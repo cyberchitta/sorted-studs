@@ -75,9 +75,9 @@ scanning station and ML pipeline.
 
 | Base Design                      | sorted-studs Replacement                                                              |
 | -------------------------------- | ------------------------------------------------------------------------------------- |
-| TCS34725 colour sensor           | Multi-view camera scanning station ([Module 3](docs/module-03-multi-view-scanner.md)) |
-| Arduino Nano + HSL classifier    | Raspberry Pi + ML pipeline ([Module 4](docs/module-04-classification-engine.md))      |
-| Small rotary diverter (few bins) | Larger diverter — design TBD ([Module 5](docs/module-05-diverter.md))                 |
+| TCS34725 colour sensor           | Multi-view camera scanning station ([Module 3](docs/m03-multi-view-scanner.md)) |
+| Arduino Nano + HSL classifier    | Raspberry Pi + ML pipeline ([Module 4](docs/m04-classification-engine.md))      |
+| Small rotary diverter (few bins) | Larger diverter — design TBD ([Module 5](docs/m05-diverter.md))                 |
 
 ---
 
@@ -87,21 +87,21 @@ scanning station and ML pipeline.
 
 | #   | Module                                                              | Status                         | Spec |
 | --- | ------------------------------------------------------------------- | ------------------------------ | ---- |
-| 1   | [Drum Feeder & Bulk Storage](docs/module-01-drum-feeder.md)         | Build from base design         | 📄   |
-| 2   | [Vibratory Singulation](docs/module-02-vibratory-singulation.md)    | Build from base design         | 📄   |
-| 3   | [Multi-View Scanning Station](docs/module-03-multi-view-scanner.md) | Original design (sorted-studs) | 📄   |
-| 5   | [Diverter & Bin Output](docs/module-05-diverter.md)                 | Design TBD — scalable          | 📄   |
+| 1   | [Drum Feeder & Bulk Storage](docs/m01-drum-feeder.md)         | Build from base design         | 📄   |
+| 2   | [Vibratory Singulation](docs/m02-vibratory-singulation.md)    | Build from base design         | 📄   |
+| 3   | [Multi-View Scanning Station](docs/m03-multi-view-scanner.md) | Original design (sorted-studs) | 📄   |
+| 5   | [Diverter & Bin Output](docs/m05-diverter.md)                 | Design TBD — scalable          | 📄   |
 
 ### Software
 
 | #   | Module                                                                  | Status                         | Spec |
 | --- | ----------------------------------------------------------------------- | ------------------------------ | ---- |
-| 4   | [Brick Classification Engine](docs/module-04-classification-engine.md)  | Original design (sorted-studs) | 📄   |
-| 6   | [Inventory & Rebrickable Sync](docs/module-06-inventory-rebrickable.md) | To build                       | 📄   |
-| 7   | [Set Coverage & Build Planner](docs/module-07-set-coverage-planner.md)  | To build                       | 📄   |
-| 8   | [Packet Generator](docs/module-08-packet-generator.md)                  | To build                       | 📄   |
-| 9   | [Control & Orchestration](docs/module-09-control-orchestration.md)      | To build                       | 📄   |
-| 10  | [User Interface](docs/module-10-user-interface.md)                      | To build                       | 📄   |
+| 4   | [Brick Classification Engine](docs/m04-classification-engine.md)  | Original design (sorted-studs) | 📄   |
+| 6   | [Inventory & Rebrickable Sync](docs/m06-inventory-rebrickable.md) | To build                       | 📄   |
+| 7   | [Set Coverage & Build Planner](docs/m07-set-coverage-planner.md)  | To build                       | 📄   |
+| 8   | [Packet Generator](docs/m08-packet-generator.md)                  | To build                       | 📄   |
+| 9   | [Control & Orchestration](docs/m09-control-orchestration.md)      | To build                       | 📄   |
+| 10  | [User Interface](docs/m10-user-interface.md)                      | To build                       | 📄   |
 
 ### Reference
 
