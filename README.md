@@ -9,9 +9,9 @@ sets or MOCs can be built from the current collection, and generates step-groupe
 "build packets" — bagged groups of bricks corresponding to stages of the build
 instructions.
 
-The project serves as both a practical tool for LEGO enthusiasts dealing with bulk
-unsorted bricks and a portfolio-grade demonstration of applied ML, computer vision,
-and mechatronics integration.
+sorted-studs is a practical tool for LEGO enthusiasts dealing with bulk unsorted
+bricks. It is designed to be open-source and reproducible, so others can build and
+iterate on their own systems.
 
 ---
 
