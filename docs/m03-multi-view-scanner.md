@@ -81,7 +81,7 @@ the 224×224 or 384×384 that classification models typically require.
 
 | Component                                              | Source                    | Est. Cost    |
 | ------------------------------------------------------ | ------------------------- | ------------ |
-| Camera module (≥12MP, global shutter preferred)        | Raspberry Pi HQ Camera    | ~$50         |
+| iPhone (XS or later; iPhone 12+ recommended) | Camera capture + ML inference  | ~$200 (used phone) |
 | First-surface mirrors (×2–3)                           | Optics supplier or Amazon | ~$15         |
 | 3D-printed light box enclosure                         | Original design           | ~$5 filament |
 | 3D-printed mirror mounts (adjustable, with set screws) | Original design           | ~$3 filament |

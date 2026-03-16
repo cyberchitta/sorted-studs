@@ -21,9 +21,10 @@ and packet generation features.
 
 ## Design Approach
 
-Web-based dashboard accessible from any device on the local network. No
-platform-specific development needed. The Pi serves the web app alongside the
-classification and orchestration services.
+Web-based dashboard served from the Mac (or any networked machine) and accessible
+from any device on the local network. No platform-specific development needed. The
+iPhone handles capture and inference; the Mac hosts the web app alongside inventory
+and orchestration services during development.
 
 ## Design Reference
 

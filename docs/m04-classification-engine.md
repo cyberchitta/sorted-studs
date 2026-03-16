@@ -19,6 +19,46 @@ Rebrickable part ID, color ID, and confidence score.
 - Confidence score; below threshold → route to "uncertain" bin
 - Inference ≤2 seconds per brick to keep up with mechanical throughput
 
+## Compute Platform
+
+### Primary: iPhone (via CoreML)
+
+The classification engine runs on an iPhone connected to the system over local WiFi.
+The iPhone handles both image capture (Module 3) and inference, making it the sole
+compute node for the vision pipeline. The Arduino handles all hardware control
+(motors, sensors, diverter) independently.
+
+The iPhone's Neural Engine runs CoreML models with low latency (~10–50ms for typical
+classification models), well within the ≤2 second inference budget. This makes it
+a stronger embedded inference platform than a Raspberry Pi for non-trivial models,
+without the cost or complexity of a Jetson.
+
+The iPhone acts as a local HTTP server. The Arduino POSTs a trigger when a brick is
+in position; the iPhone captures, infers, and returns `route_to_bin(N)` with a
+classification result. See [Module 9 — Control & Orchestration](module-09-control-orchestration.md)
+for the full protocol.
+
+**iPhone model selection:** Any iPhone with a Neural Engine (iPhone XS or later)
+is sufficient. An iPhone 12 or later is recommended for the improved ISP and
+optical zoom lens options.
+
+### Development: Mac
+
+Model training, dataset pipeline, and iterative development happen on a Mac.
+Both platforms share CoreML as the inference runtime, so a model validated on
+Mac deploys to iPhone without modification. The Mac also serves as the inference
+host during early development before the iOS app is built, using the same
+HTTP interface the Arduino expects.
+
+### Future: Jetson (optional)
+
+A separate NVIDIA Jetson-based stack can be developed as an alternative embedded
+compute platform if needed — for example, for higher-throughput production builds
+or community members who prefer a Linux-native deployment. The HTTP interface
+between the compute node and Arduino is identical regardless of platform, so
+switching is a drop-in replacement. See [Appendix D](#appendix-d-jetson-notes)
+for notes.
+
 ## Design Approach
 
 ### Two-Stage Classification
@@ -40,6 +80,17 @@ and combine features before final classification. Two approaches to evaluate:
 
 The multi-branch approach is more elegant and likely more accurate; the ensemble
 approach is easier to develop incrementally.
+
+### CoreML Model Format
+
+Models are trained in PyTorch or TensorFlow on Mac, then exported to CoreML format
+(`.mlmodel` / `.mlpackage`) via `coremltools`. The exported model is bundled directly
+into the iOS app. Model updates during development are a simple file replacement with
+no interface changes.
+
+Target model architecture for v1: EfficientNet-B0 or MobileNetV3 (fast, Neural Engine
+optimised). Evaluate against ConvNeXt-T (Brickognize's architecture) once baseline
+is established.
 
 ### Hybrid Bootstrapping with Brickognize
 
@@ -81,3 +132,5 @@ mirror geometry, so the model sees exactly the views it will encounter in produc
 - How do we handle the long tail of rare parts that won't appear in most bulk lots?
 - What's the right training strategy for the color classifier — synthetic data, or
   real-world calibration under the actual scanner lighting?
+- Which iPhone lens performs best at `#working_distance` (150mm)? Likely wide, but
+  verify empirically.

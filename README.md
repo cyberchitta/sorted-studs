@@ -73,11 +73,11 @@ sorted-studs reuses the mechanical flow (drum feeder → vibratory singulation �
 slide → diverter) and replaces the classification system with a multi-view camera
 scanning station and ML pipeline.
 
-| Base Design                      | sorted-studs Replacement                                                              |
-| -------------------------------- | ------------------------------------------------------------------------------------- |
-| TCS34725 colour sensor           | Multi-view camera scanning station ([Module 3](docs/m03-multi-view-scanner.md)) |
-| Arduino Nano + HSL classifier    | Raspberry Pi + ML pipeline ([Module 4](docs/m04-classification-engine.md))      |
-| Small rotary diverter (few bins) | Larger diverter — design TBD ([Module 5](docs/m05-diverter.md))                 |
+| Base Design                      | sorted-studs Replacement                                                                      |
+| -------------------------------- | --------------------------------------------------------------------------------------------- |
+| TCS34725 colour sensor           | Multi-view camera scanning station ([Module 3](docs/m03-multi-view-scanner.md))               |
+| Arduino Nano + HSL classifier    | Arduino (retained) + iPhone + CoreML pipeline ([Module 4](docs/m04-classification-engine.md)) |
+| Small rotary diverter (few bins) | Larger diverter — design TBD ([Module 5](docs/m05-diverter.md))                               |
 
 ---
 
@@ -85,8 +85,8 @@ scanning station and ML pipeline.
 
 ### Hardware
 
-| #   | Module                                                              | Status                         | Spec |
-| --- | ------------------------------------------------------------------- | ------------------------------ | ---- |
+| #   | Module                                                        | Status                         | Spec |
+| --- | ------------------------------------------------------------- | ------------------------------ | ---- |
 | 1   | [Drum Feeder & Bulk Storage](docs/m01-drum-feeder.md)         | Build from base design         | 📄   |
 | 2   | [Vibratory Singulation](docs/m02-vibratory-singulation.md)    | Build from base design         | 📄   |
 | 3   | [Multi-View Scanning Station](docs/m03-multi-view-scanner.md) | Original design (sorted-studs) | 📄   |
@@ -94,8 +94,8 @@ scanning station and ML pipeline.
 
 ### Software
 
-| #   | Module                                                                  | Status                         | Spec |
-| --- | ----------------------------------------------------------------------- | ------------------------------ | ---- |
+| #   | Module                                                            | Status                         | Spec |
+| --- | ----------------------------------------------------------------- | ------------------------------ | ---- |
 | 4   | [Brick Classification Engine](docs/m04-classification-engine.md)  | Original design (sorted-studs) | 📄   |
 | 6   | [Inventory & Rebrickable Sync](docs/m06-inventory-rebrickable.md) | To build                       | 📄   |
 | 7   | [Set Coverage & Build Planner](docs/m07-set-coverage-planner.md)  | To build                       | 📄   |

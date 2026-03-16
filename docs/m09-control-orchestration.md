@@ -25,23 +25,28 @@ Two compute layers:
 
 - **Real-time layer (Arduino/ESP32):** motor control, sensor reading, beam-break
   detection, diverter positioning. Deterministic timing.
-- **Application layer (Raspberry Pi):** camera capture, image preprocessing, ML
-  inference, inventory updates, UI serving. Non-deterministic but fast.
+- **Application layer (iPhone):** camera capture, image preprocessing, ML inference
+  via CoreML, inventory updates. Communicates with Arduino over local WiFi.
 
-Communication between layers via serial (USB) or I2C. Simple command protocol:
-Arduino reports sensor events ("brick detected at position X"), Pi responds with
-actions ("route to bin 7").
+Communication between layers via WiFi HTTP. Simple command protocol: Arduino POSTs
+sensor events ("brick detected at position X"), iPhone responds with actions
+("route to bin 7"). The iPhone runs a lightweight local HTTP server for this purpose.
+
+During development, the Mac can substitute for the iPhone in the application layer
+using the identical HTTP interface — no Arduino code changes required when switching
+between them.
 
 ## Design Reference
 
 BrickSortingMachine implements this as independent Python services communicating via
-TCP sockets with a simple message-passing protocol. Their Raspberry Pi acts as a relay
-server routing messages between services. This decoupled-services pattern allows
-individual modules to be restarted or updated independently.
+TCP sockets with a simple message-passing protocol. Their approach of decoupled
+services — each restartable and updatable independently — is a good model. In
+sorted-studs the equivalent is the iPhone app's internal service structure, with
+the same clean separation between capture, inference, and inventory.
 
 ## Open Questions
 
 - Latency management: how to keep mechanical flow moving during ML inference?
 - Buffer strategy: can we scan one brick while the previous brick is being diverted?
-- Should the Pi run inference locally (TFLite/ONNX) or offload to a networked GPU
-  machine during development?
+- Should the iPhone hold a persistent WiFi connection to the Arduino, or is
+  request/response per brick sufficient given the mechanical timing budget?
