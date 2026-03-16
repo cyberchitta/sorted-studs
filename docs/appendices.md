@@ -23,27 +23,28 @@
 | ---------------------------- | ----------------------- | --------- |
 | NEMA 17 stepper (17HS3404-Z) | Diverter rotation       | ~$10      |
 | A4988 stepper driver         | Stepper control         | ~$3       |
-| Arduino Nano                 | Motor/sensor control    | ~$5       |
+| Arduino Mega 2560            | Motor/sensor control    | existing  |
 | DC motor ("280") + driver    | Drum feeder             | ~$5       |
 | DC motor ("280") + DRV8871   | Vibratory feeder (v1)   | ~$8       |
 | 3D-printed parts (~500g–1kg) | Frame, scoops, channels | ~$15      |
 
 ### Added for sorted-studs
 
-| Component                              | Purpose                       | Est. Cost                 |
-| -------------------------------------- | ----------------------------- | ------------------------- |
-| iPhone XS or later (iPhone 12+ rec.)   | Camera capture + ML inference | ~$200 (existing hardware) |
-| First-surface mirrors (×2–3)           | Side/bottom views             | ~$15                      |
-| LED strip (5000K, high-CRI) + diffuser | Scan lighting                 | ~$10                      |
-| IR beam-break sensors (×2–3)           | Brick position detection      | ~$8                       |
-| Clear acrylic sheet                    | Bottom view window            | ~$5                       |
-| Additional 3D-printed parts (~500g)    | Light box, mirror mounts      | ~$10                      |
+| Component                              | Purpose                          | Est. Cost                 |
+| -------------------------------------- | -------------------------------- | ------------------------- |
+| iPhone XS or later (iPhone 12+ rec.)   | Camera capture + ML inference    | ~$200 (existing hardware) |
+| ESP32 dev board (WROOM-32)             | WiFi bridge: Arduino ↔ app layer | ~$5                       |
+| First-surface mirrors (×2–3)           | Side/bottom views                | ~$15                      |
+| LED strip (5000K, high-CRI) + diffuser | Scan lighting                    | ~$10                      |
+| IR beam-break sensors (×2–3)           | Brick position detection         | ~$8                       |
+| Clear acrylic sheet                    | Bottom view window               | ~$5                       |
+| Additional 3D-printed parts (~500g)    | Light box, mirror mounts         | ~$10                      |
 
-### Total: ~$350–400
+### Total: ~$300–350
 
 Does not include 3D printer (~$200–300 for Bambu Lab A1 Mini or Prusa MINI+). iPhone
 assumed to be existing hardware; if purchasing, an iPhone 12 secondhand runs ~$150–200.
-Mac assumed for development.
+Mac assumed for development. Arduino Mega assumed existing.
 
 ## C. Development Phases
 
@@ -78,3 +79,7 @@ platform-agnostic. A Jetson running the same inference server exposes the same
 
 **Model format:** PyTorch models export to TensorRT on Jetson via `torch2trt` or
 ONNX. This is a separate export path from CoreML but uses the same trained weights.
+
+```
+
+```

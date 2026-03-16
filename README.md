@@ -21,8 +21,8 @@ iterate on their own systems.
 
 ```
  ┌──────────┐    ┌──────────────┐    ┌──────────────┐    ┌────────────┐    ┌───────────┐
- │   DRUM   │───▶│  VIBRATORY   │───▶│  MULTI-VIEW  │───▶│  DIVERTER  │───▶│  OUTPUT   │
- │  FEEDER  │    │ SINGULATION  │    │   SCANNER    │    │            │    │   BINS    │
+ │ VIBRATING│───▶│  VIBRATORY   │───▶│  MULTI-VIEW  │───▶│  DIVERTER  │───▶│  OUTPUT   │
+ │  HOPPER  │    │ SINGULATION  │    │   SCANNER    │    │            │    │   BINS    │
  └──────────┘    └──────────────┘    └──────────────┘    └────────────┘    └───────────┘
                                            │
                                            ▼
@@ -37,6 +37,24 @@ iterate on their own systems.
                                     │   DATABASE   │    │  & PLANNER   │    │ GENERATOR │
                                     └──────────────┘    └──────────────┘    └───────────┘
 ```
+
+### Compute Architecture
+
+The system has two compute layers connected over local WiFi:
+
+**Real-time layer** — Arduino Mega handles motor control, sensors, and diverter
+positioning. An ESP32 bridges the Arduino's serial interface to WiFi as HTTP endpoints.
+
+**Application layer** — runs the classification pipeline, inventory, planning, and UI.
+Two modes:
+
+| Mode       | Application Layer | iPhone Role        | Mac Role                           |
+| ---------- | ----------------- | ------------------ | ---------------------------------- |
+| Dev        | Mac               | Camera only (HTTP) | Inference (PyTorch), orchestration |
+| Deployment | iPhone            | Camera + inference | Not required                       |
+
+Both modes use identical HTTP interfaces between layers. Switching is a single
+URL configuration change on the ESP32.
 
 ### Data Flow
 
@@ -59,6 +77,8 @@ Camera frame (single image, multiple views via mirrors)
   ("send to bin N") from the classification engine. All intelligence lives in software.
 - **Fail-safe defaults.** Any brick the system can't confidently identify goes to a
   designated "uncertain" bin for manual review or re-scanning.
+- **Dev/deploy parity.** The HTTP interface between compute layers is identical in both
+  modes. Code developed on the Mac deploys to iPhone without architectural changes.
 - **Open source, reproducible.** All 3D-printed parts designed for common FDM printers
   (≥200mm build plate). Electronics use widely available off-the-shelf components.
 
@@ -73,11 +93,11 @@ sorted-studs reuses the mechanical flow (drum feeder → vibratory singulation �
 slide → diverter) and replaces the classification system with a multi-view camera
 scanning station and ML pipeline.
 
-| Base Design                      | sorted-studs Replacement                                                                      |
-| -------------------------------- | --------------------------------------------------------------------------------------------- |
-| TCS34725 colour sensor           | Multi-view camera scanning station ([Module 3](docs/m03-multi-view-scanner.md))               |
-| Arduino Nano + HSL classifier    | Arduino (retained) + iPhone + CoreML pipeline ([Module 4](docs/m04-classification-engine.md)) |
-| Small rotary diverter (few bins) | Larger diverter — design TBD ([Module 5](docs/m05-diverter.md))                               |
+| Base Design                      | sorted-studs Replacement                                                                   |
+| -------------------------------- | ------------------------------------------------------------------------------------------ |
+| TCS34725 colour sensor           | Multi-view camera scanning station ([Module 3](docs/m03-multi-view-scanner.md))            |
+| Arduino Nano + HSL classifier    | Arduino Mega + ESP32 + iPhone/Mac pipeline ([Module 4](docs/m04-classification-engine.md)) |
+| Small rotary diverter (few bins) | Larger diverter — design TBD ([Module 5](docs/m05-diverter.md))                            |
 
 ---
 
@@ -87,7 +107,7 @@ scanning station and ML pipeline.
 
 | #   | Module                                                        | Status                         | Spec |
 | --- | ------------------------------------------------------------- | ------------------------------ | ---- |
-| 1   | [Drum Feeder & Bulk Storage](docs/m01-drum-feeder.md)         | Build from base design         | 📄   |
+| 1   | [Vibrating Hopper](docs/m01-vibrating-hopper.md)              | Original design (sorted-studs) | 📄   |
 | 2   | [Vibratory Singulation](docs/m02-vibratory-singulation.md)    | Build from base design         | 📄   |
 | 3   | [Multi-View Scanning Station](docs/m03-multi-view-scanner.md) | Original design (sorted-studs) | 📄   |
 | 5   | [Diverter & Bin Output](docs/m05-diverter.md)                 | Design TBD — scalable          | 📄   |
@@ -119,7 +139,7 @@ scanning station and ML pipeline.
 (Module 3). Integrate camera + Pi. Validate multi-angle capture.
 
 **Phase 3 — Classification Pipeline.** Synthetic data rendering, initial model training,
-Brickognize API benchmarking (Module 4).
+Brickognize API benchmarking (Module 4). Development on Mac with iPhone as camera.
 
 **Phase 4 — Inventory & Planning.** Rebrickable integration, coverage analysis, web
 dashboard (Modules 6, 7, 10).
@@ -128,7 +148,8 @@ dashboard (Modules 6, 7, 10).
 
 **Phase 6 — Packet Generation.** Step-level mapping, pick lists, bag-filling (Module 8).
 
-**Phase 7 — Polish & Scale.** 2,000+ parts recognition. Community documentation.
+**Phase 7 — Polish & Scale.** 2,000+ parts recognition. CoreML deployment to iPhone.
+Community documentation.
 
 ---
 
