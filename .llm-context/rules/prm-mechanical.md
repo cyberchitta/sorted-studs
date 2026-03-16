@@ -1,5 +1,6 @@
 ---
 description: Working on Mechanicals
+instructions: [ins-builder]
 compose:
   filters: [lc/flt-no-files]
   excerpters: [lc/exc-base]
