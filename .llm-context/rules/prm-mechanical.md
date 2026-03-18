@@ -15,4 +15,3 @@ also-include:
     - "/docs/appendices.md"
     - "/docs/reference-projects.md"
 ---
-Work on Phase 1: Mechanical Aspects
