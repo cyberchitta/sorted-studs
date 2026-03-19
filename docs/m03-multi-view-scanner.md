@@ -79,15 +79,16 @@ the 224×224 or 384×384 that classification models typically require.
 
 ## Key Components
 
-| Component                                              | Source                    | Est. Cost    |
-| ------------------------------------------------------ | ------------------------- | ------------ |
-| iPhone (XS or later; iPhone 12+ recommended) | Camera capture + ML inference  | ~$200 (used phone) |
-| First-surface mirrors (×2–3)                           | Optics supplier or Amazon | ~$15         |
-| 3D-printed light box enclosure                         | Original design           | ~$5 filament |
-| 3D-printed mirror mounts (adjustable, with set screws) | Original design           | ~$3 filament |
-| LED strip (daylight ~5000K, high-CRI) + diffuser       | Off-the-shelf             | ~$10         |
-| Clear acrylic/polycarbonate sheet (for bottom view)    | Hardware store            | ~$5          |
-| IR beam-break sensor (trigger)                         | Off-the-shelf             | ~$3          |
+| Component                                              | Source                        | Est. Cost          |
+| ------------------------------------------------------ | ----------------------------- | ------------------ |
+| iPhone (XS or later; iPhone 12+ recommended)           | Camera capture + ML inference | ~$200 (used phone) |
+| First-surface mirrors (×2–3)                           | Optics supplier or Amazon     | ~$15               |
+| 3D-printed light box enclosure                         | Original design               | ~$5 filament       |
+| 3D-printed mirror mounts (adjustable, with set screws) | Original design               | ~$3 filament       |
+| LED strip (daylight ~5000K, high-CRI) + diffuser       | Off-the-shelf                 | ~$10               |
+| Clear acrylic/polycarbonate sheet (for bottom view)    | Hardware store                | ~$5                |
+| VL53L1X time-of-flight sensor (×1–2)                   | Off-the-shelf                 | ~$5                |
+| Load cell (100g–500g) + HX711 amplifier                | Off-the-shelf                 | ~$5                |
 
 ## Design Considerations
 
@@ -104,6 +105,42 @@ the 224×224 or 384×384 that classification models typically require.
   window. Test whether the bottom view adds enough discrimination to justify the
   complexity.
 
+## Supplementary Sensors
+
+### Brick Detection: Time-of-Flight (replaces beam-break)
+
+A VL53L1X time-of-flight sensor mounted above the gravity slide serves dual
+purpose: brick presence detection and bounding box dimensional measurement.
+
+- **Presence detection.** Distance drops from empty-slide baseline when a brick
+  enters the scan zone. One-time calibration sets the threshold. Polling at 50Hz
+  (20ms) is more than sufficient — at slide speeds of 50–100mm/s, the brick moves
+  ~1mm between polls.
+- **Dimensional measurement.** The distance profile as the brick transits gives
+  height. Combined with known slide speed or a second ToF sensor along the slide
+  axis, length is extracted. Width from a lateral sensor axis or inferred from
+  the top-down camera view.
+
+This replaces the IR beam-break sensors in the original design. The beam-break's
+sub-millisecond response offers no practical advantage at these slide speeds, and
+the ToF provides dimensional data at no additional cost.
+
+### Weight Measurement
+
+A load cell (100g–500g range) with HX711 amplifier integrated into the scan
+position platform. The brick is momentarily stationary during image capture —
+this pause is the natural weigh point.
+
+- Tare between bricks.
+- Read time <100ms, well within the scan cycle budget.
+- Mechanical integration: the weigh platform must not interfere with the
+  transparent section (if present) or mirror sight lines. Design as a short
+  settling shelf at the scan position.
+
+Together, ToF dimensions and weight produce a 4-scalar vector (length, width,
+height, mass) that feeds the classification engine as a supplementary signal
+alongside the visual embedding.
+
 ## Design Reference
 
 The BrickSortingMachine project's scanner module demonstrates the camera + mirror
@@ -118,3 +155,7 @@ computational advantages.
 - Does the anti-stud (bottom) view add enough classification value to justify the
   transparent section complexity?
 - Should we include a load cell for weight measurement as a supplementary signal?
+- Load cell platform placement: above or below the transparent section? Does the
+  weigh step happen before, during, or after image capture?
+- Single ToF sensor (height profile only, infer length from transit time) vs. two
+  sensors (direct height + length)?

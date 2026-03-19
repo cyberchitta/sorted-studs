@@ -30,15 +30,16 @@
 
 ### Added for sorted-studs
 
-| Component                              | Purpose                          | Est. Cost                 |
-| -------------------------------------- | -------------------------------- | ------------------------- |
-| iPhone XS or later (iPhone 12+ rec.)   | Camera capture + ML inference    | ~$200 (existing hardware) |
-| ESP32 dev board (WROOM-32)             | WiFi bridge: Arduino ↔ app layer | ~$5                       |
-| First-surface mirrors (×2–3)           | Side/bottom views                | ~$15                      |
-| LED strip (5000K, high-CRI) + diffuser | Scan lighting                    | ~$10                      |
-| IR beam-break sensors (×2–3)           | Brick position detection         | ~$8                       |
-| Clear acrylic sheet                    | Bottom view window               | ~$5                       |
-| Additional 3D-printed parts (~500g)    | Light box, mirror mounts         | ~$10                      |
+| Component                               | Purpose                          | Est. Cost                 |
+| --------------------------------------- | -------------------------------- | ------------------------- |
+| iPhone XS or later (iPhone 12+ rec.)    | Camera capture + ML inference    | ~$200 (existing hardware) |
+| ESP32 dev board (WROOM-32)              | WiFi bridge: Arduino ↔ app layer | ~$5                       |
+| First-surface mirrors (×2–3)            | Side/bottom views                | ~$15                      |
+| LED strip (5000K, high-CRI) + diffuser  | Scan lighting                    | ~$10                      |
+| VL53L1X ToF sensor (×1–2)               | Brick detection + dimensions     | ~$5                       |
+| Load cell (100g–500g) + HX711 amplifier | Brick weight measurement         | ~$5                       |
+| Clear acrylic sheet                     | Bottom view window               | ~$5                       |
+| Additional 3D-printed parts (~500g)     | Light box, mirror mounts         | ~$10                      |
 
 ### Total: ~$300–350
 

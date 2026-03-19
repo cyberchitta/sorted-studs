@@ -241,21 +241,29 @@ For the metric learning approach, late fusion produces a single fused
 embedding vector per brick from all views — this vector is what gets
 compared against the reference database.
 
-### Supplementary Signals: Weight Measurement
+### Supplementary Signals: Weight and Dimensions
 
-Multiple sorting projects (Akiyuki's NXT sorter, DISBY) have demonstrated
-that part weight is a valuable complementary signal to visual classification.
-Weight helps disambiguate visually similar parts and detects cases where
-multiple parts are presented to the camera simultaneously.
+The scan station (Module 3) provides two non-visual measurement channels
+alongside the camera image:
 
-**Design:** a load cell or USB scale integrated into the scan station,
-with weight fed as an additional input to the classification pipeline. The
-classifier becomes multimodal: visual embedding + scalar weight → final
-classification.
+**Weight.** A load cell at the scan position measures brick mass. Multiple
+sorting projects (Akiyuki's NXT sorter, DISBY) have demonstrated that weight
+disambiguates visually similar parts and detects cases where multiple bricks
+are presented simultaneously.
 
-**Status:** design consideration, not committed. Requires mechanical
-integration with Module 3 (scan station) and a mechanism for pushing parts
-onto and off the scale. Evaluate after visual-only baseline is established.
+**Bounding box dimensions.** Time-of-flight sensors on the gravity slide
+measure length, width, and height in millimeters. This provides absolute
+scale that the camera inherently lacks — the camera sees proportions, not
+physical dimensions. A 1×2 brick and a 2×4 brick have identical aspect
+ratios from the top but differ by a factor of two in linear dimensions.
+
+Together these produce a 4-scalar vector (length, width, height, mass) that
+fuses with the visual embedding in the classification pipeline. For the
+metric learning approach (Approach B), the scalar vector is concatenated
+with the visual embedding before nearest-neighbor search, narrowing the
+candidate set before fine-grained visual discrimination.
+
+**Status:** committed for v1. Sensor integration is specified in Module 3.
 
 ### Hybrid Bootstrapping with Brickognize
 
