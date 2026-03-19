@@ -241,6 +241,99 @@ For the metric learning approach, late fusion produces a single fused
 embedding vector per brick from all views — this vector is what gets
 compared against the reference database.
 
+### Training Pipeline Options
+
+The standard approach in existing LEGO classification projects is supervised
+fine-tuning of an ImageNet-pretrained backbone on synthetic renders from the
+LDraw parts library. This works — Brickognize and Daniel West both
+demonstrate viable classifiers this way.
+
+A more staged approach could improve feature quality, particularly for
+fine-grained discrimination between visually similar parts:
+
+**Stage 0 — Self-supervised pretraining (FCMAE).** ConvNeXt V2 natively
+supports a fully convolutional masked autoencoder framework. This masks
+random patches of input images and trains the network to reconstruct them,
+learning visual structure without any labels. The entire LDraw library
+(~70,000 parts) can be rendered into an essentially unlimited volume of
+unlabeled training images. No existing LEGO sorting project uses
+self-supervised pretraining — all rely on supervised training from the
+start.
+
+**Stage 1 — Supervised fine-tuning on labeled LEGO images.** Standard
+single-view classification or metric learning on labeled synthetic renders
+and available real-world datasets (B200C, Brickognize-style collections).
+This stage doesn't require scanner hardware.
+
+**Stage 2 — Multi-view fusion training.** Train the fusion head on actual
+multi-view data from the scanning station, using the stage 1 backbone
+(frozen or slow-learning).
+
+The stages are additive — each starts from a better initialization than the
+last. Stage 0 is optional; stages 1 and 2 are required regardless of
+approach. The question is whether the self-supervised stage yields enough
+improvement in fine-grained feature quality to justify the compute cost.
+
+### Multimodal Fusion
+
+If supplementary scalar signals are available from the scanning station
+(weight from a load cell, distance/height from a time-of-flight sensor),
+these can be integrated into the classification pipeline at the feature
+fusion point.
+
+The scalar signals are low-dimensional (1–3 values) and don't justify
+their own encoder. The natural integration point is concatenation onto the
+fused multi-view feature vector before the classification or embedding
+head:
+
+```
+N view crops → shared ConvNeXt → N feature vectors → fuse views → concat([fused_visual, weight, tof]) → head
+```
+
+**Modality dropout.** If scalar sensors aren't always available (sensor
+failure, calibration drift, parts that don't sit cleanly on a scale),
+randomly zeroing out scalar inputs during training teaches the network to
+classify from vision alone when needed, while exploiting extra signals when
+present.
+
+**Reference database implications.** For the metric learning approach
+(Approach B), the fused embedding includes scalar components. Reference
+entries need matching modalities — synthetic renders won't have real weight
+data. Options include populating reference weights from LDraw part metadata
+(which includes mass for many parts), or learning a gating mechanism that
+downweights missing modalities.
+
+**ToF signal complexity.** A single distance reading is a scalar and
+concatenates directly. If the ToF sensor provides a 1D or 2D depth profile,
+a small 1D-conv or MLP encoder would be needed before concatenation.
+
+### Multi-View Fusion Head Alternatives
+
+The recommended late fusion approach (see Multi-View Fusion above) combines
+per-view feature vectors before the classification or embedding head. The
+mechanism for that combination is a design choice with trade-offs:
+
+**Option A — Concatenation + FC layer.** Concatenate all per-view feature
+vectors and pass through one fully connected layer. Simple, few additional
+parameters, easy to debug. However, a single FC layer can only learn linear
+correlations between views — it may miss complex cross-view relationships
+(e.g., "this profile in view 2 disambiguates the flat top in view 1").
+
+**Option B — Cross-attention over view tokens.** Treat each per-view
+feature vector as a token and pass them through a small transformer
+(1–2 layers) before the head. This lets the model learn which views are
+informative for a given brick and how views relate to each other. More
+parameters and complexity than Option A, but richer cross-view reasoning.
+
+```
+Option A: [v1, v2, v3] → concat → FC → embedding
+Option B: [v1, v2, v3] → cross-attention (1–2 layers) → pooled → embedding
+```
+
+Option A is the natural starting point. Option B is worth evaluating if
+the concat+FC baseline shows evidence of cross-view confusion — visually
+similar parts that differ only in a specific view combination.
+
 ### Supplementary Signals: Weight and Dimensions
 
 The scan station (Module 3) provides two non-visual measurement channels
