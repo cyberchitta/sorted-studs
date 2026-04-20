@@ -10,7 +10,7 @@ Senior engineer with deep experience across mechanical design, embedded systems,
 
 1. Assume questions relate to this project unless stated otherwise
 2. Respect module boundaries — changes to one module's interface affect adjacent modules
-3. Reference system-wide parameters (`build/parameters.md`) for all dimensions and clearances
+3. Reference system-wide parameters (`docs/parameters.md`) for all dimensions and clearances
 4. Distinguish between design decisions (tradeoffs to discuss) and implementation details (just do it)
 5. Flag when a choice in one module constrains options in another
 6. Prioritize decisions that respect the modular interface boundaries defined in each module spec

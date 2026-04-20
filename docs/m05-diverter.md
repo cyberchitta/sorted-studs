@@ -79,6 +79,22 @@ The diverter is an active area of innovation. We expect to find or develop bette
 designs as the project progresses. Any design that conforms to the interface
 specification above is compatible.
 
+### Approach F: Hex Tower Cascade (current target for v1)
+
+A hexagonal extrusion tower with stacked floors. Each floor carries a radial
+basket ring and a rotating ramp on a central shaft. Ramp default is down (brick
+passes through); the destination floor raises its ramp and rotates it to the
+selected basket. Bin count = floors × baskets/floor — 18 bins in a 3-floor ×
+6-basket build.
+
+- **Pros:** Compact footprint, scales vertically, modular (floors are identical),
+  fails safe (stuck ramp just passes the brick through).
+- **Cons:** More moving parts than Approach A, needs careful vertical clearance
+  between floors.
+- **Best for:** v1 workshop build where horizontal space is scarce.
+
+Full build-level description: [`../cad/m05-diverter/hex-cascade.md`](../cad/m05-diverter/hex-cascade.md).
+
 ## Open Questions
 
 - Which approach best balances bin count, speed, and build complexity for v1?

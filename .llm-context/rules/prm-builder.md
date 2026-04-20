@@ -7,7 +7,7 @@ compose:
 also-include:
   full-files:
     - "/README.md"
-    - "/build/parameters.md"
+    - "/docs/parameters.md"
     - "/docs/appendices.md"
     - "/docs/reference-projects.md"
   excerpted-files:
@@ -20,5 +20,5 @@ also-include:
     - "/docs/m08-packet-generator.md"
     - "/docs/m09-control-orchestration.md"
     - "/docs/m10-user-interface.md"
-    - "/build/m02-singulator.md"
+    - "/cad/m02-singulator/singulator.md"
 ---

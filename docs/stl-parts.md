@@ -1,0 +1,17 @@
+Vee_channel_hood.stl
+vee_channel_rigid_mount.stl
+Vee_channel_end_scoop.stl
+vee_channel_vibrator_mount_large_v2.stl
+
+vibe_feeder_end_bracket.stl
+
+off_center_mass.stl
+
+motor_mount_upper.stl
+motor_mount_lower.stl
+tube_spindle_mountl.stl
+
+40mm_pipe_clamp.stl
+65mm_pipe_flange_v2.stl
+
+sensor_housing.stl
