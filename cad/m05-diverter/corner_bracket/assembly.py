@@ -27,8 +27,7 @@ from cad_khana.printability.methods import FDM
 
 # --- Parameters ---------------------------------------------------------
 
-# Extrusion — 2020 for first pass. Revisit to 2040 if walls or arm
-# stiffness are inadequate.
+# Extrusion — 2020 (committed choice for the tower frame).
 EXT_SIZE = 20.0
 EXT_STUB_LEN = 60.0                # stand-in stub length for interference checks
 

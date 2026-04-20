@@ -50,8 +50,7 @@ Two concentric hexagons per floor:
 
 - **Outer hex ring** — six horizontal extrusions at each floor level
   forming the tower's outer perimeter. Six vertical corner columns
-  (likely 2020 or 2040) at the outer hex's vertices run the full
-  tower height.
+  (2020) at the outer hex's vertices run the full tower height.
 - **Inner hex ring** — six shorter horizontal extrusions at the same
   floor level forming a smaller concentric hex around the central
   drop column. Vertical columns at the inner hex's vertices may run
@@ -154,7 +153,6 @@ Derived / secondary:
 - **Spout exit width** = `min(flap_width, 2·R·sin(π/N))`.
 - **Exit-opening height** ≥ the larger of (spout peak in DOWN) and
   (brick-clearance above the hinge in UP).
-- **Extrusion profile** for the tower frame (2020 / 2040 / mix).
 - **Floor spacing** — must fit basket height + flap swing clearance +
   drive clearance.
 - **Flap angle** — currently 10° above horizontal in UP; steep enough
