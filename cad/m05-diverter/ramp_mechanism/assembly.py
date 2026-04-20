@@ -3,12 +3,17 @@ M05 hex-tower — rotating square-column flap mechanism (generic floor).
 
 Single-floor model of the rotating-column trap-door design for Approach F.
 The column is a square tube with a circular collar at the bottom (bearing
-interface); the collar rides in a fixed ring bearing attached to the
-tower frame, so nothing obstructs the drop chute. An exit opening on
-one wall is closed in DOWN state by a flap hinged at its middle: a
-rectangular catch section (inner of hinge) covers the column cross-
-section when UP, and a narrower spout section (outer of hinge) delivers
-bricks into the selected basket.
+interface); the collar rides in a fixed ring bearing held coaxial with
+the column by a **spider bracket** — a short printed hub with six
+integrated saddles that clamp over the top of radial 2020 aluminum
+extrusions running out to the inner-hex frame. The aluminum carries
+the span; the printed part is only a junction. No solid floor disk;
+the drop chute is unobstructed.
+
+An exit opening on one wall is closed in DOWN state by a flap hinged at
+its middle: a rectangular catch section (inner of hinge) covers the
+column cross-section when UP, and a narrower spout section (outer of
+hinge) delivers bricks into the selected basket.
 
 This is an **intermediate-floor** model — the base floor additionally
 has a shaft + motor mount + bearing boss to drive rotation. Those are
@@ -17,10 +22,11 @@ the ring-bearing support.
 
 One top-level parameter — `MAX_BRICK_DIM` — sizes the column interior.
 `N_BASKETS_PER_FLOOR` and `R_BASKET_INNER` together size the spout exit
-width (narrower = finer basket angular targeting).
+width (narrower = finer basket angular targeting). `R_BASKET_INNER` also
+sets the inner-hex vertex distance and therefore the spider arm length.
 
 Coordinate frame:
-    origin = column axis ∩ floor-plate top plane
+    origin = column axis ∩ floor datum (z=0 = bearing/spider base)
     +Z     = up
     +X     = radial outward toward the exit opening
     +Y     = tangent at the opening (hinge axis direction)
@@ -116,12 +122,32 @@ BOSS_Y_OFFSET = OPENING_W / 2 + BOSS_Y / 2
 COL_Z_BOT = 0.0
 COL_Z_TOP = OPENING_Z_TOP + 5.0
 
-# Floor plate + ring bearing
-FLOOR_T = 5.0
-FLOOR_OUTER_HALF = R_BASKET_INNER + 40.0
+# Ring bearing
 RING_BEARING_ID = COLLAR_OD + 2 * COLLAR_CLEARANCE
 RING_BEARING_OD = RING_BEARING_ID + 20.0
-FLOOR_HOLE_R = RING_BEARING_OD / 2 + 1.0
+
+# Bearing spider — a short printed hub that grips the bearing, with six
+# integrated saddle brackets around its perimeter. Each saddle drops
+# over the top of a 2020 aluminum extrusion running radially out to the
+# inner-hex frame; the extrusion carries the structural span, the
+# printed part is only a junction.
+N_SPIDER_SADDLES = 6
+SPIDER_HUB_ID = RING_BEARING_OD + 1.0         # ≈ 161 — slip fit over bearing OD
+SPIDER_HUB_OD = SPIDER_HUB_ID + 10.0          # ≈ 171 — 5 mm wall around bearing
+SPIDER_T = COLLAR_T                           # 5 — coplanar with bearing
+
+# 2020 aluminum extrusion profile (20 × 20 mm); extrusion top face is
+# coincident with the bearing top plane (Z = COL_Z_BOT + COLLAR_T).
+EXT_SIDE = 20.0
+
+# Saddle bracket dimensions
+SADDLE_T_TOP = 3.0                            # top-plate thickness
+SADDLE_T_WALL = 3.0                           # side-wall thickness
+SADDLE_COVER_H = 12.0                         # wrap-down depth over extrusion
+SADDLE_L = 30.0                               # radial grip length
+SADDLE_HUB_OVERLAP = 2.0                      # saddle-to-hub union overlap
+SADDLE_BOLT_D = 4.5                           # M4 clearance hole
+SADDLE_BOLT_OFFSET = 15.0                     # bolt X past hub OD (mid of grip)
 
 # Tilt angles
 TILT_UP = 10.0
@@ -139,15 +165,57 @@ def _cyl_along_y(r: float, length: float) -> Part:
 
 # --- Part functions -----------------------------------------------------
 
-def floor_plate() -> Part:
-    """Intermediate-floor deck: square plate with a circular hole for the
-    column (+ ring bearing) to pass through. Baskets sit on its outer
-    perimeter (not modeled)."""
-    outer = Pos(0, 0, -FLOOR_T / 2) * Box(
-        FLOOR_OUTER_HALF * 2, FLOOR_OUTER_HALF * 2, FLOOR_T
-    )
-    hole = Pos(0, 0, -FLOOR_T / 2) * Cylinder(FLOOR_HOLE_R, FLOOR_T * 2)
-    return outer - hole
+def bearing_spider() -> Part:
+    """Printed hub that holds the ring bearing coaxial with the column.
+    Central annulus grips the bearing's outer race; six integrated
+    saddle brackets at the perimeter drop over the top of radial 2020
+    aluminum extrusions. The aluminum carries the structural span out
+    to the inner hex; the printed part is a short junction only.
+    No solid disk — the drop chute below is unobstructed.
+    """
+    hub_z_center = COL_Z_BOT + SPIDER_T / 2
+    ext_top_z = COL_Z_BOT + COLLAR_T            # extrusion top = bearing top
+
+    # Hub annulus around the bearing
+    hub_outer = Pos(0, 0, hub_z_center) * Cylinder(SPIDER_HUB_OD / 2, SPIDER_T)
+    hub_inner = Pos(0, 0, hub_z_center) * Cylinder(SPIDER_HUB_ID / 2, SPIDER_T * 2)
+    body = hub_outer - hub_inner
+
+    # Saddle envelope (solid block; extrusion pocket + bolt hole subtracted below)
+    saddle_w = EXT_SIDE + 2 * SADDLE_T_WALL
+    saddle_h = SADDLE_COVER_H + SADDLE_T_TOP
+    saddle_x_in = SPIDER_HUB_OD / 2 - SADDLE_HUB_OVERLAP
+    saddle_x_out = SPIDER_HUB_OD / 2 + SADDLE_L
+    saddle_z_bot = ext_top_z - SADDLE_COVER_H
+    saddle_z_top = ext_top_z + SADDLE_T_TOP
+
+    # Extrusion pocket — starts at hub OD (no hub intrusion), open outward
+    cutout_x_in = SPIDER_HUB_OD / 2
+    cutout_x_out = saddle_x_out + 5.0
+    cutout_z_top = ext_top_z                    # preserve top plate
+    cutout_z_bot = saddle_z_bot - 1.0
+
+    # Bolt through top plate into extrusion's top T-slot (Y=0)
+    bolt_x = SPIDER_HUB_OD / 2 + SADDLE_BOLT_OFFSET
+    bolt_z_bot = ext_top_z - 1.0
+    bolt_z_top = saddle_z_top + 1.0
+
+    for i in range(N_SPIDER_SADDLES):
+        theta = i * 360.0 / N_SPIDER_SADDLES
+        rot = Rot(0, 0, theta)
+        saddle_env = rot * Pos(
+            (saddle_x_in + saddle_x_out) / 2, 0,
+            (saddle_z_bot + saddle_z_top) / 2,
+        ) * Box(saddle_x_out - saddle_x_in, saddle_w, saddle_h)
+        cutout = rot * Pos(
+            (cutout_x_in + cutout_x_out) / 2, 0,
+            (cutout_z_bot + cutout_z_top) / 2,
+        ) * Box(cutout_x_out - cutout_x_in, EXT_SIDE, cutout_z_top - cutout_z_bot)
+        bolt_hole = rot * Pos(bolt_x, 0, (bolt_z_bot + bolt_z_top) / 2) * Cylinder(
+            SADDLE_BOLT_D / 2, bolt_z_top - bolt_z_bot,
+        )
+        body = body + saddle_env - cutout - bolt_hole
+    return body
 
 
 def ring_bearing() -> Part:
@@ -234,7 +302,7 @@ pivot_loc = Location((PIVOT_X, 0, PIVOT_Z))
 assembly = Assembly()
 assembly = (
     assembly
-    .add("floor_plate", floor_plate())
+    .add("bearing_spider", bearing_spider())
     .add("ring_bearing", ring_bearing())
     .add("column", column())
     .add("hinge_pin", hinge_pin(), location=pivot_loc)
@@ -250,17 +318,17 @@ for angle in TILT_SAMPLES:
 assembly = (
     assembly
     # Fixed parts don't interfere with each other
-    .assert_no_interference("floor_plate", "ring_bearing")
-    .assert_no_interference("floor_plate", "column")
+    .assert_no_interference("bearing_spider", "ring_bearing")
+    .assert_no_interference("bearing_spider", "column")
     .assert_no_interference("ring_bearing", "column")
     .assert_no_interference("hinge_pin", "column")
     # Flap DOWN — closes the lower part of the opening, clears everything
-    .assert_no_interference("flap_down", "floor_plate")
+    .assert_no_interference("flap_down", "bearing_spider")
     .assert_no_interference("flap_down", "ring_bearing")
     .assert_no_interference("flap_down", "column")
     .assert_no_interference("flap_down", "hinge_pin")
     # Flap UP — catch spans column, spout clears wall, nothing fixed is hit
-    .assert_no_interference("flap_up", "floor_plate")
+    .assert_no_interference("flap_up", "bearing_spider")
     .assert_no_interference("flap_up", "ring_bearing")
     .assert_no_interference("flap_up", "column")
     .assert_no_interference("flap_up", "hinge_pin")
@@ -269,7 +337,7 @@ for angle in TILT_SAMPLES:
     name = f"flap_at_{int(angle)}"
     assembly = (
         assembly
-        .assert_no_interference(name, "floor_plate")
+        .assert_no_interference(name, "bearing_spider")
         .assert_no_interference(name, "ring_bearing")
         .assert_no_interference(name, "column")
         .assert_no_interference(name, "hinge_pin")
@@ -284,7 +352,7 @@ if __name__ == "__main__":
     # the rest — diagnostics are still written to disk for review.
     method = FDM(wall_min_mm=WALL_MIN, overhang_max_deg=90.0)
     for name, part_fn in [
-        ("floor_plate", floor_plate),
+        ("bearing_spider", bearing_spider),
         ("ring_bearing", ring_bearing),
         ("column", column),
         ("flap", flap),

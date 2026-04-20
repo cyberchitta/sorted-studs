@@ -210,9 +210,6 @@ Modeling starts with the [corner bracket](corner_bracket/assembly.py)
 per-floor [ramp mechanism](ramp_mechanism/assembly.py) — bearing
 spider, ring bearing, square column with bottom collar, hinge pin,
 and flap — which exercises the full diagnostics + assertion surface.
-(The current `assembly.py` still carries a placeholder floor-plate
-disk from an earlier design; replacing it with a spider bracket is
-pending.)
 
 The base floor adds a motor + shaft + bearing boss to drive column
 rotation; those are not in the generic-floor model and will be a
