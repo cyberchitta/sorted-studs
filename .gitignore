@@ -1,0 +1,16 @@
+.llm-context/curr_ctx.yaml
+.llm-context/lc-state.yaml
+
+# Python
+__pycache__/
+*.pyc
+
+# uv / venv
+.venv/
+uv.lock
+
+# cad-khana build outputs
+cad/**/outputs/
+
+.DS_Store
+.commit-msg
