@@ -93,6 +93,12 @@ selected basket. Bin count = floors × baskets/floor — 18 bins in a 3-floor ×
   between floors.
 - **Best for:** v1 workshop build where horizontal space is scarce.
 
+The ramp is inherently a **rotating trap door**: rotation selects *which*
+basket on the floor, up/down selects *whether* this floor catches the
+brick at all. Both degrees of freedom are required — a ramp that only
+rotates would catch every brick on the top floor; a trap door that only
+raises would need one per bin.
+
 Full build-level description: [`../cad/m05-diverter/hex-cascade.md`](../cad/m05-diverter/hex-cascade.md).
 
 ## Open Questions

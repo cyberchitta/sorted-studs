@@ -88,6 +88,32 @@ with 6 baskets per floor that's 18 bins in a compact vertical footprint.
 - Floor spacing — must fit basket height + ramp swing clearance + drive
   clearance.
 
+## Reference design observations
+
+We're drawing on a prior radial-bin tower design (shared as reference
+images). Things worth carrying into our ramp mechanism work:
+
+- **Central drop column is the trunk line.** A single vertical chute
+  runs the full height of the tower; every floor taps off it. The
+  bottom of the chute is the natural home for the uncertain/fallback
+  bin — anything not caught on the way down lands there with no extra
+  routing logic.
+- **Combined catch + guide surface.** In the reference, a single
+  angled flap both *stops* the brick and *slides* it into the basket.
+  Our ramp should do the same — one surface, not a separate catcher
+  plus chute — so the brick never loses contact while changing
+  direction.
+- **Default-down, fail-through.** Ramp rests in the pass-through
+  (down) state. Power loss, stuck actuator, or a missed command all
+  degrade to "brick falls to the bottom fallback bin," never to
+  "brick lands in the wrong bin." This is the fail-safe stance
+  already in the m05 spec.
+- **Ramp angle and basket lip.** The reference angles the flap
+  steeply enough to slide reliably but not so steep that the brick
+  bounces over the basket's far wall. Basket inner lip should be
+  higher than the ramp's launch trajectory — a constraint to verify
+  in diagnostics once we have a ramp angle picked.
+
 ## Open questions
 
 - Ramp up/down mechanism: separate servo vs. cam driven off rotation?
