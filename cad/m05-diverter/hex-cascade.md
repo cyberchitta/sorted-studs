@@ -46,19 +46,35 @@ with 6 baskets per floor that's 18 bins in a compact vertical footprint.
 
 ### Frame (hexagonal tower)
 
-- 6 vertical corner columns of aluminum extrusion (likely 2020 or
-  2040), one at each vertex of the hexagon.
-- Horizontal crossbeam rings at each floor level and top/bottom caps,
-  also aluminum extrusion.
-- 3D-printed **corner brackets** join three extrusions (two horizontal,
-  one vertical) at every vertex of every ring. These are the pink
-  star-shaped parts in the image.
-- Diagonal braces in each hex face for rigidity.
+Two concentric hexagons per floor:
+
+- **Outer hex ring** — six horizontal extrusions at each floor level
+  forming the tower's outer perimeter. Six vertical corner columns
+  (likely 2020 or 2040) at the outer hex's vertices run the full
+  tower height.
+- **Inner hex ring** — six shorter horizontal extrusions at the same
+  floor level forming a smaller concentric hex around the central
+  drop column. Vertical columns at the inner hex's vertices may run
+  full-height or be segmented between floors.
+- **Radial rails** — extrusions from each inner-hex vertex out to the
+  corresponding outer-hex vertex. They tie the two hex rings together
+  and stiffen the inner ring against basket load. A further set of
+  radial arms extends inward from the inner hex to the ring bearing
+  — the **spider** that holds the bearing coaxial with the column
+  without needing a solid floor disk. (The inner-to-bearing arms may
+  be coextensive with the inner-to-outer rails on some floors, or a
+  separate set — to be decided during frame layout.)
+- **3D-printed corner brackets** join the extrusions at every vertex
+  (shown as pink star-shaped parts in early reference sketches).
+- **Diagonal braces** in each bay between inner and outer hex for
+  torsional rigidity.
 
 ### Per-floor assembly
 
-- **Basket ring** — baskets arranged radially around the column. Each
-  basket is removable for emptying. Number per floor is a design
+- **Basket ring** — one basket per bay between inner and outer hex.
+  Each basket has a top flange wider than the bay so it hangs on the
+  inner- and outer-hex ring extrusions (drawer on two rails); drops in
+  from above, lifts out for emptying. Number per floor is a design
   parameter (see below).
 - **Rotating column + flap** — a **square-section tube** with a single
   exit opening cut into one wall. The column has **circular end-collars**
@@ -71,11 +87,11 @@ with 6 baskets per floor that's 18 bins in a compact vertical footprint.
   stack (or per-floor, if independent rotation is wanted); a second
   actuator per floor controls the flap's up/down tilt. Gravity-bias
   to DOWN so failures fall-through, not misroute.
-- **Floor plate** — structural disk on the tower frame at each floor
-  level, with a circular hole that the column's collar passes through.
-  Carries the basket ring on its outer perimeter and the ring bearing
-  at the hole's edge. **No central obstruction** — nothing inside the
-  drop chute on intermediate floors.
+- **Bearing mount** — the ring bearing is carried by the spider
+  (radial arms from the inner hex inward to the bearing's outer race).
+  No solid floor disk on intermediate floors — the drop chute is
+  unobstructed, and any brick that passes all flaps falls to the
+  bottom fallback bin with nothing in its way.
 - **Flap shape** — flat, rigid plate hinged at its middle. The catch
   section (inner of hinge) spans the full column cross-section when UP;
   the spout section (outer of hinge) reaches over the gap between the
@@ -181,14 +197,22 @@ images). Things worth carrying into our ramp mechanism work:
 - Can two adjacent floors' ramps be "up" safely if the one below is
   aimed away from the drop column — i.e., can we pipeline two bricks
   in flight?
+- **Ring-bearing type** — options include a printed plain bearing
+  ring, a lazy-susan turntable, or a commercial slewing ring bearing
+  (as sketched in the reference image). Trade-off is load capacity
+  and rotational precision vs. cost, weight, and sourcing. Not yet
+  settled.
 
 ## Build order
 
 Modeling starts with the [corner bracket](corner_bracket/assembly.py)
 (simplest printable part, proves the cad-khana workflow), then the
-per-floor [ramp mechanism](ramp_mechanism/assembly.py) — floor plate,
-ring bearing, square column with bottom collar, hinge pin, and flap
-— which exercises the full diagnostics + assertion surface.
+per-floor [ramp mechanism](ramp_mechanism/assembly.py) — bearing
+spider, ring bearing, square column with bottom collar, hinge pin,
+and flap — which exercises the full diagnostics + assertion surface.
+(The current `assembly.py` still carries a placeholder floor-plate
+disk from an earlier design; replacing it with a spider bracket is
+pending.)
 
 The base floor adds a motor + shaft + bearing boss to drive column
 rotation; those are not in the generic-floor model and will be a
