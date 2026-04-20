@@ -42,7 +42,7 @@ equilibrium (catch hangs, spout rises).
 
 import math
 
-from build123d import Box, Cylinder, Location, Part, Pos, Rot
+from build123d import Box, Cylinder, Location, Part, Polygon, Pos, Rot, extrude
 
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
@@ -56,6 +56,7 @@ MAX_BRICK_DIM = 80.0            # largest LEGO dim this sorter handles (mm)
 BRICK_SLOP = 5.0                # radial clearance brick-to-column-wall (mm)
 N_BASKETS_PER_FLOOR = 6         # 6 / 12 / 18; affects spout-exit width
 R_BASKET_INNER = 150.0          # radial distance column axis → basket lip (mm)
+R_HEX_OUTER = 270.0             # outer-hex apothem (center → edge midpoint, mm)
 
 
 # --- Derived parameters -------------------------------------------------
@@ -149,6 +150,14 @@ SADDLE_HUB_OVERLAP = 2.0                      # saddle-to-hub union overlap
 SADDLE_BOLT_D = 4.5                           # M4 clearance hole
 SADDLE_BOLT_OFFSET = 15.0                     # bolt X past hub OD (mid of grip)
 
+# Basket — trapezoidal-prism container sitting in a hex bay
+BASKET_HEX_CLEARANCE = 20.0                       # basket outer chord → frame
+R_BASKET_OUTER = R_HEX_OUTER - BASKET_HEX_CLEARANCE
+BASKET_ANG_SPAN_DEG = 360.0 / N_BASKETS_PER_FLOOR  # angular span per basket
+BASKET_WALL_T = 3.0
+BASKET_DEPTH_Z = 80.0                              # internal height
+BASKET_RIM_Z = 0.0                                 # top rim at floor datum
+
 # Tilt angles
 TILT_UP = 10.0
 TILT_DOWN = -90.0
@@ -161,6 +170,36 @@ WALL_MIN = 1.5
 
 def _cyl_along_y(r: float, length: float) -> Part:
     return Rot(90, 0, 0) * Cylinder(r, length)
+
+
+def _trap_prism(
+    r_in: float,
+    r_out: float,
+    half_angle_deg: float,
+    z_bot: float,
+    z_top: float,
+    inset: float = 0.0,
+) -> Part:
+    """Angular-sector trapezoidal prism centered on +X.
+
+    Four vertices at (r*cos(ha), ±r*sin(ha)) for r in {r_in, r_out}.
+    `inset` offsets each of the four bounding lines perpendicular-inward
+    by that amount — used to carve the hollow interior from an outer
+    shell with a uniform wall thickness.
+    """
+    ha = math.radians(half_angle_deg)
+    x_in = r_in * math.cos(ha) + inset
+    x_out = r_out * math.cos(ha) - inset
+    tan_ha = math.tan(ha)
+    dy = inset / math.cos(ha)
+    pts = [
+        (x_in, -(x_in * tan_ha - dy)),
+        (x_out, -(x_out * tan_ha - dy)),
+        (x_out, +(x_out * tan_ha - dy)),
+        (x_in, +(x_in * tan_ha - dy)),
+    ]
+    sketch = Polygon(*pts, align=None)
+    return Pos(0, 0, z_bot) * extrude(sketch, amount=z_top - z_bot)
 
 
 # --- Part functions -----------------------------------------------------
@@ -295,6 +334,27 @@ def flap() -> Part:
     return body - pin_hole
 
 
+def basket() -> Part:
+    """Trapezoidal-prism container for one basket slot, centered on +X.
+    Angular span = 360° / N_BASKETS_PER_FLOOR. Inner chord wall at radial
+    distance R_BASKET_INNER from the column axis; outer chord at
+    R_BASKET_OUTER. Walls on all four sides, a floor, open top at
+    BASKET_RIM_Z. Top flange (for hex-rail hang) not modeled yet.
+    """
+    half_angle_deg = BASKET_ANG_SPAN_DEG / 2
+    z_bot = BASKET_RIM_Z - BASKET_DEPTH_Z
+    z_top = BASKET_RIM_Z
+    outer = _trap_prism(
+        R_BASKET_INNER, R_BASKET_OUTER, half_angle_deg, z_bot, z_top,
+    )
+    cavity = _trap_prism(
+        R_BASKET_INNER, R_BASKET_OUTER, half_angle_deg,
+        z_bot + BASKET_WALL_T, z_top + 1.0,
+        inset=BASKET_WALL_T,
+    )
+    return outer - cavity
+
+
 # --- Assembly -----------------------------------------------------------
 
 pivot_loc = Location((PIVOT_X, 0, PIVOT_Z))
@@ -315,6 +375,15 @@ for angle in TILT_SAMPLES:
         location=pivot_loc * Rot(0, angle, 0),
     )
 
+# Baskets around the full ring. basket_plus_x (i=0) is the one the spout
+# aims at; the rest fill out the bay layout so renders show the ring.
+basket_names = []
+for i in range(N_BASKETS_PER_FLOOR):
+    theta = i * 360.0 / N_BASKETS_PER_FLOOR
+    name = "basket_plus_x" if i == 0 else f"basket_{i:02d}"
+    basket_names.append(name)
+    assembly = assembly.add(name, basket(), location=Rot(0, 0, theta))
+
 assembly = (
     assembly
     # Fixed parts don't interfere with each other
@@ -322,16 +391,22 @@ assembly = (
     .assert_no_interference("bearing_spider", "column")
     .assert_no_interference("ring_bearing", "column")
     .assert_no_interference("hinge_pin", "column")
+    # Basket sits in its hex bay — must clear all fixed column-side parts
+    .assert_no_interference("basket_plus_x", "column")
+    .assert_no_interference("basket_plus_x", "bearing_spider")
+    .assert_no_interference("basket_plus_x", "ring_bearing")
     # Flap DOWN — closes the lower part of the opening, clears everything
     .assert_no_interference("flap_down", "bearing_spider")
     .assert_no_interference("flap_down", "ring_bearing")
     .assert_no_interference("flap_down", "column")
     .assert_no_interference("flap_down", "hinge_pin")
+    .assert_no_interference("flap_down", "basket_plus_x")
     # Flap UP — catch spans column, spout clears wall, nothing fixed is hit
     .assert_no_interference("flap_up", "bearing_spider")
     .assert_no_interference("flap_up", "ring_bearing")
     .assert_no_interference("flap_up", "column")
     .assert_no_interference("flap_up", "hinge_pin")
+    .assert_no_interference("flap_up", "basket_plus_x")
 )
 for angle in TILT_SAMPLES:
     name = f"flap_at_{int(angle)}"
@@ -341,6 +416,23 @@ for angle in TILT_SAMPLES:
         .assert_no_interference(name, "ring_bearing")
         .assert_no_interference(name, "column")
         .assert_no_interference(name, "hinge_pin")
+        .assert_no_interference(name, "basket_plus_x")
+    )
+
+# Non-plus-x baskets are rotational copies; check they also clear the
+# fixed parts (catches any frame-vs-basket miss at higher N).
+for name in basket_names[1:]:
+    assembly = (
+        assembly
+        .assert_no_interference(name, "column")
+        .assert_no_interference(name, "bearing_spider")
+        .assert_no_interference(name, "ring_bearing")
+    )
+
+# Adjacent baskets must not overlap (validates side-by-side fit in a bay).
+if len(basket_names) >= 2:
+    assembly = assembly.assert_no_interference(
+        basket_names[0], basket_names[1]
     )
 
 
@@ -356,6 +448,7 @@ if __name__ == "__main__":
         ("ring_bearing", ring_bearing),
         ("column", column),
         ("flap", flap),
+        ("basket", basket),
     ]:
         try:
             inspect(part_fn(), method=method, out="outputs", name=name)
