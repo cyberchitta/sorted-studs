@@ -57,15 +57,43 @@ with 6 baskets per floor that's 18 bins in a compact vertical footprint.
 
 ### Per-floor assembly
 
-- **Basket ring** — six (or however many) printed baskets arranged
-  radially. Each basket is removable for emptying.
-- **Rotating ramp** — a scoop/ramp mounted on the central vertical
-  shaft. The ramp tilts up/down and rotates to address baskets.
-- **Drive** — servo or stepper on the floor's central hub, driving the
-  ramp's rotation; a second actuator (or a cam mechanism off the
-  rotation) handles the up/down tilt.
-- **Floor plate** — structural disk that carries the basket ring and
-  the central shaft bearing.
+- **Basket ring** — baskets arranged radially around the column. Each
+  basket is removable for emptying. Number per floor is a design
+  parameter (see below).
+- **Rotating column + flap** — a **square-section tube** with a single
+  exit opening cut into one wall. The column has **circular end-collars**
+  that ride in **fixed ring bearings** attached to the tower frame,
+  letting the whole column section rotate in place to aim the opening
+  at the selected basket. A flap hinged inside the wall at the
+  opening's tangential edges tilts between DOWN (flush, column sealed
+  under the hinge) and UP (tilted into the column to catch bricks).
+- **Drive** — a motor on the base floor rotates the central column
+  stack (or per-floor, if independent rotation is wanted); a second
+  actuator per floor controls the flap's up/down tilt. Gravity-bias
+  to DOWN so failures fall-through, not misroute.
+- **Floor plate** — structural disk on the tower frame at each floor
+  level, with a circular hole that the column's collar passes through.
+  Carries the basket ring on its outer perimeter and the ring bearing
+  at the hole's edge. **No central obstruction** — nothing inside the
+  drop chute on intermediate floors.
+- **Flap shape** — flat, rigid plate hinged at its middle. The catch
+  section (inner of hinge) spans the full column cross-section when UP;
+  the spout section (outer of hinge) reaches over the gap between the
+  column wall and the basket lip, and tapers to the basket's angular
+  slot width at its exit. Brick lands on the catch, slides through the
+  hinge, continues on the spout, drops into the basket — never leaves
+  the surface.
+
+The rotating-column topology (one opening that moves) is deliberate.
+The alternative — a fixed column with N openings (one per basket) —
+doesn't scale: the flap would have to fit through a narrow slot, or
+leave N−1 slots uncovered at any moment. Rotating the column keeps the
+opening size decoupled from basket count.
+
+The square cross-section (instead of cylindrical) matches the flat
+flap, so a single flat plate covers the full column interior in UP
+state without the circular-vs-rectangular gap that a cylindrical
+column would introduce.
 
 ### Top / bottom
 
@@ -77,16 +105,46 @@ with 6 baskets per floor that's 18 bins in a compact vertical footprint.
 
 ## Parameters (to be decided)
 
-- Number of floors (3 in the image; 4–5 if vertical space allows).
-- Baskets per floor (6 in the image; could be 4, 8, or 12 — tradeoff
-  between basket size and bin count).
-- Extrusion profile (2020 / 2040 / mix).
-- Drop column diameter — must accommodate the largest brick we sort
-  plus slop.
-- Ramp angle — steep enough to slide reliably, shallow enough to not
-  launch bricks out of baskets.
-- Floor spacing — must fit basket height + ramp swing clearance + drive
-  clearance.
+Four knobs size the per-floor mechanism; everything else derives from
+them. See `ramp_mechanism/assembly.py` for the authoritative formulas.
+
+- **`MAX_BRICK_DIM`** — largest LEGO dimension this sorter will handle
+  (currently 80 mm). Drives the column's interior side length and the
+  minimum spout-exit width.
+- **`N_BASKETS_PER_FLOOR`** — 6, 12, or 18. Angular spacing between
+  baskets is 360°/N (60°, 30°, 20°). More baskets ⇒ narrower basket
+  angular slot ⇒ narrower spout exit required for clean targeting.
+- **`R_BASKET_INNER`** — radial distance from column axis to basket
+  inner lip. Combined with `N_BASKETS_PER_FLOOR`, sets the basket's
+  angular slot width: `2 · R · sin(π / N)`. Must be large enough that
+  `SPOUT_EXIT_W ≥ MAX_BRICK_DIM`, or the spout can't pass the largest
+  brick. High `N` + large `MAX_BRICK_DIM` pushes `R_BASKET_INNER` and
+  therefore the tower's outer footprint upward:
+  - 6 baskets / 80 mm bricks → `R ≥ 80 mm`
+  - 12 / 80 → `R ≥ 155 mm`
+  - 18 / 80 → `R ≥ 230 mm`
+  The script `assert`s this and fails loudly if the combination is
+  geometrically impossible.
+- **Number of floors** (3 in the reference image; 4–5 if vertical space
+  allows).
+
+Derived / secondary:
+
+- **Column interior side** = `MAX_BRICK_DIM + 2 · slop` (≈ 90 mm for
+  default).
+- **Column outer side** = interior + 2 × wall thickness (≈ 96 mm).
+- **Collar OD** = `outer_side · √2 + clearance` (≈ 140 mm) — must
+  clear the square corners as they sweep during rotation.
+- **Spout exit width** = `min(flap_width, 2·R·sin(π/N))`.
+- **Exit-opening height** ≥ the larger of (spout peak in DOWN) and
+  (brick-clearance above the hinge in UP).
+- **Extrusion profile** for the tower frame (2020 / 2040 / mix).
+- **Floor spacing** — must fit basket height + flap swing clearance +
+  drive clearance.
+- **Flap angle** — currently 10° above horizontal in UP; steep enough
+  to slide reliably, shallow enough not to launch bricks out of
+  baskets (to be verified with a basket-lip diagnostic once the
+  basket is modeled).
 
 ## Reference design observations
 
@@ -128,6 +186,10 @@ images). Things worth carrying into our ramp mechanism work:
 
 Modeling starts with the [corner bracket](corner_bracket/assembly.py)
 (simplest printable part, proves the cad-khana workflow), then the
-per-floor [ramp mechanism](ramp_mechanism/assembly.py) — shaft, floor
-plate, bearing boss, hub-yoke, and ramp — which exercises the full
-diagnostics + assertion surface.
+per-floor [ramp mechanism](ramp_mechanism/assembly.py) — floor plate,
+ring bearing, square column with bottom collar, hinge pin, and flap
+— which exercises the full diagnostics + assertion surface.
+
+The base floor adds a motor + shaft + bearing boss to drive column
+rotation; those are not in the generic-floor model and will be a
+separate base-floor assembly.
