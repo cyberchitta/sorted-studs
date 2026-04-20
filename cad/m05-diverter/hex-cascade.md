@@ -1,8 +1,7 @@
 # M05 — Diverter: Hex Tower Cascade
 
 Specific realization of [Module 5 — Diverter](../../docs/m05-diverter.md)
-for sorted-studs v1. Reference image:
-[`docs/images/m05-hex-cascade.jpeg`](../../docs/images/m05-hex-cascade.jpeg).
+for sorted-studs v1.
 
 ## Concept
 
