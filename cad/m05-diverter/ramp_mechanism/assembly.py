@@ -47,8 +47,10 @@ Structural notes (to revisit):
 
 from build123d import Box, Cylinder, Location, Part, Pos, Rot
 
-from cad_khana.core.assembly import Assembly
-from cad_khana.core.build import build
+from cad_khana.mechanism.assembly import Assembly
+from cad_khana.mechanism.check import check
+from cad_khana.printability.inspect import inspect
+from cad_khana.printability.methods import FDM
 
 
 # --- Parameters ---------------------------------------------------------
@@ -238,11 +240,6 @@ assembly = (
     # both endpoints plus intermediate samples.
     .assert_clearance("ramp_down", "floor_plate", min_mm=RAMP_FLOOR_CLEARANCE)
     .assert_clearance("ramp_up", "floor_plate", min_mm=RAMP_FLOOR_CLEARANCE)
-    # Printability floor on each printed part.
-    .assert_min_wall("floor_plate", min_mm=WALL_MIN)
-    .assert_min_wall("bearing_boss", min_mm=WALL_MIN)
-    .assert_min_wall("ramp_hub", min_mm=WALL_MIN)
-    .assert_min_wall("ramp_down", min_mm=WALL_MIN)
 )
 for angle in TILT_SAMPLES:
     assembly = assembly.assert_clearance(
@@ -251,4 +248,14 @@ for angle in TILT_SAMPLES:
 
 
 if __name__ == "__main__":
-    build(assembly, out="outputs")
+    check(assembly, out="outputs")
+    # Shaft, tilt pin, and extrusion stubs are stock; only the printed
+    # parts get printability checks. The hub's yoke arms and the ramp's
+    # knuckle have real downward-facing undersides — slicer supports or
+    # re-orientation at print time will handle them, so keep the overhang
+    # check informational here and assert only on wall thickness.
+    method = FDM(wall_min_mm=WALL_MIN, overhang_max_deg=90.0)
+    inspect(floor_plate(),  method=method, out="outputs", name="floor_plate")
+    inspect(bearing_boss(), method=method, out="outputs", name="bearing_boss")
+    inspect(ramp_hub(),     method=method, out="outputs", name="ramp_hub")
+    inspect(ramp(),         method=method, out="outputs", name="ramp")
