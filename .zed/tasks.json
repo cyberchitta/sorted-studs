@@ -1,0 +1,35 @@
+[
+  {
+    "label": "OCP viewer: start",
+    "command": "uv",
+    "args": ["run", "python", "-m", "ocp_vscode"],
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "allow_concurrent_runs": false,
+    "use_new_terminal": false,
+    "reveal": "always"
+  },
+  {
+    "label": "khana view (current file)",
+    "command": "uv",
+    "args": ["run", "khana", "view", "$ZED_FILENAME"],
+    "cwd": "$ZED_DIRNAME",
+    "allow_concurrent_runs": true,
+    "reveal": "always"
+  },
+  {
+    "label": "khana check (current file)",
+    "command": "uv",
+    "args": ["run", "khana", "check", "$ZED_FILENAME"],
+    "cwd": "$ZED_DIRNAME",
+    "allow_concurrent_runs": true,
+    "reveal": "always"
+  },
+  {
+    "label": "khana build (current file)",
+    "command": "uv",
+    "args": ["run", "khana", "build", "$ZED_FILENAME"],
+    "cwd": "$ZED_DIRNAME",
+    "allow_concurrent_runs": true,
+    "reveal": "always"
+  }
+]
