@@ -1,29 +1,29 @@
 """
-M05 hex-tower — rotating square-column flap mechanism (generic floor).
+M05 hex-tower — rotating square-column trap + fixed ramp (generic floor).
 
-Single-floor model of the rotating-column trap-door design for Approach F.
+Single-floor model of the rotating-column delivery design for Approach F.
 The column is a square tube with a circular collar at the bottom (bearing
 interface); the collar rides in a fixed ring bearing held coaxial with
 the column by a **spider bracket** — a short printed hub with six
 integrated saddles that clamp over the top of radial 2020 aluminum
-extrusions running out to the inner-hex frame. The aluminum carries
-the span; the printed part is only a junction. No solid floor disk;
-the drop chute is unobstructed.
+extrusions running out to the inner-hex frame.
 
-An exit opening on one wall is closed in DOWN state by a flap hinged at
-its middle: a rectangular catch section (inner of hinge) covers the
-column cross-section when UP, and a narrower spout section (outer of
-hinge) delivers bricks into the selected basket.
+Delivery is split into two decoupled jobs:
+- **Trap** — a flat plate hinged at the +X interior wall. Closed =
+  horizontal, spanning the column cross-section, catching bricks from
+  above. Open = free end (-X) lifted up, brick slides toward the hinge
+  (+X) and drops off. Gravity-biased to closed; actuator lifts to open.
+- **Ramp** — a fixed sloped plate inside the column at the +X wall,
+  just below the trap hinge. Catches the brick as it drops off the
+  open trap and delivers it through the exit opening to the target
+  basket.
+
+Decoupling trap motion from ramp trajectory: the ramp angle is a
+free design parameter sized for the basket, not coupled to the
+trap's catch-state geometry.
 
 This is an **intermediate-floor** model — the base floor additionally
-has a shaft + motor mount + bearing boss to drive rotation. Those are
-not modeled here; intermediate floors are structurally passive beyond
-the ring-bearing support.
-
-One top-level parameter — `MAX_BRICK_DIM` — sizes the column interior.
-`N_BASKETS_PER_FLOOR` and `R_BASKET_INNER` together size the spout exit
-width (narrower = finer basket angular targeting). `R_BASKET_INNER` also
-sets the inner-hex vertex distance and therefore the spider arm length.
+has a shaft + motor mount + bearing boss to drive rotation.
 
 Coordinate frame:
     origin = column axis ∩ floor datum (z=0 = bearing/spider base)
@@ -31,13 +31,12 @@ Coordinate frame:
     +X     = radial outward toward the exit opening
     +Y     = tangent at the opening (hinge axis direction)
 
-Tilt convention (`Rot(0, θ, 0)`; positive θ rotates the +X tip toward -Z):
-    tilt = 0°   — flap horizontal; catch in -X, spout in +X.
-    tilt = -90° — catch vertical down (DOWN state; spout vertical up).
-    tilt = +10° — catch 10° above horizontal (UP / catching state).
+Trap tilt convention (`Rot(0, θ, 0)` about the hinge):
+    θ =   0° — trap horizontal, spanning column (closed / catching).
+    θ = +60° — free end swung up 60° (open / releasing).
 
-Gravity bias: catch section is longer than spout ⇒ DOWN is a stable
-equilibrium (catch hangs, spout rises).
+Gravity bias: free end (-X, opposite hinge) wants to fall ⇒ closed
+is stable without active force.
 """
 
 import math
@@ -54,7 +53,7 @@ from cad_khana.printability.methods import FDM
 
 MAX_BRICK_DIM = 80.0            # largest LEGO dim this sorter handles (mm)
 BRICK_SLOP = 5.0                # radial clearance brick-to-column-wall (mm)
-N_BASKETS_PER_FLOOR = 6         # 6 / 12 / 18; affects spout-exit width
+N_BASKETS_PER_FLOOR = 6         # 6 / 12 / 18; affects ramp-tip targeting
 R_BASKET_INNER = 150.0          # radial distance column axis → basket lip (mm)
 R_HEX_OUTER = 270.0             # outer-hex apothem (center → edge midpoint, mm)
 
@@ -71,97 +70,107 @@ COLLAR_CLEARANCE = 1.0
 COLLAR_OD = COL_OUTER_SIDE * math.sqrt(2) + 2 * COLLAR_CLEARANCE  # ≈ 138
 COLLAR_T = 5.0
 
-# Flap — catch is rectangular, spout is a narrower rectangle (step at
-# hinge; smooth taper is a follow-up)
-FLAP_T = 4.0
-FLAP_W = COL_INTERIOR_SIDE - 2              # 88 — 1 mm side clearance
-FLAP_L_CATCH = COL_INTERIOR_SIDE - 2        # 88 — spans column interior
-# Spout reaches into the basket's inner lip
-FLAP_L_SPOUT = R_BASKET_INNER - COL_OUTER_SIDE / 2 + 10.0  # 112
-
-# Spout exit width — must be ≤ basket slot angular width AND ≤ flap width
-BASKET_SLOT_W = 2 * R_BASKET_INNER * math.sin(math.pi / N_BASKETS_PER_FLOOR)
-SPOUT_EXIT_W = min(BASKET_SLOT_W, FLAP_W)
-
-# Sanity: spout exit must fit the largest brick
-assert SPOUT_EXIT_W >= MAX_BRICK_DIM, (
-    f"SPOUT_EXIT_W ({SPOUT_EXIT_W:.1f} mm) < MAX_BRICK_DIM "
-    f"({MAX_BRICK_DIM:.1f} mm). The spout exit can't pass the largest "
-    f"brick. Increase R_BASKET_INNER (currently {R_BASKET_INNER}), "
-    f"decrease N_BASKETS_PER_FLOOR (currently {N_BASKETS_PER_FLOOR}), "
-    f"or decrease MAX_BRICK_DIM."
-)
-
-# Flap knuckle / hinge pin
+# Hinge pin + knuckle
 KNUCKLE_OD = 10.0
 PIN_D = 3.0
 PIN_HOLE_D = 3.6
 PIN_LEN = COL_OUTER_SIDE + 4.0
 
-# Hinge bosses on the column (inside surface, on each side of the opening)
-BOSS_X = 10.0                               # radial extent (inward)
-BOSS_Y = 3.0                                # tangential thickness
+# Trap — flat plate, knuckle at hinge axis, plate body in -X
+TRAP_T = 4.0
+TRAP_W = 80.0                                 # ≤ MAX_BRICK_DIM; leaves ±Y for bosses
+TRAP_HINGE_X = COL_INTERIOR_SIDE / 2 - 7.0    # 38 — inset so knuckle clears +X wall
+TRAP_HINGE_Z = 100.0
+# Free end clears -X wall with 2 mm gap + knuckle radius absorbed
+TRAP_L = COL_INTERIOR_SIDE / 2 + TRAP_HINGE_X - 2.0 - KNUCKLE_OD / 2  # 76
+
+TRAP_CLOSED_DEG = 0.0
+TRAP_OPEN_DEG = 60.0
+TRAP_SAMPLES = (15.0, 30.0, 45.0)             # intermediate sweep angles
+
+# Hinge bosses — mounted on inside of +X wall, extend inward past hinge,
+# sit outside the trap knuckle's Y extent so they clear the swinging plate.
+BOSS_Y = 3.0
+BOSS_Y_OFFSET = TRAP_W / 2 + BOSS_Y / 2 + 0.5           # 43
+BOSS_X = COL_INTERIOR_SIDE / 2 - (TRAP_HINGE_X - KNUCKLE_OD / 2 - 1.0)  # 13
+BOSS_X_CENTER = COL_INTERIOR_SIDE / 2 - BOSS_X / 2      # 38.5
 BOSS_H_Z = 12.0
-BOSS_X_CENTER = COL_INTERIOR_SIDE / 2 - BOSS_X / 2
 
-# Opening + pivot
-OPENING_W = FLAP_W + 2.0                    # 90
-OPENING_Z_BOT = COLLAR_T + 2.0              # above bottom collar
-PIVOT_X = COL_INTERIOR_SIDE / 2             # at inner face of +X wall
-PIVOT_Z = OPENING_Z_BOT + FLAP_L_CATCH      # DOWN catch reaches opening bottom
-# Opening top: big enough for brick exit AND for spout clearance at DOWN
-EXIT_MARGIN = 5.0
-_ABOVE_PIVOT = max(
-    FLAP_L_SPOUT + 5.0,                      # spout peaks at DOWN
-    FLAP_T / 2 + MAX_BRICK_DIM + EXIT_MARGIN # brick exit clearance at UP
+# Ramp — fixed sloped plate, root below hinge knuckle, extends through exit
+RAMP_DEG = 20.0                               # slope below horizontal
+RAMP_T = 4.0
+RAMP_W = 70.0                                 # ≤ opening width minus side margin
+RAMP_L = 110.0                                # length along slope direction
+RAMP_DROP_BELOW_HINGE = 10.0                  # Z offset below trap hinge
+RAMP_ROOT_X = COL_INTERIOR_SIDE / 2 - 2.0     # 43 — just inside +X wall
+RAMP_ROOT_Z = TRAP_HINGE_Z - RAMP_DROP_BELOW_HINGE  # 90
+
+# Ramp tip (for documentation / targeting sanity)
+_RAMP_DEG_RAD = math.radians(RAMP_DEG)
+RAMP_TIP_X = RAMP_ROOT_X + RAMP_L * math.cos(_RAMP_DEG_RAD)
+RAMP_TIP_Z = RAMP_ROOT_Z - RAMP_L * math.sin(_RAMP_DEG_RAD)
+
+# Exit opening in the +X column wall — must pass the ramp plus a brick
+# sliding on top of it. Ramp enters the wall at x = COL_OUTER_SIDE/2.
+_RAMP_WALL_OFFSET = COL_OUTER_SIDE / 2 - RAMP_ROOT_X
+_RAMP_WALL_Z = RAMP_ROOT_Z - _RAMP_WALL_OFFSET * math.tan(_RAMP_DEG_RAD)
+OPENING_MARGIN = 5.0
+OPENING_W = RAMP_W + 2 * OPENING_MARGIN       # 80
+OPENING_Z_BOT = _RAMP_WALL_Z - RAMP_T - OPENING_MARGIN
+OPENING_Z_TOP = _RAMP_WALL_Z + MAX_BRICK_DIM + OPENING_MARGIN
+
+# Sanity: bosses must fit in the solid +X wall strip outside the opening,
+# and the opening must not encroach on the boss footprint.
+assert BOSS_Y_OFFSET + BOSS_Y / 2 <= COL_INTERIOR_SIDE / 2, (
+    f"Hinge bosses at |Y| = {BOSS_Y_OFFSET + BOSS_Y/2:.1f} mm exceed column "
+    f"interior half-width {COL_INTERIOR_SIDE/2:.1f} mm. Reduce TRAP_W."
 )
-OPENING_Z_TOP = PIVOT_Z + _ABOVE_PIVOT
+assert OPENING_W / 2 <= BOSS_Y_OFFSET - BOSS_Y / 2, (
+    f"Opening half-width ({OPENING_W/2:.1f} mm) overlaps boss inner edge "
+    f"({BOSS_Y_OFFSET - BOSS_Y/2:.1f} mm). Reduce RAMP_W or OPENING_MARGIN."
+)
 
-BOSS_Y_OFFSET = OPENING_W / 2 + BOSS_Y / 2
+# Basket angular-slot width at ramp tip must admit the ramp width.
+BASKET_SLOT_W_AT_TIP = 2 * RAMP_TIP_X * math.tan(math.pi / N_BASKETS_PER_FLOOR)
+assert RAMP_W <= BASKET_SLOT_W_AT_TIP, (
+    f"RAMP_W ({RAMP_W:.1f} mm) > basket angular slot at ramp tip "
+    f"({BASKET_SLOT_W_AT_TIP:.1f} mm at X={RAMP_TIP_X:.1f}). Reduce RAMP_W, "
+    f"increase R_BASKET_INNER, or decrease N_BASKETS_PER_FLOOR."
+)
 
-# Column height — just above the opening
+# Column height — above trap open position, above opening top
+_TRAP_OPEN_RAD = math.radians(TRAP_OPEN_DEG)
+_TRAP_FREE_Z_OPEN = TRAP_HINGE_Z + TRAP_L * math.sin(_TRAP_OPEN_RAD) + TRAP_T / 2
 COL_Z_BOT = 0.0
-COL_Z_TOP = OPENING_Z_TOP + 5.0
+COL_Z_TOP = max(OPENING_Z_TOP, _TRAP_FREE_Z_OPEN) + 10.0
 
 # Ring bearing
 RING_BEARING_ID = COLLAR_OD + 2 * COLLAR_CLEARANCE
 RING_BEARING_OD = RING_BEARING_ID + 20.0
 
-# Bearing spider — a short printed hub that grips the bearing, with six
-# integrated saddle brackets around its perimeter. Each saddle drops
-# over the top of a 2020 aluminum extrusion running radially out to the
-# inner-hex frame; the extrusion carries the structural span, the
-# printed part is only a junction.
+# Bearing spider
 N_SPIDER_SADDLES = 6
-SPIDER_HUB_ID = RING_BEARING_OD + 1.0         # ≈ 161 — slip fit over bearing OD
-SPIDER_HUB_OD = SPIDER_HUB_ID + 10.0          # ≈ 171 — 5 mm wall around bearing
-SPIDER_T = COLLAR_T                           # 5 — coplanar with bearing
+SPIDER_HUB_ID = RING_BEARING_OD + 1.0
+SPIDER_HUB_OD = SPIDER_HUB_ID + 10.0
+SPIDER_T = COLLAR_T
 
-# 2020 aluminum extrusion profile (20 × 20 mm); extrusion top face is
-# coincident with the bearing top plane (Z = COL_Z_BOT + COLLAR_T).
-EXT_SIDE = 20.0
+EXT_SIDE = 20.0                               # 2020 aluminum extrusion
 
-# Saddle bracket dimensions
-SADDLE_T_TOP = 3.0                            # top-plate thickness
-SADDLE_T_WALL = 3.0                           # side-wall thickness
-SADDLE_COVER_H = 12.0                         # wrap-down depth over extrusion
-SADDLE_L = 30.0                               # radial grip length
-SADDLE_HUB_OVERLAP = 2.0                      # saddle-to-hub union overlap
-SADDLE_BOLT_D = 4.5                           # M4 clearance hole
-SADDLE_BOLT_OFFSET = 15.0                     # bolt X past hub OD (mid of grip)
+SADDLE_T_TOP = 3.0
+SADDLE_T_WALL = 3.0
+SADDLE_COVER_H = 12.0
+SADDLE_L = 30.0
+SADDLE_HUB_OVERLAP = 2.0
+SADDLE_BOLT_D = 4.5
+SADDLE_BOLT_OFFSET = 15.0
 
-# Basket — trapezoidal-prism container sitting in a hex bay
-BASKET_HEX_CLEARANCE = 20.0                       # basket outer chord → frame
+# Basket
+BASKET_HEX_CLEARANCE = 20.0
 R_BASKET_OUTER = R_HEX_OUTER - BASKET_HEX_CLEARANCE
-BASKET_ANG_SPAN_DEG = 360.0 / N_BASKETS_PER_FLOOR  # angular span per basket
+BASKET_ANG_SPAN_DEG = 360.0 / N_BASKETS_PER_FLOOR
 BASKET_WALL_T = 3.0
-BASKET_DEPTH_Z = 80.0                              # internal height
-BASKET_RIM_Z = 0.0                                 # top rim at floor datum
-
-# Tilt angles
-TILT_UP = 10.0
-TILT_DOWN = -90.0
-TILT_SAMPLES = (-60.0, -30.0, 0.0)
+BASKET_DEPTH_Z = 80.0
+BASKET_RIM_Z = 0.0
 
 WALL_MIN = 1.5
 
@@ -182,7 +191,6 @@ def _trap_prism(
 ) -> Part:
     """Angular-sector trapezoidal prism centered on +X.
 
-    Four vertices at (r*cos(ha), ±r*sin(ha)) for r in {r_in, r_out}.
     `inset` offsets each of the four bounding lines perpendicular-inward
     by that amount — used to carve the hollow interior from an outer
     shell with a uniform wall thickness.
@@ -206,21 +214,16 @@ def _trap_prism(
 
 def bearing_spider() -> Part:
     """Printed hub that holds the ring bearing coaxial with the column.
-    Central annulus grips the bearing's outer race; six integrated
-    saddle brackets at the perimeter drop over the top of radial 2020
-    aluminum extrusions. The aluminum carries the structural span out
-    to the inner hex; the printed part is a short junction only.
-    No solid disk — the drop chute below is unobstructed.
+    Six integrated saddles grip the tops of radial 2020 aluminum
+    extrusions; the extrusions carry the span out to the inner hex.
     """
     hub_z_center = COL_Z_BOT + SPIDER_T / 2
-    ext_top_z = COL_Z_BOT + COLLAR_T            # extrusion top = bearing top
+    ext_top_z = COL_Z_BOT + COLLAR_T
 
-    # Hub annulus around the bearing
     hub_outer = Pos(0, 0, hub_z_center) * Cylinder(SPIDER_HUB_OD / 2, SPIDER_T)
     hub_inner = Pos(0, 0, hub_z_center) * Cylinder(SPIDER_HUB_ID / 2, SPIDER_T * 2)
     body = hub_outer - hub_inner
 
-    # Saddle envelope (solid block; extrusion pocket + bolt hole subtracted below)
     saddle_w = EXT_SIDE + 2 * SADDLE_T_WALL
     saddle_h = SADDLE_COVER_H + SADDLE_T_TOP
     saddle_x_in = SPIDER_HUB_OD / 2 - SADDLE_HUB_OVERLAP
@@ -228,13 +231,11 @@ def bearing_spider() -> Part:
     saddle_z_bot = ext_top_z - SADDLE_COVER_H
     saddle_z_top = ext_top_z + SADDLE_T_TOP
 
-    # Extrusion pocket — starts at hub OD (no hub intrusion), open outward
     cutout_x_in = SPIDER_HUB_OD / 2
     cutout_x_out = saddle_x_out + 5.0
-    cutout_z_top = ext_top_z                    # preserve top plate
+    cutout_z_top = ext_top_z
     cutout_z_bot = saddle_z_bot - 1.0
 
-    # Bolt through top plate into extrusion's top T-slot (Y=0)
     bolt_x = SPIDER_HUB_OD / 2 + SADDLE_BOLT_OFFSET
     bolt_z_bot = ext_top_z - 1.0
     bolt_z_top = saddle_z_top + 1.0
@@ -258,8 +259,7 @@ def bearing_spider() -> Part:
 
 
 def ring_bearing() -> Part:
-    """Stationary annular bearing at floor level. The column's bottom
-    collar rotates inside its inner race."""
+    """Stationary annular bearing at floor level."""
     z_center = COL_Z_BOT + COLLAR_T / 2
     body = Pos(0, 0, z_center) * Cylinder(RING_BEARING_OD / 2, COLLAR_T)
     hole = Pos(0, 0, z_center) * Cylinder(RING_BEARING_ID / 2, COLLAR_T * 2)
@@ -267,9 +267,9 @@ def ring_bearing() -> Part:
 
 
 def column() -> Part:
-    """Square-section tube with a bottom circular collar, a tall exit
-    opening in the +X wall, hinge bosses on the inside of the wall
-    straddling the opening, and a pin bore through the bosses.
+    """Square-section tube with a bottom collar, an exit opening in the
+    +X wall sized for the ramp + brick clearance, and hinge bosses
+    on the +X interior wall at the trap hinge line.
     """
     col_h = COL_Z_TOP - COL_Z_BOT
     col_z_center = (COL_Z_TOP + COL_Z_BOT) / 2
@@ -280,7 +280,7 @@ def column() -> Part:
     )
     tube = outer - inner
 
-    # Exit-opening cutout on the +X wall
+    # Exit opening on +X wall
     cut_z_center = (OPENING_Z_TOP + OPENING_Z_BOT) / 2
     cut_h = OPENING_Z_TOP - OPENING_Z_BOT
     cut = Pos(COL_OUTER_SIDE, 0, cut_z_center) * Box(
@@ -288,7 +288,7 @@ def column() -> Part:
     )
     tube = tube - cut
 
-    # Bottom circular collar with a square hole (lets bricks fall through)
+    # Bottom collar with square hole
     collar_z = COL_Z_BOT + COLLAR_T / 2
     collar_disc = Pos(0, 0, collar_z) * Cylinder(COLLAR_OD / 2, COLLAR_T)
     collar_hole = Pos(0, 0, collar_z) * Box(
@@ -296,17 +296,18 @@ def column() -> Part:
     )
     tube = tube + (collar_disc - collar_hole)
 
-    # Hinge bosses — inside the column, at the tangential edges of the opening
-    boss_plus = Pos(BOSS_X_CENTER, +BOSS_Y_OFFSET, PIVOT_Z) * Box(
+    # Hinge bosses — inside surface of +X wall, ±Y of the opening, at
+    # TRAP_HINGE_Z. They extend -X (inward) to anchor the pin.
+    boss_plus = Pos(BOSS_X_CENTER, +BOSS_Y_OFFSET, TRAP_HINGE_Z) * Box(
         BOSS_X, BOSS_Y, BOSS_H_Z
     )
-    boss_minus = Pos(BOSS_X_CENTER, -BOSS_Y_OFFSET, PIVOT_Z) * Box(
+    boss_minus = Pos(BOSS_X_CENTER, -BOSS_Y_OFFSET, TRAP_HINGE_Z) * Box(
         BOSS_X, BOSS_Y, BOSS_H_Z
     )
     tube = tube + boss_plus + boss_minus
 
-    # Pin bore through bosses (and through the air across the opening)
-    pin_bore = Pos(PIVOT_X, 0, PIVOT_Z) * _cyl_along_y(
+    # Pin bore through bosses (and the air between)
+    pin_bore = Pos(TRAP_HINGE_X, 0, TRAP_HINGE_Z) * _cyl_along_y(
         PIN_HOLE_D / 2, PIN_LEN + 4.0
     )
     return tube - pin_bore
@@ -316,31 +317,34 @@ def hinge_pin() -> Part:
     return _cyl_along_y(PIN_D / 2, PIN_LEN)
 
 
-def flap() -> Part:
-    """Middle-pivot flap: wide rectangular catch section on -X side of
-    hinge, narrower rectangular spout on +X side, knuckle at pivot.
-    Thickness centered on z=0 in local frame. Pin axis = local Y.
-
-    Step change in width at the hinge (catch = FLAP_W, spout =
-    SPOUT_EXIT_W). Smooth tapered spout is a follow-up cosmetic.
+def trap() -> Part:
+    """Flat plate hinged at +X interior wall. In the local frame the
+    hinge knuckle is at origin and the plate body extends in -X to
+    x = -TRAP_L. Closed state = horizontal (θ=0); open state lifts
+    the free end (-X) upward.
     """
-    catch = Pos(-FLAP_L_CATCH / 2, 0, 0) * Box(FLAP_L_CATCH, FLAP_W, FLAP_T)
-    spout = Pos(+FLAP_L_SPOUT / 2, 0, 0) * Box(
-        FLAP_L_SPOUT, SPOUT_EXIT_W, FLAP_T
-    )
-    knuckle = _cyl_along_y(KNUCKLE_OD / 2, FLAP_W)
-    body = catch + spout + knuckle
-    pin_hole = _cyl_along_y(PIN_HOLE_D / 2, FLAP_W * 2)
+    plate_center_x = -(TRAP_L / 2 + KNUCKLE_OD / 2)
+    plate = Pos(plate_center_x, 0, 0) * Box(TRAP_L, TRAP_W, TRAP_T)
+    knuckle = _cyl_along_y(KNUCKLE_OD / 2, TRAP_W)
+    body = plate + knuckle
+    pin_hole = _cyl_along_y(PIN_HOLE_D / 2, TRAP_W * 2)
     return body - pin_hole
 
 
-def basket() -> Part:
-    """Trapezoidal-prism container for one basket slot, centered on +X.
-    Angular span = 360° / N_BASKETS_PER_FLOOR. Inner chord wall at radial
-    distance R_BASKET_INNER from the column axis; outer chord at
-    R_BASKET_OUTER. Walls on all four sides, a floor, open top at
-    BASKET_RIM_Z. Top flange (for hex-rail hang) not modeled yet.
+def ramp() -> Part:
+    """Fixed sloped delivery plate. Root in the +X half of the column
+    interior just below the trap hinge; extends in +X through the
+    exit opening, sloped down at RAMP_DEG.
+
+    Built in local frame with root at origin, plate extending in +X,
+    then rotated about Y by +RAMP_DEG (tilts +X end toward -Z).
     """
+    plate = Pos(RAMP_L / 2, 0, 0) * Box(RAMP_L, RAMP_W, RAMP_T)
+    return Rot(0, RAMP_DEG, 0) * plate
+
+
+def basket() -> Part:
+    """Trapezoidal-prism container for one basket slot, centered on +X."""
     half_angle_deg = BASKET_ANG_SPAN_DEG / 2
     z_bot = BASKET_RIM_Z - BASKET_DEPTH_Z
     z_top = BASKET_RIM_Z
@@ -357,7 +361,8 @@ def basket() -> Part:
 
 # --- Assembly -----------------------------------------------------------
 
-pivot_loc = Location((PIVOT_X, 0, PIVOT_Z))
+hinge_loc = Location((TRAP_HINGE_X, 0, TRAP_HINGE_Z))
+ramp_loc = Location((RAMP_ROOT_X, 0, RAMP_ROOT_Z))
 
 assembly = Assembly()
 assembly = (
@@ -365,18 +370,17 @@ assembly = (
     .add("bearing_spider", bearing_spider())
     .add("ring_bearing", ring_bearing())
     .add("column", column())
-    .add("hinge_pin", hinge_pin(), location=pivot_loc)
-    .add("flap_down", flap(), location=pivot_loc * Rot(0, TILT_DOWN, 0))
-    .add("flap_up", flap(), location=pivot_loc * Rot(0, TILT_UP, 0))
+    .add("hinge_pin", hinge_pin(), location=hinge_loc)
+    .add("ramp", ramp(), location=ramp_loc)
+    .add("trap_closed", trap(), location=hinge_loc * Rot(0, TRAP_CLOSED_DEG, 0))
+    .add("trap_open", trap(), location=hinge_loc * Rot(0, TRAP_OPEN_DEG, 0))
 )
-for angle in TILT_SAMPLES:
+for angle in TRAP_SAMPLES:
     assembly = assembly.add(
-        f"flap_at_{int(angle)}", flap(),
-        location=pivot_loc * Rot(0, angle, 0),
+        f"trap_at_{int(angle)}", trap(),
+        location=hinge_loc * Rot(0, angle, 0),
     )
 
-# Baskets around the full ring. basket_plus_x (i=0) is the one the spout
-# aims at; the rest fill out the bay layout so renders show the ring.
 basket_names = []
 for i in range(N_BASKETS_PER_FLOOR):
     theta = i * 360.0 / N_BASKETS_PER_FLOOR
@@ -391,31 +395,36 @@ assembly = (
     .assert_no_interference("bearing_spider", "column")
     .assert_no_interference("ring_bearing", "column")
     .assert_no_interference("hinge_pin", "column")
-    # Basket sits in its hex bay — must clear all fixed column-side parts
+    .assert_no_interference("ramp", "column")
+    .assert_no_interference("ramp", "bearing_spider")
+    .assert_no_interference("ramp", "ring_bearing")
+    .assert_no_interference("ramp", "hinge_pin")
+    # Basket in its hex bay must clear all fixed column-side parts
     .assert_no_interference("basket_plus_x", "column")
     .assert_no_interference("basket_plus_x", "bearing_spider")
     .assert_no_interference("basket_plus_x", "ring_bearing")
-    # Flap DOWN — closes the lower part of the opening, clears everything
-    .assert_no_interference("flap_down", "bearing_spider")
-    .assert_no_interference("flap_down", "ring_bearing")
-    .assert_no_interference("flap_down", "column")
-    .assert_no_interference("flap_down", "hinge_pin")
-    .assert_no_interference("flap_down", "basket_plus_x")
-    # Flap UP — catch spans column, spout clears wall, nothing fixed is hit
-    .assert_no_interference("flap_up", "bearing_spider")
-    .assert_no_interference("flap_up", "ring_bearing")
-    .assert_no_interference("flap_up", "column")
-    .assert_no_interference("flap_up", "hinge_pin")
-    .assert_no_interference("flap_up", "basket_plus_x")
+    .assert_no_interference("basket_plus_x", "ramp")
+    # Trap closed — horizontal plate inside column, above ramp
+    .assert_no_interference("trap_closed", "column")
+    .assert_no_interference("trap_closed", "bearing_spider")
+    .assert_no_interference("trap_closed", "ring_bearing")
+    .assert_no_interference("trap_closed", "ramp")
+    .assert_no_interference("trap_closed", "basket_plus_x")
+    # Trap open — free end up, still inside column
+    .assert_no_interference("trap_open", "column")
+    .assert_no_interference("trap_open", "bearing_spider")
+    .assert_no_interference("trap_open", "ring_bearing")
+    .assert_no_interference("trap_open", "ramp")
+    .assert_no_interference("trap_open", "basket_plus_x")
 )
-for angle in TILT_SAMPLES:
-    name = f"flap_at_{int(angle)}"
+for angle in TRAP_SAMPLES:
+    name = f"trap_at_{int(angle)}"
     assembly = (
         assembly
+        .assert_no_interference(name, "column")
         .assert_no_interference(name, "bearing_spider")
         .assert_no_interference(name, "ring_bearing")
-        .assert_no_interference(name, "column")
-        .assert_no_interference(name, "hinge_pin")
+        .assert_no_interference(name, "ramp")
         .assert_no_interference(name, "basket_plus_x")
     )
 
@@ -438,19 +447,16 @@ if len(basket_names) >= 2:
 
 if __name__ == "__main__":
     check(assembly, out="outputs")
-    # Hinge pin is stock; inspect the printed parts. Boolean-artifact knife-
-    # edges at curved-surface intersections produce spurious sub-mm
-    # readings, so we run all inspections but don't let one failure stop
-    # the rest — diagnostics are still written to disk for review.
     method = FDM(wall_min_mm=WALL_MIN, overhang_max_deg=90.0)
     for name, part_fn in [
         ("bearing_spider", bearing_spider),
         ("ring_bearing", ring_bearing),
         ("column", column),
-        ("flap", flap),
+        ("trap", trap),
+        ("ramp", ramp),
         ("basket", basket),
     ]:
         try:
             inspect(part_fn(), method=method, out="outputs", name=name)
         except SystemExit:
-            pass  # printability warning recorded in JSON; don't block
+            pass
