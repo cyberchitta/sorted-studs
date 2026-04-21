@@ -42,3 +42,25 @@ cad/m05_diverter/
 Use underscores in directory names so Python can import them
 normally; hyphens block package imports and force `importlib`
 workarounds.
+
+## Feeding observations back to cad-khana
+
+This repo is a heavy user of `cad-khana`; real-use friction is a
+primary signal for what the skill/guidelines should cover. Treat
+every session here as an opportunity to improve `cad-khana` itself.
+
+- When an idiom, gotcha, or convention surfaces that isn't in
+  cad-khana's `SKILL.md` — CWD-relative `outputs/`, coordinate-frame
+  docstrings, where constants live, helper naming, assertion
+  placement, etc. — log a one-liner observation in
+  `../cad-khana/field-notes.md` (uncommitted; see that file's
+  header). Include the concrete example (part name, symptom) so
+  future agents can judge whether the pattern repeats.
+- **Once 2–3 observations point at the same pattern, promote it
+  into cad-khana** (SKILL.md description, SKILL.md body, or
+  `NOTES.md` as appropriate) and remove the matched field-notes
+  entries. Don't promote earlier — one-off accidents aren't
+  patterns.
+- The threshold exists because SKILL.md is part of every future
+  agent's system prompt; every line there costs context, and
+  speculative guidance ages badly.
