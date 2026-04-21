@@ -99,7 +99,7 @@ brick at all. Both degrees of freedom are required — a ramp that only
 rotates would catch every brick on the top floor; a trap door that only
 raises would need one per bin.
 
-Full build-level description: [`../cad/m05-diverter/hex-cascade.md`](../cad/m05-diverter/hex-cascade.md).
+Full build-level description: [`../cad/m05_diverter/hex-cascade.md`](../cad/m05_diverter/hex-cascade.md).
 
 ## Open Questions
 

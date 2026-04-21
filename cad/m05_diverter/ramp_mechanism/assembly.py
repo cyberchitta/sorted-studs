@@ -1,12 +1,12 @@
 """
 M05 hex-tower — rotating square-column trap + fixed ramp (generic floor).
 
-Single-floor model of the rotating-column delivery design for Approach F.
-The column is a square tube with a circular collar at the bottom (bearing
-interface); the collar rides in a fixed ring bearing held coaxial with
-the column by a **spider bracket** — a short printed hub with six
-integrated saddles that clamp over the top of radial 2020 aluminum
-extrusions running out to the inner-hex frame.
+Column-side sub-assembly of the rotating-column delivery design for
+Approach F. The column is a square tube with a circular collar at the
+bottom (bearing interface); the collar rides in a fixed ring bearing
+held coaxial with the column by a **spider bracket** — a short printed
+hub with six integrated saddles that clamp over the top of radial 2020
+aluminum extrusions running out to the inner-hex frame.
 
 Delivery is split into two decoupled jobs:
 - **Trap** — a flat plate hinged at the +X interior wall. Closed =
@@ -16,11 +16,15 @@ Delivery is split into two decoupled jobs:
 - **Ramp** — a fixed sloped plate inside the column at the +X wall,
   just below the trap hinge. Catches the brick as it drops off the
   open trap and delivers it through the exit opening to the target
-  basket.
+  basket (basket geometry lives in the basket sub-assembly).
 
 Decoupling trap motion from ramp trajectory: the ramp angle is a
 free design parameter sized for the basket, not coupled to the
 trap's catch-state geometry.
+
+Standalone validation here covers the column-side parts only. Basket
+placement + ramp-vs-basket clearance are checked in the top-level
+`../assembly.py`.
 
 This is an **intermediate-floor** model — the base floor additionally
 has a shaft + motor mount + bearing boss to drive rotation.
@@ -40,30 +44,28 @@ is stable without active force.
 """
 
 import math
+import sys
+from pathlib import Path
 
-from build123d import Box, Cylinder, Location, Part, Polygon, Pos, Rot, extrude
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from build123d import Box, Cylinder, Location, Part, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
-
-# --- Top-level parameters -----------------------------------------------
-
-MAX_BRICK_DIM = 80.0            # largest LEGO dim this sorter handles (mm)
-BRICK_SLOP = 5.0                # radial clearance brick-to-column-wall (mm)
-N_BASKETS_PER_FLOOR = 6         # 6 / 12 / 18; affects ramp-tip targeting
-R_BASKET_INNER = 150.0          # radial distance column axis → basket lip (mm)
-R_HEX_OUTER = 270.0             # outer-hex apothem (center → edge midpoint, mm)
+from params import (
+    COL_INTERIOR_SIDE,
+    COL_OUTER_SIDE,
+    MAX_BRICK_DIM,
+    N_BASKETS_PER_FLOOR,
+    R_BASKET_INNER,
+)
 
 
 # --- Derived parameters -------------------------------------------------
-
-# Column cross-section
-COL_INTERIOR_SIDE = MAX_BRICK_DIM + 2 * BRICK_SLOP   # 90
-COL_WALL_T = 3.0
-COL_OUTER_SIDE = COL_INTERIOR_SIDE + 2 * COL_WALL_T  # 96
 
 # Bottom collar (bearing interface)
 COLLAR_CLEARANCE = 1.0
@@ -131,10 +133,13 @@ assert OPENING_W / 2 <= BOSS_Y_OFFSET - BOSS_Y / 2, (
 )
 
 # Basket angular-slot width at ramp tip must admit the ramp width.
+# Shared params (N_BASKETS_PER_FLOOR, R_BASKET_INNER) ensure this
+# assertion fires on the ramp side before the basket sub-assembly loads.
 BASKET_SLOT_W_AT_TIP = 2 * RAMP_TIP_X * math.tan(math.pi / N_BASKETS_PER_FLOOR)
 assert RAMP_W <= BASKET_SLOT_W_AT_TIP, (
     f"RAMP_W ({RAMP_W:.1f} mm) > basket angular slot at ramp tip "
-    f"({BASKET_SLOT_W_AT_TIP:.1f} mm at X={RAMP_TIP_X:.1f}). Reduce RAMP_W, "
+    f"({BASKET_SLOT_W_AT_TIP:.1f} mm at X={RAMP_TIP_X:.1f}, "
+    f"R_BASKET_INNER={R_BASKET_INNER:.1f}). Reduce RAMP_W, "
     f"increase R_BASKET_INNER, or decrease N_BASKETS_PER_FLOOR."
 )
 
@@ -164,14 +169,6 @@ SADDLE_HUB_OVERLAP = 2.0
 SADDLE_BOLT_D = 4.5
 SADDLE_BOLT_OFFSET = 15.0
 
-# Basket
-BASKET_HEX_CLEARANCE = 20.0
-R_BASKET_OUTER = R_HEX_OUTER - BASKET_HEX_CLEARANCE
-BASKET_ANG_SPAN_DEG = 360.0 / N_BASKETS_PER_FLOOR
-BASKET_WALL_T = 3.0
-BASKET_DEPTH_Z = 80.0
-BASKET_RIM_Z = 0.0
-
 WALL_MIN = 1.5
 
 
@@ -179,35 +176,6 @@ WALL_MIN = 1.5
 
 def _cyl_along_y(r: float, length: float) -> Part:
     return Rot(90, 0, 0) * Cylinder(r, length)
-
-
-def _trap_prism(
-    r_in: float,
-    r_out: float,
-    half_angle_deg: float,
-    z_bot: float,
-    z_top: float,
-    inset: float = 0.0,
-) -> Part:
-    """Angular-sector trapezoidal prism centered on +X.
-
-    `inset` offsets each of the four bounding lines perpendicular-inward
-    by that amount — used to carve the hollow interior from an outer
-    shell with a uniform wall thickness.
-    """
-    ha = math.radians(half_angle_deg)
-    x_in = r_in * math.cos(ha) + inset
-    x_out = r_out * math.cos(ha) - inset
-    tan_ha = math.tan(ha)
-    dy = inset / math.cos(ha)
-    pts = [
-        (x_in, -(x_in * tan_ha - dy)),
-        (x_out, -(x_out * tan_ha - dy)),
-        (x_out, +(x_out * tan_ha - dy)),
-        (x_in, +(x_in * tan_ha - dy)),
-    ]
-    sketch = Polygon(*pts, align=None)
-    return Pos(0, 0, z_bot) * extrude(sketch, amount=z_top - z_bot)
 
 
 # --- Part functions -----------------------------------------------------
@@ -343,22 +311,6 @@ def ramp() -> Part:
     return Rot(0, RAMP_DEG, 0) * plate
 
 
-def basket() -> Part:
-    """Trapezoidal-prism container for one basket slot, centered on +X."""
-    half_angle_deg = BASKET_ANG_SPAN_DEG / 2
-    z_bot = BASKET_RIM_Z - BASKET_DEPTH_Z
-    z_top = BASKET_RIM_Z
-    outer = _trap_prism(
-        R_BASKET_INNER, R_BASKET_OUTER, half_angle_deg, z_bot, z_top,
-    )
-    cavity = _trap_prism(
-        R_BASKET_INNER, R_BASKET_OUTER, half_angle_deg,
-        z_bot + BASKET_WALL_T, z_top + 1.0,
-        inset=BASKET_WALL_T,
-    )
-    return outer - cavity
-
-
 # --- Assembly -----------------------------------------------------------
 
 hinge_loc = Location((TRAP_HINGE_X, 0, TRAP_HINGE_Z))
@@ -381,13 +333,6 @@ for angle in TRAP_SAMPLES:
         location=hinge_loc * Rot(0, angle, 0),
     )
 
-basket_names = []
-for i in range(N_BASKETS_PER_FLOOR):
-    theta = i * 360.0 / N_BASKETS_PER_FLOOR
-    name = "basket_plus_x" if i == 0 else f"basket_{i:02d}"
-    basket_names.append(name)
-    assembly = assembly.add(name, basket(), location=Rot(0, 0, theta))
-
 assembly = (
     assembly
     # Fixed parts don't interfere with each other
@@ -399,23 +344,16 @@ assembly = (
     .assert_no_interference("ramp", "bearing_spider")
     .assert_no_interference("ramp", "ring_bearing")
     .assert_no_interference("ramp", "hinge_pin")
-    # Basket in its hex bay must clear all fixed column-side parts
-    .assert_no_interference("basket_plus_x", "column")
-    .assert_no_interference("basket_plus_x", "bearing_spider")
-    .assert_no_interference("basket_plus_x", "ring_bearing")
-    .assert_no_interference("basket_plus_x", "ramp")
     # Trap closed — horizontal plate inside column, above ramp
     .assert_no_interference("trap_closed", "column")
     .assert_no_interference("trap_closed", "bearing_spider")
     .assert_no_interference("trap_closed", "ring_bearing")
     .assert_no_interference("trap_closed", "ramp")
-    .assert_no_interference("trap_closed", "basket_plus_x")
     # Trap open — free end up, still inside column
     .assert_no_interference("trap_open", "column")
     .assert_no_interference("trap_open", "bearing_spider")
     .assert_no_interference("trap_open", "ring_bearing")
     .assert_no_interference("trap_open", "ramp")
-    .assert_no_interference("trap_open", "basket_plus_x")
 )
 for angle in TRAP_SAMPLES:
     name = f"trap_at_{int(angle)}"
@@ -425,23 +363,6 @@ for angle in TRAP_SAMPLES:
         .assert_no_interference(name, "bearing_spider")
         .assert_no_interference(name, "ring_bearing")
         .assert_no_interference(name, "ramp")
-        .assert_no_interference(name, "basket_plus_x")
-    )
-
-# Non-plus-x baskets are rotational copies; check they also clear the
-# fixed parts (catches any frame-vs-basket miss at higher N).
-for name in basket_names[1:]:
-    assembly = (
-        assembly
-        .assert_no_interference(name, "column")
-        .assert_no_interference(name, "bearing_spider")
-        .assert_no_interference(name, "ring_bearing")
-    )
-
-# Adjacent baskets must not overlap (validates side-by-side fit in a bay).
-if len(basket_names) >= 2:
-    assembly = assembly.assert_no_interference(
-        basket_names[0], basket_names[1]
     )
 
 
@@ -454,7 +375,6 @@ if __name__ == "__main__":
         ("column", column),
         ("trap", trap),
         ("ramp", ramp),
-        ("basket", basket),
     ]:
         try:
             inspect(part_fn(), method=method, out="outputs", name=name)

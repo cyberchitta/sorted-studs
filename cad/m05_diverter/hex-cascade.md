@@ -121,7 +121,9 @@ column would introduce.
 ## Parameters (to be decided)
 
 Four knobs size the per-floor mechanism; everything else derives from
-them. See `ramp_mechanism/assembly.py` for the authoritative formulas.
+them. The four live in `params.py` (shared across sub-assemblies);
+column/trap/ramp derivations are in `ramp_mechanism/assembly.py` and
+basket derivations in `basket/assembly.py`.
 
 - **`MAX_BRICK_DIM`** — largest LEGO dimension this sorter will handle
   (currently 80 mm). Drives the column's interior side length and the
@@ -205,9 +207,22 @@ images). Things worth carrying into our ramp mechanism work:
 
 Modeling starts with the [corner bracket](corner_bracket/assembly.py)
 (simplest printable part, proves the cad-khana workflow), then the
-per-floor [ramp mechanism](ramp_mechanism/assembly.py) — bearing
-spider, ring bearing, square column with bottom collar, hinge pin,
-and flap — which exercises the full diagnostics + assertion surface.
+per-floor sub-assemblies:
+
+- [ramp mechanism](ramp_mechanism/assembly.py) — bearing spider, ring
+  bearing, square column with bottom collar, hinge pin, trap, and
+  fixed ramp. Exercises the full diagnostics + assertion surface on
+  the column side.
+- [basket](basket/assembly.py) — trapezoidal-prism containers arrayed
+  around the column axis; standalone checks against a minimal column
+  stub and adjacent-pair overlap.
+- [top-level diverter](assembly.py) — composes the two sub-assemblies
+  with real geometry and runs cross-boundary interference checks
+  (baskets vs column-side parts, ramp tip vs +X basket).
+
+Shared interface constants (`MAX_BRICK_DIM`, `N_BASKETS_PER_FLOOR`,
+`R_BASKET_INNER`, `R_HEX_OUTER`, `COL_OUTER_SIDE`) live in
+`params.py` and are imported by every sub-assembly.
 
 The base floor adds a motor + shaft + bearing boss to drive column
 rotation; those are not in the generic-floor model and will be a
