@@ -99,32 +99,32 @@ for k in range(6):
         .assert_no_interference("basket_plus_x", f"outer_vert_{k}")
         .assert_no_interference("basket_plus_x", f"corner_bracket_{k}")
         .assert_no_interference("basket_plus_x", f"inner_horiz_{k}")
+        .assert_no_interference("basket_plus_x", f"radial_{k}")
     )
 
-# Column-side vs inner hex (the frame parts radially closest to the
-# column envelope). Outer hex / corner columns / brackets are all
-# ≥ 272 mm from the axis — far outside the column's ~68 mm corner
-# reach — and are omitted.
+# Column-side vs inner hex + radial rails (the frame parts radially
+# closest to the column envelope). Outer hex / corner columns /
+# brackets are all ≥ 272 mm from the axis — far outside the column's
+# ~68 mm corner reach — and are omitted.
 #
-# bearing_spider vs inner_horiz_k is asserted as an EXPECTED overlap
-# (not cleared): the spider's saddle tip reaches to radial ≈115 at
-# each of 6 azimuths and the inner-hex 2020 (apothem 118) has its
-# inner face at x≈108 on the matching azimuths, so they overlap at
-# each junction. The expected-interference flag makes this a
-# regression alarm — when the spider-to-inner-hex junction is
-# designed (shorten saddle, smaller profile at inner hex, lower Z,
-# or widen R_BASKET_INNER) the assertion fires and reminds us to
-# remove it.
-_SPIDER_JUNCTION_REASON = "spider-to-inner-hex junction design pending"
+# Spider now hangs off the radial rails (saddles at azimuth (k+0.5)·60°,
+# aligned with the rail axes). The saddle grips the rail's inner end;
+# we model this as an asserted no-interference today — shape-level
+# tangent contact at the rail outer faces reads as zero clearance but
+# zero overlap volume, which passes. If the saddle is later modeled as
+# a physical clamp that closes 3D around the extrusion, expect to
+# relax this to assert_interference with a reason.
 for k in range(6):
-    name = f"inner_horiz_{k}"
+    inner = f"inner_horiz_{k}"
+    radial = f"radial_{k}"
     assembly = (
         assembly
-        .assert_no_interference("column", name)
-        .assert_no_interference("ring_bearing", name)
-        .assert_interference(
-            "bearing_spider", name, reason=_SPIDER_JUNCTION_REASON,
-        )
+        .assert_no_interference("column", inner)
+        .assert_no_interference("ring_bearing", inner)
+        .assert_no_interference("bearing_spider", inner)
+        .assert_no_interference("column", radial)
+        .assert_no_interference("ring_bearing", radial)
+        .assert_no_interference("bearing_spider", radial)
     )
 
 # Ramp extends radially past the inner hex (tip at x≈147) but stays
@@ -132,6 +132,7 @@ for k in range(6):
 # asserting in case either moves.
 for k in range(6):
     assembly = assembly.assert_no_interference("ramp", f"inner_horiz_{k}")
+    assembly = assembly.assert_no_interference("ramp", f"radial_{k}")
 
 
 if __name__ == "__main__":

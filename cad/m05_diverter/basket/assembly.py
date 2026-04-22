@@ -3,11 +3,15 @@ M05 hex-tower — basket sub-assembly.
 
 Trapezoidal-prism **bucket** sitting in one hex bay on a rotating-column
 floor. N identical buckets arrayed around the column axis at angular
-step 360°/N; each basket's angular span equals 360°/N so neighbors
-touch along shared radial walls. Floor sits on the shared stage datum
-(z=0); rim at z=+BASKET_DEPTH_Z. Open top for drop-in delivery, closed
-bottom; lifts out for emptying. Rack that physically carries the
-bucket load lives on the frame side and isn't modeled yet.
+step 360°/N. A radial 2020 rail runs between every adjacent pair of
+baskets (azimuth (k+0.5)·360°/N), tying the inner hex to the outer
+hex. Each basket's angular span is shaved below the naïve 360°/N so
+its radial walls clear the rail corridor — derivation below.
+
+Floor sits on the shared stage datum (z=0); rim at z=+BASKET_DEPTH_Z.
+Open top for drop-in delivery, closed bottom; lifts out for emptying.
+Rack that physically carries the bucket load lives on the frame side
+and isn't modeled yet.
 
 Standalone validation: N baskets + a minimal column-footprint stub,
 with interference checks against the stub and between one adjacent
@@ -37,6 +41,7 @@ from cad_khana.printability.methods import FDM
 from params import (
     COL_OUTER_SIDE,
     N_BASKETS_PER_FLOOR,
+    RAIL_SIZE,
     R_BASKET_INNER,
     R_HEX_OUTER,
 )
@@ -46,8 +51,26 @@ from params import (
 
 BASKET_HEX_CLEARANCE = 20.0                        # outer chord wall to outer-hex extrusion
 R_BASKET_OUTER = R_HEX_OUTER - BASKET_HEX_CLEARANCE
-BASKET_ANG_SPAN_DEG = 360.0 / N_BASKETS_PER_FLOOR
 BASKET_WALL_T = 3.0
+BASKET_RAIL_CLEARANCE = 2.0                        # tangential gap wall face → rail face
+
+# Basket half-angle is shrunk from 360°/(2N) by BASKET_HALF_DELTA so the
+# radial wall clears the rail's tangential half-width + the wall's own
+# half-thickness + BASKET_RAIL_CLEARANCE. The binding case is the inner
+# corner at r = R_BASKET_INNER, where a given angular offset buys the
+# least linear offset. At larger r the clearance only grows.
+_REQ_TANG_OFFSET = RAIL_SIZE / 2 + BASKET_WALL_T / 2 + BASKET_RAIL_CLEARANCE
+BASKET_HALF_DELTA_DEG = math.degrees(
+    math.asin(_REQ_TANG_OFFSET / R_BASKET_INNER)
+)
+BASKET_ANG_SPAN_DEG = 360.0 / N_BASKETS_PER_FLOOR - 2 * BASKET_HALF_DELTA_DEG
+
+assert BASKET_ANG_SPAN_DEG > 0, (
+    f"BASKET_ANG_SPAN_DEG = {BASKET_ANG_SPAN_DEG:.2f}° ≤ 0 — rail corridor "
+    f"consumes the whole basket slot. Increase R_BASKET_INNER or reduce "
+    f"RAIL_SIZE / BASKET_RAIL_CLEARANCE."
+)
+
 BASKET_DEPTH_Z = 80.0
 BASKET_FLOOR_Z = 0.0                               # shared floor datum
 BASKET_RIM_Z = BASKET_FLOOR_Z + BASKET_DEPTH_Z     # 80

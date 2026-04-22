@@ -55,14 +55,20 @@ Two concentric hexagons per floor:
   floor level forming a smaller concentric hex around the central
   drop column. Vertical columns at the inner hex's vertices may run
   full-height or be segmented between floors.
-- **Radial rails** — extrusions from each inner-hex vertex out to the
-  corresponding outer-hex vertex. They tie the two hex rings together
-  and stiffen the inner ring against basket load. A further set of
-  radial arms extends inward from the inner hex to the ring bearing
-  — the **spider** that holds the bearing coaxial with the column
-  without needing a solid floor disk. (The inner-to-bearing arms may
-  be coextensive with the inner-to-outer rails on some floors, or a
-  separate set — to be decided during frame layout.)
+- **Radial rails** — 2020 extrusions running along each basket
+  boundary (azimuth `(k+0.5)·60°`) from the inner-hex vertex out to
+  the outer-hex edge midpoint. They tie the two hex rings together
+  and stiffen the inner ring against basket load. Placing them on
+  basket boundaries (rather than on basket bisectors) keeps them out
+  of basket interiors — the cost is that each basket's angular span
+  shrinks below 60° to make tangential room for the 20 mm rail plus
+  a small clearance. The outer end butts into an outer-hex edge
+  (not a vertex), so it needs a mid-edge bracket rather than reusing
+  the existing corner bracket; this bracket is deferred. The
+  bearing **spider** hangs off the inner end of each radial rail:
+  six saddle brackets on the spider hub clamp the inner ~20 mm of
+  rail, and the rails carry the bearing load back to the outer hex
+  via the inner-hex ring. No solid floor disk is needed.
 - **3D-printed corner brackets** join the extrusions at every vertex
   (shown as pink star-shaped parts in early reference sketches).
 - **Diagonal braces** in each bay between inner and outer hex for

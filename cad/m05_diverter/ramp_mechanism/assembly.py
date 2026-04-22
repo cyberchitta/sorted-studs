@@ -61,6 +61,8 @@ from params import (
     COL_OUTER_SIDE,
     MAX_BRICK_DIM,
     N_BASKETS_PER_FLOOR,
+    RAIL_INNER_R,
+    RAIL_SIZE,
     R_BASKET_INNER,
 )
 
@@ -133,12 +135,19 @@ assert OPENING_W / 2 <= BOSS_Y_OFFSET - BOSS_Y / 2, (
 )
 
 # Basket angular-slot width at ramp tip must admit the ramp width.
-# Shared params (N_BASKETS_PER_FLOOR, R_BASKET_INNER) ensure this
-# assertion fires on the ramp side before the basket sub-assembly loads.
+# This is an UPPER BOUND on the real slot: basket/assembly.py shrinks
+# each basket's angular span below 360°/N so its radial walls clear
+# the radial-rail corridor, so the real slot at the tip is narrower
+# than this formula reports. The tight cross-boundary check lives in
+# the top-level ../assembly.py as basket_plus_x-vs-ramp
+# no-interference, which will fail if ramp geometry actually clashes
+# with the (shrunk) basket walls. Sibling-imports are forbidden, so
+# we can't pull BASKET_HALF_DELTA_DEG in here; keep this as a cheap
+# parametric sanity check only.
 BASKET_SLOT_W_AT_TIP = 2 * RAMP_TIP_X * math.tan(math.pi / N_BASKETS_PER_FLOOR)
 assert RAMP_W <= BASKET_SLOT_W_AT_TIP, (
-    f"RAMP_W ({RAMP_W:.1f} mm) > basket angular slot at ramp tip "
-    f"({BASKET_SLOT_W_AT_TIP:.1f} mm at X={RAMP_TIP_X:.1f}, "
+    f"RAMP_W ({RAMP_W:.1f} mm) > basket angular slot upper bound at "
+    f"ramp tip ({BASKET_SLOT_W_AT_TIP:.1f} mm at X={RAMP_TIP_X:.1f}, "
     f"R_BASKET_INNER={R_BASKET_INNER:.1f}). Reduce RAMP_W, "
     f"increase R_BASKET_INNER, or decrease N_BASKETS_PER_FLOOR."
 )
@@ -159,15 +168,23 @@ SPIDER_HUB_ID = RING_BEARING_OD + 1.0
 SPIDER_HUB_OD = SPIDER_HUB_ID + 10.0
 SPIDER_T = COLLAR_T
 
-EXT_SIDE = 20.0                               # 2020 aluminum extrusion
+EXT_SIDE = RAIL_SIZE                          # 2020 aluminum extrusion (== frame)
 
 SADDLE_T_TOP = 3.0
 SADDLE_T_WALL = 3.0
 SADDLE_COVER_H = 12.0
-SADDLE_L = 30.0
+# Saddles sit at azimuth (i+0.5)·(360°/N_SPIDER_SADDLES) — along basket
+# boundaries = inner-hex vertex direction = radial-rail axis. Each
+# saddle spans from the hub outward past RAIL_INNER_R to grip
+# SADDLE_GRIP_LEN of rail at its outer end. The cantilever section
+# (hub → rail inner end) is a U-channel in cross-section because the
+# extrusion cutout runs the full saddle length; upgrading that to a
+# solid bridge is a structural refinement for a later pass.
+SADDLE_GRIP_LEN = 20.0
+SADDLE_L = RAIL_INNER_R + SADDLE_GRIP_LEN - SPIDER_HUB_OD / 2
 SADDLE_HUB_OVERLAP = 2.0
 SADDLE_BOLT_D = 4.5
-SADDLE_BOLT_OFFSET = 15.0
+SADDLE_BOLT_OFFSET = RAIL_INNER_R + SADDLE_GRIP_LEN / 2 - SPIDER_HUB_OD / 2
 
 WALL_MIN = 1.5
 
@@ -208,8 +225,10 @@ def bearing_spider() -> Part:
     bolt_z_bot = ext_top_z - 1.0
     bolt_z_top = saddle_z_top + 1.0
 
+    # Saddles at (i+0.5) * step = basket boundaries / inner-hex vertex
+    # azimuths, aligned with the radial rails they grip.
     for i in range(N_SPIDER_SADDLES):
-        theta = i * 360.0 / N_SPIDER_SADDLES
+        theta = (i + 0.5) * 360.0 / N_SPIDER_SADDLES
         rot = Rot(0, 0, theta)
         saddle_env = rot * Pos(
             (saddle_x_in + saddle_x_out) / 2, 0,

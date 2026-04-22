@@ -20,12 +20,14 @@ hex at apothem 120 mm leaves ≈ 10 mm radial clearance).
 V1 scope. This file models a MIDDLE floor. Explicitly deferred:
 - Inner-hex vertical columns (full-height vs per-floor is open in
   hex-cascade.md).
-- Radial rails (inner vertex → outer vertex). Current basket packing
-  leaves no azimuthal room for a 20 mm extrusion along a basket
-  boundary; needs a basket gap allocation first.
 - Diagonal braces.
-- 4-way inner-vertex bracket (inner-hex extrusions currently stop
-  20 mm short of each inner vertex to reserve junction space).
+- 4-way inner-vertex bracket joining two inner-hex edges + one
+  radial rail at each inner-hex vertex (inner-hex extrusions
+  currently stop 20 mm short of each inner vertex and radial rails
+  currently terminate at the same point without a physical joint).
+- Outer-hex mid-edge bracket carrying the radial rail's outer end
+  (the outer hex provides an edge midpoint, not a vertex, where the
+  radial terminates).
 - Top cap and base floor (different corner-bracket variants).
 
 Coordinate frame:
@@ -65,17 +67,25 @@ from corner_bracket.assembly import (
     HOR_INNER_OFFSET,
     bracket,
 )
-from params import FLOOR_H, R_HEX_INNER, R_HEX_OUTER
+from params import (
+    FLOOR_H,
+    RAIL_INNER_R,
+    RAIL_OUTER_R,
+    RAIL_SIZE,
+    R_HEX_INNER,
+    R_HEX_OUTER,
+    R_VERT_INNER,
+)
 
 
 # --- Derived geometry --------------------------------------------------
 
 # Regular hexagon: circumradius = apothem / cos(30°) = apothem * 2/√3,
-# and edge length equals circumradius.
+# and edge length equals circumradius. R_VERT_INNER is shared via
+# params.py (radial rails reference it too); R_VERT_OUTER stays local.
 _APOTHEM_TO_VERTEX = 2.0 / math.sqrt(3.0)
 
 R_VERT_OUTER = R_HEX_OUTER * _APOTHEM_TO_VERTEX
-R_VERT_INNER = R_HEX_INNER * _APOTHEM_TO_VERTEX
 EDGE_LEN_OUTER = R_VERT_OUTER
 EDGE_LEN_INNER = R_VERT_INNER
 
@@ -83,11 +93,20 @@ EDGE_LEN_INNER = R_VERT_INNER
 # HOR_INNER_OFFSET is the arm's reserved length from the hex vertex.
 OUTER_HORIZ_LEN = EDGE_LEN_OUTER - 2.0 * HOR_INNER_OFFSET
 
-# Inner hex has no brackets yet; reserve 20 mm of free length at each
-# inner vertex so a future 4-way junction bracket can drop in without
-# having to re-length the extrusions.
-INNER_HORIZ_VERTEX_CLEAR = 20.0
+# Inner hex has no brackets yet; reserve free length at each inner
+# vertex so a future 4-way junction bracket (two inner-hex edges +
+# one radial rail + optional vertical) can drop in without having
+# to re-length the extrusions. The value is also sized to keep the
+# inner-hex edge ends clear of the bearing_spider's saddle side
+# walls, which pass over the inner-hex vertex azimuth; an extrusion
+# end at clear=20 clips the saddle wall by ~1 mm.
+INNER_HORIZ_VERTEX_CLEAR = 25.0
 INNER_HORIZ_LEN = EDGE_LEN_INNER - 2.0 * INNER_HORIZ_VERTEX_CLEAR
+
+# Radial rails: run along basket boundaries (azimuth (k+0.5)·60°) from
+# inner-hex vertex out to outer-hex edge midpoint. Derived length
+# follows the endpoint radii committed in params.py.
+RADIAL_LEN = RAIL_OUTER_R - RAIL_INNER_R
 
 assert OUTER_HORIZ_LEN > 0, (
     f"OUTER_HORIZ_LEN = {OUTER_HORIZ_LEN:.1f} mm ≤ 0 — increase R_HEX_OUTER "
@@ -96,6 +115,14 @@ assert OUTER_HORIZ_LEN > 0, (
 assert INNER_HORIZ_LEN > 0, (
     f"INNER_HORIZ_LEN = {INNER_HORIZ_LEN:.1f} mm ≤ 0 — increase R_HEX_INNER "
     f"or decrease INNER_HORIZ_VERTEX_CLEAR."
+)
+assert RAIL_SIZE == EXT_SIZE, (
+    f"RAIL_SIZE ({RAIL_SIZE}) must equal frame EXT_SIZE ({EXT_SIZE}); "
+    f"the radial rail is a standard 2020 and reuses the frame helper."
+)
+assert RADIAL_LEN > 0, (
+    f"RADIAL_LEN = {RADIAL_LEN:.1f} mm ≤ 0 — RAIL_OUTER_R must exceed "
+    f"RAIL_INNER_R."
 )
 
 
@@ -164,6 +191,22 @@ def add_frame(a: Assembly) -> Assembly:
             location=Pos(iex, iey, 0.0) * Rot(0, 0, ie_angle + 90.0),
         )
 
+        # Radial rail on basket boundary k (between baskets k and k+1).
+        # Axis along azimuth (k+0.5)·60°; inner end at the inner-hex
+        # vertex radius, outer end at the outer-hex edge midpoint. The
+        # local helper places the extrusion along +X with root at
+        # x=length/2; translate to place the midpoint at the midpoint
+        # of the two endpoint radii.
+        r_angle = (k + 0.5) * 60.0
+        r_mid = (RAIL_INNER_R + RAIL_OUTER_R) / 2.0
+        rx = r_mid * math.cos(math.radians(r_angle))
+        ry = r_mid * math.sin(math.radians(r_angle))
+        a = a.add(
+            f"radial_{k}",
+            _horiz_ext(RADIAL_LEN),
+            location=Pos(rx, ry, 0.0) * Rot(0, 0, r_angle),
+        )
+
     return a
 
 
@@ -191,6 +234,27 @@ assembly = (
     .assert_no_interference("inner_horiz_0", "outer_horiz_0")
     .assert_no_interference("inner_horiz_0", "outer_vert_0")
     .assert_no_interference("inner_horiz_0", "corner_bracket_0")
+    # Radial 0 (between basket 0 and 1, azimuth 30°) is the
+    # representative radial. 6-fold symmetry covers the other five.
+    # It meets the inner hex at the shared vertex of inner_horiz_0 /
+    # inner_horiz_1 (both end 20 mm short of the vertex), so the
+    # junction bracket is deferred and the rail should clear both
+    # inner edges today.
+    .assert_no_interference("radial_0", "inner_horiz_0")
+    .assert_no_interference("radial_0", "inner_horiz_1")
+    # Radial outer end lands on outer-hex edge 0's midpoint (edges
+    # 0 and 1 both meet the rail at the outer hex — edge 0 is the
+    # one whose midpoint is at azimuth 30°). The rail is radial (not
+    # along the edge), so it butts into the extrusion from the side
+    # and currently overlaps it — mid-edge bracket is deferred.
+    .assert_interference(
+        "radial_0", "outer_horiz_0",
+        reason="outer-hex mid-edge bracket for radial not yet designed",
+    )
+    # Radials sit well clear of outer verticals / corner brackets
+    # (>40 mm tangential separation at the outer hex).
+    .assert_no_interference("radial_0", "outer_vert_0")
+    .assert_no_interference("radial_0", "corner_bracket_0")
 )
 
 
