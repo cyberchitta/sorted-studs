@@ -9,7 +9,10 @@ import math
 
 MAX_BRICK_DIM = 80.0            # largest LEGO dim this sorter handles (mm)
 BRICK_SLOP = 5.0                # radial clearance brick-to-column-wall (mm)
-N_BASKETS_PER_FLOOR = 6         # 6 / 12 / 18; affects ramp-tip targeting
+N_BASKETS_PER_FLOOR = 6         # N of the ramp-facing basket (drives
+                                # ramp_mechanism's BASKET_SLOT_W_AT_TIP
+                                # calc). The floor itself is a mixed
+                                # layout — see FLOOR_LAYOUT below.
 R_BASKET_INNER = 150.0          # radial distance column axis → basket lip (mm)
 R_HEX_OUTER = 270.0             # outer-hex apothem (center → edge midpoint, mm)
 R_HEX_INNER = 140.0             # inner-hex apothem (mm). With both
@@ -75,3 +78,34 @@ BRACKET_HOR_OFFSET = 22.0
 RAIL_SIZE = 20.0
 RAIL_INNER_R = 90.0                                   # physical inner end
 RAIL_OUTER_R = R_VERT_OUTER - BRACKET_HOR_OFFSET      # ≈ 289.77 — physical outer end
+
+
+# Mixed floor layout. Each entry: (center_azimuth_deg, N_size, notch_set).
+# `notch_set` ⊆ {"left", "right", "middle"}; LEFT/RIGHT refer to the
+# basket's local frame (−/+ half-angle boundaries), MIDDLE to the
+# basket's own center azimuth (used only where a column sits inside a
+# basket's interior, i.e. N=9 MIDDLE baskets).
+#
+# Counterclockwise from the ramp (world +X = 0°):
+#   S1    [330°, 30°]   1× N=6 in front of ramp, notches L + R
+#   S2+3  [30°, 150°]   N=9 triple (L, M, R) spanning 2 hex sections
+#   S4    [150°, 210°]  N=12 pair (L, R)
+#   S5    [210°, 270°]  N=18 triple (L, NONE, R)
+#   S6    [270°, 330°]  N=9 (L at V_4) + N=18 (R at V_5)
+#
+# Every outer-hex vertex V_k = (k+0.5)·60° lands on exactly the
+# notches it needs; V_1 (90°) is the sole vertex inside a basket
+# interior — absorbed by the N=9 MIDDLE notch on `basket_090_09`.
+FLOOR_LAYOUT = [
+    (  0.0,  6, {"left", "right"}),
+    ( 50.0,  9, {"left"}),
+    ( 90.0,  9, {"middle"}),
+    (130.0,  9, {"right"}),
+    (165.0, 12, {"left"}),
+    (195.0, 12, {"right"}),
+    (220.0, 18, {"left"}),
+    (240.0, 18, set()),
+    (260.0, 18, {"right"}),
+    (290.0,  9, {"left"}),
+    (320.0, 18, {"right"}),
+]

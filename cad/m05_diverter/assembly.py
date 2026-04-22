@@ -14,10 +14,12 @@ this file covers only the cross-boundary pairs.
 Cross-boundary checks:
 
 - Ramp extends through the column's +X exit opening into the +X basket
-  sector → ramp vs basket_plus_x.
-- Baskets hang between the inner and outer hex rings → each basket
-  must clear every frame part type (6-fold rotational symmetry means a
-  representative basket covers all six).
+  sector → ramp vs `basket_000_06` (the N=6 basket straddling +X).
+- Baskets hang between the inner and outer hex rings → every basket
+  must clear every frame part type. The mixed floor (see
+  `params.FLOOR_LAYOUT`) breaks rotational symmetry on the basket
+  side, so all 11 baskets × 6 frame copies per part type are
+  enumerated.
 - Rotating column + bearing spider sit coaxial with the frame inner
   hex → frame inner-hex rails must clear the column envelope and the
   spider's saddle extents.
@@ -41,7 +43,7 @@ from cad_khana.mechanism.check import check
 
 from basket import assembly as _bkt
 from frame import assembly as _frame
-from params import N_BASKETS_PER_FLOOR
+from params import FLOOR_LAYOUT
 from ramp_mechanism import assembly as _ramp
 
 
@@ -66,13 +68,21 @@ assembly = (
     )
 )
 
-# Baskets arrayed around the column axis.
+# Mixed-layout baskets (see params.FLOOR_LAYOUT).
 basket_names = []
-for i in range(N_BASKETS_PER_FLOOR):
-    theta = i * 360.0 / N_BASKETS_PER_FLOOR
-    name = "basket_plus_x" if i == 0 else f"basket_{i:02d}"
+for center_deg, n_size, notches in FLOOR_LAYOUT:
+    name = f"basket_{int(round(center_deg)):03d}_{n_size:02d}"
     basket_names.append(name)
-    assembly = assembly.add(name, _bkt.basket(), location=Rot(0, 0, theta))
+    assembly = assembly.add(
+        name,
+        _bkt.basket(
+            half_angle_deg=180.0 / n_size,
+            notch_left="left" in notches,
+            notch_right="right" in notches,
+            notch_middle="middle" in notches,
+        ),
+        location=Rot(0, 0, center_deg),
+    )
 
 
 # --- Cross-boundary checks ---------------------------------------------
@@ -86,22 +96,26 @@ for name in basket_names:
         .assert_no_interference(name, "ring_bearing")
     )
 
-# Ramp tip lands in basket_plus_x's sector.
-assembly = assembly.assert_no_interference("basket_plus_x", "ramp")
+# Ramp tip lands in the N=6 basket that straddles +X.
+assembly = assembly.assert_no_interference("basket_000_06", "ramp")
 
-# Baskets vs frame. 6-fold rotational symmetry on both sides ⇒
-# checking basket_plus_x against all six of each frame part type
-# validates the symmetric cases.
-for k in range(6):
-    assembly = (
-        assembly
-        .assert_no_interference("basket_plus_x", f"outer_horiz_{k}")
-        .assert_no_interference("basket_plus_x", f"outer_vert_{k}")
-        .assert_no_interference("basket_plus_x", f"outer_vertex_bracket_{k}")
-        .assert_no_interference("basket_plus_x", f"inner_horiz_{k}")
-        .assert_no_interference("basket_plus_x", f"inner_vertex_bracket_{k}")
-        .assert_no_interference("basket_plus_x", f"radial_{k}")
-    )
+# Every basket vs every frame copy of each part type. The frame has
+# 6-fold rotational symmetry but the mixed basket layout doesn't, so
+# every basket is checked against all six frame copies. This is also
+# the authoritative test of the notch cutouts against the real
+# outer-hex through-columns (outer_vert_k) — if a notch is missing
+# or misaligned, basket-vs-outer_vert interference fails here.
+for name in basket_names:
+    for k in range(6):
+        assembly = (
+            assembly
+            .assert_no_interference(name, f"outer_horiz_{k}")
+            .assert_no_interference(name, f"outer_vert_{k}")
+            .assert_no_interference(name, f"outer_vertex_bracket_{k}")
+            .assert_no_interference(name, f"inner_horiz_{k}")
+            .assert_no_interference(name, f"inner_vertex_bracket_{k}")
+            .assert_no_interference(name, f"radial_{k}")
+        )
 
 # Column-side vs inner hex + radial rails (the frame parts radially
 # closest to the column envelope). Outer hex / corner columns /
