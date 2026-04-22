@@ -41,7 +41,6 @@ from cad_khana.printability.methods import FDM
 from params import (
     COL_OUTER_SIDE,
     N_BASKETS_PER_FLOOR,
-    RAIL_SIZE,
     R_BASKET_INNER,
     R_HEX_OUTER,
 )
@@ -52,24 +51,16 @@ from params import (
 BASKET_HEX_CLEARANCE = 20.0                        # outer chord wall to outer-hex extrusion
 R_BASKET_OUTER = R_HEX_OUTER - BASKET_HEX_CLEARANCE
 BASKET_WALL_T = 3.0
-BASKET_RAIL_CLEARANCE = 2.0                        # tangential gap wall face → rail face
 
-# Basket half-angle is shrunk from 360°/(2N) by BASKET_HALF_DELTA so the
-# radial wall clears the rail's tangential half-width + the wall's own
-# half-thickness + BASKET_RAIL_CLEARANCE. The binding case is the inner
-# corner at r = R_BASKET_INNER, where a given angular offset buys the
-# least linear offset. At larger r the clearance only grows.
-_REQ_TANG_OFFSET = RAIL_SIZE / 2 + BASKET_WALL_T / 2 + BASKET_RAIL_CLEARANCE
-BASKET_HALF_DELTA_DEG = math.degrees(
-    math.asin(_REQ_TANG_OFFSET / R_BASKET_INNER)
-)
-BASKET_ANG_SPAN_DEG = 360.0 / N_BASKETS_PER_FLOOR - 2 * BASKET_HALF_DELTA_DEG
-
-assert BASKET_ANG_SPAN_DEG > 0, (
-    f"BASKET_ANG_SPAN_DEG = {BASKET_ANG_SPAN_DEG:.2f}° ≤ 0 — rail corridor "
-    f"consumes the whole basket slot. Increase R_BASKET_INNER or reduce "
-    f"RAIL_SIZE / BASKET_RAIL_CLEARANCE."
-)
+# Basket spans a full 360°/N sector. An earlier design shrunk this
+# angularly (BASKET_HALF_DELTA) to clear the vertex brackets'
+# radial arms that sat on top of the radial rails at z ∈ [0, 6] —
+# same Z as the basket floor. With both vertex brackets flipped to
+# the underside of the extrusions (z ∈ [-26, -20]), the top surface
+# of every frame member is flush at z=0 and the rails/rings
+# themselves sit tangent to the basket floor (no volume overlap),
+# so the basket can take the whole sector.
+BASKET_ANG_SPAN_DEG = 360.0 / N_BASKETS_PER_FLOOR
 
 BASKET_DEPTH_Z = 80.0
 BASKET_FLOOR_Z = 0.0                               # shared floor datum

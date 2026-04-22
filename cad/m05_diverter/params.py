@@ -12,9 +12,24 @@ BRICK_SLOP = 5.0                # radial clearance brick-to-column-wall (mm)
 N_BASKETS_PER_FLOOR = 6         # 6 / 12 / 18; affects ramp-tip targeting
 R_BASKET_INNER = 150.0          # radial distance column axis → basket lip (mm)
 R_HEX_OUTER = 270.0             # outer-hex apothem (center → edge midpoint, mm)
-R_HEX_INNER = 118.0             # inner-hex apothem (mm); inner-hex edge lies
-                                # inside basket inner face (R_BASKET_INNER
-                                # *cos(30°)≈129.9 mm) with ≈1.9 mm clearance
+R_HEX_INNER = 140.0             # inner-hex apothem (mm). With both
+                                # vertex brackets flipped below the
+                                # extrusions, the bracket-arm ceiling is
+                                # gone; the inner hex can move out until
+                                # the inner-vertex bracket's radial arm
+                                # (bolts at r = R_VERT_INNER + 32 and
+                                # +52) runs off the end of the radial
+                                # rail at r = RAIL_OUTER_R ≈ 290, or
+                                # collides with the outer-vertex
+                                # bracket's radial arm — real ceiling
+                                # ≈ 180. Landed at 140 so the basket's
+                                # inner chord at R_BASKET_INNER·cos(30°)
+                                # ≈ 129.9 overhangs the hex inner face
+                                # at R_HEX_INNER - EXT_SIZE/2 = 130 by
+                                # ~0.1 mm (basket just clears the hex's
+                                # inner edge; the full 20 mm of hex top
+                                # face sits under the basket floor for
+                                # solid support).
 FLOOR_H = 220.0                 # vertical corner-column height spanning one
                                 # floor (top face z=0 → base z=-FLOOR_H)
 
@@ -27,7 +42,7 @@ COL_OUTER_SIDE = COL_INTERIOR_SIDE + 2 * COL_WALL_T  # 96
 # basket boundaries; radial rails run along these directions and
 # terminate at both vertex pairs.
 _APOTHEM_TO_VERTEX = 2.0 / math.sqrt(3.0)
-R_VERT_INNER = R_HEX_INNER * _APOTHEM_TO_VERTEX      # ≈ 136.26
+R_VERT_INNER = R_HEX_INNER * _APOTHEM_TO_VERTEX      # ≈ 161.66
 R_VERT_OUTER = R_HEX_OUTER * _APOTHEM_TO_VERTEX      # ≈ 311.77
 
 # Bracket-arm reserve: each vertex bracket occupies this many mm

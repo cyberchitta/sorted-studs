@@ -28,18 +28,22 @@ V1 scope. This file models a MIDDLE floor. Explicitly deferred:
 - Diagonal braces.
 - Top cap and base floor (different corner-bracket variants).
 
+Vertical corner columns are modeled as **through-columns**: they
+extend *below* the floor datum too so the (now-flipped) outer-vertex
+bracket can clamp the column at z < 0 as well as above. In the real
+tower each column is a single extrusion spanning all floors (see
+`hex-cascade.md`); this per-floor model represents that by giving
+each column an extra VERT_EXT_BELOW mm below z=0.
+
 Coordinate frame:
     origin = column axis (shared with basket / ramp_mechanism)
     +X     = basket 0 bisector
     +Z     = up
     z=0    = shared floor datum. Horizontal ring extrusions sit with
              top face at z=0 (bodies below). Vertical corner columns
-             rise UP from z=0 (bottom face at z=0) to carry the next
-             floor above. Bucket floor and bearing/spider base also
-             sit at z=0. This is a **temporary** per-floor model —
-             the real tower will use continuous corner columns
-             spanning all floors (hex-cascade.md), which will
-             promote the verticals out of this per-floor file.
+             pass THROUGH z=0 continuously (no bottom face at the
+             datum). Bucket floor and bearing/spider base also sit
+             at z=0.
 
 Vertex azimuths: `v_angle_k = (k + 0.5) * 60°`, shared by outer and
 inner hex. Edge k runs between V_k and V_{k+1}; its midpoint is at
@@ -68,8 +72,10 @@ from cad_khana.mechanism.check import check
 
 from inner_vertex_bracket.assembly import bracket as inner_bracket
 from outer_vertex_bracket.assembly import (
+    BRACKET_Z_TOP,
     EXT_SIZE,
     HOR_INNER_OFFSET,
+    PLATE_T as OUTER_BRACKET_PLATE_T,
     bracket as outer_bracket,
 )
 from params import (
@@ -131,10 +137,20 @@ def _horiz_ext(length: float) -> Part:
     return Pos(0, 0, -EXT_SIZE / 2.0) * Box(length, EXT_SIZE, EXT_SIZE)
 
 
-def _vert_ext(length: float) -> Part:
-    """2020 vertical extrusion rising above the floor datum: bottom
-    face at z=0, extending up to z=+length."""
-    return Pos(0, 0, length / 2.0) * Box(EXT_SIZE, EXT_SIZE, length)
+# Through-column: the vertical extrusion extends below z=0 far enough
+# to cover the outer-vertex bracket's below-floor body (hub bottom at
+# BRACKET_Z_TOP - PLATE_T = -26) with a small clearance. In the real
+# tower each column is one continuous 2020 spanning all floors; this
+# is the per-floor slice that happens to be visible in this model.
+VERT_EXT_BELOW = -(BRACKET_Z_TOP - OUTER_BRACKET_PLATE_T) + 10.0  # 36
+
+
+def _vert_ext(z_top: float = FLOOR_H) -> Part:
+    """2020 through-column passing through the floor datum. Extends
+    from z=-VERT_EXT_BELOW below the datum up to z=z_top above it."""
+    z_bot = -VERT_EXT_BELOW
+    length = z_top - z_bot
+    return Pos(0, 0, (z_bot + z_top) / 2.0) * Box(EXT_SIZE, EXT_SIZE, length)
 
 
 # --- Assembly builder ---------------------------------------------------

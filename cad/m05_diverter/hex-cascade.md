@@ -50,11 +50,18 @@ Two concentric hexagons per floor:
 
 - **Outer hex ring** — six horizontal extrusions at each floor level
   forming the tower's outer perimeter. Six vertical corner columns
-  (2020) at the outer hex's vertices run the full tower height.
+  (2020) at the outer hex's vertices run the full tower height as a
+  **single continuous 2020 each** — not spliced per floor. Each
+  floor's outer-vertex brackets *clamp* the through-column via its
+  side T-slots rather than supporting a per-floor column bottom.
+  This keeps the bracket shape stable across floors (no bottom /
+  middle / top variants) and puts the vertical load path in
+  compression along one continuous piece.
 - **Inner hex ring** — six shorter horizontal extrusions at the same
   floor level forming a smaller concentric hex around the central
-  drop column. Vertical columns at the inner hex's vertices may run
-  full-height or be segmented between floors.
+  drop column. Inner-hex vertical columns are currently deferred; if
+  they appear later they will follow the same continuous-through-
+  tower rule as the outer verticals.
 - **Radial rails** — 2020 extrusions running along each basket
   boundary (azimuth `(k+0.5)·60°`) from the inner-hex vertex out to
   the outer-hex edge midpoint. They tie the two hex rings together

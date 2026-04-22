@@ -14,13 +14,17 @@ This mirrors `outer_vertex_bracket` structurally, but:
     rail extends from the inner vertex away from hex center out
     to the outer vertex.
 
-Top-mounted symmetric with the outer bracket. An earlier variant of
-this bracket hung below the extrusions to avoid the bearing spider's
-saddle top cap that used to cross the inner-hex vertex azimuth at
-z ∈ [5, 8]. That went away when the radial was extended inward to
-terminate just outside the spider hub: the saddle grip zone now
-sits at r ≈ [90, 110], well inside the inner-hex vertex at
-r ≈ 136, so the vertex region is free for a top-plate bracket.
+**Bottom-mounted.** The bracket hangs off the *bottom* T-slot of the
+extrusions, body at z ∈ [-EXT_SIZE - PLATE_T, -EXT_SIZE] = [-26, -20].
+Bolts fire upward (+Z) through the plate into the extrusion's bottom
+T-slot. The reason: a top-mounted plate at z ∈ [0, PLATE_T] overlaps
+the basket Z-range [0, 80], so the bracket's horizontal arms would
+clip the basket sector and force the basket to shrink angularly.
+Flipping below leaves the whole frame top surface flush at z=0 so
+the basket can rest anywhere on it. The saddle grip zone of the
+bearing spider sits at r ≈ [90, 110], well inside the inner-hex
+vertex (r = R_HEX_INNER · 2/√3), so nothing collides with the
+below-plate at the vertex.
 
 Coordinate frame:
     +X       : bisector of the two hex-edge arms, pointing toward
@@ -31,13 +35,14 @@ Coordinate frame:
     -X       : hex exterior (outward); radial arm runs along -X
     +Z       : up
     z=0      : floor datum. Extrusion top faces sit here; bracket
-               plate body at z ∈ [0, PLATE_T].
+               plate body at z ∈ [-EXT_SIZE - PLATE_T, -EXT_SIZE]
+               (below the extrusions).
     arm_h1   : hex-edge arm at +60° from +X (along one inner-hex edge)
     arm_h2   : hex-edge arm at -60° from +X (along the other inner-hex edge)
     arm_rad  : radial arm along -X (outward) carrying the radial rail
 
 Each arm is a flat plate with two M5 clearance holes that align to a
-T-slot on the top face of its extrusion.
+T-slot on the bottom face of its extrusion.
 """
 
 from build123d import Box, Cylinder, Part, Pos, Rot
@@ -59,19 +64,14 @@ BOLT_HOLE_D = 5.5
 BOLT_FROM_EXT_END = 10.0
 BOLT_SPACING = 20.0
 
-# Bracket body. Plate sits on top of each extrusion's top face at
-# z=0; body at z ∈ [0, PLATE_T]. Hub is smaller than the outer
-# bracket's hub (12 vs 14) so its outer-facing corner clears the
-# basket's inner-chord corner — the inner-hex vertex (r ≈ 136) sits
-# only ~0.16 mm inward of the basket inner chord
-# (r_chord = R_BASKET_INNER · cos(half_span) ≈ 136.16), and any hub
-# material projecting past the vertex in the basket-facing direction
-# clips the basket. HUB_HALF = 12 leaves ~1.8 mm of radial margin —
-# a comfortable cushion for FDM tolerance. HUB_HALF > 13.25 triggers
-# a basket_plus_x × inner_vertex_bracket_0 interference at the top
-# level; 13 would pass the geometric check but is cutting it close.
+# Bracket body. Plate hangs below each extrusion's bottom face at
+# z=-EXT_SIZE; body at z ∈ [BRACKET_Z_TOP - PLATE_T, BRACKET_Z_TOP]
+# = [-26, -20]. Basket Z-range [0, 80] no longer overlaps the plate,
+# so the hub and arms can extend freely in xy without catching the
+# basket — HUB_HALF = 12 is plenty of margin at any R_HEX_INNER.
 PLATE_T = 6.0
 HUB_HALF = 12.0
+BRACKET_Z_TOP = -EXT_SIZE     # plate top face flush with extrusion bottom
 ARM_W = EXT_SIZE
 ARM_BOLT_SPAN = BOLT_FROM_EXT_END + BOLT_SPACING + BOLT_FROM_EXT_END  # 40
 
@@ -114,22 +114,25 @@ def bracket() -> Part:
     """Single-body inner-vertex bracket: solid square hub + two
     hex-edge arms (at ±60° from local +X) + one radial arm (at 180°
     from local +X, i.e., along -X). All plates at PLATE_T thickness,
-    sitting on top of the extrusion plane at z ∈ [0, PLATE_T].
+    hanging below the extrusion plane at
+    z ∈ [BRACKET_Z_TOP - PLATE_T, BRACKET_Z_TOP] = [-26, -20].
     """
-    # Hub: flat square plate in the floor plane. No cutout (no vertical).
-    hub = Pos(0, 0, PLATE_T / 2) * Box(2 * HUB_HALF, 2 * HUB_HALF, PLATE_T)
+    plate_cz = BRACKET_Z_TOP - PLATE_T / 2  # plate center z
+
+    # Hub: flat square plate below the floor datum. No cutout (no vertical).
+    hub = Pos(0, 0, plate_cz) * Box(2 * HUB_HALF, 2 * HUB_HALF, PLATE_T)
 
     # Canonical arm along local +X with two bolt clearance holes
-    # aligned to the extrusion's top T-slot (starting
+    # aligned to the extrusion's bottom T-slot (starting
     # BOLT_FROM_EXT_END inside the ext's inner end, which itself
     # sits at x=HOR_INNER_OFFSET).
-    arm_plate = Pos(ARM_L_TOTAL / 2, 0, PLATE_T / 2) * Box(ARM_L_TOTAL, ARM_W, PLATE_T)
+    arm_plate = Pos(ARM_L_TOTAL / 2, 0, plate_cz) * Box(ARM_L_TOTAL, ARM_W, PLATE_T)
     bolt_x1 = HOR_INNER_OFFSET + BOLT_FROM_EXT_END
     bolt_x2 = bolt_x1 + BOLT_SPACING
     arm_local = (
         arm_plate
-        - Pos(bolt_x1, 0, PLATE_T / 2) * _through_hole_z(BOLT_HOLE_D, PLATE_T)
-        - Pos(bolt_x2, 0, PLATE_T / 2) * _through_hole_z(BOLT_HOLE_D, PLATE_T)
+        - Pos(bolt_x1, 0, plate_cz) * _through_hole_z(BOLT_HOLE_D, PLATE_T)
+        - Pos(bolt_x2, 0, plate_cz) * _through_hole_z(BOLT_HOLE_D, PLATE_T)
     )
     arm_h1 = Rot(0, 0, HALF_HEX_ANGLE_DEG) * arm_local
     arm_h2 = Rot(0, 0, -HALF_HEX_ANGLE_DEG) * arm_local
