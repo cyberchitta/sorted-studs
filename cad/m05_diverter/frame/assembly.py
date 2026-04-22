@@ -32,8 +32,14 @@ Coordinate frame:
     origin = column axis (shared with basket / ramp_mechanism)
     +X     = basket 0 bisector = outer hex vertex 0 direction
     +Z     = up
-    z=0    = floor datum = top face of every frame extrusion.
-             (Ramp_mechanism's bearing/spider base also sits at z=0.)
+    z=0    = shared floor datum. Horizontal ring extrusions sit with
+             top face at z=0 (bodies below). Vertical corner columns
+             rise UP from z=0 (bottom face at z=0) to carry the next
+             floor above. Bucket floor and bearing/spider base also
+             sit at z=0. This is a **temporary** per-floor model —
+             the real tower will use continuous corner columns
+             spanning all floors (hex-cascade.md), which will
+             promote the verticals out of this per-floor file.
 
 Corner-bracket orientation note. corner_bracket/assembly.py places
 its two horizontal arms at ±60° from its local +X (interior angle
@@ -101,9 +107,9 @@ def _horiz_ext(length: float) -> Part:
 
 
 def _vert_ext(length: float) -> Part:
-    """2020 vertical extrusion with top face at z=0, descending to
-    z=-length."""
-    return Pos(0, 0, -length / 2.0) * Box(EXT_SIZE, EXT_SIZE, length)
+    """2020 vertical extrusion rising above the floor datum: bottom
+    face at z=0, extending up to z=+length."""
+    return Pos(0, 0, length / 2.0) * Box(EXT_SIZE, EXT_SIZE, length)
 
 
 # --- Assembly builder ---------------------------------------------------

@@ -1,20 +1,27 @@
 """
-M05 hex-tower — corner bracket (top-corner variant).
+M05 hex-tower — corner bracket (floor-corner variant).
 
 Star-shaped printed bracket that joins three aluminum extrusions at every
-hex-tower vertex: two horizontal ring extrusions meeting at 120° interior
-angle, plus one vertical column extrusion descending below.
+hex-tower vertex: two horizontal ring extrusions (top face at z=0)
+meeting at 120° interior angle, plus one vertical column extrusion
+rising **above** the floor datum (bottom face at z=0). The bracket's
+hub sits in the horizontal plane z ∈ [0, PLATE_T]; the vertical
+extrusion passes through a square cutout in the hub.
 
-Coordinate frame (all three extrusion top-faces lie in plane z=0):
+Coordinate frame:
     +X      : bisector of the two horizontal arms, pointing away from hex center
     -X      : hex interior
     +Z      : up
+    z=0     : floor datum. Horizontal extrusion top faces sit here;
+              vertical extrusion bottom face sits here.
     arm_h1  : horizontal arm at +60° from +X (along one hex edge)
     arm_h2  : horizontal arm at -60° from +X (along the other hex edge)
-    vert    : vertical arm hanging down along the -X face of the vertical ext
+    vert    : vertical arm rising along the -X face of the vertical ext
 
 Each arm is a flat plate with two M5 clearance holes that align to a T-slot
-on one face of its extrusion.
+on one face of its extrusion. This is a **temporary** design for the
+per-floor frame model — a continuous-column tower will replace this
+with a corner joint that doesn't interrupt the vertical.
 """
 
 from build123d import Box, Cylinder, Part, Pos, Rot
@@ -90,9 +97,11 @@ def _through_hole_x(hole_d: float, plate_t: float) -> Part:
 
 
 def bracket() -> Part:
-    """Single-body top-corner bracket: hub + two horizontal arms + one
-    vertical arm, all at PLATE_T thickness."""
-    # Hub: flat square plate sitting on top of the vertical extrusion.
+    """Single-body floor-corner bracket: hub + two horizontal arms + one
+    vertical arm, all at PLATE_T thickness. The vertical extrusion
+    rises through the hub, so the hub and arm roots have a square
+    cutout at the vert's footprint."""
+    # Hub: flat square plate in the floor plane.
     hub = Pos(0, 0, PLATE_T / 2) * Box(2 * HUB_HALF, 2 * HUB_HALF, PLATE_T)
 
     # Horizontal arm in local frame: along +X, root at x=0 (inside the hub),
@@ -109,27 +118,33 @@ def bracket() -> Part:
     arm_h2 = Rot(0, 0, -HALF_HEX_ANGLE_DEG) * arm_local
 
     # Vertical arm: flat plate flush against the -X face of the vertical
-    # extrusion (inner face at x = -EXT_SIZE/2). Spans z from -VERT_ARM_H
-    # (below the hub) up to PLATE_T (joining the hub).
+    # extrusion (inner face at x = -EXT_SIZE/2). Rises from the hub plane
+    # up along the vertical ext for VERT_ARM_H.
     va_x_center = -EXT_SIZE / 2 - PLATE_T / 2
-    va_z_center = (PLATE_T + (-VERT_ARM_H)) / 2
     va_h_total = PLATE_T + VERT_ARM_H
+    va_z_center = va_h_total / 2
     v_plate = Pos(va_x_center, 0, va_z_center) * Box(PLATE_T, ARM_W, va_h_total)
-    vb_z1 = -BOLT_FROM_EXT_END
-    vb_z2 = -(BOLT_FROM_EXT_END + BOLT_SPACING)
+    vb_z1 = BOLT_FROM_EXT_END
+    vb_z2 = BOLT_FROM_EXT_END + BOLT_SPACING
     vert_arm = (
         v_plate
         - Pos(va_x_center, 0, vb_z1) * _through_hole_x(BOLT_HOLE_D, PLATE_T)
         - Pos(va_x_center, 0, vb_z2) * _through_hole_x(BOLT_HOLE_D, PLATE_T)
     )
 
-    return hub + arm_h1 + arm_h2 + vert_arm
+    # The vertical extrusion now rises up through the hub plane. Cut
+    # its footprint out of the assembled bracket (clipped to the hub's
+    # z-range so the rising vertical arm on the -X side is untouched).
+    vert_cutout = Pos(0, 0, PLATE_T / 2) * Box(
+        EXT_SIZE, EXT_SIZE, PLATE_T * 3
+    )
+    return (hub + arm_h1 + arm_h2 + vert_arm) - vert_cutout
 
 
 def vert_ext_stub(length: float = EXT_STUB_LEN, size: float = EXT_SIZE) -> Part:
-    """Vertical extrusion stand-in: top face at z=0, axis on +Z, extending
-    down to z=-length."""
-    return Pos(0, 0, -length / 2) * Box(size, size, length)
+    """Vertical extrusion stand-in: bottom face at z=0, axis on +Z,
+    rising to z=+length."""
+    return Pos(0, 0, length / 2) * Box(size, size, length)
 
 
 def horiz_ext_stub_local(length: float = EXT_STUB_LEN,

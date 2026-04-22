@@ -82,7 +82,7 @@ PIN_LEN = COL_OUTER_SIDE + 4.0
 TRAP_T = 4.0
 TRAP_W = 80.0                                 # ≤ MAX_BRICK_DIM; leaves ±Y for bosses
 TRAP_HINGE_X = COL_INTERIOR_SIDE / 2 - 7.0    # 38 — inset so knuckle clears +X wall
-TRAP_HINGE_Z = 100.0
+TRAP_HINGE_Z = 135.0
 # Free end clears -X wall with 2 mm gap + knuckle radius absorbed
 TRAP_L = COL_INTERIOR_SIDE / 2 + TRAP_HINGE_X - 2.0 - KNUCKLE_OD / 2  # 76
 

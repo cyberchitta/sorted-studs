@@ -71,10 +71,12 @@ Two concentric hexagons per floor:
 ### Per-floor assembly
 
 - **Basket ring** — one basket per bay between inner and outer hex.
-  Each basket has a top flange wider than the bay so it hangs on the
-  inner- and outer-hex ring extrusions (drawer on two rails); drops in
-  from above, lifts out for emptying. Number per floor is a design
-  parameter (see below).
+  Each basket is a trapezoidal-prism **bucket** that sits on the
+  frame at the shared floor datum (basket floor = frame top = z=0);
+  open top for drop-in delivery, closed bottom, lifts out for
+  emptying. A rack between the inner and outer hex (radial rails or
+  partial deck, not yet modeled) carries the bucket load in
+  compression. Number per floor is a design parameter (see below).
 - **Rotating column + flap** — a **square-section tube** with a single
   exit opening cut into one wall. The column has **circular end-collars**
   that ride in **fixed ring bearings** attached to the tower frame,

@@ -13,7 +13,7 @@ R_HEX_OUTER = 270.0             # outer-hex apothem (center → edge midpoint, m
 R_HEX_INNER = 118.0             # inner-hex apothem (mm); inner-hex edge lies
                                 # inside basket inner face (R_BASKET_INNER
                                 # *cos(30°)≈129.9 mm) with ≈1.9 mm clearance
-FLOOR_H = 180.0                 # vertical corner-column height spanning one
+FLOOR_H = 220.0                 # vertical corner-column height spanning one
                                 # floor (top face z=0 → base z=-FLOOR_H)
 
 COL_WALL_T = 3.0

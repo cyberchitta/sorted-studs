@@ -1,11 +1,13 @@
 """
 M05 hex-tower — basket sub-assembly.
 
-Trapezoidal-prism container hung in one hex bay on a rotating-column
-floor. N identical baskets arrayed around the column axis at angular
+Trapezoidal-prism **bucket** sitting in one hex bay on a rotating-column
+floor. N identical buckets arrayed around the column axis at angular
 step 360°/N; each basket's angular span equals 360°/N so neighbors
-touch along shared radial walls. Floor sits below the column datum;
-rim at z = 0, floor at z = -BASKET_DEPTH_Z.
+touch along shared radial walls. Floor sits on the shared stage datum
+(z=0); rim at z=+BASKET_DEPTH_Z. Open top for drop-in delivery, closed
+bottom; lifts out for emptying. Rack that physically carries the
+bucket load lives on the frame side and isn't modeled yet.
 
 Standalone validation: N baskets + a minimal column-footprint stub,
 with interference checks against the stub and between one adjacent
@@ -16,6 +18,7 @@ Coordinate frame:
     origin = column axis ∩ floor datum
     +Z     = up
     +X     = radial outward; basket_plus_x sits on the +X azimuth
+    z=0    = floor datum (basket floor sits here)
 """
 
 import math
@@ -46,7 +49,8 @@ R_BASKET_OUTER = R_HEX_OUTER - BASKET_HEX_CLEARANCE
 BASKET_ANG_SPAN_DEG = 360.0 / N_BASKETS_PER_FLOOR
 BASKET_WALL_T = 3.0
 BASKET_DEPTH_Z = 80.0
-BASKET_RIM_Z = 0.0
+BASKET_FLOOR_Z = 0.0                               # shared floor datum
+BASKET_RIM_Z = BASKET_FLOOR_Z + BASKET_DEPTH_Z     # 80
 
 WALL_MIN = 1.5
 
@@ -85,9 +89,11 @@ def _trap_prism(
 # --- Part functions -----------------------------------------------------
 
 def basket() -> Part:
-    """Trapezoidal-prism container for one basket slot, centered on +X."""
+    """Trapezoidal-prism bucket for one basket slot, centered on +X.
+    Closed floor at z=BASKET_FLOOR_Z, open top at z=BASKET_RIM_Z.
+    """
     half_angle_deg = BASKET_ANG_SPAN_DEG / 2
-    z_bot = BASKET_RIM_Z - BASKET_DEPTH_Z
+    z_bot = BASKET_FLOOR_Z
     z_top = BASKET_RIM_Z
     outer = _trap_prism(
         R_BASKET_INNER, R_BASKET_OUTER, half_angle_deg, z_bot, z_top,
@@ -107,7 +113,7 @@ def col_stub() -> Part:
     against the real column() part; this stub only guards against
     baskets encroaching on the column's outer envelope in isolation.
     """
-    z_bot = BASKET_RIM_Z - BASKET_DEPTH_Z
+    z_bot = BASKET_FLOOR_Z
     z_top = BASKET_RIM_Z
     z_center = (z_bot + z_top) / 2
     return Pos(0, 0, z_center) * Box(
