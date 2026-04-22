@@ -5,13 +5,16 @@ Trapezoidal-prism **bucket** sitting in one hex bay on a rotating-column
 floor. N identical buckets arrayed around the column axis at angular
 step 360°/N. A radial 2020 rail runs between every adjacent pair of
 baskets (azimuth (k+0.5)·360°/N), tying the inner hex to the outer
-hex. Each basket's angular span is shaved below the naïve 360°/N so
-its radial walls clear the rail corridor — derivation below.
+hex. The basket takes the full 360°/N sector; its outer corners are
+notched around the outer-hex through-columns that sit on the basket-
+boundary azimuths.
 
 Floor sits on the shared stage datum (z=0); rim at z=+BASKET_DEPTH_Z.
-Open top for drop-in delivery, closed bottom; lifts out for emptying.
-Rack that physically carries the bucket load lives on the frame side
-and isn't modeled yet.
+Outer chord sits past R_HEX_OUTER so the basket floor rests on the
+outer-hex top face from above (mirroring the inner-chord-over-inner-
+hex support already landed in Phase 2 step 1). Open top for drop-in
+delivery, closed bottom; lifts out for emptying. Rack that physically
+carries the bucket load is the hex ring itself — no separate shelf.
 
 Standalone validation: N baskets + a minimal column-footprint stub,
 with interference checks against the stub and between one adjacent
@@ -43,13 +46,27 @@ from params import (
     N_BASKETS_PER_FLOOR,
     R_BASKET_INNER,
     R_HEX_OUTER,
+    R_VERT_OUTER,
 )
 
 
 # --- Parameters ---------------------------------------------------------
 
-BASKET_HEX_CLEARANCE = 20.0                        # outer chord wall to outer-hex extrusion
-R_BASKET_OUTER = R_HEX_OUTER - BASKET_HEX_CLEARANCE
+# Basket outer chord sits `BASKET_HEX_OVERHANG` mm outside R_HEX_OUTER
+# (ΔR convention, matching the inner side). At N=6 the chord midpoint
+# x-coordinate is R_BASKET_OUTER·cos(30°); with the current value the
+# chord overhangs the outer-hex edge midpoint by ~7.1 mm while
+# staying inside the hex's outer face (at r=280), so the basket
+# floor rests on a ~17 mm strip of outer-hex top face and does not
+# stick out past the tower footprint.
+#
+# The basket's radial side walls lie on the outer-hex vertex
+# azimuths and would otherwise pass straight through the through-
+# columns (20×20 rotated, body at r ∈ [~301.77, ~321.77] along
+# vertex azimuth). `basket()` subtracts a column-footprint cutout
+# at each outer corner to absorb the column body.
+BASKET_HEX_OVERHANG = 50.0
+R_BASKET_OUTER = R_HEX_OUTER + BASKET_HEX_OVERHANG   # 320
 BASKET_WALL_T = 3.0
 
 # Basket spans a full 360°/N sector. An earlier design shrunk this
@@ -66,10 +83,36 @@ BASKET_DEPTH_Z = 80.0
 BASKET_FLOOR_Z = 0.0                               # shared floor datum
 BASKET_RIM_Z = BASKET_FLOOR_Z + BASKET_DEPTH_Z     # 80
 
+# Outer-hex through-column cross-section. Must match frame's
+# `EXT_SIZE` (2020 aluminum extrusion). Duplicated locally for the
+# same reason the bracket sub-assemblies duplicate it — params.py
+# doesn't host this constant today.
+COLUMN_SIDE = 20.0
+COLUMN_CLEARANCE = 1.0   # gap between notch wall and column face
+
 WALL_MIN = 1.5
 
 
 # --- Helpers ------------------------------------------------------------
+
+def _column_cutout_at(azimuth_deg: float) -> Part:
+    """Rotated 20×20 through-cutout centered on the outer-hex vertex
+    at `azimuth_deg`, spanning the full basket Z range with margin.
+    Removes the column body (and a thin clearance margin) from a
+    basket's outer corner so the radial side wall wraps around the
+    column instead of passing through it.
+
+    Rotation matches frame's `Rot(0, 0, v_angle)` on `outer_vert_k`,
+    so the cutout's faces align with the real column's faces.
+    """
+    side = COLUMN_SIDE + 2 * COLUMN_CLEARANCE
+    z_margin = 10.0
+    height = BASKET_DEPTH_Z + 2 * z_margin
+    vx = R_VERT_OUTER * math.cos(math.radians(azimuth_deg))
+    vy = R_VERT_OUTER * math.sin(math.radians(azimuth_deg))
+    z_center = (BASKET_FLOOR_Z + BASKET_RIM_Z) / 2.0
+    return Pos(vx, vy, z_center) * Rot(0, 0, azimuth_deg) * Box(side, side, height)
+
 
 def _trap_prism(
     r_in: float,
@@ -105,6 +148,13 @@ def _trap_prism(
 def basket() -> Part:
     """Trapezoidal-prism bucket for one basket slot, centered on +X.
     Closed floor at z=BASKET_FLOOR_Z, open top at z=BASKET_RIM_Z.
+
+    Outer corners are notched around the outer-hex through-columns
+    that sit on the basket boundary azimuths — see
+    `_column_cutout_at`. Notch logic assumes every basket boundary
+    coincides with an outer-hex vertex (true at N=6; for N=12 / 18
+    only half the boundaries need a notch, and the helper call
+    pattern here would need to be generalized).
     """
     half_angle_deg = BASKET_ANG_SPAN_DEG / 2
     z_bot = BASKET_FLOOR_Z
@@ -117,7 +167,10 @@ def basket() -> Part:
         z_bot + BASKET_WALL_T, z_top + 1.0,
         inset=BASKET_WALL_T,
     )
-    return outer - cavity
+    body = outer - cavity
+    body = body - _column_cutout_at(+half_angle_deg)
+    body = body - _column_cutout_at(-half_angle_deg)
+    return body
 
 
 def col_stub() -> Part:
