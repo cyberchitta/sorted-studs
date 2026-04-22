@@ -22,17 +22,41 @@ COL_WALL_T = 3.0
 COL_INTERIOR_SIDE = MAX_BRICK_DIM + 2 * BRICK_SLOP   # 90
 COL_OUTER_SIDE = COL_INTERIOR_SIDE + 2 * COL_WALL_T  # 96
 
-# Inner-hex circumradius (center → vertex). Vertices at basket
-# boundaries = (k+0.5)·60°; radial rails run along these directions.
+# Hex circumradii (center → vertex). With Phase 1's rotation-aligned
+# layout, inner and outer hex vertices share azimuth (k+0.5)·60° =
+# basket boundaries; radial rails run along these directions and
+# terminate at both vertex pairs.
 _APOTHEM_TO_VERTEX = 2.0 / math.sqrt(3.0)
 R_VERT_INNER = R_HEX_INNER * _APOTHEM_TO_VERTEX      # ≈ 136.26
+R_VERT_OUTER = R_HEX_OUTER * _APOTHEM_TO_VERTEX      # ≈ 311.77
+
+# Bracket-arm reserve: each vertex bracket occupies this many mm
+# along every extrusion axis it terminates. Must match
+# `HOR_INNER_OFFSET` in both `outer_vertex_bracket/assembly.py` and
+# `inner_vertex_bracket/assembly.py` — duplicated here so params
+# remains self-contained and bracket sub-assemblies stay standalone.
+BRACKET_HOR_OFFSET = 22.0
 
 # Radial rails tying the inner hex to the outer hex. 2020 aluminum
-# extrusion. Axis at azimuth (k+0.5)·60° (basket boundary = inner-hex
-# vertex direction = outer-hex edge-midpoint direction). Top face at
-# z=0 like every other horizontal frame member. The spider's saddles
-# grip the inner end of each rail; the outer end needs a mid-edge
-# bracket on the outer hex (not yet modeled).
+# extrusion. Axis at azimuth (k+0.5)·60° (basket boundary = shared
+# inner/outer vertex direction). Top face at z=0 like every other
+# horizontal frame member.
+#
+# Each radial runs as a single through-line from just outside the
+# bearing-spider hub out to the outer-hex vertex. The outer end
+# reserves BRACKET_HOR_OFFSET for the outer-vertex bracket. The
+# inner end sits at RAIL_INNER_R — far enough inside the inner-hex
+# vertex that the spider saddle's grip zone
+# ([RAIL_INNER_R, RAIL_INNER_R + SADDLE_GRIP_LEN] in the ramp
+# sub-assembly) stays clear of the inner-hex vertex region where
+# inner_vertex_bracket sits. This also shrinks the spider's saddle
+# cantilever dramatically, which was the point.
+#
+# RAIL_INNER_R lower bound = ramp_mechanism's SPIDER_HUB_OD/2 (≈ 85.5
+# mm for the current column geometry) + a small clearance. Hardcoded
+# rather than derived because SPIDER_HUB_OD lives inside the ramp
+# sub-assembly; a cross-sub-assembly assert in the top-level
+# `assembly.py` catches drift if the spider hub grows past this.
 RAIL_SIZE = 20.0
-RAIL_INNER_R = R_VERT_INNER
-RAIL_OUTER_R = R_HEX_OUTER
+RAIL_INNER_R = 90.0                                   # physical inner end
+RAIL_OUTER_R = R_VERT_OUTER - BRACKET_HOR_OFFSET      # ≈ 289.77 — physical outer end

@@ -3,7 +3,7 @@ M05 hex-tower — top-level diverter assembly (one generic middle floor).
 
 Composes the three sub-assemblies at their installed positions:
 
-- frame — hex rings + outer-hex vertical corner columns + corner brackets
+- frame — hex rings + outer-hex vertical corner columns + vertex brackets
 - ramp_mechanism — bearing spider, ring bearing, rotating column + trap + ramp
 - basket — N angular-sector basket cells around the column
 
@@ -97,8 +97,9 @@ for k in range(6):
         assembly
         .assert_no_interference("basket_plus_x", f"outer_horiz_{k}")
         .assert_no_interference("basket_plus_x", f"outer_vert_{k}")
-        .assert_no_interference("basket_plus_x", f"corner_bracket_{k}")
+        .assert_no_interference("basket_plus_x", f"outer_vertex_bracket_{k}")
         .assert_no_interference("basket_plus_x", f"inner_horiz_{k}")
+        .assert_no_interference("basket_plus_x", f"inner_vertex_bracket_{k}")
         .assert_no_interference("basket_plus_x", f"radial_{k}")
     )
 
