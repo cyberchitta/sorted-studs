@@ -85,9 +85,9 @@ BASKET_WALL_T = 3.0
 # themselves sit tangent to the basket floor (no volume overlap),
 # so each basket can take the whole sector.
 
-BASKET_DEPTH_Z = 80.0
+BASKET_DEPTH_Z = 130.0
 BASKET_FLOOR_Z = 0.0                               # shared floor datum
-BASKET_RIM_Z = BASKET_FLOOR_Z + BASKET_DEPTH_Z     # 80
+BASKET_RIM_Z = BASKET_FLOOR_Z + BASKET_DEPTH_Z     # 130
 
 # Outer-hex through-column cross-section. Must match frame's
 # `EXT_SIZE` (2020 aluminum extrusion). Duplicated locally for the

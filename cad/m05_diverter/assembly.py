@@ -36,14 +36,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from build123d import Rot
+from build123d import Location, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
 
 from basket import assembly as _bkt
 from frame import assembly as _frame
-from params import FLOOR_LAYOUT
+from params import FLOOR_H, FLOOR_LAYOUT
 from ramp_mechanism import assembly as _ramp
 
 
@@ -66,6 +66,16 @@ assembly = (
         "trap_closed", _ramp.trap(),
         location=_ramp.hinge_loc * Rot(0, _ramp.TRAP_CLOSED_DEG, 0),
     )
+    # Stand-in for the floor-below's trap at max-open (60°), mapped
+    # into this floor's frame via -FLOOR_H. Lets the single-floor
+    # model show the full steady-state stack-up before the multi-floor
+    # assembly is built.
+    .add(
+        "lower_trap_open", _ramp.trap(),
+        location=Location(
+            (_ramp.TRAP_HINGE_X, 0, _ramp.TRAP_HINGE_Z - FLOOR_H)
+        ) * Rot(0, _ramp.TRAP_OPEN_DEG, 0),
+    )
 )
 
 # Mixed-layout baskets (see params.FLOOR_LAYOUT).
@@ -87,13 +97,17 @@ for center_deg, n_size, notches in FLOOR_LAYOUT:
 
 # --- Cross-boundary checks ---------------------------------------------
 
-# Every basket vs the column-side fixed parts.
+# Every basket vs the column-side fixed parts. lower_trap_open is a
+# stand-in for the floor below, not a physical part on this floor —
+# but it's modeled so we can assert basket walls and frame members
+# still clear it.
 for name in basket_names:
     assembly = (
         assembly
         .assert_no_interference(name, "column")
         .assert_no_interference(name, "bearing_spider")
         .assert_no_interference(name, "ring_bearing")
+        .assert_no_interference(name, "lower_trap_open")
     )
 
 # Ramp tip lands in the N=6 basket that straddles +X.
@@ -140,6 +154,12 @@ for k in range(6):
         .assert_no_interference("column", radial)
         .assert_no_interference("ring_bearing", radial)
         .assert_no_interference("bearing_spider", radial)
+        # Lower-floor trap-open intrusion vs the frame members radially
+        # closest to the axis. Inner hex + rails sit at z ∈ [-20, 0]
+        # (top face at z=0); the intrusion sweeps up through the axis
+        # region and must clear them.
+        .assert_no_interference("lower_trap_open", inner)
+        .assert_no_interference("lower_trap_open", radial)
     )
 
 # Ramp extends radially past the inner hex (tip at x≈147) but stays

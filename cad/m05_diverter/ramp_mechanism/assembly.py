@@ -59,6 +59,7 @@ from cad_khana.printability.methods import FDM
 from params import (
     COL_INTERIOR_SIDE,
     COL_OUTER_SIDE,
+    FLOOR_H,
     MAX_BRICK_DIM,
     N_BASKETS_PER_FLOOR,
     RAIL_INNER_R,
@@ -84,7 +85,7 @@ PIN_LEN = COL_OUTER_SIDE + 4.0
 TRAP_T = 4.0
 TRAP_W = 80.0                                 # ≤ MAX_BRICK_DIM; leaves ±Y for bosses
 TRAP_HINGE_X = COL_INTERIOR_SIDE / 2 - 7.0    # 38 — inset so knuckle clears +X wall
-TRAP_HINGE_Z = 135.0
+TRAP_HINGE_Z = 185.0
 # Free end clears -X wall with 2 mm gap + knuckle radius absorbed
 TRAP_L = COL_INTERIOR_SIDE / 2 + TRAP_HINGE_X - 2.0 - KNUCKLE_OD / 2  # 76
 
@@ -107,7 +108,7 @@ RAMP_W = 70.0                                 # ≤ opening width minus side mar
 RAMP_L = 110.0                                # length along slope direction
 RAMP_DROP_BELOW_HINGE = 10.0                  # Z offset below trap hinge
 RAMP_ROOT_X = COL_INTERIOR_SIDE / 2 - 2.0     # 43 — just inside +X wall
-RAMP_ROOT_Z = TRAP_HINGE_Z - RAMP_DROP_BELOW_HINGE  # 90
+RAMP_ROOT_Z = TRAP_HINGE_Z - RAMP_DROP_BELOW_HINGE  # 175
 
 # Ramp tip (for documentation / targeting sanity)
 _RAMP_DEG_RAD = math.radians(RAMP_DEG)
@@ -155,7 +156,22 @@ assert RAMP_W <= BASKET_SLOT_W_AT_TIP, (
 # Column height — above trap open position, above opening top
 _TRAP_OPEN_RAD = math.radians(TRAP_OPEN_DEG)
 _TRAP_FREE_Z_OPEN = TRAP_HINGE_Z + TRAP_L * math.sin(_TRAP_OPEN_RAD) + TRAP_T / 2
-COL_Z_BOT = 0.0
+
+# Lower-floor trap intrusion. The floor below has an identical trap
+# at its own TRAP_HINGE_Z; mapped into this floor's local frame via
+# -FLOOR_H, its max-open (60°) free end reaches up to the Z below
+# (includes plate tip geometry — knuckle radius and tilted half-
+# thickness). The column's bottom collar + bearing + spider must sit
+# above this with COL_BASE_CLEARANCE so the two floors stack cleanly.
+LOWER_TRAP_OPEN_Z_MAX = (
+    TRAP_HINGE_Z
+    + (TRAP_L + KNUCKLE_OD / 2) * math.sin(_TRAP_OPEN_RAD)
+    + (TRAP_T / 2) * math.cos(_TRAP_OPEN_RAD)
+    - FLOOR_H
+)
+COL_BASE_CLEARANCE = 5.0
+RAIL_TOP_Z = 0.0                                     # frame datum (rail top face)
+COL_Z_BOT = LOWER_TRAP_OPEN_Z_MAX + COL_BASE_CLEARANCE
 COL_Z_TOP = max(OPENING_Z_TOP, _TRAP_FREE_Z_OPEN) + 10.0
 
 # Ring bearing
@@ -166,7 +182,6 @@ RING_BEARING_OD = RING_BEARING_ID + 20.0
 N_SPIDER_SADDLES = 6
 SPIDER_HUB_ID = RING_BEARING_OD + 1.0
 SPIDER_HUB_OD = SPIDER_HUB_ID + 10.0
-SPIDER_T = COLLAR_T
 
 EXT_SIDE = RAIL_SIZE                          # 2020 aluminum extrusion (== frame)
 
@@ -201,12 +216,28 @@ def bearing_spider() -> Part:
     """Printed hub that holds the ring bearing coaxial with the column.
     Six integrated saddles grip the tops of radial 2020 aluminum
     extrusions; the extrusions carry the span out to the inner hex.
-    """
-    hub_z_center = COL_Z_BOT + SPIDER_T / 2
-    ext_top_z = COL_Z_BOT + COLLAR_T
 
-    hub_outer = Pos(0, 0, hub_z_center) * Cylinder(SPIDER_HUB_OD / 2, SPIDER_T)
-    hub_inner = Pos(0, 0, hub_z_center) * Cylinder(SPIDER_HUB_ID / 2, SPIDER_T * 2)
+    The hub is an annular skirt that spans from the rail top (where
+    the saddles anchor) up to the column collar top (where the ring
+    bearing sits inside the hub ID). When COL_Z_BOT > RAIL_TOP_Z —
+    which is the case on every intermediate floor so the column clears
+    the lower floor's trap-open swing — the hub becomes a tall riser;
+    on the base floor (no lower intrusion) it collapses back to the
+    original COLLAR_T-thick ring.
+    """
+    hub_z_bot = RAIL_TOP_Z
+    hub_z_top = COL_Z_BOT + COLLAR_T
+    hub_t = hub_z_top - hub_z_bot
+    hub_z_center = (hub_z_bot + hub_z_top) / 2
+    # Saddle reference is anchored to the rail (NOT the column bottom).
+    # The rail's top face is at RAIL_TOP_Z; the original saddle geometry
+    # used `COL_Z_BOT + COLLAR_T` as the anchor, which gave a 5 mm
+    # riser above the rail. Preserve that offset here so the U-channel
+    # clamps the rail the same way regardless of hub height.
+    ext_top_z = RAIL_TOP_Z + COLLAR_T
+
+    hub_outer = Pos(0, 0, hub_z_center) * Cylinder(SPIDER_HUB_OD / 2, hub_t)
+    hub_inner = Pos(0, 0, hub_z_center) * Cylinder(SPIDER_HUB_ID / 2, hub_t * 2)
     body = hub_outer - hub_inner
 
     saddle_w = EXT_SIDE + 2 * SADDLE_T_WALL
@@ -334,6 +365,13 @@ def ramp() -> Part:
 
 hinge_loc = Location((TRAP_HINGE_X, 0, TRAP_HINGE_Z))
 ramp_loc = Location((RAMP_ROOT_X, 0, RAMP_ROOT_Z))
+# Lower floor's trap at max-open (60°), mapped into this floor's frame.
+# Not a part of this floor — it's a stand-in for the intrusion from
+# below. The model includes it so basic stack-up interference is caught
+# before we build the full multi-floor assembly.
+lower_trap_loc = Location(
+    (TRAP_HINGE_X, 0, TRAP_HINGE_Z - FLOOR_H)
+) * Rot(0, TRAP_OPEN_DEG, 0)
 
 assembly = Assembly()
 assembly = (
@@ -345,6 +383,7 @@ assembly = (
     .add("ramp", ramp(), location=ramp_loc)
     .add("trap_closed", trap(), location=hinge_loc * Rot(0, TRAP_CLOSED_DEG, 0))
     .add("trap_open", trap(), location=hinge_loc * Rot(0, TRAP_OPEN_DEG, 0))
+    .add("lower_trap_open", trap(), location=lower_trap_loc)
 )
 for angle in TRAP_SAMPLES:
     assembly = assembly.add(
@@ -373,6 +412,12 @@ assembly = (
     .assert_no_interference("trap_open", "bearing_spider")
     .assert_no_interference("trap_open", "ring_bearing")
     .assert_no_interference("trap_open", "ramp")
+    # Lower-floor trap-open intrusion — must clear THIS floor's column-
+    # bottom stack (collar / ring bearing / spider hub) and the ramp.
+    .assert_no_interference("lower_trap_open", "column")
+    .assert_no_interference("lower_trap_open", "bearing_spider")
+    .assert_no_interference("lower_trap_open", "ring_bearing")
+    .assert_no_interference("lower_trap_open", "ramp")
 )
 for angle in TRAP_SAMPLES:
     name = f"trap_at_{int(angle)}"
