@@ -1,31 +1,38 @@
 """
-M02 C-channel singulator — rotor sub-assembly.
+M02 C-channel singulator — rotor sub-assembly (hollow shell).
 
-Faceted frustum coaxial with the stator V-trough. Bricks drop onto
-the flat top, slide down the outward-tilted flanks, and settle into
-the V between the rotor's base edge and the stator's outer wall. As
-the rotor spins, each facet drags bricks against the outer stator
-wall; transitions between facets create a "wave" that helps break
-up clumps (see docs/m02-c-channel-singulator.md).
+Faceted frustum with a matched-taper interior cavity. The shell
+forms the rotating V wall; the cavity hides the drive — motor body
+and fixed support stem sit inside the spinning rotor, coaxial with
+its rotation axis (see ../drive/assembly.py).
 
-Outside-ride geometry: bricks ride on the OUTSIDE of the rotor
-flank, pressed against the outer stator wall — not through a
-centre drop hole. The rotor top is a closed platform; the only
-axial opening is the drive-shaft bore.
+Geometry:
+    - Outer: 8-faceted frustum, base r = 90 mm, top r = 30 mm, 60 mm
+      tall, flank at 45° from vertical.
+    - Shell: ROTOR_SHELL_WALL_T radial wall from z=0 up to z = height
+      − top_cap_t (cavity opens here).
+    - Top cap: solid ROTOR_TOP_CAP_T thick above the cavity.
+    - Internal boss: ROTOR_BOSS_OD cylinder descending from the top
+      cap's underside into the cavity, with a shaft bore going up
+      through the boss and into the top cap (blind halfway through
+      the cap).
 
-V1 is a solid frustum with a central shaft bore; hub reinforcement
-and D-shaft retention are deferred until the drive sub-assembly
-lands.
+Outside-ride still applies: bricks sit in the V between the rotor
+flank and the stator outer wall; nothing about the hollow interior
+changes that contact geometry.
 
-Standalone validation: rotor alone, printability check (FDM).
-Cross-boundary checks (rotor-vs-stator gap, shaft coaxiality) live
-in the top-level ../assembly.py once sibling sub-assemblies exist.
+Printability note: the cavity is open at the bottom and closed at
+the top. A one-piece print expects breakaway support inside the
+cavity (removed through the open bottom after printing), OR a split
+at z = BOSS_BOTTOM_Z into a lower shell-only funnel + an upper
+cap+boss piece bonded together. Pick at slice time; the CAD model
+is the assembled geometry either way.
 
 Coordinate frame:
     origin = rotor axis ∩ base plane (widest section, at the
              V-bottom level of the stator)
     +Z     = up (top-platform / drop-surface direction)
-    z=0    = rotor base plane (coincident with stator V-bottom)
+    z=0    = rotor base plane (= stator V-bottom)
 """
 
 import sys
@@ -41,11 +48,18 @@ from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
 from params import (
+    BOSS_BOTTOM_Z,
+    BOSS_TOP_Z,
+    MOTOR_SHAFT_BORE_CLEARANCE,
+    NEMA17_SHAFT_D,
     ROTOR_BASE_DIAMETER,
+    ROTOR_BOSS_OD,
     ROTOR_FACET_COUNT,
     ROTOR_HEIGHT,
-    SHAFT_BORE_CLEARANCE,
-    SHAFT_DIAMETER,
+    ROTOR_SHELL_WALL_T,
+    ROTOR_TOP_CAP_T,
+    SHAFT_BORE_BOTTOM_Z,
+    SHAFT_BORE_TOP_Z,
     V_HALF_ANGLE_DEG,
 )
 
@@ -61,28 +75,57 @@ def rotor(
     height: float = ROTOR_HEIGHT,
     n_facets: int = ROTOR_FACET_COUNT,
     flank_angle_deg: float = V_HALF_ANGLE_DEG,
-    shaft_bore_d: float = SHAFT_DIAMETER + 2 * SHAFT_BORE_CLEARANCE,
+    shell_wall_t: float = ROTOR_SHELL_WALL_T,
+    top_cap_t: float = ROTOR_TOP_CAP_T,
+    boss_od: float = ROTOR_BOSS_OD,
+    shaft_bore_d: float = NEMA17_SHAFT_D + 2 * MOTOR_SHAFT_BORE_CLEARANCE,
 ) -> Part:
-    """Faceted frustum centered on the Z axis, base at z=0, apex up.
+    """Hollow faceted frustum with top cap, internal coupling boss,
+    and blind shaft bore. Base at z=0, apex direction +Z.
 
-    Closed-top regular n-gonal frustum with a central shaft bore.
-    `base_diameter` is the circumscribing-circle diameter of the base
-    polygon; facet corners lie on that circle and facet flats sit
-    inside it by a factor of cos(π/n_facets).
-
-    The flank narrows as it rises at `flank_angle_deg` from vertical,
-    giving a top face diameter of
-    `base_diameter − 2·height·tan(flank_angle_deg)`.
+    Build order:
+      outer − cavity  →  shell + solid top cap (annulus below cap,
+                         full section above).
+      + boss          →  cylindrical protrusion from cap underside
+                         into the cavity.
+      − shaft_bore    →  blind bore up through the boss into the
+                         top cap for the motor-shaft slip fit.
     """
-    base_sketch = RegularPolygon(
-        radius=base_diameter / 2, side_count=n_facets,
+    base_r = base_diameter / 2.0
+
+    outer = extrude(
+        RegularPolygon(radius=base_r, side_count=n_facets),
+        amount=height,
+        taper=flank_angle_deg,
     )
-    cone = extrude(base_sketch, amount=height, taper=flank_angle_deg)
-    # Through-bore with 1 mm poke-through each end for a clean boolean.
-    bore = Pos(0, 0, height / 2) * Cylinder(
-        shaft_bore_d / 2, height + 2,
+
+    # Matched-taper cavity: same flank angle, circumradius offset
+    # inward by shell_wall_t, stops at (height − top_cap_t) so the
+    # top cap remains solid. 1 mm poke below z=0 for a clean boolean
+    # against the open bottom.
+    cavity_bottom_pad = 1.0
+    cavity_height = (height - top_cap_t) + cavity_bottom_pad
+    cavity = Pos(0, 0, -cavity_bottom_pad) * extrude(
+        RegularPolygon(radius=base_r - shell_wall_t, side_count=n_facets),
+        amount=cavity_height,
+        taper=flank_angle_deg,
     )
-    return cone - bore
+
+    # Boss descending from the top cap into the cavity.
+    boss = Pos(0, 0, (BOSS_BOTTOM_Z + BOSS_TOP_Z) / 2.0) * Cylinder(
+        boss_od / 2.0, BOSS_TOP_Z - BOSS_BOTTOM_Z,
+    )
+
+    # Shaft bore — open at boss bottom (SHAFT_BORE_BOTTOM_Z), blind
+    # SHAFT_BORE_TOP_Z below the rotor's outer top face.
+    bore_len = SHAFT_BORE_TOP_Z - SHAFT_BORE_BOTTOM_Z
+    # 1 mm poke below bore bottom to guarantee a clean open end.
+    bore = Pos(
+        0, 0,
+        SHAFT_BORE_BOTTOM_Z - 1.0 + (bore_len + 1.0) / 2.0,
+    ) * Cylinder(shaft_bore_d / 2.0, bore_len + 1.0)
+
+    return (outer - cavity) + boss - bore
 
 
 # --- Assembly ----------------------------------------------------------
@@ -92,9 +135,10 @@ assembly = Assembly().add("rotor", rotor())
 
 if __name__ == "__main__":
     check(assembly, out="outputs")
-    # Print base-down: the flank's 45°-from-vertical slope is on the
-    # friendly side (each layer smaller than the one below), so a 50°
-    # overhang threshold gives a small margin without being generous.
+    # 45°-from-vertical flank is base-down-friendly on the outer
+    # face; the cavity's inner face has a matching 45° inward lean
+    # as z increases, which reads as an overhang. 50° threshold
+    # leaves headroom for printer tuning.
     method = FDM(wall_min_mm=WALL_MIN, overhang_max_deg=50.0)
     try:
         inspect(rotor(), method=method, out="outputs", name="rotor")
