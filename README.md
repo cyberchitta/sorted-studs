@@ -108,7 +108,9 @@ scanning station and ML pipeline.
 | #   | Module                                                        | Status                         | Spec |
 | --- | ------------------------------------------------------------- | ------------------------------ | ---- |
 | 1   | [Vibrating Hopper](docs/m01-vibrating-hopper.md)              | Original design (sorted-studs) | 📄   |
+|     | ↳ [Drum Feeder](docs/m01-drum-feeder.md)                      | Build from base design         | 📄   |
 | 2   | [Vibratory Singulation](docs/m02-vibratory-singulation.md)    | Build from base design         | 📄   |
+|     | ↳ [C-Channel Singulator](docs/m02-c-channel-singulator.md)    | Original design (sorted-studs) | 📄   |
 | 3   | [Multi-View Scanning Station](docs/m03-multi-view-scanner.md) | Original design (sorted-studs) | 📄   |
 | 5   | [Diverter & Bin Output](docs/m05-diverter.md)                 | Design TBD — scalable          | 📄   |
 

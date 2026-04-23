@@ -1,8 +1,9 @@
 # Module 1: Drum Feeder & Bulk Storage
 
 **Status:** Build from base design
+**Alternative:** [Module 1 — Vibrating Hopper](m01-vibrating-hopper.md)
 **Dependencies:** None (first stage in physical flow)
-**Feeds into:** [Module 2 — Vibratory Singulation](module-02-vibratory-singulation.md)
+**Feeds into:** [Module 2 — Vibratory Singulation](m02-vibratory-singulation.md)
 
 ---
 

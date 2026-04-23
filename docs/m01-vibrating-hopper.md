@@ -1,6 +1,7 @@
 # Module 1: Vibrating Hopper
 
 **Status:** Original design (sorted-studs)
+**Alternative:** [Module 1 — Drum Feeder](m01-drum-feeder.md)
 **Dependencies:** None (first stage in physical flow)
 **Feeds into:** [Module 2 — Two-Stage Singulation](m02-vibratory-singulation.md)
 
