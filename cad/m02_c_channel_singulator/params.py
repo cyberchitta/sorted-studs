@@ -40,10 +40,20 @@ ROTOR_HEIGHT = (
     / math.tan(math.radians(V_HALF_ANGLE_DEG))
 )
 
-# Facet count around the rotor circumference. Spec's default starting
-# point; 6 gives wider panels (more grip), 12 gives smoother conveyance
-# (less pulse per revolution).
-ROTOR_FACET_COUNT = 8
+# Facet count around the rotor circumference. 10 panels meet at the
+# top; the rim stays a true circle so no gap opens against the stator
+# regardless of rotor angle.
+ROTOR_FACET_COUNT = 10
+
+# Rotor facet "crown kink" — a 20-vertex star cross-section placed
+# partway up the flank. 10 "peak" star points line up with top-polygon
+# vertices (the ridges visible in the render); 10 "valley" points sit
+# at the intermediate azimuths, pulled radially inward to create the
+# triangular sub-facets between ridges. The rim (z=0) stays a circle;
+# the kink fades out as it approaches the base.
+ROTOR_FACET_KINK_Z_FRAC = 0.35         # fraction of rotor height
+ROTOR_FACET_PEAK_BULGE = 0.0           # outward deflection of peaks (mm)
+ROTOR_FACET_VALLEY_DENT = 4.0          # inward deflection of valleys (mm)
 
 # Radial gap between rotor base edge and stator V-bottom. Must stay
 # smaller than the thinnest common LEGO plate (~3.2 mm) so no piece
@@ -55,11 +65,23 @@ ROTOR_STATOR_GAP = 2.0
 # (no extended-wall hopper). Matches #channel_wall_height.
 STATOR_WALL_H = 40.0
 
+# Height above the V-bottom where the stator inner wall transitions
+# from sloped (V at V_HALF_ANGLE_DEG) to vertical. Sized to clear the
+# tallest common LEGO element that rides in the V — 30 mm covers a
+# 3× brick stack, 2×2 round cylinders, and minifig torso+head with
+# headroom. Above this, the cone is unnecessary: the pieces are
+# already seated in the V, and a cylindrical upper wall just
+# contains splash. Must be ≤ STATOR_WALL_H.
+STATOR_V_H = 30.0
+assert 0.0 < STATOR_V_H <= STATOR_WALL_H, (
+    "STATOR_V_H must be positive and not exceed STATOR_WALL_H"
+)
+
 # Exit arc angular width — the cut-away on the outer stator wall
 # where bricks fall off. Starts at one facet-pitch so a single facet
 # face spans the opening when aligned; candidate for tuning per the
 # spec's Open Questions.
-EXIT_ARC_DEG = 360.0 / ROTOR_FACET_COUNT   # 45° at N=8
+EXIT_ARC_DEG = 360.0 / ROTOR_FACET_COUNT   # 36° at N=10
 
 
 # --- Rotor shell (hollow) ----------------------------------------------
