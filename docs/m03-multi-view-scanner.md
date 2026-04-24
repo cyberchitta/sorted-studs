@@ -228,8 +228,8 @@ down); ML deployment flexibility lives with whatever box runs the model.
 
 ### Mount
 
-- Rigid aluminium or 3D-printed bracket attached to the front wall of the
-  enclosure
+- 3D-printed pad-on-rail clamp hanging from the camera rig's rail D
+  cantilever (see Frame Architecture above)
 - Once locked, **not user-adjustable during operation** — calibration depends
   on fixed geometry
 - Sacrificial shim stack for initial alignment; lock with threadlocker after
@@ -290,13 +290,22 @@ Outside Ø180 mm, the platform can be opaque — hosts the feed landing zone,
 ring light mount, load cell, and ToF sensor. Total platform diameter ~Ø360 mm
 including this collar.
 
-### Load cell placement
+### Load cells inline with the hinge axis
 
-Load cell supports the **entire platform disc** (transparent + opaque collar)
-from below via a single central column or a three-point support outside the
-transparent region. Brick weight registers as a delta on the tared platform
-mass. Load cell must not intrude into any mirror sightline; the three-point
-support pattern is chosen to avoid the two below-mirror cones.
+The platform is a rectangular collar hinged along its front edge. Two
+pillow blocks on the platform frame's top cross-rail carry the hinge
+pin; each pillow block sits on a 500 g beam load cell sandwiched
+between the block and the cross-rail. While the platform is held
+level by a solenoid-driven pin at the back edge, the sum of the two
+load-cell readings (minus the tared platform mass) reads the brick
+mass. Retracting the pin tips the platform forward, dumping the brick
+into the Module 5 diverter ingest.
+
+Rationale: load cells inline with the hinge axis see the full
+platform + brick load as pure compression on the pillow-block ↔
+cross-rail interface. Any horizontal force from brick motion on the
+platform is reacted by the hinge pin rather than appearing as a
+moment on the load cells.
 
 ## Feed & Eject
 
@@ -319,26 +328,30 @@ forward onto the transparent disc, then stops at origin. Actions:
 
 1. Drop from chute onto back landing (z ≈ +120 mm)
 2. Shuttle pushes forward to origin (z = 0), brick settles
-3. Load cell reads mass
+3. Load cell reads mass (platform held level by back-edge pin)
 4. Camera captures frame
-5. Shuttle continues forward to eject at z ≈ −120 mm → gravity feed to diverter
-   (Module 5)
+5. Back-edge pin retracts; platform tips forward on its front-edge
+   hinge; brick slides off the front edge into the Module 5 diverter
+   ingest. Pin re-engages and the platform returns to level for the
+   next brick.
 
 Shuttle surface and push-plate are matte black to avoid showing up in mirror
 views if visible in the frame.
 
 ### Ejecting forward
 
-Front edge of the platform has a gravity slide / chute down to the diverter
-staging zone. Eject direction (−Z, toward operator front) is opposite the feed
-(+Z, from back).
+The platform tips forward on its front-edge hinge when the back-edge
+solenoid pin retracts, dumping the brick into the diverter staging
+zone. Eject direction (−Z, toward operator front) is opposite the
+feed direction (+Z, from back), and the camera rig's open front face
+leaves the eject path unobstructed.
 
 ## Supplementary Sensors
 
 ### Time-of-Flight for brick presence + dimensions
 
-VL53L1X or equivalent, mounted on the enclosure ceiling above the scan
-position, pointed straight down.
+VL53L1X or equivalent, mounted on the underside of the camera rig's
+cantilever rail D above the scan position, pointed straight down.
 
 - **Presence detection.** Distance drops below empty-platform baseline when the
   shuttle brings a brick in.
@@ -346,8 +359,9 @@ position, pointed straight down.
   ceiling-to-empty-platform baseline.
 - **Polling:** 50 Hz is ample at shuttle speeds of ≲ 100 mm/s.
 
-Mounted on the enclosure ceiling (y ≈ +250 mm), clear of all mirror cones and
-the camera's direct view of the brick (sensor sits above camera axis).
+Mounted on the camera rig's cantilever rail D (y ≈ +250 mm), clear of all
+mirror cones and the camera's direct view of the brick (sensor sits above
+camera axis).
 
 ### Load cell + HX711
 
@@ -358,18 +372,70 @@ the camera's direct view of the brick (sensor sits above camera axis).
   bricks (measured during the shuttle-forward motion when no brick is yet on
   the disc)
 
-## Enclosure
+## Frame Architecture
 
-- **Material:** 3D-printed or laser-cut MDF / foamed PVC, painted matte black
-  internally
-- **Walls:** light-tight; seams taped or flanged
-- **Access:** hinged front door for cleaning mirrors and disc; side panel
-  removable for camera/lens work
-- **Mirror mounts:** adjustable in two axes (pitch + yaw) via set screws +
-  lock screws; coarse position from printed geometry, fine tune during first
-  calibration
-- **Ventilation:** passive — LED ring generates some heat but not enough for
-  forced cooling at continuous operation
+Two independent frames share the floor plane. Separating them insulates
+optical calibration from platform service operations (disc cleaning,
+load-cell access, shuttle work) and provides an unobstructed forward
+eject path to Module 5.
+
+### Camera rig — sparse T-frame
+
+Four 2020 T-slot aluminum extrusions plus a diagonal truss carry all
+three mirror mounts and the camera mount. There is no structure in
+the brick plane and nothing crosses the eject path; the "front face"
+is fully open by construction.
+
+- **rail A** — X-span at the below-mirror plane (y ≈ −140, z ≈ +28).
+  Both below-mirror clamps grip rail A directly; beam reach is zero.
+- **rail B** — Z-span from rail A back to under the back-upper mirror
+  plane (y ≈ −140, z ≈ +180). Forms the T with rail A. Extends past
+  both junctions in the Z direction as fore-aft outrigger feet.
+- **rail C** — vertical post from rail B's back end up past the
+  back-upper mirror to the cantilever height. Back-upper clamp grips
+  rail C directly; beam reach is zero.
+- **rail D** — Z-cantilever from the top of rail C forward over the
+  camera. Camera clamp hangs from rail D's underside.
+- **diagonal truss** — tension strut from the top of rail C
+  forward-and-down to rail B. Converts rail D from a pure cantilever
+  to a triangulated truss, collapsing ~1–2 mm of static tip deflection
+  at the camera to near-zero.
+
+Mirror and camera clamps are printed pad-on-rail parts — a clamp body
+gripping the rail with a flat pad carrying the mount's four-corner
+bolt pattern. Rails A, C, and D all pass through or immediately
+behind the mount planes, so beam reach is eliminated everywhere.
+
+Joint reinforcement: the T-junction (rail A ↔ B) and the L-junction
+(rail C ↔ D) carry bending loads that exceed what stock corner
+brackets resist. Each joint is closed with a printed gusset — heat-
+set M4 inserts in the gusset mate with T-nuts in the extrusion
+slots, clamping two faces of each member.
+
+### Platform frame — freestanding
+
+A small 2020-extrusion rectangle on its own feet, sized to slide into
+the camera rig's open interior. Carries the hinged-quad platform and
+its pillow blocks (see Platform section). The two frames share a
+floor plane but need no precision indexing — only platform-to-brick
+geometry is optically relevant, and the brick sits on the platform.
+
+Module 5 (diverter) bolts to the platform frame rather than the
+camera rig, giving the Module 2 → 3 → 5 pipeline a single shared
+mechanical interface.
+
+### Shroud
+
+Ambient-light rejection is provided by an opaque fabric or light
+printed shroud draped over the camera rig. The shroud carries no
+load; the rig structure stands independently.
+
+### Adjustment
+
+Mirror mounts adjustable in pitch + yaw via the rev-1 three-screw
+kinematic stack (`cad/m03_scanner/mirror_mount_kinematic/`). Coarse
+position from printed clamp geometry, fine tune during first
+calibration, lock with jam nuts.
 
 ## Key Components (revised)
 
@@ -382,7 +448,10 @@ the camera's direct view of the brick (sensor sits above camera axis).
 | LED ring, Ø500 mm, 5000 K, CRI ≥ 95, diffused      | Neewer / similar          | ~$40      |
 | 3D-printed mirror mounts (×3)                      | original                  | ~$3 filament |
 | 3D-printed camera bracket                          | original                  | ~$3 filament |
-| 3D-printed enclosure panels                        | original                  | ~$25 filament |
+| 2020 T-slot aluminum extrusion (~4.5 m, camera + platform frames combined) | stock | ~$25 |
+| T-nuts, corner brackets, M4/M5 hardware            | stock                     | ~$15       |
+| 3D-printed joint gussets + pad-on-rail clamps      | original                  | ~$5 filament |
+| 3D-printed pillow blocks + hinged-quad platform    | original                  | ~$10 filament |
 | Matte black interior paint                          | hardware store            | ~$10      |
 | VL53L1X ToF sensor                                  | Adafruit                  | ~$5       |
 | 500 g load cell + HX711                             | Amazon                    | ~$8       |
@@ -417,8 +486,9 @@ the camera's direct view of the brick (sensor sits above camera axis).
   like a tilting ramp?
 - Underside illumination strategy — edge-lit disc vs. sub-platform ring vs.
   bounce only?
-- How does this integrate mechanically with the Module 2 singulator exit? Same
-  frame or separate modules?
+- How does Module 2's singulator exit land on the platform frame's back
+  landing zone? (The platform frame, not the camera rig, is now the shared
+  Module 2 → 3 → 5 mechanical interface — see Frame Architecture.)
 - Calibration procedure — what's the minimal set of known targets we need to
   solve all four view extrinsics?
 
