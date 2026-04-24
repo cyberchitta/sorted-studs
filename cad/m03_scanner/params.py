@@ -571,6 +571,17 @@ SKELETON_RAIL_CEIL_BOTTOM_Y = (
     SKELETON_RAIL_CEIL_CENTERLINE_Y - SKELETON_RAIL_MEMBER / 2
 )                                                   # +320 (rail -Y face)
 
+# Rev-2 mid-front transverse rail. Spans world +X between post_fl and
+# post_fr at the camera bracket back face height, coplanar with the
+# other front rails in Z (same centerline z = -SKELETON_RAIL_CORNER_Z).
+# Its +Z (inboard) face carries the camera-bracket rail clamp; choosing
+# the rail centerline Y equal to the bracket back face Y makes the tab
+# beam run nearly horizontal (pure +Z in world, ~0° tilt in clamp-local).
+SKELETON_RAIL_FRONT_MID_Y = CAMERA_BRACKET_BACK_CENTRE[1]        # ≈ 107.81
+SKELETON_RAIL_FRONT_MID_FRONT_FACE_Z = (
+    -SKELETON_RAIL_CORNER_Z + SKELETON_RAIL_MEMBER / 2
+)                                                                # -280
+
 
 # --- Mirror-mount rail clamp placement (rev 2) --------------------------
 #
@@ -673,3 +684,43 @@ RAIL_CLAMP_BACK_UPPER_POS = (
 )
 
 RAIL_CLAMP_BACK_UPPER_CLAMP_ROT = Rot(180, 0, 0)
+
+
+# --- Camera-bracket rail clamp placement (rev 2) ------------------------
+#
+# Rev-2 replacement for the rev-1 `camera_bracket_adapter/` wedge. A
+# rail clamp grips the new `rail_front_mid` transverse and presents the
+# camera bracket's 52 × 52 four-corner bolt pattern at the bracket's
+# canonical (25°-tilted) pose.
+#
+# Clamp-local frame (see camera_bracket_rail_clamp/assembly.py):
+#     origin : centre of clamp bottom face, on the rail's +Z (inboard)
+#              face, at the along-rail position of the bracket back
+#              face centre (x = 0; rail runs along +X)
+#     +X     : along rail long axis (world +X)
+#     +Y     : away from rail (= world +Z, from the front-wall plane
+#              toward the brick)
+#     +Z     : from rail toward bracket along the horizontal axis
+#              perpendicular to both (= world -Y, per the right-handed
+#              frame convention)
+#
+# Placement rotation is Rx(+90°): clamp-local +X → world +X; +Y →
+# world +Z; +Z → world -Y. Like the back-upper placement, this is not
+# a pure Ry heading, so we store a full `Rot` rather than a float.
+#
+# The rail centerline Y equals the bracket back face Y
+# (SKELETON_RAIL_FRONT_MID_Y), so the bracket back face in clamp-local
+# lands at ≈ (0, 49, 0) — pure +Y reach, ~0° beam tilt. The bracket
+# is tilted 25° about world +X, so the pad itself is tilted in clamp-
+# local: its mount-facing face normal lands on clamp-local
+# (0, -cos25°, -sin25°) ≈ (0, -0.906, -0.423). Beam and pad geometry
+# are derived inside `camera_bracket_rail_clamp.clamp()` from the
+# composed mount_in_clamp Location.
+
+RAIL_CLAMP_CAMERA_POS = (
+    0.0,
+    SKELETON_RAIL_FRONT_MID_Y,
+    SKELETON_RAIL_FRONT_MID_FRONT_FACE_Z,
+)
+
+RAIL_CLAMP_CAMERA_CLAMP_ROT = Rot(90, 0, 0)

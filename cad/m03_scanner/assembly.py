@@ -8,30 +8,34 @@ this file only covers pairs that span two sub-systems.
 
 Sub-assemblies placed here:
 
-  * skeleton                  — 2020-extrusion frame (rev 2 chassis;
-                                replaces the rev-1 six-panel enclosure,
-                                which stays in the tree as standalone
-                                rev-1 reference)
-  * platform                  — Ø360 collar + Ø180 optical disc + load cells
-  * camera_bracket            — Pi HQ Camera + 2.8 mm lens + printed plate
-  * camera_bracket_adapter    — tilted wedge between front wall and bracket
-  * mirror_mount (×3)         — rigid rev 1 mount at each mirror pose
-                                (back-upper, below-left, below-right)
-  * mirror_mount_rail_clamp   — rev-2 rail clamp supporting each mirror
-                                mount off a skeleton rail; three
-                                instances (below-left on
-                                `rail_floor_left`, below-right on
-                                `rail_floor_right`, back-upper on
-                                `rail_ceil_back`). Replaces the rev-1
-                                `below_mirror_floor_bracket/` and
-                                `back_upper_wall_bracket/` wedges (both
-                                kept in the tree as standalone rev-1
-                                reference).
-  * load_cell_standoff (×3)   — printed column carrying each load cell's
-                                fixed end; rev-1 bottom face sat on the
-                                enclosure floor, now floats until the
-                                platform's rev-2 hinged-quad replacement
-                                lands (see NEXT_STEPS.md)
+  * skeleton                    — 2020-extrusion frame (rev 2 chassis;
+                                  replaces the rev-1 six-panel enclosure,
+                                  which stays in the tree as standalone
+                                  rev-1 reference)
+  * platform                    — Ø360 collar + Ø180 optical disc + load cells
+  * camera_bracket              — Pi HQ Camera + 2.8 mm lens + printed plate
+  * camera_bracket_rail_clamp   — rev-2 rail clamp supporting the camera
+                                  bracket off `rail_front_mid`. Replaces
+                                  the rev-1 `camera_bracket_adapter/`
+                                  wedge (kept in the tree as standalone
+                                  rev-1 reference).
+  * mirror_mount (×3)           — rigid rev 1 mount at each mirror pose
+                                  (back-upper, below-left, below-right)
+  * mirror_mount_rail_clamp     — rev-2 rail clamp supporting each mirror
+                                  mount off a skeleton rail; three
+                                  instances (below-left on
+                                  `rail_floor_left`, below-right on
+                                  `rail_floor_right`, back-upper on
+                                  `rail_ceil_back`). Replaces the rev-1
+                                  `below_mirror_floor_bracket/` and
+                                  `back_upper_wall_bracket/` wedges (both
+                                  kept in the tree as standalone rev-1
+                                  reference).
+  * load_cell_standoff (×3)     — printed column carrying each load cell's
+                                  fixed end; rev-1 bottom face sat on the
+                                  enclosure floor, now floats until the
+                                  platform's rev-2 hinged-quad replacement
+                                  lands (see NEXT_STEPS.md)
 
 Placement references come from `params.py`; those values are copied
 from `docs/m03-multi-view-scanner.md`. If the reference doc's
@@ -58,13 +62,14 @@ and their plate extents don't approach each other (closest centre pair
 is ≈ 460 mm apart). A check would pass trivially and add noise.
 
 Transitional state (rev 2 mid-migration — see NEXT_STEPS.md):
-  The load-cell standoffs and camera-bracket adapter were each designed
-  in rev 1 to sit tangent to a specific enclosure panel that is no
-  longer placed. They remain in the tree at their original world poses
-  — geometrically correct, but physically "floating" until each gets
-  its own rev-2 rail-clamp / skeleton attachment. Cross-boundary
-  assertions against their former panels are gone; assertions against
-  the skeleton take their place.
+  The load-cell standoffs were each designed in rev 1 to sit tangent to
+  a specific enclosure panel that is no longer placed. They remain in
+  the tree at their original world poses — geometrically correct, but
+  physically "floating" until each gets its own rev-2 rail-clamp /
+  skeleton attachment (the platform's rev-2 hinged-quad replacement
+  drops the standoffs altogether; see NEXT_STEPS.md). Cross-boundary
+  assertions against the former enclosure panels are gone; assertions
+  against the skeleton take their place.
 """
 
 import importlib.util
@@ -82,7 +87,6 @@ from cad_khana.mechanism.check import check
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from params import (  # noqa: E402
-    ADAPTER_POS,
     CAMERA_POS,
     CAMERA_ROT_DEG,
     LOAD_CELL_STANDOFF_HEADING_DEG,
@@ -99,6 +103,8 @@ from params import (  # noqa: E402
     RAIL_CLAMP_BELOW_LEFT_POS,
     RAIL_CLAMP_BELOW_RIGHT_CLAMP_ROT,
     RAIL_CLAMP_BELOW_RIGHT_POS,
+    RAIL_CLAMP_CAMERA_CLAMP_ROT,
+    RAIL_CLAMP_CAMERA_POS,
     horizontal_x_roll_deg,
     rotation_for_normal,
 )
@@ -127,10 +133,10 @@ def _load(subdir: str) -> ModuleType:
 _skel = _load("skeleton")
 _plat = _load("platform")
 _cam = _load("camera_bracket")
-_adapter = _load("camera_bracket_adapter")
 _mirror = _load("mirror_mount")
 _standoff = _load("load_cell_standoff")
 _rail_clamp = _load("mirror_mount_rail_clamp")
+_cam_clamp = _load("camera_bracket_rail_clamp")
 
 
 # --- Placement constants ------------------------------------------------
@@ -144,11 +150,13 @@ _PLATFORM_LOC = Rot(-90, 0, 0)
 # toward +Z; origin translated to the PCB rear plane in world.
 _CAMERA_LOC = Pos(*CAMERA_POS) * Rot(*CAMERA_ROT_DEG)
 
-# Adapter placement: world-axis-aligned (no rotation). Local origin
-# at ADAPTER_POS — the back face sits flush against the front-wall
-# inner face, and the tilted front face is coplanar with the bracket
-# back face.
-_ADAPTER_LOC = Pos(*ADAPTER_POS)
+# Rev-2 camera rail clamp placement. Clamp-local +X = along
+# `rail_front_mid` long axis (world +X); +Y = away from rail (world
+# +Z, from front wall toward brick); +Z = world -Y (right-handed
+# completion). Rx(+90°) carries clamp-local axes onto these world
+# directions; the clamp origin sits on the rail's +Z (inboard) face at
+# the bracket back face Y.
+_CAM_CLAMP_LOC = Pos(*RAIL_CLAMP_CAMERA_POS) * RAIL_CLAMP_CAMERA_CLAMP_ROT
 
 # Mirror placements: local +Z = mirror outward normal. Translation
 # places the reflective face centre at the mirror's world coordinates.
@@ -274,9 +282,19 @@ assembly = (
     .add("camera_lens", _cam.lens_stub(), location=_CAMERA_LOC)
 )
 
-# Tilted spacer between front wall and bracket back face.
+# Rev-2 camera rail clamp. The clamp's mount_in_clamp is computed from
+# the camera bracket's world placement so the pad lands coplanar with
+# the bracket back face.
+_cam_clamp_mount_in_clamp = _cam_clamp.mount_in_clamp_for(
+    clamp_pos=RAIL_CLAMP_CAMERA_POS,
+    clamp_rot=RAIL_CLAMP_CAMERA_CLAMP_ROT,
+    camera_pos=CAMERA_POS,
+    camera_rot_deg=CAMERA_ROT_DEG,
+)
 assembly = assembly.add(
-    "camera_adapter", _adapter.adapter(), location=_ADAPTER_LOC
+    "rail_clamp_camera",
+    _cam_clamp.clamp(mount_in_clamp=_cam_clamp_mount_in_clamp),
+    location=_CAM_CLAMP_LOC,
 )
 
 # Three rigid mirror mounts. Each contributes a bracket + mirror stand-in
@@ -322,7 +340,8 @@ _PLATFORM_NAMES = ["collar", "disc", *_LOAD_CELL_NAMES]
 _CAMERA_BRACKET_NAMES = ("camera_plate", "camera_pcb", "camera_lens")
 _INTERNAL_NAMES = (
     _PLATFORM_NAMES
-    + [*_CAMERA_BRACKET_NAMES, "camera_adapter"]
+    + list(_CAMERA_BRACKET_NAMES)
+    + ["rail_clamp_camera"]
     + _MIRROR_PART_NAMES
     + list(_STANDOFF_NAMES)
     + list(_RAIL_CLAMP_NAMES)
@@ -346,33 +365,33 @@ for _mirror_part in _MIRROR_PART_NAMES:
     for _plat_part in _PLATFORM_NAMES:
         assembly = assembly.assert_no_interference(_mirror_part, _plat_part)
 
-# Adapter vs camera-bracket triplet. Tangent contact at the tilted
-# face is intended (bracket back face = adapter front face); the
-# assertion enforces tangency-without-overlap. Also catches any drift
-# in CAMERA_POS, CAMERA_ROT_DEG, CAMERA_BRACKET_PLATE_T, or
-# ADAPTER_POS that would push the bracket into or away from the
-# adapter face.
+# Camera rail clamp vs camera bracket triplet. Pad face is coplanar
+# with the bracket back face minus MOUNT_GAP (tangent treatment, same
+# convention as the mirror rail clamps); this assertion enforces
+# tangency-without-overlap. Also catches drift in CAMERA_POS,
+# CAMERA_ROT_DEG, CAMERA_BRACKET_PLATE_T, or any of the camera rail-
+# clamp placement constants.
 for _cam_part in _CAMERA_BRACKET_NAMES:
-    assembly = assembly.assert_no_interference("camera_adapter", _cam_part)
+    assembly = assembly.assert_no_interference("rail_clamp_camera", _cam_part)
 
-# Adapter vs every mirror mount. Adapter sits at world y ∈ [73, 142]
-# and z ∈ [-290, -215]; mirrors are well clear today, but the
-# below-mirror floor-bracket rev planned in NEXT_STEPS.md could grow
-# inward toward the front wall.
+# Camera rail clamp vs every mirror mount. Camera clamp sits at world
+# x ≈ 0, y ∈ [98, 177], z ∈ [-280, -231]; mirrors are well clear
+# today (below at y ≈ -140, back-upper at y ≈ 180 but z ≈ 180).
+# Regression guard against future clamp or mirror-mount growth.
 for _mirror_part in _MIRROR_PART_NAMES:
-    assembly = assembly.assert_no_interference("camera_adapter", _mirror_part)
+    assembly = assembly.assert_no_interference("rail_clamp_camera", _mirror_part)
 
-# Adapter vs platform. Adapter sits forward of the platform; this is
-# a regression guard for any future shuttle / disc-retainer feature
-# growth.
+# Camera rail clamp vs platform. Camera clamp sits forward of the
+# platform (z ≤ -231); regression guard for any future shuttle or
+# disc-retainer feature that grows into the front hemisphere.
 for _plat_part in _PLATFORM_NAMES:
-    assembly = assembly.assert_no_interference("camera_adapter", _plat_part)
+    assembly = assembly.assert_no_interference("rail_clamp_camera", _plat_part)
 
-# Rail clamps vs everything else. Each clamp's pad face is coplanar
-# with its supported mirror mount plate back face minus MOUNT_GAP
-# (tangent treatment as the rev-1 floor bracket's top-face convention);
-# the clamp's bottom face is coplanar with its supporting skeleton
-# rail, already covered by the skeleton assertions in the
+# Mirror rail clamps vs everything else. Each clamp's pad face is
+# coplanar with its supported mirror mount plate back face minus
+# MOUNT_GAP (tangent treatment as the rev-1 floor bracket's top-face
+# convention); the clamp's bottom face is coplanar with its supporting
+# skeleton rail, already covered by the skeleton assertions in the
 # _INTERNAL_NAMES loop.
 for _clamp_name in _RAIL_CLAMP_NAMES:
     # vs every mirror-mount part (the supported mirror is the target
@@ -386,16 +405,17 @@ for _clamp_name in _RAIL_CLAMP_NAMES:
     for _plat_part in _PLATFORM_NAMES:
         assembly = assembly.assert_no_interference(_clamp_name, _plat_part)
 
-    # vs camera bracket triplet + adapter — below clamps at world
-    # |x| ≥ 205, z ∈ [-50, 100]; back-upper clamp at x = 0, z ∈ [130,
-    # 300]; camera at x ≈ 0, z ≈ -226. Well clear.
+    # vs camera bracket triplet + camera rail clamp — below mirror
+    # clamps at world |x| ≥ 205, z ∈ [-50, 100]; back-upper clamp at
+    # x = 0, z ∈ [130, 300]; camera at x ≈ 0, z ≈ -226; camera clamp
+    # at x ∈ [-30, 30], z ∈ [-280, -231]. Well clear.
     for _cam_part in _CAMERA_BRACKET_NAMES:
         assembly = assembly.assert_no_interference(_clamp_name, _cam_part)
-    assembly = assembly.assert_no_interference(_clamp_name, "camera_adapter")
+    assembly = assembly.assert_no_interference(_clamp_name, "rail_clamp_camera")
 
-# Rail clamp vs rail clamp. Below-left/right sit in opposite X
-# hemispheres; back-upper sits on the back ceiling rail with no X
-# overlap with the below-mirror clamps at today's envelopes.
+# Mirror rail clamp vs mirror rail clamp. Below-left/right sit in
+# opposite X hemispheres; back-upper sits on the back ceiling rail
+# with no X overlap with the below-mirror clamps at today's envelopes.
 # Regression guard against any future clamp footprint expansion.
 for _i in range(len(_RAIL_CLAMP_NAMES)):
     for _j in range(_i + 1, len(_RAIL_CLAMP_NAMES)):
@@ -427,15 +447,17 @@ for _idx, _standoff_name in enumerate(_STANDOFF_NAMES):
     for _mirror_part in _MIRROR_PART_NAMES:
         assembly = assembly.assert_no_interference(_standoff_name, _mirror_part)
 
-    # vs. the camera bracket triplet + adapter (the az=90 standoff sits
-    # at world z ≈ -220, the adapter at z ≈ [-290, -215] and the bracket
-    # at z ≈ -225 — comfortably clear today, regression guard).
+    # vs. the camera bracket triplet + camera rail clamp (the az=90
+    # standoff sits at world z ≈ -220, the camera clamp at z ∈ [-280,
+    # -231] and the bracket at z ≈ -225 — standoff is a vertical column
+    # at y ∈ [-240, -48], so it's entirely below the camera clamp's y
+    # ∈ [98, 177]. Regression guard).
     for _cam_part in _CAMERA_BRACKET_NAMES:
         assembly = assembly.assert_no_interference(_standoff_name, _cam_part)
-    assembly = assembly.assert_no_interference(_standoff_name, "camera_adapter")
+    assembly = assembly.assert_no_interference(_standoff_name, "rail_clamp_camera")
 
-    # vs. every rev-2 rail clamp. The az=210 standoff sits closest to
-    # the below-left clamp (~2 mm outside the clamp's +X bbox edge per
+    # vs. every rev-2 mirror rail clamp. The az=210 standoff sits closest
+    # to the below-left clamp (~2 mm outside the clamp's +X bbox edge per
     # the load_cell_standoff/ docstring); az=330 sits symmetrically
     # close to the below-right clamp; back-upper clamp hangs at y ≥
     # 125, comfortably above all three standoffs. Regression guard.

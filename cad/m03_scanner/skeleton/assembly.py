@@ -92,6 +92,7 @@ from params import (  # noqa: E402
     ENCLOSURE_INNER_Y_MIN,
     ENCLOSURE_INNER_Z_MAX,
     ENCLOSURE_INNER_Z_MIN,
+    SKELETON_RAIL_FRONT_MID_Y,
 )
 
 
@@ -224,6 +225,10 @@ _MEMBERS = {
     "rail_ceil_back":   rail_x(Y_CEILING_RAIL, +1),
     "rail_ceil_left":   rail_z(Y_CEILING_RAIL, -1),
     "rail_ceil_right":  rail_z(Y_CEILING_RAIL, +1),
+    # Rev-2 intermediate cross-member at the camera bracket back face
+    # height, coplanar with the front rails in Z. Carries the camera
+    # rail clamp's short-reach tab (≈ 49 mm in clamp-local +Y).
+    "rail_front_mid":   rail_x(SKELETON_RAIL_FRONT_MID_Y, -1),
 }
 
 assembly = Assembly()
