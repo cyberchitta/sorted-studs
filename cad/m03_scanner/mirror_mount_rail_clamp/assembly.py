@@ -3,62 +3,82 @@ M03 scanner — mirror-mount rail clamp (rev 2).
 
 Printed clamp that supports a mirror_mount from a 2020 T-slot extrusion
 member of the rev-2 skeleton (see `../skeleton/assembly.py`). Rev 2
-replacement for the rev-1 `../below_mirror_floor_bracket/` wedge, which
-required an enclosure floor panel to bolt into; the clamp bolts
-directly onto the skeleton rail via two M4 bolts into T-nuts captured
-in the rail's outward-facing slot, so the rev-1 six-panel enclosure is
-no longer needed to support the mirror mount.
+replacement for the rev-1 `../below_mirror_floor_bracket/` wedges and
+`../back_upper_wall_bracket/` wedge, which required enclosure panels
+to bolt into; the clamp bolts directly onto the skeleton rail via two
+M4 bolts into T-nuts captured in the rail's slot, so the rev-1 six-
+panel enclosure is no longer needed to support the mirror mounts.
 
-One part design drives both below-mirror instances: below-left clamps
-onto `rail_floor_left`, below-right onto `rail_floor_right`. The two
-differ only in the `Rot(0, heading, 0)` placement rotation applied at
-the top-level assembly — the clamp-local geometry is identical by
-mirror symmetry (square pad, reflection-symmetric mount-bolt pattern,
-tilt-axis beam). Each instance supplies its own `mount_in_clamp`
-`Location` built by `mount_in_clamp_for(...)` from the matching
-`RAIL_CLAMP_*_{POS,HEADING_DEG}` + `MIRROR_*_{POS,NORMAL}` constants
-in `../params.py`. The standalone `check()` below runs the below-left
-instance as the representative POC.
+One part design drives all three mirror instances:
+  * below-left  — clamps onto `rail_floor_left`  (floor rail, grips +Y face)
+  * below-right — clamps onto `rail_floor_right` (floor rail, grips +Y face)
+  * back-upper  — clamps onto `rail_ceil_back`   (ceiling rail, grips -Y face)
 
-Porting to the back-upper mirror is a follow-up: different rail
-(probably `rail_ceil_back`), different clamp-local frame convention
-(mount faces downward-and-backward rather than up-and-inward), so
-the `clamp()` geometry will need to flex on the rail-face side.
+The two below-mirror clamps are geometrically identical by mirror
+symmetry (their mount-back position in clamp-local is the same
+`(0, 75, 83)` tuple). The back-upper has a different mount-back
+reach in clamp-local — `(0, 140, 110)` — so its beam tilt (38° vs
+48° from vertical) and beam length (194 mm vs 118 mm) differ. Both
+derive inside `clamp()` from the `mount_in_clamp` Location passed in,
+so the same function body produces all three parts; only the per-
+instance placement + `mount_in_clamp` arguments vary.
+
+Each instance supplies its own placement + `mount_in_clamp` via
+`mount_in_clamp_for(clamp_pos, clamp_rot, mirror_pos, mirror_normal)`,
+drawing from the matching `RAIL_CLAMP_*_{POS,CLAMP_ROT}` +
+`MIRROR_*_{POS,NORMAL}` constants in `../params.py`. The standalone
+`check()` below exercises the below-left instance as the canonical
+POC; a second `inspect()` covers the back-upper whose beam length +
+tilt differ enough to exercise the printability ray sampler on a new
+geometry.
 
 Coordinate frame (local to this sub-assembly):
-    origin = centre of clamp bottom face, on rail top face, at the
-             world-Z of the mount plate back face centre
+    origin = centre of clamp bottom face, on the rail face being
+             gripped, at the along-rail position of the mount plate
+             back face centre
     +X     = along rail long axis
-    +Y     = world +Y (up, perpendicular to rail top face)
-    +Z     = horizontal, from rail toward mount
-    y = 0                     : rail top face (clamp bottom contact)
+    +Y     = away from rail (clamp body rises in +Y)
+    +Z     = from rail toward mount
+    y = 0                     : rail face (clamp bottom contact)
     y ∈ [0, BASE_H]           : clamp base body
     y > BASE_H                : tab (beam) rising toward mount pad
 
+Whether clamp-local +Y lands on world +Y (below-mirror floor-rail
+clamp — grips rail top face) or world -Y (back-upper ceiling-rail
+clamp — grips rail bottom face) is set entirely by the placement
+rotation at the top level; the clamp-local geometry is orientation-
+agnostic.
+
 Two M4 clamp bolts drop through the base along local -Y into T-nuts
-sitting in the rail's top slot (T-nuts not modelled — stock hardware,
+sitting in the rail's slot (T-nuts not modelled — stock hardware,
 same convention as the skeleton's corner L-brackets). From the base,
 an angled rectangular beam rises along the rail-to-mount direction
-(in clamp-local, ≈ (0, 0.67, 0.74)) up to a flat "mount pad" whose
-face is coplanar with the mount plate back face, minus MOUNT_GAP.
-Four M4 clearance holes in the pad are drilled along the mirror
-normal axis, on the 94 × 94 mirror_mount bolt pattern, so the mount
-plate can be bolted into the pad from its front face (same bolt-
-direction convention as the below-mirror floor bracket).
+up to a flat "mount pad" whose face is coplanar with the mount plate
+back face, minus MOUNT_GAP. Four M4 clearance holes in the pad are
+drilled along the mirror normal axis, on the 94 × 94 mirror_mount
+bolt pattern, so the mount plate can be bolted into the pad from its
+front face (same bolt-direction convention as the below-mirror floor
+bracket).
 
 The mount-pad feature is placed by composing build123d Locations:
-`_MOUNT_IN_CLAMP` = clamp-placement-inverse · mount-placement expresses
+`mount_in_clamp` = clamp-placement-inverse · mount-placement expresses
 mount-local coordinates in the clamp-local frame. Any mount-local
 geometry (the pad itself, the four bolt-hole cylinders) passes through
-this Location on its way into the clamp-local body.
+this Location on its way into the clamp-local body. Beam tilt and
+axial length are derived from the mount-back position in clamp-local
+inside `clamp()`, so a single function body handles all three
+instances without a separate `clamp_ceiling()` flavour.
 
-Print orientation: clamp base on the build plate, +Y up. The beam
-rises at ≈ 48° from vertical (inside typical PLA overhang capability
-with support material), and the mount pad's underside faces downward
-at ≈ 38° from horizontal — definitely needs supports on the pad's
-lower face at rev 1. The beam-to-pad junction adds an oversize wedge
-of material that reduces the span of unsupported pad underside; rev 2
-will taper the beam into the pad to eliminate pad overhang entirely.
+Print orientation: clamp base on the build plate, +Y up. At the below-
+mirror pose the beam rises at ≈ 48° from vertical (inside typical PLA
+overhang capability with support material) and the mount pad's
+underside faces downward at ≈ 38° from horizontal. At the back-upper
+pose the beam is more vertical (≈ 38° from vertical) so its downward-
+facing side is easier to print, but the beam is ~194 mm long — flex
+under preload is a rev-2 follow-up (taper the beam, add a rib, or
+add an intermediate cross-member). The mount pad's underside is a
+genuinely unsupported overhang at rev 1 and needs supports regardless
+of threshold.
 """
 
 import math
@@ -75,12 +95,16 @@ from cad_khana.printability.methods import FDM
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from params import (  # noqa: E402
+    MIRROR_BACK_UPPER_NORMAL,
+    MIRROR_BACK_UPPER_POS,
     MIRROR_BELOW_LEFT_NORMAL,
     MIRROR_BELOW_LEFT_POS,
     MIRROR_MOUNT_BACK_OFFSET,
     MIRROR_MOUNT_BOLT_SPACING,
     MIRROR_MOUNT_PLATE_SIZE,
-    RAIL_CLAMP_BELOW_LEFT_HEADING_DEG,
+    RAIL_CLAMP_BACK_UPPER_CLAMP_ROT,
+    RAIL_CLAMP_BACK_UPPER_POS,
+    RAIL_CLAMP_BELOW_LEFT_CLAMP_ROT,
     RAIL_CLAMP_BELOW_LEFT_POS,
     SKELETON_RAIL_MEMBER,
     WALL_MIN,
@@ -155,63 +179,83 @@ _MOUNT_BOLT_HALF = MIRROR_MOUNT_BOLT_SPACING / 2
 # Location on its way into the clamp body.
 #
 # Exposed as a public helper so the top-level `../assembly.py` can
-# build a mount_in_clamp Location per instance (below-left uses the
-# default; below-right calls this with its own constants) without
+# build a mount_in_clamp Location per instance (each of below-left,
+# below-right, back-upper passes its own constants) without
 # duplicating the composition.
 
 def mount_in_clamp_for(
     clamp_pos: tuple[float, float, float],
-    clamp_heading_deg: float,
+    clamp_rot: Rot,
     mirror_pos: tuple[float, float, float],
     mirror_normal: tuple[float, float, float],
 ) -> Location:
     """Compose the mount-local → clamp-local `Location` from per-instance
-    placement constants. `clamp_pos` + `clamp_heading_deg` locate the
-    clamp in world; `mirror_pos` + `mirror_normal` locate the mirror
-    mount in world (roll is picked by `horizontal_x_roll_deg(...)` so
-    mount-local +X lands on a world-horizontal direction, matching the
-    rigid mirror_mount convention in `../params.py`)."""
-    clamp_world = Pos(*clamp_pos) * Rot(0, clamp_heading_deg, 0)
+    placement constants. `clamp_pos` + `clamp_rot` locate the clamp in
+    world (the below-mirror instances pass a pure Ry heading rotation;
+    back-upper passes Rx(180°) to grip the ceiling rail's -Y face);
+    `mirror_pos` + `mirror_normal` locate the mirror mount in world
+    (roll is picked by `horizontal_x_roll_deg(...)` so mount-local +X
+    lands on a world-horizontal direction, matching the rigid
+    mirror_mount convention in `../params.py`)."""
+    clamp_world = Pos(*clamp_pos) * clamp_rot
     mount_world = Pos(*mirror_pos) * rotation_for_normal(
         mirror_normal, roll_deg=horizontal_x_roll_deg(mirror_normal)
     )
     return clamp_world.inverse() * mount_world
 
 
-# Below-left pose — drives module-level sanity asserts, derived beam
-# geometry (tilt / axial length), and the standalone `check()` run.
-# By mirror symmetry every derived value also applies to below-right
-# (same _MOUNT_BACK_XYZ in clamp-local), so no second copy is needed.
+def _mount_back_in_clamp(mount_in_clamp: Location) -> tuple[float, float, float]:
+    """Mount plate back face centre expressed in clamp-local coordinates.
+    Used both for the beam tilt/length derivation inside `clamp()` and
+    for per-instance sanity assertions at module load."""
+    p = (mount_in_clamp * Pos(0, 0, -MIRROR_MOUNT_BACK_OFFSET)).position
+    return (p.X, p.Y, p.Z)
+
+
+# Below-left pose — the representative POC for module-level sanity
+# asserts and the standalone `check()` run. By mirror symmetry
+# below-right shares the same clamp-local mount-back XYZ, so one
+# sanity block covers both floor-rail instances. Back-upper is
+# checked separately below (different reach).
 _MOUNT_IN_CLAMP: Location = mount_in_clamp_for(
     RAIL_CLAMP_BELOW_LEFT_POS,
-    RAIL_CLAMP_BELOW_LEFT_HEADING_DEG,
+    RAIL_CLAMP_BELOW_LEFT_CLAMP_ROT,
     MIRROR_BELOW_LEFT_POS,
     MIRROR_BELOW_LEFT_NORMAL,
 )
+_MOUNT_BACK_XYZ = _mount_back_in_clamp(_MOUNT_IN_CLAMP)
 
-# Mount back face centre in clamp-local. Used below for the beam-tilt
-# computation and for sanity assertions.
-_MOUNT_BACK_IN_CLAMP = _MOUNT_IN_CLAMP * Pos(0, 0, -MIRROR_MOUNT_BACK_OFFSET)
-_MB_POS = _MOUNT_BACK_IN_CLAMP.position
-_MOUNT_BACK_XYZ = (_MB_POS.X, _MB_POS.Y, _MB_POS.Z)
+_MOUNT_IN_CLAMP_BACK_UPPER: Location = mount_in_clamp_for(
+    RAIL_CLAMP_BACK_UPPER_POS,
+    RAIL_CLAMP_BACK_UPPER_CLAMP_ROT,
+    MIRROR_BACK_UPPER_POS,
+    MIRROR_BACK_UPPER_NORMAL,
+)
+_MOUNT_BACK_XYZ_BACK_UPPER = _mount_back_in_clamp(_MOUNT_IN_CLAMP_BACK_UPPER)
 
 
 # --- Parametric sanity --------------------------------------------------
 
-# Mount should sit well above rail (clamp-local +Y) and inboard
-# (clamp-local +Z) of it. X should be near zero because the clamp is
-# centred along the rail under the mount back face.
-assert _MOUNT_BACK_XYZ[1] > 50.0, (
-    f"mount back face must be above rail; got Y={_MOUNT_BACK_XYZ[1]:.1f}"
-)
-assert _MOUNT_BACK_XYZ[2] > 50.0, (
-    f"mount back face must be inboard of rail; got Z={_MOUNT_BACK_XYZ[2]:.1f}"
-)
-assert abs(_MOUNT_BACK_XYZ[0]) < 2.0, (
-    f"mount back face should sit near clamp X=0 (centred under mount); "
-    f"got X={_MOUNT_BACK_XYZ[0]:.2f}. If this fails, the clamp's world "
-    f"Z is not the mount back face Z."
-)
+# For every instance: mount should sit well in +Y (away from rail) and
+# +Z (from rail toward mount) in clamp-local. X should be near zero
+# because the clamp is centred along the rail under the mount back
+# face.
+for _label, _xyz in (
+    ("below-left", _MOUNT_BACK_XYZ),
+    ("back-upper", _MOUNT_BACK_XYZ_BACK_UPPER),
+):
+    assert _xyz[1] > 50.0, (
+        f"{_label}: mount back face must be away from rail (+Y); "
+        f"got Y={_xyz[1]:.1f}"
+    )
+    assert _xyz[2] > 50.0, (
+        f"{_label}: mount back face must be inboard of rail (+Z); "
+        f"got Z={_xyz[2]:.1f}"
+    )
+    assert abs(_xyz[0]) < 2.0, (
+        f"{_label}: mount back face should sit near clamp X=0 "
+        f"(centred along rail under mount); got X={_xyz[0]:.2f}."
+    )
 
 # Clamp bolts must not collide with the beam footprint on the base.
 # Beam centre at X=0, half-width BEAM_W/2; clamp bolts at ±_CLAMP_BOLT_HALF.
@@ -235,23 +279,6 @@ assert PAD_SIZE >= MIRROR_MOUNT_PLATE_SIZE, (
 )
 
 
-# --- Beam geometry (derived) --------------------------------------------
-
-# Target: drive the beam's top face into the pad's volume. The beam
-# runs from the clamp base top (y ≈ BASE_H) to the mount back face
-# centre (_MOUNT_BACK_XYZ). Beam axis in clamp-local is approximately
-# (0, Y, Z) — the tiny X component (≈ _MOUNT_BACK_XYZ[0]) is ignored
-# at rev 1; a pure Rx tilt reaches the target within 1 mm.
-_BEAM_TILT_DEG = math.degrees(
-    math.atan2(_MOUNT_BACK_XYZ[2], _MOUNT_BACK_XYZ[1])
-)
-_BEAM_AXIAL_LEN = (
-    math.hypot(_MOUNT_BACK_XYZ[1], _MOUNT_BACK_XYZ[2])  # length from origin
-    + PAD_T                                               # punch through pad
-    + 10.0                                                # overshoot margin
-)
-
-
 # --- Part function ------------------------------------------------------
 
 def clamp(
@@ -262,8 +289,6 @@ def clamp(
     clamp_hole_d: float = CLAMP_BOLT_HOLE_D,
     beam_w: float = BEAM_W,
     beam_t: float = BEAM_T,
-    beam_tilt_deg: float = _BEAM_TILT_DEG,
-    beam_axial_len: float = _BEAM_AXIAL_LEN,
     pad_size: float = PAD_SIZE,
     pad_t: float = PAD_T,
     mount_gap: float = MOUNT_GAP,
@@ -276,10 +301,24 @@ def clamp(
     drilled for two rail bolts and four mount bolts.
 
     `mount_in_clamp` supplies the mount-local → clamp-local Location;
-    defaults to the below-left below-mirror pose. Future mirror
-    instances pass their own Location without changing the geometry
-    functions.
+    defaults to the below-left below-mirror pose. Beam tilt and
+    axial length are derived from this Location inside the function
+    so below-left, below-right (mirror-symmetric with below-left),
+    and back-upper (different reach) all build from the same body.
     """
+    # Derive beam tilt + length from mount-back position in clamp-local.
+    # The beam runs from the clamp base top (y ≈ base_h) to the mount
+    # back face centre; a pure Rx tilt lands within 1 mm of the target
+    # (the X component of the mount-back in clamp-local is ≤ 2 mm by
+    # the sanity block above).
+    _mb_x, _mb_y, _mb_z = _mount_back_in_clamp(mount_in_clamp)
+    beam_tilt_deg = math.degrees(math.atan2(_mb_z, _mb_y))
+    beam_axial_len = (
+        math.hypot(_mb_y, _mb_z)                # length from origin
+        + pad_t                                 # punch through pad
+        + 10.0                                  # overshoot margin
+    )
+
     # --- 1. Clamp base (axis-aligned box on rail top) ---
     body = Pos(0, base_h / 2, 0) * Box(base_l, base_h, base_w)
 
@@ -353,6 +392,11 @@ def clamp(
 # vs rail, clamp vs mirror mount, clamp vs adjacent parts) live in the
 # scanner top-level `assembly.py`. Standalone `check()` reports volume +
 # bbox so a numerical sanity glance is possible without the full rig.
+# The canonical instance here is below-left (its `mount_in_clamp`
+# defaults via `clamp()`); the back-upper variant is inspected
+# separately below because its beam length (~194 mm vs ~118 mm) and
+# tilt (~38° vs ~48°) change the overhang surfaces enough to deserve
+# its own printability pass.
 assembly = Assembly().add("clamp", clamp())
 
 
@@ -362,21 +406,37 @@ if __name__ == "__main__":
     # default up_axis is +Z, so override.
     #
     # Overhang threshold raised from 45° to 55° because:
-    #   * the beam tilts ≈ 48° from vertical (its downward-facing side
-    #     reports ≈ 48°),
-    #   * the four mount-bolt cylinders tilt ≈ 38° from vertical (their
-    #     upper-half walls report ≈ 52° — same geometry as the
-    #     below_mirror_floor_bracket).
+    #   * the below-left beam tilts ≈ 48° from vertical (its downward-
+    #     facing side reports ≈ 48°),
+    #   * the four below-left mount-bolt cylinders tilt ≈ 38° from
+    #     vertical (their upper-half walls report ≈ 52° — same
+    #     geometry as the below_mirror_floor_bracket).
     # The pad's underside is a genuinely unsupported overhang at rev 1
     # and will need printer-side supports regardless of threshold; a
     # rev 2 tapered beam-to-pad junction eliminates this.
+    #
+    # Back-upper's beam is more vertical (≈ 38° from vertical) so the
+    # beam-side overhang drops to ≈ 38°; its mount-bolt cylinders,
+    # however, tilt farther from vertical (≈ 62°, vs 38° for below-
+    # left) because the back-upper mirror normal sits closer to
+    # horizontal in clamp-local. The sampler reports 62.2° on those
+    # bolt-bore upper-half walls, so back-upper's threshold is raised
+    # to 65° — printable with the same rev-1 convention (the rigid
+    # mount-bolt bores need slicer-side supports anyway; heat-set
+    # insert pockets in the pad are the rev-2 replacement).
     inspect(
         clamp(),
         method=FDM(
-            up_axis=(0, 1, 0),
-            wall_min_mm=WALL_MIN,
-            overhang_max_deg=55.0,
+            up_axis=(0, 1, 0), wall_min_mm=WALL_MIN, overhang_max_deg=55.0
         ),
         out="outputs",
         name="clamp",
+    )
+    inspect(
+        clamp(mount_in_clamp=_MOUNT_IN_CLAMP_BACK_UPPER),
+        method=FDM(
+            up_axis=(0, 1, 0), wall_min_mm=WALL_MIN, overhang_max_deg=65.0
+        ),
+        out="outputs",
+        name="clamp_back_upper",
     )

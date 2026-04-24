@@ -17,18 +17,16 @@ Sub-assemblies placed here:
   * camera_bracket_adapter    — tilted wedge between front wall and bracket
   * mirror_mount (×3)         — rigid rev 1 mount at each mirror pose
                                 (back-upper, below-left, below-right)
-  * mirror_mount_rail_clamp   — rev-2 rail clamp supporting a below-
-                                mirror mount off a floor rail; two
+  * mirror_mount_rail_clamp   — rev-2 rail clamp supporting each mirror
+                                mount off a skeleton rail; three
                                 instances (below-left on
                                 `rail_floor_left`, below-right on
-                                `rail_floor_right`). Replaces the rev-1
-                                `below_mirror_floor_bracket/` wedges
-                                (kept in the tree as standalone rev-1
+                                `rail_floor_right`, back-upper on
+                                `rail_ceil_back`). Replaces the rev-1
+                                `below_mirror_floor_bracket/` and
+                                `back_upper_wall_bracket/` wedges (both
+                                kept in the tree as standalone rev-1
                                 reference).
-  * back_upper_wall_bracket   — printed wedge supporting the back-upper
-                                mount from the (now-removed) enclosure
-                                back wall; floats in space until its
-                                own rev-2 rail clamp lands
   * load_cell_standoff (×3)   — printed column carrying each load cell's
                                 fixed end; rev-1 bottom face sat on the
                                 enclosure floor, now floats until the
@@ -60,13 +58,13 @@ and their plate extents don't approach each other (closest centre pair
 is ≈ 460 mm apart). A check would pass trivially and add noise.
 
 Transitional state (rev 2 mid-migration — see NEXT_STEPS.md):
-  The back-upper wall bracket, load-cell standoffs, and camera-bracket
-  adapter were each designed in rev 1 to sit tangent to a specific
-  enclosure panel that is no longer placed. They remain in the tree at
-  their original world poses — geometrically correct, but physically
-  "floating" until each gets its own rev-2 rail-clamp / skeleton
-  attachment. Cross-boundary assertions against their former panels
-  are gone; assertions against the skeleton take their place.
+  The load-cell standoffs and camera-bracket adapter were each designed
+  in rev 1 to sit tangent to a specific enclosure panel that is no
+  longer placed. They remain in the tree at their original world poses
+  — geometrically correct, but physically "floating" until each gets
+  its own rev-2 rail-clamp / skeleton attachment. Cross-boundary
+  assertions against their former panels are gone; assertions against
+  the skeleton take their place.
 """
 
 import importlib.util
@@ -85,7 +83,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from params import (  # noqa: E402
     ADAPTER_POS,
-    BACK_UPPER_BRACKET_POS,
     CAMERA_POS,
     CAMERA_ROT_DEG,
     LOAD_CELL_STANDOFF_HEADING_DEG,
@@ -96,9 +93,11 @@ from params import (  # noqa: E402
     MIRROR_BELOW_LEFT_POS,
     MIRROR_BELOW_RIGHT_NORMAL,
     MIRROR_BELOW_RIGHT_POS,
-    RAIL_CLAMP_BELOW_LEFT_HEADING_DEG,
+    RAIL_CLAMP_BACK_UPPER_CLAMP_ROT,
+    RAIL_CLAMP_BACK_UPPER_POS,
+    RAIL_CLAMP_BELOW_LEFT_CLAMP_ROT,
     RAIL_CLAMP_BELOW_LEFT_POS,
-    RAIL_CLAMP_BELOW_RIGHT_HEADING_DEG,
+    RAIL_CLAMP_BELOW_RIGHT_CLAMP_ROT,
     RAIL_CLAMP_BELOW_RIGHT_POS,
     horizontal_x_roll_deg,
     rotation_for_normal,
@@ -130,7 +129,6 @@ _plat = _load("platform")
 _cam = _load("camera_bracket")
 _adapter = _load("camera_bracket_adapter")
 _mirror = _load("mirror_mount")
-_wall_bracket = _load("back_upper_wall_bracket")
 _standoff = _load("load_cell_standoff")
 _rail_clamp = _load("mirror_mount_rail_clamp")
 
@@ -185,36 +183,42 @@ _MIRROR_POSES = {
     ),
 }
 
-# Rev-2 rail clamp placements (one per below-mirror instance). Local
-# +X = along the supporting floor-rail long axis; local +Y = world +Y;
-# local +Z = horizontal, from rail toward mount. Below-left uses
-# `rail_floor_left` with heading +90° (local +X → world -Z, +Z →
-# world +X); below-right is the X-mirror: `rail_floor_right`, heading
-# -90° (local +X → world +Z, +Z → world -X). The two instances share
-# the same clamp-local geometry — only the placement differs.
+# Rev-2 rail clamp placements (one per mirror). Clamp-local +X = along
+# the supporting rail long axis; +Y = away from rail (clamp body
+# rises in +Y); +Z = from rail toward mount.
+#   * below-left  — `rail_floor_left`, Ry(+90°): local +X → world -Z,
+#                   +Y → world +Y, +Z → world +X.
+#   * below-right — X-mirror of below-left: `rail_floor_right`,
+#                   Ry(-90°): +X → world +Z, +Z → world -X.
+#   * back-upper  — `rail_ceil_back`, Rx(180°): grips rail's -Y face
+#                   so +Y → world -Y (clamp hangs below rail) and
+#                   +Z → world -Z (mount is inboard of rail). Pure Ry
+#                   heading can't express this; specs carry a full
+#                   `Rot` (`clamp_rot`) rather than a heading float.
+# Clamp-local geometry is identical for the two below mirrors by
+# mirror symmetry; back-upper has a longer mount-back reach so its
+# beam tilt + length differ (derived inside `clamp()` from
+# `mount_in_clamp`).
 _RAIL_CLAMP_SPECS = {
     "rail_clamp_below_left": {
         "clamp_pos": RAIL_CLAMP_BELOW_LEFT_POS,
-        "clamp_heading_deg": RAIL_CLAMP_BELOW_LEFT_HEADING_DEG,
+        "clamp_rot": RAIL_CLAMP_BELOW_LEFT_CLAMP_ROT,
         "mirror_pos": MIRROR_BELOW_LEFT_POS,
         "mirror_normal": MIRROR_BELOW_LEFT_NORMAL,
     },
     "rail_clamp_below_right": {
         "clamp_pos": RAIL_CLAMP_BELOW_RIGHT_POS,
-        "clamp_heading_deg": RAIL_CLAMP_BELOW_RIGHT_HEADING_DEG,
+        "clamp_rot": RAIL_CLAMP_BELOW_RIGHT_CLAMP_ROT,
         "mirror_pos": MIRROR_BELOW_RIGHT_POS,
         "mirror_normal": MIRROR_BELOW_RIGHT_NORMAL,
     },
+    "rail_clamp_back_upper": {
+        "clamp_pos": RAIL_CLAMP_BACK_UPPER_POS,
+        "clamp_rot": RAIL_CLAMP_BACK_UPPER_CLAMP_ROT,
+        "mirror_pos": MIRROR_BACK_UPPER_POS,
+        "mirror_normal": MIRROR_BACK_UPPER_NORMAL,
+    },
 }
-
-# Back-upper wall-bracket placement. Local +Y = world -Z (into the
-# enclosure from the back wall); local +Z = world +Y (horizontal
-# projection of back-face outward-normal onto the back wall, which for
-# the x-symmetric back-upper mirror is straight up). Rot(-90, 0, 0)
-# carries local +Y onto world -Z and local +Z onto world +Y. No
-# heading rotation is needed — the back-upper is x-symmetric (nx = 0)
-# and the bracket is symmetric in its own local X.
-_WALL_BRACKET_LOC = Pos(*BACK_UPPER_BRACKET_POS) * Rot(-90, 0, 0)
 
 # Load-cell standoff placements. Local +Y = world +Y; local +X aligns
 # with the supported beam's radial outward direction under Ry(heading),
@@ -288,24 +292,18 @@ for _prefix, _loc in _MIRROR_POSES.items():
         .add(_mirror_name, _mirror.mirror_stub(), location=_loc)
     )
 
-# Rev-2 rail clamps (below-left + below-right mirrors on the floor
-# rails). Each instance passes its own mount_in_clamp Location built
-# from the per-instance placement + mirror constants above.
+# Rev-2 rail clamps (one per mirror). Each instance passes its own
+# mount_in_clamp Location built from the per-instance placement +
+# mirror constants above.
 _RAIL_CLAMP_NAMES = tuple(_RAIL_CLAMP_SPECS.keys())
 for _name, _spec in _RAIL_CLAMP_SPECS.items():
-    _loc = Pos(*_spec["clamp_pos"]) * Rot(0, _spec["clamp_heading_deg"], 0)
+    _loc = Pos(*_spec["clamp_pos"]) * _spec["clamp_rot"]
     _mount_in_clamp = _rail_clamp.mount_in_clamp_for(**_spec)
     assembly = assembly.add(
         _name,
         _rail_clamp.clamp(mount_in_clamp=_mount_in_clamp),
         location=_loc,
     )
-
-# One back-upper wall bracket (single placement off the back wall).
-_WALL_BRACKET_NAME = "wall_bracket_back_upper"
-assembly = assembly.add(
-    _WALL_BRACKET_NAME, _wall_bracket.bracket(), location=_WALL_BRACKET_LOC
-)
 
 # Three load-cell standoffs (one printed column under each load cell's
 # fixed end). Names mirror the platform's `load_cell_{i}` indices so
@@ -326,7 +324,6 @@ _INTERNAL_NAMES = (
     _PLATFORM_NAMES
     + [*_CAMERA_BRACKET_NAMES, "camera_adapter"]
     + _MIRROR_PART_NAMES
-    + [_WALL_BRACKET_NAME]
     + list(_STANDOFF_NAMES)
     + list(_RAIL_CLAMP_NAMES)
 )
@@ -371,61 +368,35 @@ for _mirror_part in _MIRROR_PART_NAMES:
 for _plat_part in _PLATFORM_NAMES:
     assembly = assembly.assert_no_interference("camera_adapter", _plat_part)
 
-# Back-upper wall bracket vs everything else. The bracket's bottom
-# face sits coplanar with the back-wall inner face (tangent contact,
-# treated as zero overlap); the tilted top face is separated from the
-# back-upper mount plate back face by MOUNT_GAP. All other pairs are
-# comfortably clear today; these assertions are regression guards
-# against future bracket growth.
-#
-# vs every mirror-mount part (back-upper is the one supported, the
-# other two are regression guards).
-for _mirror_part in _MIRROR_PART_NAMES:
-    assembly = assembly.assert_no_interference(_WALL_BRACKET_NAME, _mirror_part)
-
-# vs platform parts — bracket sits at world y ∈ [126, 287], z ∈ [149,
-# 260]; platform sits near y=0, z=0 and so is well clear.
-for _plat_part in _PLATFORM_NAMES:
-    assembly = assembly.assert_no_interference(_WALL_BRACKET_NAME, _plat_part)
-
-# vs camera-bracket triplet + adapter — camera sits near the front
-# wall (z ≈ -227) and so is well clear.
-for _cam_part in _CAMERA_BRACKET_NAMES:
-    assembly = assembly.assert_no_interference(_WALL_BRACKET_NAME, _cam_part)
-assembly = assembly.assert_no_interference(_WALL_BRACKET_NAME, "camera_adapter")
-
-# vs the rev-2 rail clamps. Clamps span world y ≤ -85; wall bracket at
-# y ≥ 126; well clear.
-for _clamp_name in _RAIL_CLAMP_NAMES:
-    assembly = assembly.assert_no_interference(_WALL_BRACKET_NAME, _clamp_name)
-
-
 # Rail clamps vs everything else. Each clamp's pad face is coplanar
-# with its supported below-mirror mount plate back face minus
-# MOUNT_GAP (tangent treatment as the rev-1 floor bracket's top-face
-# convention); the clamp's bottom face is coplanar with the
-# supporting floor rail's top face, already covered by the skeleton
-# assertions in the _INTERNAL_NAMES loop.
+# with its supported mirror mount plate back face minus MOUNT_GAP
+# (tangent treatment as the rev-1 floor bracket's top-face convention);
+# the clamp's bottom face is coplanar with its supporting skeleton
+# rail, already covered by the skeleton assertions in the
+# _INTERNAL_NAMES loop.
 for _clamp_name in _RAIL_CLAMP_NAMES:
-    # vs every mirror-mount part (the supported below-mirror is the
-    # target contact; the other two are regression guards).
+    # vs every mirror-mount part (the supported mirror is the target
+    # contact; the other two are regression guards).
     for _mirror_part in _MIRROR_PART_NAMES:
         assembly = assembly.assert_no_interference(_clamp_name, _mirror_part)
 
-    # vs platform parts — clamps at y ∈ [-220, -85], platform at
-    # y ≈ 0; regression guard.
+    # vs platform parts — below-mirror clamps at y ∈ [-220, -85],
+    # back-upper clamp at y ∈ [125, 320]; platform at y ≈ 0; all
+    # regression guards.
     for _plat_part in _PLATFORM_NAMES:
         assembly = assembly.assert_no_interference(_clamp_name, _plat_part)
 
-    # vs camera bracket triplet + adapter — clamps at world |x| ≥ 205,
-    # z ∈ [-50, 100]; camera at x ≈ 0, z ≈ -226. Well clear.
+    # vs camera bracket triplet + adapter — below clamps at world
+    # |x| ≥ 205, z ∈ [-50, 100]; back-upper clamp at x = 0, z ∈ [130,
+    # 300]; camera at x ≈ 0, z ≈ -226. Well clear.
     for _cam_part in _CAMERA_BRACKET_NAMES:
         assembly = assembly.assert_no_interference(_clamp_name, _cam_part)
     assembly = assembly.assert_no_interference(_clamp_name, "camera_adapter")
 
-# Rail clamp vs rail clamp. Below-left and below-right sit in opposite
-# X hemispheres with ≥ 400 mm centre-to-centre separation; regression
-# guard against any future clamp footprint expansion.
+# Rail clamp vs rail clamp. Below-left/right sit in opposite X
+# hemispheres; back-upper sits on the back ceiling rail with no X
+# overlap with the below-mirror clamps at today's envelopes.
+# Regression guard against any future clamp footprint expansion.
 for _i in range(len(_RAIL_CLAMP_NAMES)):
     for _j in range(_i + 1, len(_RAIL_CLAMP_NAMES)):
         assembly = assembly.assert_no_interference(
@@ -456,9 +427,6 @@ for _idx, _standoff_name in enumerate(_STANDOFF_NAMES):
     for _mirror_part in _MIRROR_PART_NAMES:
         assembly = assembly.assert_no_interference(_standoff_name, _mirror_part)
 
-    # vs. the back-upper wall bracket.
-    assembly = assembly.assert_no_interference(_standoff_name, _WALL_BRACKET_NAME)
-
     # vs. the camera bracket triplet + adapter (the az=90 standoff sits
     # at world z ≈ -220, the adapter at z ≈ [-290, -215] and the bracket
     # at z ≈ -225 — comfortably clear today, regression guard).
@@ -466,10 +434,11 @@ for _idx, _standoff_name in enumerate(_STANDOFF_NAMES):
         assembly = assembly.assert_no_interference(_standoff_name, _cam_part)
     assembly = assembly.assert_no_interference(_standoff_name, "camera_adapter")
 
-    # vs. both rev-2 rail clamps. The az=210 standoff sits closest to
+    # vs. every rev-2 rail clamp. The az=210 standoff sits closest to
     # the below-left clamp (~2 mm outside the clamp's +X bbox edge per
     # the load_cell_standoff/ docstring); az=330 sits symmetrically
-    # close to the below-right clamp. Regression guard.
+    # close to the below-right clamp; back-upper clamp hangs at y ≥
+    # 125, comfortably above all three standoffs. Regression guard.
     for _clamp_name in _RAIL_CLAMP_NAMES:
         assembly = assembly.assert_no_interference(_standoff_name, _clamp_name)
 

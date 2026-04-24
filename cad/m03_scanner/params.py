@@ -561,31 +561,43 @@ LOAD_CELL_STANDOFF_BOLT_HOLE_D = 4.5
 
 SKELETON_RAIL_MEMBER = 20.0                         # 2020 cross-section
 SKELETON_RAIL_CORNER_X = 290.0                      # |x| of corner posts' centerlines
+SKELETON_RAIL_CORNER_Z = 290.0                      # |z| of corner posts' centerlines
 SKELETON_RAIL_FLOOR_CENTERLINE_Y = -230.0           # floor rail centerlines
 SKELETON_RAIL_FLOOR_TOP_Y = (
     SKELETON_RAIL_FLOOR_CENTERLINE_Y + SKELETON_RAIL_MEMBER / 2
 )                                                   # -220 (rail +Y face)
+SKELETON_RAIL_CEIL_CENTERLINE_Y = +330.0            # ceiling rail centerlines
+SKELETON_RAIL_CEIL_BOTTOM_Y = (
+    SKELETON_RAIL_CEIL_CENTERLINE_Y - SKELETON_RAIL_MEMBER / 2
+)                                                   # +320 (rail -Y face)
 
 
-# --- Mirror-mount rail clamp placement (rev 2 POC) ----------------------
+# --- Mirror-mount rail clamp placement (rev 2) --------------------------
 #
 # Rev 2 replacement for the rev-1 printed wedges that supported each
 # mirror from an enclosure panel. A rail clamp grips a 2020 extrusion
 # member of the rev-2 skeleton and presents the mirror_mount's 94 × 94
 # four-corner bolt pattern at the mount's canonical pose.
 #
-# Rev 2 POC targets the below-left mirror on `rail_floor_left` (floor
-# rail at world x = -X_POST, y = Y_FLOOR_RAIL, running along world Z).
-# Porting to below-right + back-upper follows the same template with
-# per-mirror placement constants (to be added alongside each clamp).
+# All three mirrors (below-left, below-right, back-upper) share one
+# parameterised clamp body (see `mirror_mount_rail_clamp/assembly.py`);
+# each instance supplies its own placement + mount-in-clamp Location.
+# Clamp-local geometry is identical by symmetry for the two below-
+# mirrors; the back-upper has a different mount-back distance so the
+# beam tilt/length differ (the `clamp()` function derives those from
+# the mount Location passed in).
 #
 # Clamp-local frame (see mirror_mount_rail_clamp/assembly.py):
-#     origin : centre of clamp bottom face, on rail top face, at the
-#              world-Z of the mount plate back face centre (so the
-#              clamp is centred along the rail under the mount)
+#     origin : centre of clamp bottom face, on rail face being gripped,
+#              at the along-rail position of the mount plate back face
 #     +X     : along rail long axis
-#     +Y     : world +Y (up, perpendicular to rail top face)
-#     +Z     : horizontal, from rail toward mount
+#     +Y     : away from rail (clamp body rises in +Y)
+#     +Z     : from rail toward mount (horizontal for the below-mirror
+#              floor-rail instances; tilted for the back-upper ceiling-
+#              rail instance)
+#
+# Each instance carries a full `Rot` clamp rotation rather than a
+# heading float because the back-upper's placement is not a pure Ry.
 
 # Below-left mount back face centre in world (same derivation as the
 # floor-bracket placement above; uses _back_face_centre_world).
@@ -600,11 +612,10 @@ RAIL_CLAMP_BELOW_LEFT_POS = (
     _BL_CLAMP_BACK[2],                    # same Z as mount back face
 )
 
-# Placement heading. Clamp-local +X is along rail long axis; world rail
-# axis is +Z. For rail_floor_left (at world x = -290) and mount at
-# world x ≈ -207 (toward +X), clamp-local +Z must land on world +X.
-# Ry(+90°): local +X → world -Z, local +Y → world +Y, local +Z → world +X.
-RAIL_CLAMP_BELOW_LEFT_HEADING_DEG = 90.0
+# Ry(+90°): clamp-local +X → world -Z (along rail_floor_left long axis),
+# +Y → world +Y (away from rail top), +Z → world +X (toward mount at
+# x ≈ -207 from rail at x = -290).
+RAIL_CLAMP_BELOW_LEFT_CLAMP_ROT = Rot(0, 90, 0)
 
 
 # Below-right mirror. X-mirror of the below-left placement: same rail-
@@ -624,8 +635,41 @@ RAIL_CLAMP_BELOW_RIGHT_POS = (
     _BR_CLAMP_BACK[2],                    # same Z as mount back face
 )
 
-# Ry(-90°): local +X → world +Z, local +Y → world +Y, local +Z → world
-# -X. For rail_floor_right (at world x = +290) and mount at world
-# x ≈ +207 (toward -X), this puts clamp-local +Z on world -X so the
-# rail-to-mount direction points at the mount.
-RAIL_CLAMP_BELOW_RIGHT_HEADING_DEG = -90.0
+# Ry(-90°): clamp-local +X → world +Z, +Y → world +Y, +Z → world -X
+# (toward mount at x ≈ +207 from rail at x = +290).
+RAIL_CLAMP_BELOW_RIGHT_CLAMP_ROT = Rot(0, -90, 0)
+
+
+# Back-upper mirror. Clamps onto `rail_ceil_back` (ceiling rail running
+# along world +X at y = +330, z = +290), gripping the rail's -Y
+# (bottom-in-world) face so the clamp hangs below the rail with the
+# mount pad reaching down-and-inboard to the back-upper mount back
+# face centre at world (0, 179.7, 179.8). Reach in clamp-local is
+# ≈ (0, 140, 110) — longer than the below-mirror clamps' (0, 75, 83);
+# rev-2 follow-up is to add a mid-height back cross-member and shorten
+# the tab (see `../NEXT_STEPS.md`).
+#
+# Placement rotation is Rx(180°): clamp-local +X → world +X (along
+# rail), +Y → world -Y (down, away from rail bottom face), +Z → world
+# -Z (inboard toward mount). Unlike the below-mirror clamps' pure
+# Ry(heading) placement, this combines two world axes, so the
+# constant is stored as a full `Rot`.
+
+_BU_CLAMP_BACK = _back_face_centre_world(
+    MIRROR_BACK_UPPER_POS, MIRROR_BACK_UPPER_NORMAL
+)
+
+assert abs(_BU_CLAMP_BACK[0]) < 1e-6, (
+    "back-upper mirror has drifted off the YZ plane; the back-upper "
+    "rail clamp assumes the x-symmetric (centered on the rail) pose"
+)
+
+# Clamp origin on rail bottom face, centred along rail under the mount
+# back face centre.
+RAIL_CLAMP_BACK_UPPER_POS = (
+    _BU_CLAMP_BACK[0],                    # x = 0 (centred on rail_ceil_back)
+    SKELETON_RAIL_CEIL_BOTTOM_Y,          # rail -Y face Y
+    SKELETON_RAIL_CORNER_Z,               # rail_ceil_back centerline Z
+)
+
+RAIL_CLAMP_BACK_UPPER_CLAMP_ROT = Rot(180, 0, 0)
