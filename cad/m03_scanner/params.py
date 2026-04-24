@@ -74,7 +74,39 @@ MIRROR_BELOW_LEFT_NORMAL = (0.690, 0.616, -0.380)
 MIRROR_BELOW_RIGHT_NORMAL = (-0.690, 0.616, -0.380)
 
 
-def rotation_for_normal(normal: tuple[float, float, float]) -> Rot:
+# --- Mirror mount ⇄ floor bracket interface -----------------------------
+#
+# External interface of `mirror_mount/` that the adjacent
+# `below_mirror_floor_bracket/` must agree on. Each of these duplicates
+# an internal constant in mirror_mount/assembly.py; change either side
+# and the top-level cross-boundary tangent-contact assertion will catch
+# the drift.
+
+# Mirror glass thickness.
+MIRROR_MOUNT_MIRROR_T = 3.0
+
+# Printed plate thickness (rigid rev 1).
+MIRROR_MOUNT_PLATE_T = 5.0
+
+# Offset from mirror reflective face to plate back face along mount-
+# local -Z (= outward-normal direction reversed). Bracket top face
+# lands on this plane.
+MIRROR_MOUNT_BACK_OFFSET = MIRROR_MOUNT_MIRROR_T + MIRROR_MOUNT_PLATE_T
+
+# Square plate size (PLATE_W == PLATE_H in mirror_mount).
+MIRROR_MOUNT_PLATE_SIZE = 110.0
+
+# Corner-bolt spacing (PLATE_SIZE - 2·BOLT_INSET in mirror_mount, with
+# BOLT_INSET = 8.0). Same 94 mm square pattern is reused on the floor
+# bracket's top face so four bolts clamp mount → bracket with a single
+# matched hole pattern.
+MIRROR_MOUNT_BOLT_SPACING = 94.0
+
+
+def rotation_for_normal(
+    normal: tuple[float, float, float],
+    roll_deg: float = 0.0,
+) -> Rot:
     """Rotation that carries a sub-assembly's local +Z onto `normal`.
 
     Used to orient each mirror_mount: the mount's local +Z is the
@@ -82,24 +114,73 @@ def rotation_for_normal(normal: tuple[float, float, float]) -> Rot:
     that direction correctly in world space.
 
     Roll about the target normal is unconstrained for the square mirror
-    + threefold adjuster triangle at this rev; we pick the solution
-    with Rz = 0. If a future rev needs a specific corner orientation,
-    post-multiply by `Rot(0, 0, roll_deg)` on the caller side.
+    + threefold adjuster triangle at this rev. `roll_deg` sets the
+    `Rz` component of the Euler triple; callers that need mount-local
+    +X to fall on a specific world direction (e.g. the horizontal
+    bracket-local tilt axis for the below-mirror floor brackets)
+    supply the value computed by `horizontal_x_roll_deg(normal)`.
     """
     nx, ny, nz = normal
     n_mag = math.sqrt(nx * nx + ny * ny + nz * nz)
     nx, ny, nz = nx / n_mag, ny / n_mag, nz / n_mag
 
-    # `Rot(a, b, 0)` applied to (0, 0, 1) yields
-    # (cos(a)·sin(b), -sin(a), cos(a)·cos(b)). Solve for a, b.
-    alpha = math.degrees(math.asin(-ny))
-    ca = math.cos(math.radians(alpha))
-    if abs(ca) < 1e-9:
-        # Degenerate (local +Z maps onto ±Y): any beta works.
-        beta = 0.0
+    # build123d's `Rot(a, b, c)` composes as Rx(a) · Ry(b) · Rz(c)
+    # when applied to a point. With Rz(0) = I:
+    #   Rot(a, b, 0) · (0, 0, 1) = Rx(a) · Ry(b) · (0, 0, 1)
+    #                            = (sin b, -sin a · cos b, cos a · cos b)
+    # Matching component-wise to (nx, ny, nz):
+    #   sin b = nx           →  b = asin(nx)
+    #   tan a = -ny / nz     →  a = atan2(-ny, nz)   (for cos b > 0)
+    beta = math.degrees(math.asin(nx))
+    cb = math.cos(math.radians(beta))
+    if abs(cb) < 1e-9:
+        # Degenerate (local +Z maps onto ±X): any alpha works.
+        alpha = 0.0
     else:
-        beta = math.degrees(math.atan2(nx / ca, nz / ca))
-    return Rot(alpha, beta, 0.0)
+        alpha = math.degrees(math.atan2(-ny / cb, nz / cb))
+    return Rot(alpha, beta, roll_deg)
+
+
+def horizontal_x_roll_deg(normal: tuple[float, float, float]) -> float:
+    """Roll (`Rz` component) that sends mount-local +X onto a
+    world-horizontal direction after `rotation_for_normal(normal)`
+    placement. The resulting mount-local +X lies in the plane
+    perpendicular to the normal and has zero world-Y component — it
+    aligns with the horizontal "tilt axis" of a bracket whose frame
+    is `Rot(0, heading, 0)` for this normal's heading.
+
+    Derivation: full rotation matrix is Rx(a)·Ry(b)·Rz(c) per
+    `Rot(a,b,c)` semantics. Mount-local +X lands at world
+    `(cos b · cos c, cos a · sin c + sin a · sin b · cos c,
+      sin a · sin c − cos a · sin b · cos c)`.
+    Setting the Y component to zero:
+        cos a · sin c + sin a · sin b · cos c = 0
+      ⇒ tan c = -sin a · sin b / cos a
+    Pick the root with `cos c > 0` (so `R_11 = cos b · cos c` keeps
+    the sign of `cos b`, i.e. mount +X stays on the +X side of the
+    horizontal plane for normals with +Z component, matching the
+    bracket's +X by convention).
+    """
+    nx, ny, nz = normal
+    n_mag = math.sqrt(nx * nx + ny * ny + nz * nz)
+    nx, ny, nz = nx / n_mag, ny / n_mag, nz / n_mag
+
+    beta = math.asin(nx)
+    cb = math.cos(beta)
+    sb = math.sin(beta)
+    if abs(cb) < 1e-9:
+        return 0.0
+    alpha = math.atan2(-ny / cb, nz / cb)
+    sa = math.sin(alpha)
+    ca = math.cos(alpha)
+
+    # Root with cos c > 0. If ca > 0, setting sc = -sa·sb, cc = ca
+    # (unscaled) gives the desired ratio; normalise signs so cc > 0.
+    num = -sa * sb
+    den = ca
+    if den < 0:
+        num, den = -num, -den
+    return math.degrees(math.atan2(num, den))
 
 
 # --- Enclosure envelope -------------------------------------------------
@@ -121,6 +202,107 @@ ENCLOSURE_WALL_T = 5.0
 
 # FDM printability floor — matches the sub-assembly convention.
 WALL_MIN = 1.5
+
+
+# --- Below-mirror floor bracket placement (rev 1) -----------------------
+#
+# Each below-mirror sits tilted up-and-inward on a printed wedge whose
+# base rests on the enclosure floor. Both brackets share one part
+# design (`below_mirror_floor_bracket/`); they're placed at two world
+# locations related by reflection across the YZ plane.
+#
+# Bracket local frame (see below_mirror_floor_bracket/assembly.py):
+#     origin : on floor (y = ENCLOSURE_INNER_Y_MIN), directly under
+#              the mount back face centre.
+#     +Y     : world +Y (up).
+#     +Z     : horizontal projection of back-face outward-normal
+#              (= horizontal projection of -mirror_normal); the top
+#              face rises along +Z.
+#     +X     : +Y × +Z (horizontal, orthogonal to +Z).
+#
+# The bracket is reflection-symmetric in its local X, so below-left and
+# below-right instances differ only in the Ry(heading) placement
+# rotation, not in the part geometry.
+
+
+def _back_face_centre_world(pos, normal, offset=MIRROR_MOUNT_BACK_OFFSET):
+    """Mount plate back face centre in world: mirror_pos - offset·normal."""
+    return (pos[0] - offset * normal[0],
+            pos[1] - offset * normal[1],
+            pos[2] - offset * normal[2])
+
+
+def _bracket_heading_deg(normal):
+    """Heading angle that Rot(0, heading, 0) needs so bracket-local +Z
+    lands on the horizontal projection of -normal (= back-face normal)
+    in world. Derived from (sin θ, 0, cos θ) = (-nx, 0, -nz)/|…|."""
+    return math.degrees(math.atan2(-normal[0], -normal[2]))
+
+
+# Both below-mirrors share elevation above horizontal (by the tetrahedral
+# optimiser's threefold symmetry); the bracket top-face tilt and height
+# derive from this common value.
+_BL_NY = MIRROR_BELOW_LEFT_NORMAL[1]
+_BR_NY = MIRROR_BELOW_RIGHT_NORMAL[1]
+assert abs(_BL_NY - _BR_NY) < 1e-6, (
+    "below-mirrors have drifted apart in elevation; floor bracket "
+    "geometry assumes they share a single tilt angle"
+)
+BELOW_MIRROR_ELEV_DEG = math.degrees(math.asin(_BL_NY))
+
+_BL_BACK = _back_face_centre_world(
+    MIRROR_BELOW_LEFT_POS, MIRROR_BELOW_LEFT_NORMAL
+)
+_BR_BACK = _back_face_centre_world(
+    MIRROR_BELOW_RIGHT_POS, MIRROR_BELOW_RIGHT_NORMAL
+)
+
+# Bracket local origin in world = (back_face_x, floor_y, back_face_z).
+BELOW_MIRROR_BRACKET_LEFT_POS = (
+    _BL_BACK[0], ENCLOSURE_INNER_Y_MIN, _BL_BACK[2]
+)
+BELOW_MIRROR_BRACKET_RIGHT_POS = (
+    _BR_BACK[0], ENCLOSURE_INNER_Y_MIN, _BR_BACK[2]
+)
+
+# Mount back face centre height above floor. Bolt hole axes pass
+# through this plane.
+BELOW_MIRROR_BRACKET_MOUNT_PLANE_HEIGHT = _BL_BACK[1] - ENCLOSURE_INNER_Y_MIN
+assert abs(
+    (_BR_BACK[1] - ENCLOSURE_INNER_Y_MIN)
+    - BELOW_MIRROR_BRACKET_MOUNT_PLANE_HEIGHT
+) < 1e-6, (
+    "below-mirrors have drifted apart in height; floor bracket "
+    "geometry assumes a single mount-plane height"
+)
+
+# Assembly clearance between the bracket's top face and the mount
+# plate's back face, measured along bracket-local +Y. Two purposes:
+#   * separates coplanar faces so the cross-boundary boolean
+#     intersection computes a clean zero volume (coplanar tangent
+#     contact otherwise picks up ~4 mm³ of numerical noise that
+#     trips `assert_no_interference`'s 0.001 mm³ threshold).
+#   * absorbs print-dimension drift + surface-finish stack on both
+#     the bracket top and the mount plate back face.
+# Bolt-hole centres in the bracket remain on the mount bolts' world
+# axes (modelled at MOUNT_PLANE_HEIGHT, not top-face height); the
+# resulting lateral offset from bracket hole edge to bolt axis is
+# well inside the M4 clearance (≤ 0.25 mm for GAP ≤ 0.3).
+BELOW_MIRROR_BRACKET_MOUNT_GAP = 0.3
+
+# Bracket's physical top-face height — the cut plane sits this much
+# below the mount plate's back face.
+BELOW_MIRROR_BRACKET_TOP_HEIGHT = (
+    BELOW_MIRROR_BRACKET_MOUNT_PLANE_HEIGHT - BELOW_MIRROR_BRACKET_MOUNT_GAP
+)
+
+# Heading angles for the two placements.
+BELOW_MIRROR_BRACKET_LEFT_HEADING_DEG = _bracket_heading_deg(
+    MIRROR_BELOW_LEFT_NORMAL
+)
+BELOW_MIRROR_BRACKET_RIGHT_HEADING_DEG = _bracket_heading_deg(
+    MIRROR_BELOW_RIGHT_NORMAL
+)
 
 
 # --- Camera bracket adapter (rev 1) -------------------------------------

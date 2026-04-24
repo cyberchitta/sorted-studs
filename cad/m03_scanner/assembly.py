@@ -8,12 +8,15 @@ file only covers pairs that span two sub-systems.
 
 Sub-assemblies placed here:
 
-  * enclosure              — six-panel rectangular box (world frame)
-  * platform               — Ø360 collar + Ø180 optical disc + load cells
-  * camera_bracket         — Pi HQ Camera + 2.8 mm lens + printed plate
-  * camera_bracket_adapter — tilted wedge between front wall and bracket
-  * mirror_mount (×3)      — rigid rev 1 mount at each mirror pose
-                             (back-upper, below-left, below-right)
+  * enclosure                 — six-panel rectangular box (world frame)
+  * platform                  — Ø360 collar + Ø180 optical disc + load cells
+  * camera_bracket            — Pi HQ Camera + 2.8 mm lens + printed plate
+  * camera_bracket_adapter    — tilted wedge between front wall and bracket
+  * mirror_mount (×3)         — rigid rev 1 mount at each mirror pose
+                                (back-upper, below-left, below-right)
+  * below_mirror_floor_bracket (×2) — printed wedge supporting the below-
+                                left and below-right mounts from the
+                                enclosure floor
 
 Placement references come from `params.py`; those values are copied
 from `docs/m03-multi-view-scanner.md`. If the reference doc's
@@ -62,6 +65,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from params import (  # noqa: E402
     ADAPTER_POS,
+    BELOW_MIRROR_BRACKET_LEFT_HEADING_DEG,
+    BELOW_MIRROR_BRACKET_LEFT_POS,
+    BELOW_MIRROR_BRACKET_RIGHT_HEADING_DEG,
+    BELOW_MIRROR_BRACKET_RIGHT_POS,
     CAMERA_POS,
     CAMERA_ROT_DEG,
     MIRROR_BACK_UPPER_NORMAL,
@@ -70,6 +77,7 @@ from params import (  # noqa: E402
     MIRROR_BELOW_LEFT_POS,
     MIRROR_BELOW_RIGHT_NORMAL,
     MIRROR_BELOW_RIGHT_POS,
+    horizontal_x_roll_deg,
     rotation_for_normal,
 )
 
@@ -99,6 +107,7 @@ _plat = _load("platform")
 _cam = _load("camera_bracket")
 _adapter = _load("camera_bracket_adapter")
 _mirror = _load("mirror_mount")
+_floor_bracket = _load("below_mirror_floor_bracket")
 
 
 # --- Placement constants ------------------------------------------------
@@ -118,20 +127,51 @@ _CAMERA_LOC = Pos(*CAMERA_POS) * Rot(*CAMERA_ROT_DEG)
 # back face.
 _ADAPTER_LOC = Pos(*ADAPTER_POS)
 
-# Mirror placements: local +Z = mirror outward normal; translation
+# Mirror placements: local +Z = mirror outward normal. Translation
 # places the reflective face centre at the mirror's world coordinates.
+# Roll about the outward normal is picked by `horizontal_x_roll_deg`
+# so mount-local +X lands on a world-horizontal direction — matching
+# each below-mirror's floor-bracket local +X axis, which is how the
+# mount's four-corner bolt pattern stays axis-aligned to the
+# `below_mirror_floor_bracket` top-face bolt pattern. Back-upper has
+# no downstream bracket yet; the same convention keeps its roll
+# well-defined for when that bracket lands.
 _MIRROR_POSES = {
     "mirror_back_upper": (
         Pos(*MIRROR_BACK_UPPER_POS)
-        * rotation_for_normal(MIRROR_BACK_UPPER_NORMAL)
+        * rotation_for_normal(
+            MIRROR_BACK_UPPER_NORMAL,
+            roll_deg=horizontal_x_roll_deg(MIRROR_BACK_UPPER_NORMAL),
+        )
     ),
     "mirror_below_left": (
         Pos(*MIRROR_BELOW_LEFT_POS)
-        * rotation_for_normal(MIRROR_BELOW_LEFT_NORMAL)
+        * rotation_for_normal(
+            MIRROR_BELOW_LEFT_NORMAL,
+            roll_deg=horizontal_x_roll_deg(MIRROR_BELOW_LEFT_NORMAL),
+        )
     ),
     "mirror_below_right": (
         Pos(*MIRROR_BELOW_RIGHT_POS)
-        * rotation_for_normal(MIRROR_BELOW_RIGHT_NORMAL)
+        * rotation_for_normal(
+            MIRROR_BELOW_RIGHT_NORMAL,
+            roll_deg=horizontal_x_roll_deg(MIRROR_BELOW_RIGHT_NORMAL),
+        )
+    ),
+}
+
+# Below-mirror floor-bracket placements. Local +Y = world +Y; local +Z
+# = horizontal projection of back-face normal, rotated about world +Y
+# by the heading angle from params.py. Local origin sits on the floor
+# directly under the mount plate's back face centre.
+_FLOOR_BRACKET_POSES = {
+    "floor_bracket_below_left": (
+        Pos(*BELOW_MIRROR_BRACKET_LEFT_POS)
+        * Rot(0, BELOW_MIRROR_BRACKET_LEFT_HEADING_DEG, 0)
+    ),
+    "floor_bracket_below_right": (
+        Pos(*BELOW_MIRROR_BRACKET_RIGHT_POS)
+        * Rot(0, BELOW_MIRROR_BRACKET_RIGHT_HEADING_DEG, 0)
     ),
 }
 
@@ -195,14 +235,22 @@ for _prefix, _loc in _MIRROR_POSES.items():
         .add(_mirror_name, _mirror.mirror_stub(), location=_loc)
     )
 
+# Two below-mirror floor brackets (same printed part, two placements).
+_FLOOR_BRACKET_NAMES = list(_FLOOR_BRACKET_POSES.keys())
+for _name, _loc in _FLOOR_BRACKET_POSES.items():
+    assembly = assembly.add(_name, _floor_bracket.bracket(), location=_loc)
+
 
 # --- Cross-boundary assertions ------------------------------------------
 
 # Internal parts that must clear every enclosure panel.
+_PLATFORM_NAMES = ["collar", "disc", *_LOAD_CELL_NAMES]
+_CAMERA_BRACKET_NAMES = ("camera_plate", "camera_pcb", "camera_lens")
 _INTERNAL_NAMES = (
-    ["collar", "disc", *_LOAD_CELL_NAMES,
-     "camera_plate", "camera_pcb", "camera_lens", "camera_adapter"]
+    _PLATFORM_NAMES
+    + [*_CAMERA_BRACKET_NAMES, "camera_adapter"]
     + _MIRROR_PART_NAMES
+    + _FLOOR_BRACKET_NAMES
 )
 
 for _internal in _INTERNAL_NAMES:
@@ -213,14 +261,14 @@ for _internal in _INTERNAL_NAMES:
 # mirrors are well clear today, but any future growth in the kinematic
 # mount stack or in the lens envelope could close the gap.
 for _mirror_part in _MIRROR_PART_NAMES:
-    for _cam_part in ("camera_plate", "camera_pcb", "camera_lens"):
+    for _cam_part in _CAMERA_BRACKET_NAMES:
         assembly = assembly.assert_no_interference(_mirror_part, _cam_part)
 
 # Mirror mounts vs platform. Same logic — below-mirrors currently sit
 # ≥ 120 mm below the platform collar, but a future floor-bracket rev
 # could extend the mount up toward the platform aperture.
 for _mirror_part in _MIRROR_PART_NAMES:
-    for _plat_part in ["collar", "disc", *_LOAD_CELL_NAMES]:
+    for _plat_part in _PLATFORM_NAMES:
         assembly = assembly.assert_no_interference(_mirror_part, _plat_part)
 
 # Adapter vs camera-bracket triplet. Tangent contact at the tilted
@@ -229,7 +277,7 @@ for _mirror_part in _MIRROR_PART_NAMES:
 # in CAMERA_POS, CAMERA_ROT_DEG, CAMERA_BRACKET_PLATE_T, or
 # ADAPTER_POS that would push the bracket into or away from the
 # adapter face.
-for _cam_part in ("camera_plate", "camera_pcb", "camera_lens"):
+for _cam_part in _CAMERA_BRACKET_NAMES:
     assembly = assembly.assert_no_interference("camera_adapter", _cam_part)
 
 # Adapter vs every mirror mount. Adapter sits at world y ∈ [73, 142]
@@ -242,8 +290,39 @@ for _mirror_part in _MIRROR_PART_NAMES:
 # Adapter vs platform. Adapter sits forward of the platform; this is
 # a regression guard for any future shuttle / disc-retainer feature
 # growth.
-for _plat_part in ["collar", "disc", *_LOAD_CELL_NAMES]:
+for _plat_part in _PLATFORM_NAMES:
     assembly = assembly.assert_no_interference("camera_adapter", _plat_part)
+
+# Floor brackets vs everything else. Each bracket's top face is
+# coplanar with its own mirror's mount plate back face (tangent
+# contact); the assert_no_interference treats tangency as zero overlap
+# and therefore enforces "coplanar or below" without allowing
+# interpenetration. The same tangent-contact pattern holds against
+# the enclosure floor panel, already covered by the _INTERNAL_NAMES
+# loop above.
+for _bracket_name in _FLOOR_BRACKET_NAMES:
+    # vs every mirror-mount part (both its supported mount and the
+    # other two mirrors, as a regression guard against future
+    # growth of the bracket envelope toward its neighbours).
+    for _mirror_part in _MIRROR_PART_NAMES:
+        assembly = assembly.assert_no_interference(_bracket_name, _mirror_part)
+
+    # vs platform parts — bracket top at world y ≈ -87 mm sits well
+    # below the load cells at y ≈ -21; regression guard.
+    for _plat_part in _PLATFORM_NAMES:
+        assembly = assembly.assert_no_interference(_bracket_name, _plat_part)
+
+    # vs camera-bracket triplet + adapter — brackets sit near the
+    # floor at y ≤ -87 and away from the front wall; regression
+    # guard for future bracket growth.
+    for _cam_part in _CAMERA_BRACKET_NAMES:
+        assembly = assembly.assert_no_interference(_bracket_name, _cam_part)
+    assembly = assembly.assert_no_interference(_bracket_name, "camera_adapter")
+
+# Floor brackets vs each other. Left and right sit in opposite X
+# hemispheres with a > 350 mm centre-to-centre gap today; regression
+# guard for future growth inward toward the scanner centreline.
+assembly = assembly.assert_no_interference(*_FLOOR_BRACKET_NAMES)
 
 
 if __name__ == "__main__":
