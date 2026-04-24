@@ -39,6 +39,26 @@ CAMERA_POS = (0.0, 105.7, -226.6)
 CAMERA_ROT_DEG = (25.0, 0.0, 0.0)
 
 
+# --- Camera bracket ⇄ adapter interface ---------------------------------
+#
+# External interface of `camera_bracket/` that the adjacent
+# `camera_bracket_adapter/` must agree on. Each of these duplicates an
+# internal constant in camera_bracket/assembly.py; change either side
+# and the top-level cross-boundary assertion will catch the drift.
+
+# Square plate dimension (PLATE_W == PLATE_H in camera_bracket).
+CAMERA_BRACKET_PLATE_SIZE = 68.0
+
+# Plate thickness along the bracket's local Z.
+CAMERA_BRACKET_PLATE_T = 5.0
+
+# Corner-bolt spacing (PLATE_W - 2·BOLT_INSET in camera_bracket, with
+# BOLT_INSET = 8.0). Same 52 mm square pattern is reused on the
+# adapter's tilted front face so four bolts clamp bracket→adapter with
+# a single matched hole pattern.
+CAMERA_BRACKET_BOLT_SPACING = 52.0
+
+
 # --- Mirrors ------------------------------------------------------------
 
 # Physical mirror centres in world (centre of reflective face).
@@ -101,3 +121,34 @@ ENCLOSURE_WALL_T = 5.0
 
 # FDM printability floor — matches the sub-assembly convention.
 WALL_MIN = 1.5
+
+
+# --- Camera bracket adapter (rev 1) -------------------------------------
+#
+# Wedge spacer between the flat front wall (world +X / +Y) and the
+# 25°-tilted bracket back face. Placed in world without rotation; its
+# local origin sits on the inner face of `wall_front`, vertically
+# aligned with the bracket back face centre so the adapter's tilted
+# front face is coplanar with the bracket's back face.
+
+_TILT_RAD = math.radians(CAMERA_ROT_DEG[0])
+_SIN_TILT = math.sin(_TILT_RAD)
+_COS_TILT = math.cos(_TILT_RAD)
+
+# Bracket back face centre in world: bracket-local (0, 0, -PLATE_T)
+# rotated by Rot(TILT, 0, 0) and translated by CAMERA_POS.
+CAMERA_BRACKET_BACK_CENTRE = (
+    CAMERA_POS[0],
+    CAMERA_POS[1] + CAMERA_BRACKET_PLATE_T * _SIN_TILT,
+    CAMERA_POS[2] - CAMERA_BRACKET_PLATE_T * _COS_TILT,
+)
+
+# Adapter local origin in world. X = 0 (centred on the scanner spine);
+# Y matches the bracket back face centre Y so the wedge is symmetric
+# around the bracket's vertical axis; Z sits on the front-wall inner
+# face.
+ADAPTER_POS = (
+    0.0,
+    CAMERA_BRACKET_BACK_CENTRE[1],
+    ENCLOSURE_INNER_Z_MIN,
+)

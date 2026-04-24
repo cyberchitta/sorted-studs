@@ -11,6 +11,7 @@ Sub-assemblies placed here:
   * enclosure              — six-panel rectangular box (world frame)
   * platform               — Ø360 collar + Ø180 optical disc + load cells
   * camera_bracket         — Pi HQ Camera + 2.8 mm lens + printed plate
+  * camera_bracket_adapter — tilted wedge between front wall and bracket
   * mirror_mount (×3)      — rigid rev 1 mount at each mirror pose
                              (back-upper, below-left, below-right)
 
@@ -60,6 +61,7 @@ from cad_khana.mechanism.check import check
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from params import (  # noqa: E402
+    ADAPTER_POS,
     CAMERA_POS,
     CAMERA_ROT_DEG,
     MIRROR_BACK_UPPER_NORMAL,
@@ -95,6 +97,7 @@ def _load(subdir: str) -> ModuleType:
 _enc = _load("enclosure")
 _plat = _load("platform")
 _cam = _load("camera_bracket")
+_adapter = _load("camera_bracket_adapter")
 _mirror = _load("mirror_mount")
 
 
@@ -108,6 +111,12 @@ _PLATFORM_LOC = Rot(-90, 0, 0)
 # Camera placement: local +Z (lens axis) rotated to 25° below horizontal
 # toward +Z; origin translated to the PCB rear plane in world.
 _CAMERA_LOC = Pos(*CAMERA_POS) * Rot(*CAMERA_ROT_DEG)
+
+# Adapter placement: world-axis-aligned (no rotation). Local origin
+# at ADAPTER_POS — the back face sits flush against the front-wall
+# inner face, and the tilted front face is coplanar with the bracket
+# back face.
+_ADAPTER_LOC = Pos(*ADAPTER_POS)
 
 # Mirror placements: local +Z = mirror outward normal; translation
 # places the reflective face centre at the mirror's world coordinates.
@@ -168,6 +177,11 @@ assembly = (
     .add("camera_lens", _cam.lens_stub(), location=_CAMERA_LOC)
 )
 
+# Tilted spacer between front wall and bracket back face.
+assembly = assembly.add(
+    "camera_adapter", _adapter.adapter(), location=_ADAPTER_LOC
+)
+
 # Three rigid mirror mounts. Each contributes a bracket + mirror stand-in
 # under a unique prefix.
 _MIRROR_PART_NAMES = []
@@ -187,7 +201,7 @@ for _prefix, _loc in _MIRROR_POSES.items():
 # Internal parts that must clear every enclosure panel.
 _INTERNAL_NAMES = (
     ["collar", "disc", *_LOAD_CELL_NAMES,
-     "camera_plate", "camera_pcb", "camera_lens"]
+     "camera_plate", "camera_pcb", "camera_lens", "camera_adapter"]
     + _MIRROR_PART_NAMES
 )
 
@@ -208,6 +222,28 @@ for _mirror_part in _MIRROR_PART_NAMES:
 for _mirror_part in _MIRROR_PART_NAMES:
     for _plat_part in ["collar", "disc", *_LOAD_CELL_NAMES]:
         assembly = assembly.assert_no_interference(_mirror_part, _plat_part)
+
+# Adapter vs camera-bracket triplet. Tangent contact at the tilted
+# face is intended (bracket back face = adapter front face); the
+# assertion enforces tangency-without-overlap. Also catches any drift
+# in CAMERA_POS, CAMERA_ROT_DEG, CAMERA_BRACKET_PLATE_T, or
+# ADAPTER_POS that would push the bracket into or away from the
+# adapter face.
+for _cam_part in ("camera_plate", "camera_pcb", "camera_lens"):
+    assembly = assembly.assert_no_interference("camera_adapter", _cam_part)
+
+# Adapter vs every mirror mount. Adapter sits at world y ∈ [73, 142]
+# and z ∈ [-290, -215]; mirrors are well clear today, but the
+# below-mirror floor-bracket rev planned in NEXT_STEPS.md could grow
+# inward toward the front wall.
+for _mirror_part in _MIRROR_PART_NAMES:
+    assembly = assembly.assert_no_interference("camera_adapter", _mirror_part)
+
+# Adapter vs platform. Adapter sits forward of the platform; this is
+# a regression guard for any future shuttle / disc-retainer feature
+# growth.
+for _plat_part in ["collar", "disc", *_LOAD_CELL_NAMES]:
+    assembly = assembly.assert_no_interference("camera_adapter", _plat_part)
 
 
 if __name__ == "__main__":
