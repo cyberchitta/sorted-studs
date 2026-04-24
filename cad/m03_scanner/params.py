@@ -59,6 +59,27 @@ CAMERA_BRACKET_PLATE_T = 5.0
 CAMERA_BRACKET_BOLT_SPACING = 52.0
 
 
+# --- Camera bracket adapter ⇄ enclosure front wall interface ------------
+#
+# External interface of `camera_bracket_adapter/` that the enclosure's
+# `wall_front` panel must agree on. Four M4 wall bolts drive through
+# the front panel from outside the enclosure into the adapter's back
+# face; the wall carries a matched through-hole pattern so the bolt
+# axes are coaxial with the adapter's holes. Duplicates an internal
+# constant in camera_bracket_adapter/assembly.py; changing either side
+# without the other surfaces as misalignment at first assembly.
+
+# Full XY spacing of the adapter's wall-bolt square pattern (18 mm
+# half-spacing in the adapter's module → 36 mm centre-to-centre
+# between adjacent bolts).
+ADAPTER_WALL_BOLT_SPACING = 36.0
+
+# Through-hole clearance diameter for the M4 wall bolts. Same 4.5 mm
+# used by every M4 clearance hole in the scanner (mirror mount,
+# camera bracket, adapter bracket-bolt group).
+ADAPTER_WALL_BOLT_HOLE_D = 4.5
+
+
 # --- Mirrors ------------------------------------------------------------
 
 # Physical mirror centres in world (centre of reflective face).

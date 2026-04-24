@@ -51,7 +51,7 @@ What's deferred to rev 2 (documented in `../NEXT_STEPS.md`):
     printed corner brackets).
 """
 
-from build123d import Box, Part, Pos
+from build123d import Box, Cylinder, Part, Pos
 
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
@@ -66,6 +66,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from params import (  # noqa: E402
+    ADAPTER_WALL_BOLT_HOLE_D,
+    ADAPTER_WALL_BOLT_SPACING,
+    CAMERA_BRACKET_BACK_CENTRE,
     ENCLOSURE_INNER_X_MAX,
     ENCLOSURE_INNER_X_MIN,
     ENCLOSURE_INNER_Y_MAX,
@@ -172,8 +175,32 @@ def wall_back() -> Part:
 
 
 def wall_front() -> Part:
-    """Front panel, face at z = Z_MIN (inner front) / Z_OUTER_MIN."""
-    return _panel_x_y((ENCLOSURE_INNER_Z_MIN + Z_OUTER_MIN) / 2)
+    """Front panel, face at z = Z_MIN (inner front) / Z_OUTER_MIN.
+
+    Carries the adapter wall-bolt through-hole pattern: 4× M4 bolt
+    clearance holes on a square of side `ADAPTER_WALL_BOLT_SPACING`,
+    centred on (0, CAMERA_BRACKET_BACK_CENTRE.y) in world. Bolts drive
+    from outside the enclosure (world -Z side) through the panel and
+    into the adapter's matching holes on the back face. The 0.3 mm
+    radial slop between the 4.5 mm clearance hole and the M4 bolt
+    absorbs any sub-millimetre print-dimension drift between the two
+    parts."""
+    z_center = (ENCLOSURE_INNER_Z_MIN + Z_OUTER_MIN) / 2
+    panel = _panel_x_y(z_center)
+
+    # Adapter wall-bolt through-holes. Cylinder length spans the full
+    # panel thickness with margin on both sides so the boolean cut
+    # lands cleanly regardless of the panel's precise Z extent.
+    cyl_len = _T * 4
+    half = ADAPTER_WALL_BOLT_SPACING / 2
+    y_center = CAMERA_BRACKET_BACK_CENTRE[1]
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            panel -= (
+                Pos(sx * half, y_center + sy * half, z_center)
+                * Cylinder(ADAPTER_WALL_BOLT_HOLE_D / 2, cyl_len)
+            )
+    return panel
 
 
 def wall_left() -> Part:

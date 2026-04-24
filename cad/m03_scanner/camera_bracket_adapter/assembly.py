@@ -64,6 +64,8 @@ from cad_khana.printability.methods import FDM
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from params import (  # noqa: E402
+    ADAPTER_WALL_BOLT_HOLE_D,
+    ADAPTER_WALL_BOLT_SPACING,
     CAMERA_BRACKET_BACK_CENTRE,
     CAMERA_BRACKET_BOLT_SPACING,
     CAMERA_BRACKET_PLATE_SIZE,
@@ -100,16 +102,19 @@ PRISM_H = _max_plane_z + 5.0
 # Bracket bolt pattern — half-spacing in each axis on a square.
 BRACKET_BOLT_HALF = CAMERA_BRACKET_BOLT_SPACING / 2
 
-# Wall bolt pattern — inner square. Spacing chosen so the wall-bolt
-# cylinders stay in different x-planes from the bracket-bolt
-# cylinders (BRACKET_BOLT_HALF = 26 → wall at 18 leaves an 8 mm gap
-# between axis x-planes).
-WALL_BOLT_X = 18.0
-WALL_BOLT_Y = 18.0
+# Wall bolt pattern — inner square, driven by the shared params-level
+# constant so the enclosure's `wall_front` through-hole pattern lines
+# up with these holes. Half-spacing chosen (at 18 mm) so wall-bolt
+# cylinders stay in different x-planes from the bracket-bolt cylinders
+# (BRACKET_BOLT_HALF = 26 → wall at 18 leaves an 8 mm gap between
+# axis x-planes).
+WALL_BOLT_X = ADAPTER_WALL_BOLT_SPACING / 2
+WALL_BOLT_Y = ADAPTER_WALL_BOLT_SPACING / 2
 
 # Bolt clearance hole diameter. M4 → 4.5 mm matches the bracket and
-# mirror-mount rev 1 conventions.
-BOLT_HOLE_D = 4.5
+# mirror-mount rev 1 conventions; sourced from the shared interface
+# constant so the enclosure's matching through-holes stay in lockstep.
+BOLT_HOLE_D = ADAPTER_WALL_BOLT_HOLE_D
 
 
 # --- Bolt entry geometry helpers ---------------------------------------
