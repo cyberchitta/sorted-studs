@@ -17,6 +17,8 @@ Sub-assemblies placed here:
   * below_mirror_floor_bracket (×2) — printed wedge supporting the below-
                                 left and below-right mounts from the
                                 enclosure floor
+  * back_upper_wall_bracket   — printed wedge supporting the back-upper
+                                mount from the enclosure back wall
 
 Placement references come from `params.py`; those values are copied
 from `docs/m03-multi-view-scanner.md`. If the reference doc's
@@ -41,12 +43,14 @@ and their plate extents don't approach each other (closest centre pair
 is ≈ 460 mm apart). A check would pass trivially and add noise.
 
 What the rev-1 enclosure does NOT yet provide — noted in `NEXT_STEPS.md`:
-mount-interface bolt patterns for any sub-assembly, cut-outs for the
-chute / eject slot / access door, or ring-light and ToF mount features.
-The camera bracket and mirror mounts sit in space at their target
-poses for this rev; rev 2 adds the walls' mount interfaces (likely
-tilted standoffs or tilted sub-panels, since none of the mounts is
-flush against an axis-aligned world wall).
+panel through-hole patterns pairing with the mount-bracket bolt
+patterns (front wall ↔ camera adapter, floor ↔ below-mirror brackets,
+back wall ↔ back-upper bracket); cut-outs for the chute / eject slot /
+access door; edge-joint hardware; and ring-light and ToF mount
+features. All three mirror mounts are now bracketed to a wall (front
+wall adapter for the camera-direct viewpoint, floor for the below-
+left/right mirrors, back wall for the back-upper mirror); rev 2
+finishes the wall-side of each interface.
 """
 
 import importlib.util
@@ -65,6 +69,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from params import (  # noqa: E402
     ADAPTER_POS,
+    BACK_UPPER_BRACKET_POS,
     BELOW_MIRROR_BRACKET_LEFT_HEADING_DEG,
     BELOW_MIRROR_BRACKET_LEFT_POS,
     BELOW_MIRROR_BRACKET_RIGHT_HEADING_DEG,
@@ -108,6 +113,7 @@ _cam = _load("camera_bracket")
 _adapter = _load("camera_bracket_adapter")
 _mirror = _load("mirror_mount")
 _floor_bracket = _load("below_mirror_floor_bracket")
+_wall_bracket = _load("back_upper_wall_bracket")
 
 
 # --- Placement constants ------------------------------------------------
@@ -175,6 +181,15 @@ _FLOOR_BRACKET_POSES = {
     ),
 }
 
+# Back-upper wall-bracket placement. Local +Y = world -Z (into the
+# enclosure from the back wall); local +Z = world +Y (horizontal
+# projection of back-face outward-normal onto the back wall, which for
+# the x-symmetric back-upper mirror is straight up). Rot(-90, 0, 0)
+# carries local +Y onto world -Z and local +Z onto world +Y. No
+# heading rotation is needed — the back-upper is x-symmetric (nx = 0)
+# and the bracket is symmetric in its own local X.
+_WALL_BRACKET_LOC = Pos(*BACK_UPPER_BRACKET_POS) * Rot(-90, 0, 0)
+
 
 # --- Assembly composition -----------------------------------------------
 
@@ -240,6 +255,12 @@ _FLOOR_BRACKET_NAMES = list(_FLOOR_BRACKET_POSES.keys())
 for _name, _loc in _FLOOR_BRACKET_POSES.items():
     assembly = assembly.add(_name, _floor_bracket.bracket(), location=_loc)
 
+# One back-upper wall bracket (single placement off the back wall).
+_WALL_BRACKET_NAME = "wall_bracket_back_upper"
+assembly = assembly.add(
+    _WALL_BRACKET_NAME, _wall_bracket.bracket(), location=_WALL_BRACKET_LOC
+)
+
 
 # --- Cross-boundary assertions ------------------------------------------
 
@@ -251,6 +272,7 @@ _INTERNAL_NAMES = (
     + [*_CAMERA_BRACKET_NAMES, "camera_adapter"]
     + _MIRROR_PART_NAMES
     + _FLOOR_BRACKET_NAMES
+    + [_WALL_BRACKET_NAME]
 )
 
 for _internal in _INTERNAL_NAMES:
@@ -323,6 +345,34 @@ for _bracket_name in _FLOOR_BRACKET_NAMES:
 # hemispheres with a > 350 mm centre-to-centre gap today; regression
 # guard for future growth inward toward the scanner centreline.
 assembly = assembly.assert_no_interference(*_FLOOR_BRACKET_NAMES)
+
+# Back-upper wall bracket vs everything else. The bracket's bottom
+# face sits coplanar with the back-wall inner face (tangent contact,
+# treated as zero overlap); the tilted top face is separated from the
+# back-upper mount plate back face by MOUNT_GAP. All other pairs are
+# comfortably clear today; these assertions are regression guards
+# against future bracket growth.
+#
+# vs every mirror-mount part (back-upper is the one supported, the
+# other two are regression guards).
+for _mirror_part in _MIRROR_PART_NAMES:
+    assembly = assembly.assert_no_interference(_WALL_BRACKET_NAME, _mirror_part)
+
+# vs platform parts — bracket sits at world y ∈ [126, 287], z ∈ [149,
+# 260]; platform sits near y=0, z=0 and so is well clear.
+for _plat_part in _PLATFORM_NAMES:
+    assembly = assembly.assert_no_interference(_WALL_BRACKET_NAME, _plat_part)
+
+# vs camera-bracket triplet + adapter — camera sits near the front
+# wall (z ≈ -227) and so is well clear.
+for _cam_part in _CAMERA_BRACKET_NAMES:
+    assembly = assembly.assert_no_interference(_WALL_BRACKET_NAME, _cam_part)
+assembly = assembly.assert_no_interference(_WALL_BRACKET_NAME, "camera_adapter")
+
+# vs the two below-mirror floor brackets — those sit at y ≈ -240
+# (floor), the wall bracket sits at y ∈ [126, 287]; well clear today.
+for _floor_name in _FLOOR_BRACKET_NAMES:
+    assembly = assembly.assert_no_interference(_WALL_BRACKET_NAME, _floor_name)
 
 
 if __name__ == "__main__":

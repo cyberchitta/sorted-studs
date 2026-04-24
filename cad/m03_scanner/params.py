@@ -305,6 +305,80 @@ BELOW_MIRROR_BRACKET_RIGHT_HEADING_DEG = _bracket_heading_deg(
 )
 
 
+# --- Back-upper wall bracket placement (rev 1) --------------------------
+#
+# The back-upper mirror's back-face outward-normal points up-and-back
+# (world +Y +Z), with the +Z component (0.885) dominant over the +Y
+# component (0.466). The natural support wall is therefore the back
+# wall at z = ENCLOSURE_INNER_Z_MAX; the mount plate's back face sits
+# ~80 mm inboard of the back wall along world +Z.
+#
+# Bracket local frame (see back_upper_wall_bracket/assembly.py):
+#     origin : on back-wall inner face (z = ENCLOSURE_INNER_Z_MAX),
+#              at the world-X and world-Y of the mount back face
+#              centre.
+#     +Y     : world -Z (into the enclosure from the back wall;
+#              analogous to "up from floor" in the below-mirror
+#              bracket's frame).
+#     +Z     : horizontal projection of back-face outward-normal onto
+#              the back-wall plane, normalised. For back-upper whose
+#              nx = 0 this is world +Y (straight up in world terms).
+#     +X     : +Y × +Z = world +X (horizontal tilt axis along the wall
+#              surface).
+#
+# Placement rotation in the top-level assembly is Rot(-90, 0, 0): the
+# pure Rx(-90) carries bracket-local +Y onto world -Z and bracket-
+# local +Z onto world +Y. No heading rotation is needed because the
+# back-upper is x-symmetric (nx = 0); the bracket itself is also
+# symmetric in its local X, so both halves of the back-upper's mount
+# plate land correctly under one placement.
+
+# Back-upper mirror back face centre in world (mirror face centre
+# offset by MIRROR_MOUNT_BACK_OFFSET along -mirror_normal).
+_BU_BACK_CENTRE = _back_face_centre_world(
+    MIRROR_BACK_UPPER_POS, MIRROR_BACK_UPPER_NORMAL
+)
+
+# The back-upper must sit on the YZ plane for the symmetric, heading-
+# free placement to be valid. Fail loudly if the viewpoint optimiser
+# drifts it off-axis.
+assert abs(MIRROR_BACK_UPPER_NORMAL[0]) < 1e-6, (
+    "back-upper mirror has drifted off the YZ plane (nx != 0); the "
+    "back-upper wall bracket assumes the x-symmetric (heading = 0) "
+    "pose"
+)
+
+# Elevation of the mirror normal above the back-wall inward-normal
+# (world -Z). Mirror-normal component along -Z = -nz; for the back-
+# upper this is 0.885, giving ELEV ≈ 62.2° and a complementary top-
+# face tilt ≈ 27.8° — much gentler than the below-mirror's 52°.
+BACK_UPPER_ELEV_DEG = math.degrees(math.asin(-MIRROR_BACK_UPPER_NORMAL[2]))
+
+# Bracket local origin in world. x/y match the mount back face centre;
+# z sits on the back-wall inner face.
+BACK_UPPER_BRACKET_POS = (
+    _BU_BACK_CENTRE[0], _BU_BACK_CENTRE[1], ENCLOSURE_INNER_Z_MAX
+)
+
+# Distance from back-wall inner face to the mount plate back face
+# centre along world +Z (= bracket-local +Y).
+BACK_UPPER_BRACKET_MOUNT_PLANE_HEIGHT = (
+    ENCLOSURE_INNER_Z_MAX - _BU_BACK_CENTRE[2]
+)
+
+# MOUNT_GAP rationale matches the below-mirror floor bracket — see the
+# comment on BELOW_MIRROR_BRACKET_MOUNT_GAP above. The gap is also
+# large enough to absorb the lateral offset between the bracket hole
+# centre (on the top-face plane) and the mount bolt axis (through the
+# mount plate at mount_plane_height); widened bracket hole diameter
+# covers the residual.
+BACK_UPPER_BRACKET_MOUNT_GAP = 0.3
+
+BACK_UPPER_BRACKET_TOP_HEIGHT = (
+    BACK_UPPER_BRACKET_MOUNT_PLANE_HEIGHT - BACK_UPPER_BRACKET_MOUNT_GAP
+)
+
+
 # --- Camera bracket adapter (rev 1) -------------------------------------
 #
 # Wedge spacer between the flat front wall (world +X / +Y) and the
