@@ -605,3 +605,27 @@ RAIL_CLAMP_BELOW_LEFT_POS = (
 # world x ≈ -207 (toward +X), clamp-local +Z must land on world +X.
 # Ry(+90°): local +X → world -Z, local +Y → world +Y, local +Z → world +X.
 RAIL_CLAMP_BELOW_LEFT_HEADING_DEG = 90.0
+
+
+# Below-right mirror. X-mirror of the below-left placement: same rail-
+# top Y and same Z under the mount back face, opposite X post and
+# opposite Ry heading. Clamp-local geometry (mount-back position, beam
+# tilt, pad pose) is identical to below-left by mirror symmetry — the
+# pad is square, the four-corner mount-bolt pattern is reflection-
+# symmetric, and the sanity asserts attached to the below-left
+# computation cover both instances.
+_BR_CLAMP_BACK = _back_face_centre_world(
+    MIRROR_BELOW_RIGHT_POS, MIRROR_BELOW_RIGHT_NORMAL
+)
+
+RAIL_CLAMP_BELOW_RIGHT_POS = (
+    +SKELETON_RAIL_CORNER_X,              # rail_floor_right centerline X
+    SKELETON_RAIL_FLOOR_TOP_Y,            # rail top face Y
+    _BR_CLAMP_BACK[2],                    # same Z as mount back face
+)
+
+# Ry(-90°): local +X → world +Z, local +Y → world +Y, local +Z → world
+# -X. For rail_floor_right (at world x = +290) and mount at world
+# x ≈ +207 (toward -X), this puts clamp-local +Z on world -X so the
+# rail-to-mount direction points at the mount.
+RAIL_CLAMP_BELOW_RIGHT_HEADING_DEG = -90.0

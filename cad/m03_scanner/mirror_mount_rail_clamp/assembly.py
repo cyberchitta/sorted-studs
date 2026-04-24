@@ -1,5 +1,5 @@
 """
-M03 scanner — mirror-mount rail clamp (rev 2 POC, below-left).
+M03 scanner — mirror-mount rail clamp (rev 2).
 
 Printed clamp that supports a mirror_mount from a 2020 T-slot extrusion
 member of the rev-2 skeleton (see `../skeleton/assembly.py`). Rev 2
@@ -9,11 +9,21 @@ directly onto the skeleton rail via two M4 bolts into T-nuts captured
 in the rail's outward-facing slot, so the rev-1 six-panel enclosure is
 no longer needed to support the mirror mount.
 
-This first rev is scoped to the below-left mirror on `rail_floor_left`
-(left-hand floor rail). Porting to below-right and back-upper mirrors
-is a follow-up — each will need its own `RAIL_CLAMP_*_{POS,HEADING_DEG}`
-in `../params.py` and its own instance of this clamp in the top-level
-assembly.
+One part design drives both below-mirror instances: below-left clamps
+onto `rail_floor_left`, below-right onto `rail_floor_right`. The two
+differ only in the `Rot(0, heading, 0)` placement rotation applied at
+the top-level assembly — the clamp-local geometry is identical by
+mirror symmetry (square pad, reflection-symmetric mount-bolt pattern,
+tilt-axis beam). Each instance supplies its own `mount_in_clamp`
+`Location` built by `mount_in_clamp_for(...)` from the matching
+`RAIL_CLAMP_*_{POS,HEADING_DEG}` + `MIRROR_*_{POS,NORMAL}` constants
+in `../params.py`. The standalone `check()` below runs the below-left
+instance as the representative POC.
+
+Porting to the back-upper mirror is a follow-up: different rail
+(probably `rail_ceil_back`), different clamp-local frame convention
+(mount faces downward-and-backward rather than up-and-inward), so
+the `clamp()` geometry will need to flex on the rail-face side.
 
 Coordinate frame (local to this sub-assembly):
     origin = centre of clamp bottom face, on rail top face, at the
@@ -136,24 +146,47 @@ MOUNT_BOLT_HOLE_D = 5.0
 _MOUNT_BOLT_HALF = MIRROR_MOUNT_BOLT_SPACING / 2
 
 
-# --- Below-left mount pose in clamp-local -------------------------------
+# --- Mount pose in clamp-local (per-instance helper) --------------------
 
 # The clamp-placement and mount-placement are both known in world
 # coordinates. Composing `clamp_placement.inverse() * mount_placement`
 # gives the mount-local frame expressed in clamp-local. Any mount-
 # local geometry (pad, bolt-hole cylinders) left-multiplies this
 # Location on its way into the clamp body.
+#
+# Exposed as a public helper so the top-level `../assembly.py` can
+# build a mount_in_clamp Location per instance (below-left uses the
+# default; below-right calls this with its own constants) without
+# duplicating the composition.
 
-_clamp_placement_world = (
-    Pos(*RAIL_CLAMP_BELOW_LEFT_POS)
-    * Rot(0, RAIL_CLAMP_BELOW_LEFT_HEADING_DEG, 0)
-)
-_mount_placement_world = Pos(*MIRROR_BELOW_LEFT_POS) * rotation_for_normal(
+def mount_in_clamp_for(
+    clamp_pos: tuple[float, float, float],
+    clamp_heading_deg: float,
+    mirror_pos: tuple[float, float, float],
+    mirror_normal: tuple[float, float, float],
+) -> Location:
+    """Compose the mount-local → clamp-local `Location` from per-instance
+    placement constants. `clamp_pos` + `clamp_heading_deg` locate the
+    clamp in world; `mirror_pos` + `mirror_normal` locate the mirror
+    mount in world (roll is picked by `horizontal_x_roll_deg(...)` so
+    mount-local +X lands on a world-horizontal direction, matching the
+    rigid mirror_mount convention in `../params.py`)."""
+    clamp_world = Pos(*clamp_pos) * Rot(0, clamp_heading_deg, 0)
+    mount_world = Pos(*mirror_pos) * rotation_for_normal(
+        mirror_normal, roll_deg=horizontal_x_roll_deg(mirror_normal)
+    )
+    return clamp_world.inverse() * mount_world
+
+
+# Below-left pose — drives module-level sanity asserts, derived beam
+# geometry (tilt / axial length), and the standalone `check()` run.
+# By mirror symmetry every derived value also applies to below-right
+# (same _MOUNT_BACK_XYZ in clamp-local), so no second copy is needed.
+_MOUNT_IN_CLAMP: Location = mount_in_clamp_for(
+    RAIL_CLAMP_BELOW_LEFT_POS,
+    RAIL_CLAMP_BELOW_LEFT_HEADING_DEG,
+    MIRROR_BELOW_LEFT_POS,
     MIRROR_BELOW_LEFT_NORMAL,
-    roll_deg=horizontal_x_roll_deg(MIRROR_BELOW_LEFT_NORMAL),
-)
-_MOUNT_IN_CLAMP: Location = (
-    _clamp_placement_world.inverse() * _mount_placement_world
 )
 
 # Mount back face centre in clamp-local. Used below for the beam-tilt
