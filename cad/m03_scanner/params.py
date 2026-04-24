@@ -550,3 +550,58 @@ LOAD_CELL_STANDOFF_FLOOR_BOLT_SPACING = 24.0
 # offset), so 4.5 mm matches the camera-adapter wall-bolt convention
 # rather than the mirror-bracket widened 5.0 mm.
 LOAD_CELL_STANDOFF_BOLT_HOLE_D = 4.5
+
+
+# --- Skeleton rail interface --------------------------------------------
+#
+# 2020 T-slot extrusion geometry for the rev-2 frame skeleton (see
+# skeleton/assembly.py). Duplicated here so mount clamps that grip a
+# rail can derive their placement without sibling-to-sibling imports;
+# the skeleton's own `assert` block pairs with these values.
+
+SKELETON_RAIL_MEMBER = 20.0                         # 2020 cross-section
+SKELETON_RAIL_CORNER_X = 290.0                      # |x| of corner posts' centerlines
+SKELETON_RAIL_FLOOR_CENTERLINE_Y = -230.0           # floor rail centerlines
+SKELETON_RAIL_FLOOR_TOP_Y = (
+    SKELETON_RAIL_FLOOR_CENTERLINE_Y + SKELETON_RAIL_MEMBER / 2
+)                                                   # -220 (rail +Y face)
+
+
+# --- Mirror-mount rail clamp placement (rev 2 POC) ----------------------
+#
+# Rev 2 replacement for the rev-1 printed wedges that supported each
+# mirror from an enclosure panel. A rail clamp grips a 2020 extrusion
+# member of the rev-2 skeleton and presents the mirror_mount's 94 × 94
+# four-corner bolt pattern at the mount's canonical pose.
+#
+# Rev 2 POC targets the below-left mirror on `rail_floor_left` (floor
+# rail at world x = -X_POST, y = Y_FLOOR_RAIL, running along world Z).
+# Porting to below-right + back-upper follows the same template with
+# per-mirror placement constants (to be added alongside each clamp).
+#
+# Clamp-local frame (see mirror_mount_rail_clamp/assembly.py):
+#     origin : centre of clamp bottom face, on rail top face, at the
+#              world-Z of the mount plate back face centre (so the
+#              clamp is centred along the rail under the mount)
+#     +X     : along rail long axis
+#     +Y     : world +Y (up, perpendicular to rail top face)
+#     +Z     : horizontal, from rail toward mount
+
+# Below-left mount back face centre in world (same derivation as the
+# floor-bracket placement above; uses _back_face_centre_world).
+_BL_CLAMP_BACK = _back_face_centre_world(
+    MIRROR_BELOW_LEFT_POS, MIRROR_BELOW_LEFT_NORMAL
+)
+
+# Clamp origin on rail top, directly under the mount back face centre.
+RAIL_CLAMP_BELOW_LEFT_POS = (
+    -SKELETON_RAIL_CORNER_X,              # rail_floor_left centerline X
+    SKELETON_RAIL_FLOOR_TOP_Y,            # rail top face Y
+    _BL_CLAMP_BACK[2],                    # same Z as mount back face
+)
+
+# Placement heading. Clamp-local +X is along rail long axis; world rail
+# axis is +Z. For rail_floor_left (at world x = -290) and mount at
+# world x ≈ -207 (toward +X), clamp-local +Z must land on world +X.
+# Ry(+90°): local +X → world -Z, local +Y → world +Y, local +Z → world +X.
+RAIL_CLAMP_BELOW_LEFT_HEADING_DEG = 90.0
