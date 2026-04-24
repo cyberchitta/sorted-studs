@@ -19,6 +19,8 @@ Sub-assemblies placed here:
                                 enclosure floor
   * back_upper_wall_bracket   — printed wedge supporting the back-upper
                                 mount from the enclosure back wall
+  * load_cell_standoff (×3)   — printed column carrying each load cell's
+                                fixed end from the enclosure floor
 
 Placement references come from `params.py`; those values are copied
 from `docs/m03-multi-view-scanner.md`. If the reference doc's
@@ -44,13 +46,15 @@ is ≈ 460 mm apart). A check would pass trivially and add noise.
 
 What the rev-1 enclosure does NOT yet provide — noted in `NEXT_STEPS.md`:
 panel through-hole patterns pairing with the mount-bracket bolt
-patterns (front wall ↔ camera adapter, floor ↔ below-mirror brackets,
-back wall ↔ back-upper bracket); cut-outs for the chute / eject slot /
+patterns (front wall ↔ camera adapter is done; floor ↔ below-mirror
+brackets + floor ↔ load-cell standoffs + back wall ↔ back-upper
+bracket are the remaining three); cut-outs for the chute / eject slot /
 access door; edge-joint hardware; and ring-light and ToF mount
 features. All three mirror mounts are now bracketed to a wall (front
 wall adapter for the camera-direct viewpoint, floor for the below-
-left/right mirrors, back wall for the back-upper mirror); rev 2
-finishes the wall-side of each interface.
+left/right mirrors, back wall for the back-upper mirror), and all
+three load cells now stand on printed columns that reach the floor;
+rev 2 finishes the wall-side of each interface.
 """
 
 import importlib.util
@@ -76,6 +80,8 @@ from params import (  # noqa: E402
     BELOW_MIRROR_BRACKET_RIGHT_POS,
     CAMERA_POS,
     CAMERA_ROT_DEG,
+    LOAD_CELL_STANDOFF_HEADING_DEG,
+    LOAD_CELL_STANDOFF_POSITIONS,
     MIRROR_BACK_UPPER_NORMAL,
     MIRROR_BACK_UPPER_POS,
     MIRROR_BELOW_LEFT_NORMAL,
@@ -114,6 +120,7 @@ _adapter = _load("camera_bracket_adapter")
 _mirror = _load("mirror_mount")
 _floor_bracket = _load("below_mirror_floor_bracket")
 _wall_bracket = _load("back_upper_wall_bracket")
+_standoff = _load("load_cell_standoff")
 
 
 # --- Placement constants ------------------------------------------------
@@ -190,6 +197,19 @@ _FLOOR_BRACKET_POSES = {
 # and the bracket is symmetric in its own local X.
 _WALL_BRACKET_LOC = Pos(*BACK_UPPER_BRACKET_POS) * Rot(-90, 0, 0)
 
+# Load-cell standoff placements. Local +Y = world +Y; local +X aligns
+# with the supported beam's radial outward direction under Ry(heading),
+# where heading = the load-cell's platform-local azimuth (derivation
+# in params.py). One placement per load cell, in the same index order
+# as the platform's `load_cell_{i}` parts.
+_STANDOFF_LOCS = [
+    Pos(*pos) * Rot(0, heading, 0)
+    for pos, heading in zip(
+        LOAD_CELL_STANDOFF_POSITIONS,
+        LOAD_CELL_STANDOFF_HEADING_DEG,
+    )
+]
+
 
 # --- Assembly composition -----------------------------------------------
 
@@ -261,6 +281,15 @@ assembly = assembly.add(
     _WALL_BRACKET_NAME, _wall_bracket.bracket(), location=_WALL_BRACKET_LOC
 )
 
+# Three load-cell standoffs (one printed column under each load cell's
+# fixed end). Names mirror the platform's `load_cell_{i}` indices so
+# cross-boundary assertions pair cleanly.
+_STANDOFF_NAMES = tuple(
+    f"load_cell_standoff_{i}" for i in range(len(_STANDOFF_LOCS))
+)
+for _name, _loc in zip(_STANDOFF_NAMES, _STANDOFF_LOCS):
+    assembly = assembly.add(_name, _standoff.bracket(), location=_loc)
+
 
 # --- Cross-boundary assertions ------------------------------------------
 
@@ -273,6 +302,7 @@ _INTERNAL_NAMES = (
     + _MIRROR_PART_NAMES
     + _FLOOR_BRACKET_NAMES
     + [_WALL_BRACKET_NAME]
+    + list(_STANDOFF_NAMES)
 )
 
 for _internal in _INTERNAL_NAMES:
@@ -373,6 +403,52 @@ assembly = assembly.assert_no_interference(_WALL_BRACKET_NAME, "camera_adapter")
 # (floor), the wall bracket sits at y ∈ [126, 287]; well clear today.
 for _floor_name in _FLOOR_BRACKET_NAMES:
     assembly = assembly.assert_no_interference(_WALL_BRACKET_NAME, _floor_name)
+
+# Load-cell standoffs vs. everything else. Each standoff's top face sits
+# MOUNT_GAP below its own load-cell's bottom face (coplanar-tangent
+# treatment matches the mirror brackets' mount-gap convention); the
+# bottom face is coplanar with the enclosure floor, already covered by
+# the _INTERNAL_NAMES loop.
+#
+# The az=210 and az=330 standoffs sit ~2 mm outside the `.below_left` /
+# `.below_right` floor-bracket bbox +X edges (see the
+# load_cell_standoff/ module docstring). The assertions below enforce
+# that margin as a regression guard.
+for _idx, _standoff_name in enumerate(_STANDOFF_NAMES):
+    # vs. every enclosure panel — already added in the _INTERNAL_NAMES
+    # loop above.
+
+    # vs. the supported load cell (MOUNT_GAP = 0.3 mm keeps the tangent
+    # contact clean) plus the other two as regression guards.
+    for _plat_part in _PLATFORM_NAMES:
+        assembly = assembly.assert_no_interference(_standoff_name, _plat_part)
+
+    # vs. every mirror-mount part (bracket + glass).
+    for _mirror_part in _MIRROR_PART_NAMES:
+        assembly = assembly.assert_no_interference(_standoff_name, _mirror_part)
+
+    # vs. the two below-mirror floor brackets (the tight-clearance pair
+    # per the docstring analysis) and the back-upper wall bracket.
+    for _floor_name in _FLOOR_BRACKET_NAMES:
+        assembly = assembly.assert_no_interference(_standoff_name, _floor_name)
+    assembly = assembly.assert_no_interference(_standoff_name, _WALL_BRACKET_NAME)
+
+    # vs. the camera bracket triplet + adapter (the az=90 standoff sits
+    # at world z ≈ -220, the adapter at z ≈ [-290, -215] and the bracket
+    # at z ≈ -225 — comfortably clear today, regression guard).
+    for _cam_part in _CAMERA_BRACKET_NAMES:
+        assembly = assembly.assert_no_interference(_standoff_name, _cam_part)
+    assembly = assembly.assert_no_interference(_standoff_name, "camera_adapter")
+
+# Standoff vs. standoff — the three columns sit at r = 220 around the
+# platform with 120° angular separation, so centre-to-centre is
+# 2·220·sin(60°) ≈ 381 mm. Regression guard against any future footprint
+# expansion.
+for _i in range(len(_STANDOFF_NAMES)):
+    for _j in range(_i + 1, len(_STANDOFF_NAMES)):
+        assembly = assembly.assert_no_interference(
+            _STANDOFF_NAMES[_i], _STANDOFF_NAMES[_j]
+        )
 
 
 if __name__ == "__main__":

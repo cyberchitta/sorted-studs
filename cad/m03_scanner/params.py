@@ -429,3 +429,124 @@ ADAPTER_POS = (
     CAMERA_BRACKET_BACK_CENTRE[1],
     ENCLOSURE_INNER_Z_MIN,
 )
+
+
+# --- Platform ⇄ load-cell standoff interface ----------------------------
+#
+# External interface of `platform/` that the adjacent `load_cell_standoff/`
+# must agree on. Each of these duplicates an internal constant in
+# platform/assembly.py; change either side and the top-level cross-
+# boundary interference assertion will catch the drift at the 0.3 mm
+# MOUNT_GAP scale.
+
+# 500 g beam load-cell geometry (duplicates platform/assembly.py).
+PLATFORM_COLLAR_T = 8.0
+PLATFORM_LOAD_CELL_L = 80.0
+PLATFORM_LOAD_CELL_H = 13.0
+PLATFORM_LOAD_CELL_R = 150.0
+PLATFORM_LOAD_CELL_AZ_DEG = (90.0, 210.0, 330.0)
+
+# Beam bottom face world-Y (collar bottom = -COLLAR_T, beam hanging
+# one LOAD_CELL_H below that).
+LOAD_CELL_BOTTOM_Y = -(PLATFORM_COLLAR_T + PLATFORM_LOAD_CELL_H)
+
+
+# --- Load-cell fixed-end bolt pattern (beam ⇄ standoff interface) -------
+#
+# The outer (fixed) end of each 500 g beam load cell carries a two-bolt
+# mounting pattern along the beam's radial axis. The standoff's top
+# face matches this pattern so each beam bolts down to its own column.
+# Values are conservative for a generic 80 × 13 × 13 beam (real
+# TAL220-class cells are typically 15 mm spacing with the outer bolt
+# 6 mm from the outer edge); re-spec when a specific cell is picked.
+
+# Distance between the two bolts along the beam's radial axis (beam-
+# local +X = standoff-local +X when heading = azimuth).
+LOAD_CELL_FIXED_END_BOLT_SPACING = 15.0
+
+# Radial position of the bolt-pattern centre, measured from the platform
+# origin along the beam's radial outward direction. Beam extends
+# r ∈ [PLATFORM_LOAD_CELL_R, PLATFORM_LOAD_CELL_R + PLATFORM_LOAD_CELL_L]
+# = [150, 230]; bolt-pattern centre 10 mm inboard of the outer end.
+LOAD_CELL_FIXED_END_BOLT_CENTER_R = (
+    PLATFORM_LOAD_CELL_R + PLATFORM_LOAD_CELL_L - 10.0
+)
+
+
+# --- Load-cell standoff placement (rev 1) -------------------------------
+#
+# Each load-cell fixed end is carried from the enclosure floor by one
+# printed column. The three instances share one part design
+# (`load_cell_standoff/`) and differ only in the Ry(heading) placement
+# rotation, mirroring the two-instance below-mirror floor bracket
+# pattern one directory up.
+#
+# Standoff local frame (see load_cell_standoff/assembly.py):
+#     origin : centre of column bottom face, on the enclosure floor
+#              (y = ENCLOSURE_INNER_Y_MIN), directly under the load-
+#              cell fixed-end bolt pattern centre
+#     +Y     : world +Y (up)
+#     +X     : beam radial outward direction (horizontal)
+#     +Z     : beam tangential (horizontal; completes right-handed
+#              frame with +X, +Y)
+#
+# Heading: under the platform's Rot(-90, 0, 0) world map, a beam at
+# platform-local azimuth A (measured about platform-local +Z from
+# platform-local +X) has its radial outward vector land on world
+#     Rot(-90, 0, 0) · (cos A, sin A, 0) = (cos A, 0, -sin A)
+# which is exactly Ry(A) · (1, 0, 0). So the standoff's world heading
+# (Ry component) equals the load-cell's platform-local azimuth.
+
+# Clearance between the standoff top face and the load-cell beam
+# bottom face along world +Y. Same rationale as the mirror-bracket
+# MOUNT_GAPs — separates coplanar faces so the cross-boundary boolean
+# reads a clean zero volume at the 0.001 mm³ threshold, and absorbs
+# sub-millimetre print-dimension drift on both parts.
+LOAD_CELL_STANDOFF_MOUNT_GAP = 0.3
+
+LOAD_CELL_STANDOFF_TOP_Y = LOAD_CELL_BOTTOM_Y - LOAD_CELL_STANDOFF_MOUNT_GAP
+
+# Column height, floor → top face.
+LOAD_CELL_STANDOFF_HEIGHT = (
+    LOAD_CELL_STANDOFF_TOP_Y - ENCLOSURE_INNER_Y_MIN
+)
+
+
+def _load_cell_standoff_pos(az_deg: float) -> tuple[float, float, float]:
+    """World position of a standoff's local origin — bottom face centre
+    on the enclosure floor, radially under the fixed-end bolt pattern
+    centre. Derived from heading = az convention above."""
+    az_rad = math.radians(az_deg)
+    r = LOAD_CELL_FIXED_END_BOLT_CENTER_R
+    return (
+        r * math.cos(az_rad),
+        ENCLOSURE_INNER_Y_MIN,
+        -r * math.sin(az_rad),
+    )
+
+
+LOAD_CELL_STANDOFF_POSITIONS = tuple(
+    _load_cell_standoff_pos(_az) for _az in PLATFORM_LOAD_CELL_AZ_DEG
+)
+LOAD_CELL_STANDOFF_HEADING_DEG = PLATFORM_LOAD_CELL_AZ_DEG
+
+
+# --- Load-cell standoff ⇄ floor panel interface -------------------------
+#
+# Four M4 floor bolts secure each standoff to the enclosure floor. The
+# standoff's bottom face carries the through-hole pattern today; the
+# mating through-hole pattern in `enclosure.wall_floor` is a rev 2
+# follow-up bundled with the below-mirror bracket floor-bolt pattern
+# (see `../NEXT_STEPS.md` "Suggested next CAD moves" item 2).
+
+# Square XZ spacing of the four-bolt pattern on the standoff's bottom
+# face (and the matching floor-panel through-holes once they land).
+# 24 mm chosen so the pattern fits comfortably inside the column
+# cross-section (see load_cell_standoff/assembly.py for the width
+# constraint driven by the below-mirror bracket clearance).
+LOAD_CELL_STANDOFF_FLOOR_BOLT_SPACING = 24.0
+
+# M4 clearance hole diameter. Pure axial bolts (no tilt-driven lateral
+# offset), so 4.5 mm matches the camera-adapter wall-bolt convention
+# rather than the mirror-bracket widened 5.0 mm.
+LOAD_CELL_STANDOFF_BOLT_HOLE_D = 4.5
