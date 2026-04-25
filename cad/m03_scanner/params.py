@@ -724,3 +724,72 @@ RAIL_CLAMP_CAMERA_POS = (
 )
 
 RAIL_CLAMP_CAMERA_CLAMP_ROT = Rot(90, 0, 0)
+
+
+# --- Rev-3 T-frame rail positions ---------------------------------------
+#
+# Successor to the rev-2 SKELETON_RAIL_* block above. The rev-3 frame
+# (see `skeleton_t_frame/assembly.py`) carries only four rails plus
+# two corner braces. Rails A (X-span) and C (vertical post) are placed
+# just outside the mount plate volumes — close enough that the printed
+# clamp is a short stub instead of a rev-2 long tilted beam, but far
+# enough that the clamp base clears the plate by a few millimetres.
+# Magic numbers below derive from the worst-case plate-projection
+# analysis in skeleton_t_frame/assembly.py.
+
+T_FRAME_RAIL_A_Y = -220.0                                # rail A centerline Y
+T_FRAME_RAIL_A_TOP_Y = T_FRAME_RAIL_A_Y + SKELETON_RAIL_MEMBER / 2   # = -210
+T_FRAME_RAIL_C_Z = 240.0                                 # rail C centerline Z
+T_FRAME_RAIL_C_FRONT_Z = T_FRAME_RAIL_C_Z - SKELETON_RAIL_MEMBER / 2 # = 230
+
+
+# --- Rev-3 mirror pad-clamp placement -----------------------------------
+#
+# Rev-3 replacement for `RAIL_CLAMP_*` above. Same conceptual role —
+# print one body, parameterise it by `mount_in_clamp` for each of the
+# three mirrors — but the rev-3 rail positions put the mount-back at
+# ≈ (0, 65, 0) for the below-mirrors and ≈ (0, 50, 0) for the back-
+# upper, so the beam runs straight up rather than rev-2's 38–48° tilt.
+#
+# Clamp-local frame (see `mirror_pad_clamp/assembly.py`):
+#     origin : centre of clamp bottom face, on the rail face the clamp
+#              grips, directly under the mount plate back-face centre
+#              along the rail axis
+#     +X     : along rail long axis
+#     +Y     : away from rail (clamp body rises in +Y)
+#     +Z     : right-handed third axis; for the below-mirrors this is
+#              the world horizontal perpendicular to the rail; for the
+#              back-upper it is world -X
+#
+# Each instance pairs a world placement (`*_POS`) with a `Rot` that
+# carries clamp-local axes onto world axes.
+
+# Below-left: clamp on rail A's +Y face, X-centred under the mount-
+# back centre. Identity rotation — clamp-local matches world.
+RAIL_PAD_CLAMP_BELOW_LEFT_POS = (
+    _BL_CLAMP_BACK[0],                # mount-back X (= mirror_pos.x - 8·mirror_normal.x)
+    T_FRAME_RAIL_A_TOP_Y,             # rail A +Y face
+    _BL_CLAMP_BACK[2],                # mount-back Z (= rail A centerline Z, beam straight up)
+)
+RAIL_PAD_CLAMP_BELOW_LEFT_CLAMP_ROT = Rot(0, 0, 0)
+
+# Below-right: X-mirror of below-left. Same identity rotation; the
+# mount's own X-flipped normal supplies the chirality, so the printed
+# body is the X-mirror of below-left's (different drilled holes, same
+# overall shape).
+RAIL_PAD_CLAMP_BELOW_RIGHT_POS = (
+    _BR_CLAMP_BACK[0],
+    T_FRAME_RAIL_A_TOP_Y,
+    _BR_CLAMP_BACK[2],
+)
+RAIL_PAD_CLAMP_BELOW_RIGHT_CLAMP_ROT = Rot(0, 0, 0)
+
+# Back-upper: clamp on rail C's -Z face (rail C runs along world +Y).
+# Rot(-90, -90, 0) maps clamp-local +X → world +Y (along rail), +Y →
+# world -Z (away from rail toward mount), +Z → world -X.
+RAIL_PAD_CLAMP_BACK_UPPER_POS = (
+    _BU_CLAMP_BACK[0],                # x = 0 (rail C is on the YZ plane)
+    _BU_CLAMP_BACK[1],                # mount-back Y (= rail C clamp Y)
+    T_FRAME_RAIL_C_FRONT_Z,           # rail C -Z face
+)
+RAIL_PAD_CLAMP_BACK_UPPER_CLAMP_ROT = Rot(-90, -90, 0)

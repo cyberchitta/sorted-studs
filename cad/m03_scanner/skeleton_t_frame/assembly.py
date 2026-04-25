@@ -10,37 +10,50 @@ scan volume and eject path open by construction.
 
 Rails (see `../NEXT_STEPS.md` for the full design rationale):
 
-  * rail A — X-span at the below-mirror mount back-face plane
-    (y ≈ -145, z ≈ +28). Both below-mirror pad-on-rail clamps grip
-    directly, zero beam reach. Split into left/right halves at the
-    T-junction so rail B runs continuously through.
-  * rail B — Z-span at the same plane, continuous through the T.
+  * rail A — X-span just below the below-mirror mount plates
+    (y = -220, z ≈ +28), close enough to the mount back-face plane
+    that the printed clamp is a short stub rather than the rev-2
+    long beam. The "pad-on-rail" goal (zero beam reach) was
+    incompatible with the tilted back face crossing the rail body,
+    so rail A drops just far enough that the clamp base clears the
+    mount plate's lowest world-Y point with a few mm margin.
+    Split into left/right halves at the T-junction so rail B runs
+    continuously through.
+  * rail B — Z-span at the same Y, continuous through the T.
     Forms the backbone from rail A's centre back to rail C, with
     outriggers past each junction for fore-aft base stability.
-  * rail C — vertical post at the back-upper mount back-face plane
-    (x = 0, z ≈ +180). Rises from rail B's back end past the back-
-    upper mirror to rail D's height. Back-upper pad-on-post clamp
-    grips directly.
+  * rail C — vertical post behind the back-upper mount plate
+    (x = 0, z = +240). Same logic as rail A — pushed out of the
+    mount plate's volume so a short stub clamp can host the back-
+    upper mirror without a long beam. Rises from rail B's back end
+    past the back-upper mirror to rail D's height.
   * rail D — Z-cantilever over the camera, sitting atop rail C.
     Camera pad-on-cantilever-underside clamp hangs below.
 
-Plus two ~45° diagonal braces, one at each L-junction (rail B ↔ rail C
-and rail C ↔ rail D). Each bridges its two rails with mitered ends
-that sit flush (CORNER_GAP away) against the adjacent rail faces, so
-they actually triangulate the joint rather than floating near it.
-Both braces sit just forward of rail C at the back of the rig, so
-the interior stays clear for the platform frame to slide in — the
-central point of the rev-3 decoupled-platform architecture.
+The rail B ↔ rail C L-junction carries a single ~45° corner brace
+inside the L (mitered at both ends, CORNER_GAP from each adjacent
+rail face). The interior stays clear for the platform frame to slide
+in — the central point of the rev-3 decoupled-platform architecture.
 
-A single long diagonal from rail D (along the cantilever) down to rail
-B would reduce camera-tip deflection more aggressively (~10×, by
-converting rail D to a propped cantilever) but cuts straight through
-the platform frame's volume. Joint-stiffening braces give a ~2×
-reduction while keeping the interior open. If that factor turns out
-insufficient once the rig is built and instrumented, the escape
-hatch is a king-post above rail C with a tension strut to rail D's
-tip, which stays entirely above y = 240 and so still clears the
-platform.
+The rail C ↔ rail D L-junction can't carry the same kind of corner
+brace: the back-upper mirror mount sits in that corner, and any
+diagonal from rail C's -Z face to rail D's -Y face crashes through
+the mount + pad-clamp volume. Instead, this slice props rail D's
+cantilever from above with a king-post + strut pair:
+
+  * king-post — 2020 vertical extrusion sitting on rail D's +Y face
+    directly above the rail C / rail D L-junction. Lives entirely
+    above y = 260, well above any platform / camera / mirror part.
+  * strut_d   — diagonal from king-post tip down-and-forward to rail
+    D's free (-Z) end. Mitered against the king-post's -Z face at one
+    end and rail D's +Y face at the other. Converts rail D from a
+    bare cantilever (~530 mm reach) to a propped beam — nominally
+    ~10× tip-deflection reduction, vs ~2× for the single corner
+    brace that would have lived in the closed L.
+
+Both new members sit on the +Y side of rail D's plane, so the back-
+upper mount + pad clamp + back-upper mirror can occupy the lower L
+volume undisturbed.
 
 Coordinate frame = world frame (matches `../params.py`):
     origin = brick centroid on the platform top face
@@ -60,9 +73,10 @@ ends, with its body offset from the adjacent rails by ~10-20 mm so
 the extrusion volumes don't intersect at this rev.
 
 Rev-3 vs rev-2 differences:
-  * No floor rails — rails A and B sit at the below-mirror mount plane
-    and each below-mirror clamp has zero beam reach. Floor-standing
-    feet are a follow-up slice.
+  * No floor rails — rails A and B sit just below the below-mirror
+    mount plates, with the printed clamp a short stub instead of a
+    rev-2 long tilted beam. Floor-standing feet are a follow-up
+    slice.
   * No ceiling rails — rail D's height is set by clearance over the
     back-upper mount plate, not a uniform ceiling plane.
   * No separate enclosure; the camera rig and platform frame are
@@ -98,10 +112,11 @@ CORNER_GAP = 0.3                # butt-joint gap at each rail endpoint
 
 # --- World-frame references --------------------------------------------
 #
-# Rails A/B sit at the below-mirror mount back-face plane (pad-on-rail
-# convention); rail C sits at the back-upper back-face plane (pad-on-
-# post). Both are derived from mount pose + back-offset so a viewpoint-
-# optimiser update in `params.py` flows through automatically.
+# Rails A/B sit just below the below-mirror mount plates; rail C sits
+# behind the back-upper plate. Each rail is offset from its mount's
+# back-face centre along the back-face outward normal by enough that
+# the clamp base clears the mount plate's solid volume — see
+# `MOUNT_CLEARANCE` derivation below.
 
 def _back_face_centre(pos, normal):
     return tuple(
@@ -113,71 +128,92 @@ _BL_BACK = _back_face_centre(MIRROR_BELOW_LEFT_POS, MIRROR_BELOW_LEFT_NORMAL)
 _BU_BACK = _back_face_centre(MIRROR_BACK_UPPER_POS, MIRROR_BACK_UPPER_NORMAL)
 
 
-# --- Rail A — X-span at the below-mirror plane --------------------------
+# --- Rail offsets from mount back-face centres -------------------------
+#
+# The clamp base is BASE_H ≈ 15 mm tall and sits on the rail face that
+# faces the mount. The mount plate (110 × 110 × 5 mm, tilted) bulges
+# from its back-face centre by ~48 mm toward world -Y for the below-
+# mirrors (and ~26 mm toward world +Z for the back-upper). To keep
+# the clamp base clear of that plate volume with a few mm margin, the
+# rail face must sit (HALF_PLATE_PROJ + BASE_H + MARGIN) further along
+# the back-face outward normal than the back-face centre.
+#
+# Concretely for below-left:
+#   plate min world-Y ≈ -188.4 (= mirror_pos.y - 55·|m_local_Y.y| - 8·|m_normal.y|)
+#   rail +Y face must be ≤ -188.4 - margin_5 = -193.4
+#   rail centerline ≤ -193.4 - 10 (rail half) = -203.4
+#   include BASE_H so base top ≤ -193.4: rail centerline ≤ -218.4
+# Round to -220 → 6.6 mm gap from base top to plate volume.
+#
+# For back-upper the same calculation lands rail centerline at
+# z ≥ 235.4; round to 240 → 9.6 mm gap.
 
-RAIL_A_Y = _BL_BACK[1]                           # ≈ -145.03
-RAIL_A_Z = _BL_BACK[2]                           # ≈ 28.44
+RAIL_A_Y = -220.0                                # base top y = -195, plate min y ≈ -188.4 → 6.6 mm gap
+RAIL_A_Z = _BL_BACK[2]                           # ≈ 28.44; under mount-back centre Z so beam straight up
 RAIL_A_X_HALF = 270.0                            # outrigger past mirror x=±207
 
 # Half-rails end CORNER_GAP inboard of rail B's nearest face.
 RAIL_A_INNER_X = MEMBER / 2 + CORNER_GAP         # = 10.3
 
 
-# --- Rail B — Z-span at the below-mirror plane, continuous through T ----
+# --- Rail B — Z-span at the same Y as rail A, continuous through T -----
 
 RAIL_B_Y = RAIL_A_Y                              # coplanar with rail A
 RAIL_B_Z_FRONT = -30.0                           # front outrigger past rail A junction (z≈28)
-RAIL_B_Z_BACK = _BU_BACK[2] + 40.0               # ≈ 219.78, back outrigger past rail C
 
 
-# --- Rail C — vertical post under the back-upper mirror -----------------
+# --- Rail C — vertical post behind the back-upper mirror ----------------
 
-RAIL_C_Z = _BU_BACK[2]                           # ≈ 179.78
+RAIL_C_Z = 240.0                                 # base top z = 215, plate max z ≈ 205.4 → 9.6 mm gap
 # Sits on rail B's +Y face with CORNER_GAP separator.
-RAIL_C_Y_BOTTOM = RAIL_B_Y + MEMBER / 2 + CORNER_GAP    # ≈ -134.73
+RAIL_C_Y_BOTTOM = RAIL_B_Y + MEMBER / 2 + CORNER_GAP    # ≈ -209.7
 # Top set high enough to clear the back-upper mount plate's upper corner
-# (y ≤ 227.2 for the 110 × 110 plate at the back-upper pose) and to
+# (y ≤ 228.4 for the 110 × 110 plate at the back-upper pose) and to
 # present the L-junction elevation for rail D.
 RAIL_C_Y_TOP = 240.0
+
+# Rail B back outrigger sits 40 mm past rail C's back face.
+RAIL_B_Z_BACK = RAIL_C_Z + 40.0                  # = 280.0
 
 
 # --- Rail D — Z-cantilever over the camera ------------------------------
 
 RAIL_D_Y = RAIL_C_Y_TOP + CORNER_GAP + MEMBER / 2   # ≈ 250.3 (sits on rail C top)
-RAIL_D_Z_BACK = RAIL_C_Z + MEMBER / 2            # ≈ 189.78 (L-junction aligned with rail C +Z face)
+RAIL_D_Z_BACK = RAIL_C_Z + MEMBER / 2            # = 250.0 (L-junction aligned with rail C +Z face)
 RAIL_D_Z_FRONT = -280.0                          # ~53 mm past camera (z ≈ -226.6)
 
 
-# --- Corner braces — ~45° diagonals at the two L-junctions ------------
+# --- Rail B ↔ rail C corner brace --------------------------------------
 #
-# Two short struts, one per L-junction, each bridging its two rails at
-# ~45°. Both ends are mitered (cut parallel to the adjacent rail face
-# minus CORNER_GAP) so the brace body sits flush against each rail.
+# Single ~45° diagonal inside the lower-back L. 60 mm legs along each
+# adjacent rail face → ~85 mm hypotenuse, mitered at each end so the
+# brace body sits flush against rail B's +Y face and rail C's -Z face
+# (CORNER_GAP from each).
+
+_BRACE_LEG = 60.0                 # leg length along each adjacent rail face
+
+BRACE_BC_ON_B_Z = RAIL_C_Z - MEMBER / 2 - _BRACE_LEG     # = 170.0 (60 mm forward of rail C -Z face)
+BRACE_BC_ON_C_Y = RAIL_B_Y + MEMBER / 2 + _BRACE_LEG     # = -150.0 (60 mm above rail B +Y face)
+
+
+# --- King-post + strut — props rail D's cantilever above the L --------
 #
-# A single long diagonal from rail D (along the cantilever) down to
-# rail B would drop camera-tip deflection by ~10× rather than the ~2×
-# the corner braces give, but it crosses the rig's interior at x = 0
-# — exactly the volume the platform frame slides into, which is the
-# whole rev-3 premise. Corner braces keep the interior clear.
+# The rail C ↔ rail D L-junction can't host a corner brace because the
+# back-upper mount + pad clamp own that interior volume. Instead, a
+# vertical king-post sits on rail D directly above the rail C L-junction,
+# and a strut runs from the king-post tip down-and-forward to rail D's
+# free end. Both members live entirely above y = 260 so they clear the
+# back-upper mount + clamp and the platform.
 #
-# If 2× isn't enough once the rig is instrumented, the escape hatch
-# is a king-post above rail C plus a tension strut to rail D's tip,
-# entirely above y = 240 so still clear of the platform.
+# The triangle (king-post / strut / rail D) converts rail D from a pure
+# cantilever (~530 mm reach) to a propped beam — nominally ~10× tip-
+# deflection reduction. Same structural payoff as a long rail-B-to-D
+# diagonal would give, but routed entirely above the rig interior.
 
-# Each brace is specified by its two attach points — (signed) distances
-# from the L-junction corner along each adjacent rail face. A 60 mm leg
-# on each side gives a ~45° brace roughly 85 mm along its axis. Ends
-# are mitered (cut flush to the adjacent rail face minus CORNER_GAP)
-# so the brace body contacts both rails cleanly rather than floating
-# in free space.
-
-# B ↔ C brace — inside the lower-back L (rail B +Y face ↔ rail C -Z face).
-BRACE_BC_ON_B_Z = 110.0           # attach on rail B: 60 mm forward of rail C -Z face
-BRACE_BC_ON_C_Y = -75.0           # attach on rail C: 60 mm above rail B +Y face
-
-# C ↔ D brace — inside the upper-back L (rail C -Z face ↔ rail D -Y face).
-BRACE_CD_ON_C_Y = 180.0           # attach on rail C: 60 mm below rail D -Y face
-BRACE_CD_ON_D_Z = 110.0           # attach on rail D: 60 mm forward of rail C -Z face
+KING_POST_H = 150.0                                       # post height (rail D top → post top)
+KING_POST_Z = RAIL_C_Z                                    # = 240 (centred over rail C)
+KING_POST_Y_BOTTOM = RAIL_D_Y + MEMBER / 2 + CORNER_GAP   # = 260.6 (just above rail D top face)
+KING_POST_Y_TOP = KING_POST_Y_BOTTOM + KING_POST_H        # = 410.6
 
 
 # --- Parametric sanity -------------------------------------------------
@@ -298,6 +334,9 @@ _rail_c_len = RAIL_C_Y_TOP - RAIL_C_Y_BOTTOM
 _rail_d_zc = (RAIL_D_Z_FRONT + RAIL_D_Z_BACK) / 2
 _rail_d_len = RAIL_D_Z_BACK - RAIL_D_Z_FRONT
 
+_king_post_yc = (KING_POST_Y_BOTTOM + KING_POST_Y_TOP) / 2
+_king_post_len = KING_POST_Y_TOP - KING_POST_Y_BOTTOM
+
 
 _MEMBERS = {
     "rail_a_left": rail_x(_rail_a_left_xc, _rail_a_left_len, RAIL_A_Y, RAIL_A_Z),
@@ -317,15 +356,17 @@ _MEMBERS = {
             _half_space("z_max", RAIL_C_Z - MEMBER / 2 - CORNER_GAP),
         ],
     ),
-    "brace_cd": mitered_brace_yz(
-        # Attach on rail C -Z face and rail D -Y face.
-        (0.0, BRACE_CD_ON_C_Y, RAIL_C_Z - MEMBER / 2),
-        (0.0, RAIL_D_Y - MEMBER / 2, BRACE_CD_ON_D_Z),
+    "king_post": rail_y(0.0, _king_post_yc, _king_post_len, KING_POST_Z),
+    "strut_d": mitered_brace_yz(
+        # Attach on king-post -Z face (front) at the post top, and rail
+        # D's +Y face (top) at the front (free) end of the cantilever.
+        (0.0, KING_POST_Y_TOP, KING_POST_Z - MEMBER / 2),
+        (0.0, RAIL_D_Y + MEMBER / 2, RAIL_D_Z_FRONT),
         cutters=[
-            # Miter against rail C -Z face.
-            _half_space("z_max", RAIL_C_Z - MEMBER / 2 - CORNER_GAP),
-            # Miter against rail D -Y face.
-            _half_space("y_max", RAIL_D_Y - MEMBER / 2 - CORNER_GAP),
+            # Miter against king-post -Z face.
+            _half_space("z_max", KING_POST_Z - MEMBER / 2 - CORNER_GAP),
+            # Miter against rail D +Y face.
+            _half_space("y_min", RAIL_D_Y + MEMBER / 2 + CORNER_GAP),
         ],
     ),
 }
