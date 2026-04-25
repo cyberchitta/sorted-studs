@@ -831,3 +831,61 @@ RAIL_PAD_CLAMP_CAMERA_POS = (
 # Rot(180, 90, 0): clamp-local +X → world +Z (along rail D toward back),
 # +Y → world -Y (down toward bracket), +Z → world +X (right-handed).
 RAIL_PAD_CLAMP_CAMERA_CLAMP_ROT = Rot(180, 90, 0)
+
+
+# --- Brick reference (from docs/parameters.md) -------------------------
+
+# 90% of LEGO parts fit within an 80 mm sphere. Drives the minimum
+# platform aperture and the camera-rig clearance envelope. Optical
+# sightline cones at the platform plane (≤ Ø172 per rev-1's design)
+# dominate this for acrylic sizing.
+BRICK_SPHERE_DIA = 80.0
+
+
+# --- Rev-3 platform frame (slice a) ------------------------------------
+#
+# Standalone freestanding 2020 frame that hosts the rev-3 hinged
+# platform. Sits in front of and slightly under the camera rig's
+# rail A / rail B bottom faces. Slides into the open camera-rig front
+# by construction; no precision indexing needed (the brick sits on the
+# platform, so only platform-to-brick geometry matters optically).
+#
+# Floor uses a "T-tongue" topology — front X-rail + back Z-tongue —
+# rather than a closed rectangle. Three contact regions (two front-
+# corner posts + one tongue tip) give a stable footprint without the
+# 4-point rocking risk of a closed rectangle on an uneven bench.
+
+# Acrylic platform plate: smallest rectangle that simultaneously
+# clears the below-mirror sightline cones (≤ Ø172 at the platform
+# plane per rev-1) and accommodates the largest brick footprint
+# (BRICK_SPHERE_DIA = 80). 180 mm gives ~4 mm of clear acrylic margin
+# outside the Ø172 sightline circle for edge clamping.
+PLATFORM_ACRYLIC_SIZE = 180.0
+
+# Floor rails sit at y = -245 (top face -235), 5 mm below the rev-3
+# camera rig's rail A / rail B bottom faces at y = -230. Clear 3D
+# separation in Y means the platform-frame tongue can pass under
+# rail B at z ∈ [-30, +100] without interference.
+PLATFORM_FRAME_FLOOR_Y = -245.0
+
+# Front-post centerlines in X. ±100 sits 10 mm outboard of the
+# 180 mm acrylic edge (acrylic at x ∈ [-90, +90]) so the cross-rail
+# tops carry hinge bearings just outside the platform footprint, and
+# clears rail A's outrigger end at x = ±270 by ~170 mm.
+PLATFORM_FRAME_POST_X = 100.0
+
+# Front-post centerline Z. -100 sits 10 mm forward of the acrylic
+# front edge (z = -90), so the cross-rail centerline passes just in
+# front of the platform's hinge edge.
+PLATFORM_FRAME_POST_Z = -100.0
+
+# Cross-rail centerline Y. Top face at -30 puts the hinge-bearing
+# upper face just below the platform top at y = 0; bearing height
+# ~25–30 mm brings the hinge bore into the acrylic edge thickness.
+PLATFORM_FRAME_CROSS_RAIL_Y = -40.0
+
+# Back-tongue tip Z. +100 puts the back foot ~100 mm behind the world
+# origin, well past the platform's CG, for forward-tip stability.
+# Tongue passes under rail B (which spans z ∈ [-30, +280] at x = 0,
+# y = -220) — 5 mm Y-clearance keeps them disjoint in 3D.
+PLATFORM_FRAME_TONGUE_Z_BACK = 100.0
