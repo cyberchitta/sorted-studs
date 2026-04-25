@@ -229,6 +229,10 @@ SKELETON_RAIL_MEMBER = 20.0
 
 T_FRAME_RAIL_A_Y = -220.0                                # rail A centerline Y
 T_FRAME_RAIL_A_TOP_Y = T_FRAME_RAIL_A_Y + SKELETON_RAIL_MEMBER / 2   # = -210
+T_FRAME_RAIL_A_Z = _back_face_centre_world(
+    MIRROR_BELOW_LEFT_POS, MIRROR_BELOW_LEFT_NORMAL
+)[2]                                                                 # ≈ 28.44
+T_FRAME_RAIL_A_FRONT_Z = T_FRAME_RAIL_A_Z - SKELETON_RAIL_MEMBER / 2 # ≈ 18.44
 T_FRAME_RAIL_C_Z = 240.0                                 # rail C centerline Z
 T_FRAME_RAIL_C_FRONT_Z = T_FRAME_RAIL_C_Z - SKELETON_RAIL_MEMBER / 2 # = 230
 T_FRAME_RAIL_D_Y = 250.3                                 # rail D centerline Y
@@ -373,11 +377,13 @@ PLATFORM_ACRYLIC_SIZE = 180.0
 # top face without the bond joint dominating the plate's geometry.
 PLATFORM_ACRYLIC_T = 4.0
 
-# Floor rails sit at y = -245 (top face -235), 5 mm below the rev-3
-# camera rig's rail A / rail B bottom faces at y = -230. Clear 3D
-# separation in Y means the platform-frame tongue can pass under
-# rail B at z ∈ [-30, +100] without interference.
-PLATFORM_FRAME_FLOOR_Y = -245.0
+# Floor rails are coplanar with the camera rig's rail A / rail B
+# (centerline y = -220, top face y = -210, bottom face y = -230).
+# Both the rig and the platform frame share a single bench at
+# y = -230. The Z-tongue therefore can't pass under rail B; it butts
+# up against rail B's front face (CORNER_GAP separator), and rail B's
+# front outrigger has been removed correspondingly.
+PLATFORM_FRAME_FLOOR_Y = -220.0
 
 # Front-post centerlines in X. ±100 sits 10 mm outboard of the
 # 180 mm acrylic edge (acrylic at x ∈ [-90, +90]) so the cross-rail
@@ -395,11 +401,13 @@ PLATFORM_FRAME_POST_Z = -100.0
 # ~25–30 mm brings the hinge bore into the acrylic edge thickness.
 PLATFORM_FRAME_CROSS_RAIL_Y = -40.0
 
-# Back-tongue tip Z. +100 puts the back foot ~100 mm behind the world
-# origin, well past the platform's CG, for forward-tip stability.
-# Tongue passes under rail B (which spans z ∈ [-30, +280] at x = 0,
-# y = -220) — 5 mm Y-clearance keeps them disjoint in 3D.
-PLATFORM_FRAME_TONGUE_Z_BACK = 100.0
+# Back-tongue tip Z. Tongue butts against rail B's new front face
+# (z ≈ 18.44, flush with rail A's front face) with a CORNER_GAP
+# (0.3 mm) separator — they share the same y = -220 plane, so they
+# can't overlap in z. Significantly shorter than the acrylic's
+# z-extent (z ∈ [-90, +90]); accepted because the platform is light
+# and its CG sits forward of the new back foot.
+PLATFORM_FRAME_TONGUE_Z_BACK = T_FRAME_RAIL_A_FRONT_Z - 0.3
 
 
 # --- Rev-3 platform hinge bearing (slice b) ----------------------------

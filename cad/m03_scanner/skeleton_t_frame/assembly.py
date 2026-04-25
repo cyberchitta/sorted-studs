@@ -20,8 +20,11 @@ Rails (see `../NEXT_STEPS.md` for the full design rationale):
     Split into left/right halves at the T-junction so rail B runs
     continuously through.
   * rail B — Z-span at the same Y, continuous through the T.
-    Forms the backbone from rail A's centre back to rail C, with
-    outriggers past each junction for fore-aft base stability.
+    Forms the backbone from rail A's front face back past rail C
+    (back outrigger only). The rev-3 platform's Z-tongue lies
+    coplanar with rail A/B (single shared bench at y = -230), so
+    rail B can't extend past rail A toward the front without
+    clashing with the tongue — the front outrigger was removed.
   * rail C — vertical column behind the back-upper mount plate
     (x = 0, z = +240). Same logic as rail A — pushed out of the
     mount plate's volume so a short stub clamp can host the back-
@@ -165,7 +168,10 @@ RAIL_A_INNER_X = MEMBER / 2 + CORNER_GAP         # = 10.3
 # --- Rail B — Z-span at the same Y as rail A, continuous through T -----
 
 RAIL_B_Y = RAIL_A_Y                              # coplanar with rail A
-RAIL_B_Z_FRONT = -30.0                           # front outrigger past rail A junction (z≈28)
+# Rail B's front face is flush with rail A's front face — no front
+# outrigger. The rev-3 platform tongue lives at the same Y and butts
+# against this face, precluding any forward extension here.
+RAIL_B_Z_FRONT = RAIL_A_Z - MEMBER / 2           # = 18.44
 
 
 # --- Rail C — vertical column behind the back-upper mirror -------------
@@ -244,9 +250,10 @@ assert RAIL_A_X_HALF > abs(MIRROR_BELOW_LEFT_POS[0]), (
     f"past the below-mirror X position (x=±{abs(MIRROR_BELOW_LEFT_POS[0])})"
 )
 
-assert RAIL_B_Z_FRONT < RAIL_A_Z and RAIL_B_Z_BACK > RAIL_C_Z, (
-    f"rail B must extend past both rail A junction (z={RAIL_A_Z:.2f}) "
-    f"and rail C junction (z={RAIL_C_Z:.2f}); "
+assert RAIL_B_Z_FRONT == RAIL_A_Z - MEMBER / 2 and RAIL_B_Z_BACK > RAIL_C_Z, (
+    f"rail B must start flush with rail A's front face (no front "
+    f"outrigger; expected z={RAIL_A_Z - MEMBER / 2:.2f}) and extend "
+    f"past rail C junction (z={RAIL_C_Z:.2f}); "
     f"got z ∈ [{RAIL_B_Z_FRONT}, {RAIL_B_Z_BACK}]"
 )
 

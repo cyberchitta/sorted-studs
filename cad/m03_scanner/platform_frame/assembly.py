@@ -27,11 +27,13 @@ Coordinate frame = world frame (matches `../params.py`):
     +Y     = up
     +Z     = away from operator (toward the back of the machine)
 
-Clearance to camera rig: floor rails at y = -245 (top face -235) sit
-5 mm below the rev-3 rig's rail A / rail B bottom faces at y = -230,
-so the tongue passes under rail B at z ∈ [-30, +100] in 3D without
-interference. Front posts at z = -100 are 70 mm forward of rail A
-(z = +28); cross-rail at z = -100 is also clear of rail A.
+Clearance to camera rig: floor rails are coplanar with the rig's
+rail A / rail B (centerline y = -220, both share a single bench at
+y = -230). The tongue therefore can't pass under rail B; it butts
+up against rail B's front face (CORNER_GAP separator), which
+skeleton_t_frame has moved flush with rail A's front face (front
+outrigger removed). Front posts at z = -100 are well forward of
+rail A (z = +28); cross-rail at z = -100 is also clear of rail A.
 
 All members are stock 2020 aluminum extrusion — bought, not printed —
 so no `inspect()` calls. Butt-jointed members end CORNER_GAP (0.3 mm)
@@ -61,6 +63,7 @@ from params import (  # noqa: E402
     PLATFORM_FRAME_POST_X,
     PLATFORM_FRAME_POST_Z,
     PLATFORM_FRAME_TONGUE_Z_BACK,
+    T_FRAME_RAIL_A_FRONT_Z,
 )
 
 
@@ -107,10 +110,21 @@ assert _TONGUE_Z_LEN > 0, (
     f"+Z face ({_TONGUE_Z_FRONT})"
 )
 
-assert PLATFORM_FRAME_POST_Z + MEMBER / 2 < 18.44, (
+assert PLATFORM_FRAME_POST_Z + MEMBER / 2 < T_FRAME_RAIL_A_FRONT_Z, (
     f"front rail +Z face ({PLATFORM_FRAME_POST_Z + MEMBER / 2}) is not "
-    f"forward of the camera rig's rail A front face (z ≈ 18.44); the "
-    f"frame's vertical posts would crash rail A in 3D"
+    f"forward of the camera rig's rail A front face "
+    f"(z = {T_FRAME_RAIL_A_FRONT_Z:.2f}); the frame's vertical posts "
+    f"would crash rail A in 3D"
+)
+
+# Tongue and rail B share y = -220, so they can't overlap in z. The
+# tongue back must be CORNER_GAP-separated from rail B's front face
+# (which sits at T_FRAME_RAIL_A_FRONT_Z, since rail B has no front
+# outrigger past rail A).
+assert PLATFORM_FRAME_TONGUE_Z_BACK + CORNER_GAP <= T_FRAME_RAIL_A_FRONT_Z, (
+    f"tongue back face ({PLATFORM_FRAME_TONGUE_Z_BACK}) needs at least "
+    f"{CORNER_GAP} mm clearance from rail B's front face "
+    f"({T_FRAME_RAIL_A_FRONT_Z:.2f}); they share y = -220 and would crash"
 )
 
 
