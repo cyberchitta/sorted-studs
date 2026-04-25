@@ -245,12 +245,9 @@ if __name__ == "__main__":
     # which is the only basket with a column notch cut through its
     # interior rather than at a boundary.
     method = FDM(wall_min_mm=WALL_MIN, overhang_max_deg=90.0)
-    try:
-        inspect(
-            basket(half_angle_deg=180.0 / 9, notch_middle=True),
-            method=method,
-            out="outputs",
-            name="basket_090_09",
-        )
-    except SystemExit:
-        pass
+    inspect(
+        basket(half_angle_deg=180.0 / 9, notch_middle=True),
+        method=method,
+        out="outputs",
+        name="basket_090_09",
+    )

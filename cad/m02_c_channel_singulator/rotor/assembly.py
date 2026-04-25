@@ -212,12 +212,25 @@ assembly = Assembly().add("rotor", rotor())
 
 if __name__ == "__main__":
     check(assembly, out="outputs")
-    # 45°-from-vertical flank is base-down-friendly on the outer
-    # face; the cavity's inner face has a matching 45° inward lean
-    # as z increases, which reads as an overhang. 50° threshold
-    # leaves headroom for printer tuning.
+    # 50° threshold passes the 45° conical flank (outer face base-down,
+    # cavity inner face matching inward lean). The cavity ceiling, boss
+    # bottom, and blind-bore top will still flag as 90° overhangs — see
+    # waiver below.
     method = FDM(wall_min_mm=WALL_MIN, overhang_max_deg=50.0)
     try:
         inspect(rotor(), method=method, out="outputs", name="rotor")
     except SystemExit:
-        pass
+        # Two known-tolerated failures (full detail in
+        # outputs/rotor-printability.json):
+        # (1) min wall ~0.09mm — ray-sampling artifact at the 20-point
+        #     star kink ridges. Real wall is ≥ ROTOR_SHELL_WALL_T by
+        #     construction (see cavity_r_at_kink derivation in rotor()).
+        # (2) 90° overhang area — cavity ceiling, boss bottom, and blind
+        #     bore top all face downward when printed apex-up. Print
+        #     plan in the module docstring handles this: breakaway
+        #     support through the open base, or split at z=BOSS_BOTTOM_Z
+        #     into shell + cap+boss pieces.
+        print(
+            "WAIVED: rotor printability (star-ridge wall artifact + apex-up cavity ceilings, see docstring print plan)",
+            file=sys.stderr,
+        )

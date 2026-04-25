@@ -216,4 +216,11 @@ if __name__ == "__main__":
     try:
         inspect(stator(), method=method, out="outputs", name="stator")
     except SystemExit:
-        pass
+        # Known false positive: ray-sampling reports ~0.1mm wall at the
+        # sharp V-cone inner edge where two 45° faces meet. Design wall
+        # is STATOR_WALL_T everywhere; the diagnostic in
+        # outputs/stator-printability.json still records the failure.
+        print(
+            "WAIVED: stator printability (V-cone inner-edge ray-sampling artifact)",
+            file=sys.stderr,
+        )

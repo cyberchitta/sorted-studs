@@ -433,6 +433,13 @@ for angle in TRAP_SAMPLES:
 if __name__ == "__main__":
     check(assembly, out="outputs")
     method = FDM(wall_min_mm=WALL_MIN, overhang_max_deg=90.0)
+    # Per-part waivers for known printability false positives. A new
+    # failure on any part NOT listed here will raise. Full per-part
+    # diagnostics still land in outputs/<name>-printability.json.
+    waivers = {
+        "bearing_spider": "ray-sampling artifact at hub annulus + saddle bolt-hole edges",
+        "ring_bearing": "ray-sampling artifact at thin annulus edges",
+    }
     for name, part_fn in [
         ("bearing_spider", bearing_spider),
         ("ring_bearing", ring_bearing),
@@ -443,4 +450,6 @@ if __name__ == "__main__":
         try:
             inspect(part_fn(), method=method, out="outputs", name=name)
         except SystemExit:
-            pass
+            if name not in waivers:
+                raise
+            print(f"WAIVED: {name} printability ({waivers[name]})", file=sys.stderr)
