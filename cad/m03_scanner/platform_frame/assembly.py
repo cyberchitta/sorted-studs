@@ -151,19 +151,31 @@ _MEMBERS = {
     ),
 }
 
+PLATFORM_FRAME_PART_NAMES = tuple(_MEMBERS.keys())
 
-# --- Assembly ----------------------------------------------------------
 
-assembly = Assembly()
-for _name, _part in _MEMBERS.items():
-    assembly = assembly.add(_name, _part)
+# --- Assembly builder --------------------------------------------------
+
+def add_platform_frame(a: Assembly) -> Assembly:
+    """Add all 2020 platform-frame members in world coordinates and
+    return the updated assembly. Exposed so the top-level scanner
+    assembly composes via the public surface instead of reaching
+    into module-private state.
+    """
+    for name, part in _MEMBERS.items():
+        a = a.add(name, part)
+    return a
+
+
+# --- Standalone assembly -----------------------------------------------
+
+assembly = add_platform_frame(Assembly())
 
 # Every pair of members must be non-overlapping. Butt-joints are
 # separated by CORNER_GAP (0.3 mm); printed corner brackets bridge the
 # gaps in reality and are not modelled in this slice.
-_names = list(_MEMBERS.keys())
-for _i, _a in enumerate(_names):
-    for _b in _names[_i + 1:]:
+for _i, _a in enumerate(PLATFORM_FRAME_PART_NAMES):
+    for _b in PLATFORM_FRAME_PART_NAMES[_i + 1:]:
         assembly = assembly.assert_no_interference(_a, _b)
 
 

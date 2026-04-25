@@ -77,10 +77,8 @@ fixed by the tetrahedral optimiser in
 approach each other (closest centre pair is ≈ 460 mm apart).
 """
 
-import importlib.util
 import sys
 from pathlib import Path
-from types import ModuleType
 
 from build123d import Pos, Rot
 
@@ -89,6 +87,10 @@ from cad_khana.mechanism.check import check
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from camera_bracket import assembly as _cam  # noqa: E402
+from camera_pad_clamp import assembly as _cam_pad_clamp  # noqa: E402
+from mirror_mount import assembly as _mirror  # noqa: E402
+from mirror_pad_clamp import assembly as _pad_clamp  # noqa: E402
 from params import (  # noqa: E402
     CAMERA_POS,
     CAMERA_ROT_DEG,
@@ -109,33 +111,10 @@ from params import (  # noqa: E402
     horizontal_x_roll_deg,
     rotation_for_normal,
 )
-
-
-# --- Sub-assembly loading -----------------------------------------------
-#
-# Same importlib trick as the rev-2 top-level: each sub-directory
-# holds a bare `assembly.py` with no `__init__.py`. Load each by
-# file path.
-
-def _load(subdir: str) -> ModuleType:
-    path = Path(__file__).resolve().parent / subdir / "assembly.py"
-    spec = importlib.util.spec_from_file_location(
-        f"m03_scanner_{subdir}", path
-    )
-    mod = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None
-    spec.loader.exec_module(mod)
-    return mod
-
-
-_skel = _load("skeleton_t_frame")
-_plat_frame = _load("platform_frame")
-_bearing = _load("platform_hinge_bearing")
-_plat_acrylic = _load("platform_acrylic")
-_cam = _load("camera_bracket")
-_mirror = _load("mirror_mount")
-_pad_clamp = _load("mirror_pad_clamp")
-_cam_pad_clamp = _load("camera_pad_clamp")
+from platform_acrylic import assembly as _plat_acrylic  # noqa: E402
+from platform_frame import assembly as _plat_frame  # noqa: E402
+from platform_hinge_bearing import assembly as _bearing  # noqa: E402
+from skeleton_t_frame import assembly as _skel  # noqa: E402
 
 
 # --- Placement constants ------------------------------------------------
@@ -200,18 +179,16 @@ _PAD_CLAMP_SPECS = {
 
 assembly = Assembly()
 
-# Rev-3 sparse T-frame skeleton. Each member in `_skel._MEMBERS` is
-# already positioned at its world location.
-_SKELETON_NAMES = tuple(_skel._MEMBERS.keys())
-for _name, _part in _skel._MEMBERS.items():
-    assembly = assembly.add(_name, _part)
+# Rev-3 sparse T-frame skeleton — each member is already positioned at
+# its world location by the sub-assembly's builder.
+_SKELETON_NAMES = _skel.SKELETON_T_FRAME_PART_NAMES
+assembly = _skel.add_skeleton_t_frame(assembly)
 
 # Rev-3 platform frame (5 members: front X-rail + Z-tongue floor,
 # 2 front posts, top X cross-rail). Same convention as skeleton: the
 # sub-assembly bakes world positions into each part.
-_PLATFORM_FRAME_NAMES = tuple(_plat_frame._MEMBERS.keys())
-for _name, _part in _plat_frame._MEMBERS.items():
-    assembly = assembly.add(_name, _part)
+_PLATFORM_FRAME_NAMES = _plat_frame.PLATFORM_FRAME_PART_NAMES
+assembly = _plat_frame.add_platform_frame(assembly)
 
 # Rev-3 hinge bearings (×2). Bearing-local origin is the bottom face
 # of the block; world placement puts that face on the cross-rail's
