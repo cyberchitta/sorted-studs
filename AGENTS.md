@@ -21,5 +21,9 @@ Commit message drafts:
 - Follow the global convention from `~/.claude/CLAUDE.md`: single-line
   conventional subject, blank line, co-author trailer; body only when it
   genuinely adds context.
-- For Codex CLI work, use this co-author trailer form:
+- For Codex CLI work, use the exact active model number in the
+  co-author trailer when known. Example:
   `Co-authored-by: GPT-5.5 Codex <gpt-5.5-codex@codex-cli>`.
+- Do not guess the model number. If the exact Codex model is not exposed
+  by the session or provided by the user, ask before drafting the
+  co-author trailer.
