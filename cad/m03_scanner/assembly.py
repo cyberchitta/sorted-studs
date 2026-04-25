@@ -42,9 +42,9 @@ Slices placed here today:
                                     bonded to two printed hinge
                                     brackets that share the world
                                     hinge axis with the bearings.
-
-Slices NOT yet placed (see `NEXT_STEPS.md` Suggested next CAD moves):
-  * frame_gusset_t/, _l/          — camera-rig slice (d)
+  * frame_gusset_t + frame_gusset_l
+                                  — rev-3 printed plates reinforcing
+                                    the rail A/B and rail C/D joints.
 
 The rev-1/rev-2 sub-assembly directories were deleted from the tree
 in the slice (3) cleanup commit (see `superseded_platform_designs.md`
@@ -89,6 +89,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from camera_bracket import assembly as _cam  # noqa: E402
 from camera_pad_clamp import assembly as _cam_pad_clamp  # noqa: E402
+from frame_gusset_l import assembly as _gusset_l  # noqa: E402
+from frame_gusset_t import assembly as _gusset_t  # noqa: E402
 from mirror_mount import assembly as _mirror  # noqa: E402
 from mirror_pad_clamp import assembly as _pad_clamp  # noqa: E402
 from params import (  # noqa: E402
@@ -183,6 +185,12 @@ assembly = Assembly()
 # its world location by the sub-assembly's builder.
 _SKELETON_NAMES = _skel.SKELETON_T_FRAME_PART_NAMES
 assembly = _skel.add_skeleton_t_frame(assembly)
+
+# Rev-3 printed frame gussets bridging fixed rail faces in the
+# skeleton_t_frame.
+_GUSSET_NAMES = ("gusset_t_ab", "gusset_l_cd")
+assembly = _gusset_t.add_frame_gusset_t(assembly, name=_GUSSET_NAMES[0])
+assembly = _gusset_l.add_frame_gusset_l(assembly, name=_GUSSET_NAMES[1])
 
 # Rev-3 platform frame (5 members: front X-rail + Z-tongue floor,
 # 2 front posts, top X cross-rail). Same convention as skeleton: the
@@ -289,6 +297,7 @@ _INTERNAL_NAMES = (
     + _MIRROR_PART_NAMES
     + list(_PAD_CLAMP_NAMES)
     + [_CAMERA_CLAMP_NAME]
+    + list(_GUSSET_NAMES)
 )
 
 # Every internal part vs every skeleton_t_frame member.
@@ -363,6 +372,16 @@ for _i in range(len(_PLATFORM_NAMES)):
         assembly = assembly.assert_no_interference(
             _PLATFORM_NAMES[_i], _PLATFORM_NAMES[_j]
         )
+
+# Frame gussets vs all non-skeleton internals. Gusset-vs-skeleton
+# tangent checks are covered by the common internal-vs-skeleton loop.
+_NON_GUSSET_INTERNAL_NAMES = [
+    _name for _name in _INTERNAL_NAMES if _name not in _GUSSET_NAMES
+]
+for _gusset in _GUSSET_NAMES:
+    for _other in _NON_GUSSET_INTERNAL_NAMES:
+        assembly = assembly.assert_no_interference(_gusset, _other)
+assembly = assembly.assert_no_interference(_GUSSET_NAMES[0], _GUSSET_NAMES[1])
 
 
 if __name__ == "__main__":
