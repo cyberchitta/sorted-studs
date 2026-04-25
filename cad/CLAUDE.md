@@ -43,6 +43,19 @@ Use underscores in directory names so Python can import them
 normally; hyphens block package imports and force `importlib`
 workarounds.
 
+## Commit message draft
+
+Whenever a CAD slice updates a module's `NEXT_STEPS.md` (or
+equivalent live progress doc), also save the corresponding commit
+message draft to `.commit-msg` at the project root in the same edit
+batch. The two updates pair: NEXT_STEPS records what landed in the
+sub-assembly tree, `.commit-msg` records the commit that will carry
+it. Don't leave one updated and the other stale.
+
+Follow the global commit-message convention from `~/.claude/CLAUDE.md`
+(single-line conventional subject, co-author trailer, body only when
+it earns its place).
+
 ## Feeding observations back to cad-khana
 
 This repo is a heavy user of `cad-khana`; real-use friction is a

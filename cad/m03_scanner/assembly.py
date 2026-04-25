@@ -22,10 +22,12 @@ Slices placed here today:
                                     bolt pattern is the rev-3 pad
                                     clamp's pad-bolt interface).
   * camera_bracket                — rev-1 bracket, carried forward
-                                    unchanged. Floats in world space
-                                    until slice (c) `camera_pad_clamp/`
-                                    lands; cross-boundary clamp
-                                    assertions are stubbed until then.
+                                    unchanged. Now supported by the
+                                    rev-3 camera_pad_clamp (slice c).
+  * camera_pad_clamp              — rev-3 hanging pad-clamp on rail D's
+                                    underside, carrying the camera
+                                    bracket. Replaces the rev-2
+                                    camera_bracket_rail_clamp.
   * platform + load_cell_standoff (×3)
                                     — rev-1 components carried forward
                                     until the rev-3 platform slices
@@ -40,7 +42,6 @@ Slices placed here today:
                                     "floating".
 
 Slices NOT yet placed (see `NEXT_STEPS.md` Suggested next CAD moves):
-  * camera_pad_clamp/             — slice (c)
   * frame_gusset_t/, _l/          — slice (d)
   * platform_frame/, _pillow_block/, _hinged/  — slice (2)
 
@@ -52,6 +53,8 @@ Cross-boundary checks:
   * Mirror pad clamps vs the supported mirror mounts — tangent
     contact at the pad face (`assert_no_interference` catches drift
     past MOUNT_GAP), and regression-only against the other two.
+  * Camera pad clamp vs the camera bracket — same MOUNT_GAP tangent
+    contact at the pad face.
   * Mirror mounts vs camera bracket and vs platform — same regression
     guards as the rev-2 top-level.
 
@@ -90,6 +93,8 @@ from params import (  # noqa: E402
     RAIL_PAD_CLAMP_BELOW_LEFT_POS,
     RAIL_PAD_CLAMP_BELOW_RIGHT_CLAMP_ROT,
     RAIL_PAD_CLAMP_BELOW_RIGHT_POS,
+    RAIL_PAD_CLAMP_CAMERA_CLAMP_ROT,
+    RAIL_PAD_CLAMP_CAMERA_POS,
     horizontal_x_roll_deg,
     rotation_for_normal,
 )
@@ -119,6 +124,7 @@ _cam = _load("camera_bracket")
 _mirror = _load("mirror_mount")
 _standoff = _load("load_cell_standoff")
 _pad_clamp = _load("mirror_pad_clamp")
+_cam_pad_clamp = _load("camera_pad_clamp")
 
 
 # --- Placement constants ------------------------------------------------
@@ -265,6 +271,24 @@ for _name, _spec in _PAD_CLAMP_SPECS.items():
         location=_loc,
     )
 
+# Rev-3 camera pad clamp — single instance, hangs below rail D
+# carrying the camera bracket.
+_CAMERA_CLAMP_NAME = "pad_clamp_camera"
+_camera_clamp_loc = (
+    Pos(*RAIL_PAD_CLAMP_CAMERA_POS) * RAIL_PAD_CLAMP_CAMERA_CLAMP_ROT
+)
+_camera_mount_in_clamp = _cam_pad_clamp.mount_in_clamp_for(
+    clamp_pos=RAIL_PAD_CLAMP_CAMERA_POS,
+    clamp_rot=RAIL_PAD_CLAMP_CAMERA_CLAMP_ROT,
+    camera_pos=CAMERA_POS,
+    camera_rot_deg=CAMERA_ROT_DEG,
+)
+assembly = assembly.add(
+    _CAMERA_CLAMP_NAME,
+    _cam_pad_clamp.clamp(mount_in_clamp=_camera_mount_in_clamp),
+    location=_camera_clamp_loc,
+)
+
 # Three load-cell standoffs (rev-1, carried forward). Names mirror
 # the platform's `load_cell_{i}` indices so cross-boundary assertions
 # pair cleanly.
@@ -285,6 +309,7 @@ _INTERNAL_NAMES = (
     + _MIRROR_PART_NAMES
     + list(_STANDOFF_NAMES)
     + list(_PAD_CLAMP_NAMES)
+    + [_CAMERA_CLAMP_NAME]
 )
 
 # Internal parts vs every skeleton_t_frame member.
@@ -331,6 +356,25 @@ for _i in range(len(_PAD_CLAMP_NAMES)):
             _PAD_CLAMP_NAMES[_i], _PAD_CLAMP_NAMES[_j]
         )
 
+# Camera pad-clamp vs the camera bracket triplet — tangent contact at
+# the pad face (`assert_no_interference` catches drift past MOUNT_GAP).
+for _cam_part in _CAMERA_BRACKET_NAMES:
+    assembly = assembly.assert_no_interference(_CAMERA_CLAMP_NAME, _cam_part)
+
+# Camera pad-clamp vs every mirror mount + every mirror pad-clamp —
+# regression guard. The camera clamp hangs from rail D over the camera
+# (z ≈ -231); the mirrors live at z ∈ [25, 173]. No overlap expected.
+for _mirror_part in _MIRROR_PART_NAMES:
+    assembly = assembly.assert_no_interference(_CAMERA_CLAMP_NAME, _mirror_part)
+for _mirror_clamp_name in _PAD_CLAMP_NAMES:
+    assembly = assembly.assert_no_interference(
+        _CAMERA_CLAMP_NAME, _mirror_clamp_name
+    )
+
+# Camera pad-clamp vs platform — regression guard.
+for _plat_part in _PLATFORM_NAMES:
+    assembly = assembly.assert_no_interference(_CAMERA_CLAMP_NAME, _plat_part)
+
 # Load-cell standoffs vs everything else (carried-forward rev-1
 # layout — kept as regression guards until rev-3 platform replaces
 # them).
@@ -346,6 +390,8 @@ for _idx, _standoff_name in enumerate(_STANDOFF_NAMES):
 
     for _clamp_name in _PAD_CLAMP_NAMES:
         assembly = assembly.assert_no_interference(_standoff_name, _clamp_name)
+
+    assembly = assembly.assert_no_interference(_standoff_name, _CAMERA_CLAMP_NAME)
 
 # Standoff vs standoff — three columns at r = 220 with 120° angular
 # separation (centre-to-centre 2·220·sin(60°) ≈ 381 mm). Regression.

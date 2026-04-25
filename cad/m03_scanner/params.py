@@ -741,6 +741,8 @@ T_FRAME_RAIL_A_Y = -220.0                                # rail A centerline Y
 T_FRAME_RAIL_A_TOP_Y = T_FRAME_RAIL_A_Y + SKELETON_RAIL_MEMBER / 2   # = -210
 T_FRAME_RAIL_C_Z = 240.0                                 # rail C centerline Z
 T_FRAME_RAIL_C_FRONT_Z = T_FRAME_RAIL_C_Z - SKELETON_RAIL_MEMBER / 2 # = 230
+T_FRAME_RAIL_D_Y = 250.3                                 # rail D centerline Y
+T_FRAME_RAIL_D_BOTTOM_Y = T_FRAME_RAIL_D_Y - SKELETON_RAIL_MEMBER / 2   # = 240.3
 
 
 # --- Rev-3 mirror pad-clamp placement -----------------------------------
@@ -793,3 +795,39 @@ RAIL_PAD_CLAMP_BACK_UPPER_POS = (
     T_FRAME_RAIL_C_FRONT_Z,           # rail C -Z face
 )
 RAIL_PAD_CLAMP_BACK_UPPER_CLAMP_ROT = Rot(-90, -90, 0)
+
+
+# --- Rev-3 camera pad-clamp placement -----------------------------------
+#
+# Replaces the rev-2 `RAIL_CLAMP_CAMERA_*` (camera-bracket rail clamp on
+# `rail_front_mid`). The rev-3 camera hangs below rail D — the
+# Z-cantilever projecting forward from the rail C ↔ D junction. The
+# clamp grips rail D's -Y (underside) face directly above the camera
+# bracket back face centre, so its beam runs straight down to the
+# bracket pad with no Z offset.
+#
+# Clamp-local frame (see `camera_pad_clamp/assembly.py`):
+#     origin : centre of clamp bottom face, on rail D's -Y face,
+#              at the along-rail (Z) position of the bracket back face
+#     +X     : along rail D long axis (= world +Z)
+#     +Y     : away from rail (downward in world; clamp body hangs in
+#              clamp +Y while gravity pulls in clamp +Y)
+#     +Z     : right-handed third (= world +X)
+#
+# Beam reach in clamp-local +Y is fixed by the rail D underside Y minus
+# the bracket back face Y: 240.3 - 107.81 ≈ 132.5 mm. Longer than the
+# rev-3 mirror clamps' 50–65 mm reach; rail D's height is set by
+# clearance over the back-upper mount plate corner, so it can't be
+# pushed any closer to the camera. The strut + propped-beam architecture
+# (see `skeleton_t_frame/assembly.py`) is what keeps the cantilever
+# stiff under this load.
+
+RAIL_PAD_CLAMP_CAMERA_POS = (
+    CAMERA_BRACKET_BACK_CENTRE[0],    # x = 0 (rail D centred on YZ plane)
+    T_FRAME_RAIL_D_BOTTOM_Y,          # rail D -Y face
+    CAMERA_BRACKET_BACK_CENTRE[2],    # under bracket back face centre
+)
+
+# Rot(180, 90, 0): clamp-local +X → world +Z (along rail D toward back),
+# +Y → world -Y (down toward bracket), +Z → world +X (right-handed).
+RAIL_PAD_CLAMP_CAMERA_CLAMP_ROT = Rot(180, 90, 0)
