@@ -28,24 +28,28 @@ Slices placed here today:
                                     underside, carrying the camera
                                     bracket. Replaces the rev-2
                                     camera_bracket_rail_clamp.
-  * platform + load_cell_standoff (×3)
-                                    — rev-1 components carried forward
-                                    until the rev-3 platform slices
-                                    (`platform_frame/`,
-                                    `platform_pillow_block/`,
-                                    `platform_hinged/`) land. The
-                                    standoffs were rev-1-aligned to
-                                    enclosure-floor anchors that no
-                                    longer exist; they remain in the
-                                    tree at their original world
-                                    poses but are physically
-                                    "floating".
+  * platform_frame (×5 members)   — rev-3 standalone 2020 frame
+                                    carrying the hinged platform.
+                                    Sits in front of the camera rig
+                                    and is mechanically decoupled
+                                    from it; replaces rev-1
+                                    `../platform/` + `load_cell_standoff/`.
+  * platform_hinge_bearing (×2)   — rev-3 printed pillow-blocks
+                                    bolted to the platform frame's
+                                    top cross-rail.
+  * platform_acrylic + brackets (×3 parts)
+                                  — rev-3 PMMA plate (`acrylic_plate`)
+                                    bonded to two printed hinge
+                                    brackets that share the world
+                                    hinge axis with the bearings.
 
 Slices NOT yet placed (see `NEXT_STEPS.md` Suggested next CAD moves):
-  * frame_gusset_t/, _l/          — slice (d)
-  * platform_frame/, _pillow_block/, _hinged/  — slice (2)
+  * frame_gusset_t/, _l/          — camera-rig slice (d)
 
-The rev-1/rev-2 reference top-level lives at `assembly_rev2.py`.
+The rev-1/rev-2 reference top-level lives at `assembly_rev2.py`. The
+rev-1 `platform/` and `load_cell_standoff/` directories remain in
+the tree as standalone-runnable references but are no longer placed
+here.
 
 Cross-boundary checks:
   * Every internal part vs every skeleton_t_frame member (regression
@@ -55,8 +59,17 @@ Cross-boundary checks:
     past MOUNT_GAP), and regression-only against the other two.
   * Camera pad clamp vs the camera bracket — same MOUNT_GAP tangent
     contact at the pad face.
-  * Mirror mounts vs camera bracket and vs platform — same regression
-    guards as the rev-2 top-level.
+  * Hinge bearings sit on the platform-frame cross-rail's top face
+    (tangent contact); the brackets share the world hinge axis with
+    the bearings but sit 5 mm inboard along ±X. Both are
+    `assert_no_interference` — they catch drift past the modelled
+    gap (tangent contact + the X air-gap respectively) without
+    pretending the parts don't touch.
+  * Acrylic plate sits 1 mm above the bearing top faces at the
+    bearings' inboard X; the assertion guards against the gap
+    closing.
+  * Mirror mounts vs camera bracket and vs platform parts — same
+    regression guards as the rev-2 top-level.
 
 Mirror-to-mirror interference is not asserted: the three mirrors are
 fixed by the tetrahedral optimiser in
@@ -79,8 +92,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from params import (  # noqa: E402
     CAMERA_POS,
     CAMERA_ROT_DEG,
-    LOAD_CELL_STANDOFF_HEADING_DEG,
-    LOAD_CELL_STANDOFF_POSITIONS,
     MIRROR_BACK_UPPER_NORMAL,
     MIRROR_BACK_UPPER_POS,
     MIRROR_BELOW_LEFT_NORMAL,
@@ -103,9 +114,8 @@ from params import (  # noqa: E402
 # --- Sub-assembly loading -----------------------------------------------
 #
 # Same importlib trick as the rev-2 top-level: each sub-directory
-# holds a bare `assembly.py` with no `__init__.py`, and `platform`
-# in particular collides with stdlib so the namespace-package
-# approach doesn't survive. Load each by file path.
+# holds a bare `assembly.py` with no `__init__.py`. Load each by
+# file path.
 
 def _load(subdir: str) -> ModuleType:
     path = Path(__file__).resolve().parent / subdir / "assembly.py"
@@ -119,19 +129,16 @@ def _load(subdir: str) -> ModuleType:
 
 
 _skel = _load("skeleton_t_frame")
-_plat = _load("platform")
+_plat_frame = _load("platform_frame")
+_bearing = _load("platform_hinge_bearing")
+_plat_acrylic = _load("platform_acrylic")
 _cam = _load("camera_bracket")
 _mirror = _load("mirror_mount")
-_standoff = _load("load_cell_standoff")
 _pad_clamp = _load("mirror_pad_clamp")
 _cam_pad_clamp = _load("camera_pad_clamp")
 
 
 # --- Placement constants ------------------------------------------------
-
-# The platform's local +Z points out of the top face; the scanner's
-# world "up" is +Y. Rot(-90, 0, 0) maps local +Z onto world +Y.
-_PLATFORM_LOC = Rot(-90, 0, 0)
 
 # Camera placement: local +Z (lens axis) rotated to 25° below
 # horizontal toward +Z; origin translated to the PCB rear plane.
@@ -188,56 +195,57 @@ _PAD_CLAMP_SPECS = {
     },
 }
 
-# Mirror name → corresponding pad-clamp name. Used to label which
-# clamp / mount pair is the supported tangent contact (vs the other
-# two, which are regression guards).
-_MIRROR_TO_CLAMP = {
-    "mirror_back_upper": "pad_clamp_back_upper",
-    "mirror_below_left": "pad_clamp_below_left",
-    "mirror_below_right": "pad_clamp_below_right",
-}
-
-# Load-cell standoff placements (rev-1, carried forward). Local +Y =
-# world +Y; local +X aligns with the supported beam's radial outward
-# direction under Ry(heading), where heading = the load-cell's
-# platform-local azimuth (derivation in params.py).
-_STANDOFF_LOCS = [
-    Pos(*pos) * Rot(0, heading, 0)
-    for pos, heading in zip(
-        LOAD_CELL_STANDOFF_POSITIONS,
-        LOAD_CELL_STANDOFF_HEADING_DEG,
-    )
-]
-
 
 # --- Assembly composition -----------------------------------------------
 
 assembly = Assembly()
 
 # Rev-3 sparse T-frame skeleton. Each member in `_skel._MEMBERS` is
-# already positioned at its world location (the sub-assembly bakes
-# the `Pos(...)` into each part).
+# already positioned at its world location.
 _SKELETON_NAMES = tuple(_skel._MEMBERS.keys())
 for _name, _part in _skel._MEMBERS.items():
     assembly = assembly.add(_name, _part)
 
-# Platform — rev-1 components carried forward.
-assembly = (
-    assembly
-    .add("collar", _plat.collar(), location=_PLATFORM_LOC)
-    .add("disc", _plat.disc_stub(), location=_PLATFORM_LOC)
-)
-_LOAD_CELL_NAMES = tuple(
-    f"load_cell_{i}" for i in range(len(_plat.LOAD_CELL_AZ_DEG))
-)
-for _idx, _az in enumerate(_plat.LOAD_CELL_AZ_DEG):
+# Rev-3 platform frame (5 members: front X-rail + Z-tongue floor,
+# 2 front posts, top X cross-rail). Same convention as skeleton: the
+# sub-assembly bakes world positions into each part.
+_PLATFORM_FRAME_NAMES = tuple(_plat_frame._MEMBERS.keys())
+for _name, _part in _plat_frame._MEMBERS.items():
+    assembly = assembly.add(_name, _part)
+
+# Rev-3 hinge bearings (×2). Bearing-local origin is the bottom face
+# of the block; world placement puts that face on the cross-rail's
+# top face (tangent contact), centered along the rail in Z.
+_BEARING_NAMES = ("bearing_left", "bearing_right")
+for _name, _x_sign in zip(_BEARING_NAMES, (-1, +1)):
     assembly = assembly.add(
-        _LOAD_CELL_NAMES[_idx],
-        _plat.load_cell_stub(),
-        location=_PLATFORM_LOC * _plat._load_cell_location(_az),
+        _name,
+        _bearing.bearing(),
+        location=Pos(
+            _x_sign * _bearing.PLATFORM_HINGE_BEARING_X,
+            _bearing._RAIL_TOP_Y_WORLD,
+            _bearing.PLATFORM_HINGE_PIN_Z,
+        ),
     )
 
-# Camera bracket + PCB + lens stand-in (rev-1, floating until slice (c)).
+# Rev-3 platform: PMMA plate centered on world origin + two printed
+# hinge brackets bonded to its underside.
+_ACRYLIC_NAME = "acrylic_plate"
+assembly = assembly.add(_ACRYLIC_NAME, _plat_acrylic.acrylic_plate())
+
+_BRACKET_NAMES = ("bracket_left", "bracket_right")
+for _name, _x_sign in zip(_BRACKET_NAMES, (-1, +1)):
+    assembly = assembly.add(
+        _name,
+        _plat_acrylic.bracket(),
+        location=Pos(
+            _x_sign * _plat_acrylic.PLATFORM_HINGE_BRACKET_X,
+            _plat_acrylic._BRACKET_Y_BOTTOM_WORLD,
+            _plat_acrylic.BRACKET_Z_CENTRE_WORLD,
+        ),
+    )
+
+# Camera bracket + PCB + lens stand-in (rev-1, supported by camera_pad_clamp).
 assembly = (
     assembly
     .add("camera_plate", _cam.bracket(), location=_CAMERA_LOC)
@@ -247,12 +255,10 @@ assembly = (
 
 # Three rigid mirror mounts — bracket + mirror-glass stand-in per pose.
 _MIRROR_PART_NAMES = []
-_MIRROR_BRACKET_NAMES = {}      # mirror prefix → bracket part name
 for _prefix, _loc in _MIRROR_POSES.items():
     _bracket_name = f"{_prefix}_bracket"
     _mirror_name = f"{_prefix}_glass"
     _MIRROR_PART_NAMES.extend([_bracket_name, _mirror_name])
-    _MIRROR_BRACKET_NAMES[_prefix] = _bracket_name
     assembly = (
         assembly
         .add(_bracket_name, _mirror.bracket(), location=_loc)
@@ -289,30 +295,26 @@ assembly = assembly.add(
     location=_camera_clamp_loc,
 )
 
-# Three load-cell standoffs (rev-1, carried forward). Names mirror
-# the platform's `load_cell_{i}` indices so cross-boundary assertions
-# pair cleanly.
-_STANDOFF_NAMES = tuple(
-    f"load_cell_standoff_{i}" for i in range(len(_STANDOFF_LOCS))
-)
-for _name, _loc in zip(_STANDOFF_NAMES, _STANDOFF_LOCS):
-    assembly = assembly.add(_name, _standoff.bracket(), location=_loc)
-
 
 # --- Cross-boundary assertions ------------------------------------------
 
-_PLATFORM_NAMES = ["collar", "disc", *_LOAD_CELL_NAMES]
+# Group names by sub-system for the pairwise nests below.
+_PLATFORM_NAMES = (
+    *_PLATFORM_FRAME_NAMES,
+    *_BEARING_NAMES,
+    _ACRYLIC_NAME,
+    *_BRACKET_NAMES,
+)
 _CAMERA_BRACKET_NAMES = ("camera_plate", "camera_pcb", "camera_lens")
 _INTERNAL_NAMES = (
-    _PLATFORM_NAMES
+    list(_PLATFORM_NAMES)
     + list(_CAMERA_BRACKET_NAMES)
     + _MIRROR_PART_NAMES
-    + list(_STANDOFF_NAMES)
     + list(_PAD_CLAMP_NAMES)
     + [_CAMERA_CLAMP_NAME]
 )
 
-# Internal parts vs every skeleton_t_frame member.
+# Every internal part vs every skeleton_t_frame member.
 for _internal in _INTERNAL_NAMES:
     for _member in _SKELETON_NAMES:
         assembly = assembly.assert_no_interference(_internal, _member)
@@ -322,7 +324,7 @@ for _mirror_part in _MIRROR_PART_NAMES:
     for _cam_part in _CAMERA_BRACKET_NAMES:
         assembly = assembly.assert_no_interference(_mirror_part, _cam_part)
 
-# Mirror mounts vs platform — regression guard.
+# Mirror mounts vs platform sub-system — regression guard.
 for _mirror_part in _MIRROR_PART_NAMES:
     for _plat_part in _PLATFORM_NAMES:
         assembly = assembly.assert_no_interference(_mirror_part, _plat_part)
@@ -335,9 +337,9 @@ for _clamp_name in _PAD_CLAMP_NAMES:
     for _mirror_part in _MIRROR_PART_NAMES:
         assembly = assembly.assert_no_interference(_clamp_name, _mirror_part)
 
-    # vs platform parts — below-mirror clamps at y ∈ [-220, ~-98],
-    # back-upper clamp at y ∈ [...]; platform at y ≈ 0; all
-    # regression guards.
+    # vs platform sub-system — below-mirror clamps at y ∈ [-220, ~-98],
+    # back-upper clamp on rail C's -Z face; platform frame at
+    # y ∈ [-245, -30], acrylic at y ∈ [-4, 0]. Regression guards.
     for _plat_part in _PLATFORM_NAMES:
         assembly = assembly.assert_no_interference(_clamp_name, _plat_part)
 
@@ -371,34 +373,18 @@ for _mirror_clamp_name in _PAD_CLAMP_NAMES:
         _CAMERA_CLAMP_NAME, _mirror_clamp_name
     )
 
-# Camera pad-clamp vs platform — regression guard.
+# Camera pad-clamp vs platform sub-system — regression guard.
 for _plat_part in _PLATFORM_NAMES:
     assembly = assembly.assert_no_interference(_CAMERA_CLAMP_NAME, _plat_part)
 
-# Load-cell standoffs vs everything else (carried-forward rev-1
-# layout — kept as regression guards until rev-3 platform replaces
-# them).
-for _idx, _standoff_name in enumerate(_STANDOFF_NAMES):
-    for _plat_part in _PLATFORM_NAMES:
-        assembly = assembly.assert_no_interference(_standoff_name, _plat_part)
-
-    for _mirror_part in _MIRROR_PART_NAMES:
-        assembly = assembly.assert_no_interference(_standoff_name, _mirror_part)
-
-    for _cam_part in _CAMERA_BRACKET_NAMES:
-        assembly = assembly.assert_no_interference(_standoff_name, _cam_part)
-
-    for _clamp_name in _PAD_CLAMP_NAMES:
-        assembly = assembly.assert_no_interference(_standoff_name, _clamp_name)
-
-    assembly = assembly.assert_no_interference(_standoff_name, _CAMERA_CLAMP_NAME)
-
-# Standoff vs standoff — three columns at r = 220 with 120° angular
-# separation (centre-to-centre 2·220·sin(60°) ≈ 381 mm). Regression.
-for _i in range(len(_STANDOFF_NAMES)):
-    for _j in range(_i + 1, len(_STANDOFF_NAMES)):
+# Internal platform sub-system cross-boundary pairs. Each platform
+# piece (frame member, bearing, acrylic, bracket) crossed against
+# every other piece — most are regression, the supported tangent /
+# air-gap pairs are called out in the docstring above.
+for _i in range(len(_PLATFORM_NAMES)):
+    for _j in range(_i + 1, len(_PLATFORM_NAMES)):
         assembly = assembly.assert_no_interference(
-            _STANDOFF_NAMES[_i], _STANDOFF_NAMES[_j]
+            _PLATFORM_NAMES[_i], _PLATFORM_NAMES[_j]
         )
 
 
