@@ -862,6 +862,12 @@ BRICK_SPHERE_DIA = 80.0
 # outside the Ø172 sightline circle for edge clamping.
 PLATFORM_ACRYLIC_SIZE = 180.0
 
+# Acrylic plate thickness. Common cast PMMA stock thickness; gives
+# enough stiffness to span 180 mm under a brick load without flex,
+# and enough edge thickness to host the bonded hinge brackets'
+# top face without the bond joint dominating the plate's geometry.
+PLATFORM_ACRYLIC_T = 4.0
+
 # Floor rails sit at y = -245 (top face -235), 5 mm below the rev-3
 # camera rig's rail A / rail B bottom faces at y = -230. Clear 3D
 # separation in Y means the platform-frame tongue can pass under
@@ -922,3 +928,21 @@ PLATFORM_HINGE_PIN_Y = -17.5
 # T-nuts can sit in the top slot). Same Z as the cross-rail / front
 # posts.
 PLATFORM_HINGE_PIN_Z = PLATFORM_FRAME_POST_Z
+
+
+# --- Rev-3 platform acrylic + hinge bracket (slice c) ------------------
+#
+# The "platform" in operational terms: the moving piece that hinges
+# forward to drop bricks. 180 × 180 × 4 mm PMMA plate (top face at
+# y = 0) with two small printed hinge brackets bonded to its underside
+# near the front edge. The brackets share their pin bore with the
+# slice (b) bearing pillow-blocks; one continuous Ø5 round-stock pin
+# threads through bearings + brackets together.
+
+# Hinge-bracket centerlines in X. With a 30 mm bracket width, ±55
+# puts the bracket's outboard X face at ±70 — 5 mm inboard of the
+# bearing's inboard X face at ±75 (bearing is 30 mm wide centered at
+# ±90). The 5 mm air gap along the pin axis lets the platform rotate
+# without bearing-bracket rub. Bracket is entirely under the acrylic
+# (acrylic span x ∈ [-90, +90]).
+PLATFORM_HINGE_BRACKET_X = 55.0
