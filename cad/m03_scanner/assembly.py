@@ -46,10 +46,10 @@ Slices placed here today:
 Slices NOT yet placed (see `NEXT_STEPS.md` Suggested next CAD moves):
   * frame_gusset_t/, _l/          — camera-rig slice (d)
 
-The rev-1/rev-2 reference top-level lives at `assembly_rev2.py`. The
-rev-1 `platform/` and `load_cell_standoff/` directories remain in
-the tree as standalone-runnable references but are no longer placed
-here.
+The rev-1/rev-2 sub-assembly directories were deleted from the tree
+in the slice (3) cleanup commit (see `superseded_platform_designs.md`
+for the retrieval commit hashes if you need to inspect the old
+designs).
 
 Cross-boundary checks:
   * Every internal part vs every skeleton_t_frame member (regression
