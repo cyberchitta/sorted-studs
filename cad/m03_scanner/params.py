@@ -889,3 +889,36 @@ PLATFORM_FRAME_CROSS_RAIL_Y = -40.0
 # Tongue passes under rail B (which spans z ∈ [-30, +280] at x = 0,
 # y = -220) — 5 mm Y-clearance keeps them disjoint in 3D.
 PLATFORM_FRAME_TONGUE_Z_BACK = 100.0
+
+
+# --- Rev-3 platform hinge bearing (slice b) ----------------------------
+#
+# Two printed bushing blocks bolted to the platform-frame cross-rail's
+# top face. Each carries a single horizontal pin bore (along world ±X)
+# for the hinge pin running across the platform's front edge. Two M5
+# bolts per block drop into the cross-rail's top T-slot (T-nuts not
+# modelled — stock hardware). Load cells are deferred — the rev-3
+# variant trades this body for a load-cell-pocket variant on the same
+# bolt pattern, with no change to platform_frame.
+
+# Bearing block centerlines in X. ±90 lines up with the slice (c)
+# acrylic platform edges (acrylic at x ∈ [-90, +90]); 10 mm inboard
+# of the front-post centerlines at x = ±100 and 20 mm inboard of the
+# cross-rail X-end face at x = ±110.
+PLATFORM_HINGE_BEARING_X = 90.0
+
+# Hinge pin: M5 round stock. 0.4 mm diametric clearance on the bore.
+PLATFORM_HINGE_PIN_D = 5.0
+
+# Hinge pin axis Y. Cross-rail top face at y = -30; bearing block is
+# 25 mm tall (top face y = -5, just below the acrylic top at y = 0)
+# with the bore at the block centerline. The slice (c) platform-side
+# hinge bracket spans from the acrylic underside down to the pin.
+# Numerical: PLATFORM_FRAME_CROSS_RAIL_Y + MEMBER/2 + 12.5 = -17.5.
+PLATFORM_HINGE_PIN_Y = -17.5
+
+# Hinge pin axis Z. Bearing centered on the cross-rail in Z so the
+# rail-T-slot bolts enter on the rail centerline (only line where
+# T-nuts can sit in the top slot). Same Z as the cross-rail / front
+# posts.
+PLATFORM_HINGE_PIN_Z = PLATFORM_FRAME_POST_Z
