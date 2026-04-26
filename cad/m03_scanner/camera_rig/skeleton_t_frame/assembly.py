@@ -101,9 +101,9 @@ from build123d import Box, Part, Pos, Rot
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from params import (  # noqa: E402
+from camera_rig.params import (  # noqa: E402
     CAMERA_POS,
     MIRROR_BACK_UPPER_NORMAL,
     MIRROR_BACK_UPPER_POS,

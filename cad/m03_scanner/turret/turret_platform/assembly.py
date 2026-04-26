@@ -32,33 +32,39 @@ Members (4 total — 1 acrylic + 3 printed bonded pieces):
     the 172 × 172 zone; centring is deferred to either banking via
     slice (e)'s cam profile, a transparent silicone insert, or both.
 
-Coordinate frame = world frame at IMAGE (matches `../params.py`):
+Coordinate frame = cartridge-local IMAGE pose:
     origin = brick centroid on platform top face
-    +X     = operator's right (= along IMAGE pin axis)
+    +X     = along pin axis
     +Y     = up
-    +Z     = away from operator (= radial outward from hub at IMAGE)
+    +Z     = radial outward from hub
+
+`add_turret_platform(a, station)` translates and rotates this
+cartridge to each station in turret-local: IMAGE at (0, 0, +R) with
+no rotation, LOAD at (+R, 0, 0) with Ry(+90), DUMP at (-R, 0, 0)
+with Ry(-90), RETURN at (0, 0, -R) with Ry(180). Same shape, four
+poses.
 
 Bond joint: each printed piece sits BOND_GAP (0.3 mm) away from the
 acrylic face it bonds to — same idiom as platform_acrylic. The gap is
 filled by structural-acrylic epoxy in reality and keeps the modelled
 cross-boundary interference check at clean zero.
 
-Bracket-local frame (one bracket; world placement applies translation
-+ X-mirror for the neg_x instance):
+Bracket-local frame (one bracket; cartridge placement applies
+translation + X-mirror for the neg_x instance):
     origin = bottom-face centre of the bracket block
-    +X     = along pin axis (world ±X at IMAGE)
+    +X     = along pin axis            (= cartridge +X)
     +Y     = up toward acrylic underside
-    +Z     = perpendicular to pin in horizontal plane (world ±Z at
-             IMAGE)
+    +Z     = perpendicular to pin in horizontal plane
+             (= cartridge ±Z, hub-side / outward-side)
 
 Cantilever note: each bracket extends in Z slightly past the acrylic
-inner edge (acrylic spans z ∈ [-90, +90]; bracket centerline at
-z = -90 with z-extent 16 mm → bracket spans z ∈ [-98, -82]). The
-half from z = -98 to z = -90 sits in open air forward of the acrylic
-edge — the unbonded cantilever zone where the pin bore lives. The
-half from z = -90 to z = -82 sits under the acrylic in the bond zone
-(8 × 5 = 40 mm² per bracket; small but two brackets share the load
-and the bond is in shear, not peel).
+inner edge (acrylic spans cartridge z ∈ [-90, +90]; bracket centerline
+at z = -90 with z-extent 16 mm → bracket spans z ∈ [-98, -82]). The
+half from z = -98 to z = -90 sits in open air past the acrylic edge —
+the unbonded cantilever zone where the pin bore lives. The half from
+z = -90 to z = -82 sits under the acrylic in the bond zone (8 × 5 =
+40 mm² per bracket; small but two brackets share the load and the
+bond is in shear, not peel).
 
 Print orientation per piece:
   * brackets — bottom face on build plate (+Y up). Horizontal pin
@@ -78,25 +84,30 @@ from cad_khana.mechanism.check import check
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from params import (  # noqa: E402
+from turret.params import (  # noqa: E402
     PLATFORM_ACRYLIC_SIZE,
     PLATFORM_ACRYLIC_T,
+    TURRET_ARM_R,
     TURRET_HINGE_PIN_D,
     TURRET_HINGE_PIN_RADIAL,
     TURRET_HINGE_PIN_Y,
-    TURRET_HUB_X,
-    TURRET_HUB_Z,
     WALL_MIN,
 )
 
 
-# --- IMAGE-pose world references ---------------------------------------
+# --- Cartridge-local IMAGE-pose references -----------------------------
 
-# Slice (c) IMAGE pin axis: along world ±X at (y, z) below.
-PIN_AXIS_Y_WORLD = TURRET_HINGE_PIN_Y                          # = -22.5
-PIN_AXIS_Z_WORLD = TURRET_HUB_Z + TURRET_HINGE_PIN_RADIAL      # = -90
+# In cartridge-local, the IMAGE pin axis runs along ±X. Y matches
+# turret-local Y (vertical). Z is "radial outward from hub" at IMAGE
+# pose, so the hub-side of the acrylic sits at -Z.
+PIN_AXIS_Y_LOCAL = TURRET_HINGE_PIN_Y                          # = -22.5
+# Cartridge centroid at the brick centroid (origin); the pin sits at
+# the hub-side edge of the acrylic, RADIAL short of the hub.
+# Cartridge-local hub Z = -ARM_R when placed at IMAGE (centroid at
+# turret +R), so cartridge-local pin Z = -ARM_R + RADIAL.
+PIN_AXIS_Z_LOCAL = TURRET_HINGE_PIN_RADIAL - TURRET_ARM_R      # = -90
 
 # Modelled gap between any printed piece and the acrylic face it
 # bonds to. Filled by structural-acrylic epoxy in real assembly.
@@ -106,9 +117,9 @@ BOND_GAP = 0.3
 # --- Hinge bracket dimensions ------------------------------------------
 
 # Bracket-local axes:
-#   +X = along pin axis        (= world ±X at IMAGE)
-#   +Y = up                    (= world +Y)
-#   +Z = perpendicular to pin  (= world ±Z at IMAGE)
+#   +X = along pin axis        (= cartridge +X)
+#   +Y = up                    (= cartridge / world +Y)
+#   +Z = perpendicular to pin  (= cartridge ±Z)
 BRACKET_BLOCK_X = 5.0          # spans one pin-tip protrusion zone
 BRACKET_BLOCK_Y = 23.0         # bottom up to bond-side top face
 BRACKET_BLOCK_Z = 16.0         # spans across the pin axis
@@ -117,32 +128,33 @@ BRACKET_BLOCK_Z = 16.0         # spans across the pin axis
 # stock pin from slice (c).
 PIN_BORE_D = TURRET_HINGE_PIN_D + 0.4
 
-# Bracket bottom Y in world. Acrylic underside at y = -PLATFORM_ACRYLIC_T,
-# minus BOND_GAP for the bond layer, minus block height to land the
-# bottom face.
-BRACKET_BOTTOM_Y_WORLD = -PLATFORM_ACRYLIC_T - BOND_GAP - BRACKET_BLOCK_Y
+# Bracket bottom Y in cartridge-local. Acrylic underside at
+# y = -PLATFORM_ACRYLIC_T, minus BOND_GAP for the bond layer, minus
+# block height to land the bottom face.
+BRACKET_BOTTOM_Y_LOCAL = -PLATFORM_ACRYLIC_T - BOND_GAP - BRACKET_BLOCK_Y
 
-# Pin axis Y in bracket-local. World pin Y minus bracket bottom Y.
-_PIN_Y_LOCAL = PIN_AXIS_Y_WORLD - BRACKET_BOTTOM_Y_WORLD
+# Pin axis Y in bracket-local frame. Cartridge pin Y minus bracket
+# bottom Y.
+_PIN_Y_BRACKET_LOCAL = PIN_AXIS_Y_LOCAL - BRACKET_BOTTOM_Y_LOCAL
 
 # Slice (c) bushing block half-width along the pin axis (mirrors
 # slice (c)'s BUSHING_BLOCK_W = 20).
 _BUSHING_HALF_X = 10.0
 _PIN_AIR_GAP = 0.5             # bracket-to-bushing-block side clearance
 
-# Each bracket centred at world X = ±(bushing half + air gap +
+# Each bracket centred at cartridge X = ±(bushing half + air gap +
 # bracket half) — its inboard face sits AIR_GAP outboard of the
 # bushing block, and the bracket spans the rest of the pin tip
-# (pin tip at world X = ±15 = bushing 10 + protrusion 5).
+# (pin tip at cartridge X = ±15 = bushing 10 + protrusion 5).
 BRACKET_X_CENTRE_OFFSET = (
     _BUSHING_HALF_X + _PIN_AIR_GAP + BRACKET_BLOCK_X / 2          # = 13
 )
-BRACKET_POS_X_WORLD = +BRACKET_X_CENTRE_OFFSET
-BRACKET_NEG_X_WORLD = -BRACKET_X_CENTRE_OFFSET
+BRACKET_POS_X_LOCAL = +BRACKET_X_CENTRE_OFFSET
+BRACKET_NEG_X_LOCAL = -BRACKET_X_CENTRE_OFFSET
 
-# Bracket centerline Z in world = pin axis Z (so the horizontal bore
-# along ±X passes through the bracket centerline).
-BRACKET_Z_WORLD = PIN_AXIS_Z_WORLD                                # = -90
+# Bracket centerline Z in cartridge-local = pin axis Z (so the
+# horizontal bore along ±X passes through the bracket centerline).
+BRACKET_Z_LOCAL = PIN_AXIS_Z_LOCAL                                # = -90
 
 
 # --- Perimeter ring dimensions -----------------------------------------
@@ -152,21 +164,21 @@ RING_INNER = 172.0                              # ≥ Ø172 transparent zone
 RING_HEIGHT = 5.0                               # above acrylic top face
 _RING_FRAME_T = (RING_OUTER - RING_INNER) / 2   # = 4
 
-# Ring bottom face Y in world: BOND_GAP above acrylic top (y = 0).
-RING_BOTTOM_Y_WORLD = BOND_GAP
+# Ring bottom face Y in cartridge-local: BOND_GAP above acrylic top (y = 0).
+RING_BOTTOM_Y_LOCAL = BOND_GAP
 
 
 # --- Sanity asserts ----------------------------------------------------
 
 # Pin bore wall to bracket Y (top + bottom) faces.
-assert _PIN_Y_LOCAL - PIN_BORE_D / 2 >= WALL_MIN, (
+assert _PIN_Y_BRACKET_LOCAL - PIN_BORE_D / 2 >= WALL_MIN, (
     f"pin-bore to bracket bottom-Y wall "
-    f"{_PIN_Y_LOCAL - PIN_BORE_D / 2:.2f} mm < WALL_MIN ({WALL_MIN}); "
+    f"{_PIN_Y_BRACKET_LOCAL - PIN_BORE_D / 2:.2f} mm < WALL_MIN ({WALL_MIN}); "
     f"raise BRACKET_BLOCK_Y or move TURRET_HINGE_PIN_Y down"
 )
-assert (BRACKET_BLOCK_Y - _PIN_Y_LOCAL) - PIN_BORE_D / 2 >= WALL_MIN, (
+assert (BRACKET_BLOCK_Y - _PIN_Y_BRACKET_LOCAL) - PIN_BORE_D / 2 >= WALL_MIN, (
     f"pin-bore to bracket top-Y wall "
-    f"{(BRACKET_BLOCK_Y - _PIN_Y_LOCAL) - PIN_BORE_D / 2:.2f} mm < "
+    f"{(BRACKET_BLOCK_Y - _PIN_Y_BRACKET_LOCAL) - PIN_BORE_D / 2:.2f} mm < "
     f"WALL_MIN ({WALL_MIN})"
 )
 
@@ -179,7 +191,7 @@ assert _pin_z_wall >= WALL_MIN, (
 )
 
 # Bracket inboard face (toward bushing block) clears the bushing block.
-_inboard_face_x = abs(BRACKET_POS_X_WORLD) - BRACKET_BLOCK_X / 2
+_inboard_face_x = abs(BRACKET_POS_X_LOCAL) - BRACKET_BLOCK_X / 2
 assert _inboard_face_x - _BUSHING_HALF_X >= _PIN_AIR_GAP - 1e-9, (
     f"bracket inboard X face {_inboard_face_x:.2f} mm closer than "
     f"AIR_GAP ({_PIN_AIR_GAP}) to bushing block face "
@@ -188,20 +200,20 @@ assert _inboard_face_x - _BUSHING_HALF_X >= _PIN_AIR_GAP - 1e-9, (
 
 # Bracket outboard face inside acrylic X footprint.
 assert (
-    abs(BRACKET_POS_X_WORLD) + BRACKET_BLOCK_X / 2
+    abs(BRACKET_POS_X_LOCAL) + BRACKET_BLOCK_X / 2
     <= PLATFORM_ACRYLIC_SIZE / 2
 ), "bracket outboard X face overhangs acrylic edge"
 
 # Bracket inboard Z face (the face facing the acrylic interior, +Z
-# direction at IMAGE) sits inside the acrylic footprint so a real
-# bond zone exists.
-_bracket_inboard_z = BRACKET_Z_WORLD + BRACKET_BLOCK_Z / 2
+# direction in cartridge-local) sits inside the acrylic footprint so
+# a real bond zone exists.
+_bracket_inboard_z = BRACKET_Z_LOCAL + BRACKET_BLOCK_Z / 2
 _acrylic_inner_edge_z = -PLATFORM_ACRYLIC_SIZE / 2                # = -90
 _bond_zone_z_overlap = _bracket_inboard_z - _acrylic_inner_edge_z
 assert _bond_zone_z_overlap > 0, (
     f"bracket bond-zone overlap with acrylic in Z is "
     f"{_bond_zone_z_overlap:.2f} mm ≤ 0; bracket sits entirely "
-    f"forward of the acrylic — no bond surface"
+    f"past the acrylic edge — no bond surface"
 )
 
 # Ring frame width ≥ WALL_MIN.
@@ -232,7 +244,7 @@ def bracket(
     block_x: float = BRACKET_BLOCK_X,
     block_y: float = BRACKET_BLOCK_Y,
     block_z: float = BRACKET_BLOCK_Z,
-    pin_y_local: float = _PIN_Y_LOCAL,
+    pin_y_local: float = _PIN_Y_BRACKET_LOCAL,
     pin_bore_d: float = PIN_BORE_D,
 ):
     """One printed hinge bracket: rectangular block with a horizontal
@@ -266,17 +278,18 @@ def ring(
 
 # --- Per-station placement helper --------------------------------------
 
-# Rotation around the hub axis that maps the IMAGE-pose cartridge to
-# each station's world pose. Angle = world rotation around +Y axis,
-# applied AFTER first translating the cartridge to put the hub axis
-# at world origin (sandwich rotation; see add_turret_platform below).
+# Rotation that maps the cartridge-local IMAGE pose onto each station's
+# turret-local pose. The cartridge is built in cartridge-local with the
+# pin axis along ±X and "outward" along +Z. Each station has its own
+# (radial-outward, tangential) directions in turret-local; the rotation
+# below picks the proper-rotation root that aligns cartridge axes onto
+# them. (Reflections aren't valid placements; sign choices below pick
+# the rotation whose determinant is +1.)
 #
-#   IMAGE  →  IMAGE   :   0°   (identity)
-#   IMAGE  →  LOAD    : +90°   (Ry(+90°) maps platform-local +X (=world +Z
-#                              at IMAGE) to world +X — the LOAD radial
-#                              direction)
-#   IMAGE  →  RETURN  : 180°   (+Z → -Z)
-#   IMAGE  →  DUMP    : -90°   (+Z → -X)
+#   IMAGE  : Ry(  0°)  cartridge +X → turret +X, +Z → +Z
+#   LOAD   : Ry(+90°)  cartridge +X → turret -Z, +Z → +X
+#   DUMP   : Ry(-90°)  cartridge +X → turret +Z, +Z → -X
+#   RETURN : Ry(180°)  cartridge +X → turret -X, +Z → -Z
 STATION_ANGLES = {
     "image":  0,
     "load":   90,
@@ -284,14 +297,23 @@ STATION_ANGLES = {
     "dump":  -90,
 }
 
-# IMAGE-pose part placements (world coords when at IMAGE). Used by
-# both the standalone (no rotation) and the per-station builder
-# below (rotated around the hub axis).
+# Station centroid in turret-local. The cartridge centroid (acrylic
+# top-face centre) lands here for each station after rotation.
+_STATION_CENTROIDS = {
+    "image":  Pos(0, 0, +TURRET_ARM_R),
+    "load":   Pos(+TURRET_ARM_R, 0, 0),
+    "return": Pos(0, 0, -TURRET_ARM_R),
+    "dump":   Pos(-TURRET_ARM_R, 0, 0),
+}
+
+# Cartridge-local part placements. Used by both the standalone
+# (cartridge in isolation) and the per-station builder below
+# (translated + rotated to its turret-local pose).
 _IMAGE_LOCS = (
     ("acrylic", Pos(0, 0, 0)),
-    ("bracket_pos", Pos(BRACKET_POS_X_WORLD, BRACKET_BOTTOM_Y_WORLD, BRACKET_Z_WORLD)),
-    ("bracket_neg", Pos(BRACKET_NEG_X_WORLD, BRACKET_BOTTOM_Y_WORLD, BRACKET_Z_WORLD)),
-    ("ring", Pos(0, RING_BOTTOM_Y_WORLD, 0)),
+    ("bracket_pos", Pos(BRACKET_POS_X_LOCAL, BRACKET_BOTTOM_Y_LOCAL, BRACKET_Z_LOCAL)),
+    ("bracket_neg", Pos(BRACKET_NEG_X_LOCAL, BRACKET_BOTTOM_Y_LOCAL, BRACKET_Z_LOCAL)),
+    ("ring", Pos(0, RING_BOTTOM_Y_LOCAL, 0)),
 )
 
 _PART_BUILDERS = {
@@ -303,40 +325,39 @@ _PART_BUILDERS = {
 
 
 def add_turret_platform(
-    a: Assembly,
-    station: str,
-    hub_x: float = TURRET_HUB_X,
-    hub_z: float = TURRET_HUB_Z,
+    a: Assembly, station: str, base=Pos(0, 0, 0)
 ) -> Assembly:
     """Place one cartridge at the named station ('image', 'load',
-    'dump', 'return') in world coordinates. The cartridge geometry
-    is built in IMAGE pose; this helper applies a sandwich rotation
-    around the hub axis to land it at the station's pose. Part
-    names are prefixed with the station to avoid collisions across
-    instances ("platform_load_acrylic", etc.)."""
+    'dump', 'return'). Cartridge geometry is built in cartridge-local
+    IMAGE pose; this helper applies a per-station rotation around the
+    hub axis (turret-local origin) and translates to the station's
+    centroid. `base` (default: identity) is pre-multiplied to lift the
+    result into a parent frame. Part names are prefixed with the
+    station to avoid collisions across instances
+    ("platform_load_acrylic", etc.)."""
     angle = STATION_ANGLES[station]
-    hub_xform = (
-        Pos(hub_x, 0, hub_z)
-        * Rot(0, angle, 0)
-        * Pos(-hub_x, 0, -hub_z)
-    )
+    centroid = _STATION_CENTROIDS[station]
+    rotation = Rot(0, angle, 0)
     for sub_name, image_loc in _IMAGE_LOCS:
         full_name = f"platform_{station}_{sub_name}"
         a = a.add(
             full_name,
             _PART_BUILDERS[sub_name](),
-            location=hub_xform * image_loc,
+            location=base * centroid * rotation * image_loc,
         )
     return a
 
 
-# --- Standalone assembly (IMAGE pose only) ----------------------------
+# --- Standalone assembly (cartridge-local, no station placement) ------
 
-assembly = add_turret_platform(Assembly(), "image")
+# Build the cartridge in cartridge-local with no station rotation /
+# translation. Pairwise no-interference checks are invariant under
+# rigid motion; this verifies the cartridge geometry alone.
+assembly = Assembly()
+_STANDALONE_NAMES = tuple(f"cartridge_{sub_name}" for sub_name, _ in _IMAGE_LOCS)
+for (sub_name, image_loc), full_name in zip(_IMAGE_LOCS, _STANDALONE_NAMES):
+    assembly = assembly.add(full_name, _PART_BUILDERS[sub_name](), location=image_loc)
 
-_STANDALONE_NAMES = tuple(
-    f"platform_image_{sub_name}" for sub_name, _ in _IMAGE_LOCS
-)
 for _i, _a in enumerate(_STANDALONE_NAMES):
     for _b in _STANDALONE_NAMES[_i + 1:]:
         assembly = assembly.assert_no_interference(_a, _b)

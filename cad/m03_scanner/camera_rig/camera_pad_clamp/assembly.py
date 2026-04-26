@@ -67,9 +67,9 @@ from cad_khana.mechanism.check import check
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from params import (  # noqa: E402
+from camera_rig.params import (  # noqa: E402
     CAMERA_BRACKET_BOLT_SPACING,
     CAMERA_BRACKET_PLATE_SIZE,
     CAMERA_BRACKET_PLATE_T,

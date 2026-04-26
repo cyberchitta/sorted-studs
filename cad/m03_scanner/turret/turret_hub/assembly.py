@@ -25,15 +25,15 @@ Members (4 total):
                         Ø8 ID × 7 mm) flush with the housing top face.
   * hub_bearing_bottom — same, flush with the housing bottom face.
 
-Coordinate frame = world frame (matches `../params.py`):
-    origin = brick centroid on the IMAGE platform top face
-    +X     = operator's right
-    +Y     = up
-    +Z     = away from operator (toward the back of the machine)
+Coordinate frame = turret-local frame (matches `../params.py`):
+    origin = hub axis at the cross-rail's top face Y plane
+    +X     = operator's right            (parallel to world +X)
+    +Y     = up                          (parallel to world +Y)
+    +Z     = away from operator          (parallel to world +Z)
 
-Housing bottom face sits on the cross-rail top face at world
+Housing bottom face sits on the cross-rail top face at
 y = TURRET_FRAME_FLOOR_Y + MEMBER/2 = -210; the hub axis runs vertical
-through (world x = 0, z = TURRET_HUB_Z). Bearings press into the Ø22
+through turret-local (0, *, 0) by construction. Bearings press into the Ø22
 bore (tangent contact in the model, which `assert_no_interference`
 treats as zero overlap); axial retention is via shaft circlips
 (E-clips), not modelled. Shaft is captured by the bearings + circlips.
@@ -54,9 +54,9 @@ from cad_khana.mechanism.check import check
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from params import (  # noqa: E402
+from turret.params import (  # noqa: E402
     TURRET_FRAME_CROSS_Z,
     TURRET_FRAME_FLOOR_Y,
     TURRET_HUB_X,
@@ -262,23 +262,22 @@ HUB_PART_NAMES = (
 )
 
 
-def add_turret_hub(a: Assembly) -> Assembly:
-    """Add the four turret-hub parts (housing + shaft + 2 bearings) in
-    world coordinates and return the updated assembly. Exposed so the
-    top-level scanner assembly composes via the public surface instead
-    of reaching into module-private state."""
-    base = Pos(TURRET_HUB_X, RAIL_TOP_Y, TURRET_HUB_Z)
-    a = a.add("hub_housing", housing(), location=base)
-    a = a.add("hub_shaft", shaft(), location=base)
+def add_turret_hub(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
+    """Add the four turret-hub parts (housing + shaft + 2 bearings).
+    Parts are positioned in turret-local coordinates; `base` (default:
+    identity) is pre-multiplied to lift them into a parent frame."""
+    hub_pose = base * Pos(TURRET_HUB_X, RAIL_TOP_Y, TURRET_HUB_Z)
+    a = a.add("hub_housing", housing(), location=hub_pose)
+    a = a.add("hub_shaft", shaft(), location=hub_pose)
     a = a.add(
         "hub_bearing_top",
         bearing(),
-        location=base * Pos(0, _TOP_BEARING_Y, 0),
+        location=hub_pose * Pos(0, _TOP_BEARING_Y, 0),
     )
     a = a.add(
         "hub_bearing_bottom",
         bearing(),
-        location=base * Pos(0, _BOTTOM_BEARING_Y, 0),
+        location=hub_pose * Pos(0, _BOTTOM_BEARING_Y, 0),
     )
     return a
 

@@ -11,30 +11,35 @@ the floor frame, with the hub + drive, arms, platform cartridges and
 cam ring landing in later slices.
 
 Members (5 total, all stock 2020 aluminum extrusion at y = -220):
-  * floor_back_x   — back X-rail butting the camera rig's rail A
-                     front face (CORNER_GAP separator).
+  * floor_back_x   — back X-rail at z = TURRET_FRAME_BACK_Z. When the
+                     turret is placed in world via Pos(0, 0, -ARM_R),
+                     this rail's +Z face lands CORNER_GAP forward of
+                     the camera rig's rail A front face — that
+                     boundary is asserted in `../../assembly.py`.
   * floor_front_x  — front X-rail at z = TURRET_FRAME_FRONT_Z (under
                      the RETURN station centroid).
   * floor_left_z   — left Z-rail at x = -TURRET_FRAME_SIDE_X.
   * floor_right_z  — right Z-rail at x = +TURRET_FRAME_SIDE_X.
-  * floor_cross_x  — center X-rail at z = TURRET_HUB_Z. Mounting line
-                     shared by the slice (b) hub bearing (x = 0), the
-                     M2 singulator (LOAD, x = +130) and the M5
-                     diverter (DUMP, x = -130).
+  * floor_cross_x  — center X-rail at z = TURRET_FRAME_CROSS_Z (= hub
+                     axis Z = 0 in turret-local). Mounting line shared
+                     by the slice (b) hub bearing (x = 0), the M2
+                     singulator (LOAD, x = +130) and the M5 diverter
+                     (DUMP, x = -130).
 
-Coordinate frame = world frame (matches `../params.py`):
-    origin = brick centroid on the IMAGE platform top face
-    +X     = operator's right
-    +Y     = up
-    +Z     = away from operator (toward the back of the machine)
+Coordinate frame = turret-local frame (matches `../params.py`):
+    origin = hub axis at the cross-rail's top face Y plane
+    +X     = operator's right            (parallel to world +X)
+    +Y     = up                          (parallel to world +Y)
+    +Z     = away from operator          (parallel to world +Z)
 
 Clearance to camera rig: floor rails are coplanar with the rig's
-rail A / rail B (centerline y = -220, both share a single bench).
-The back rail butts rail A's front face with a CORNER_GAP separator;
-side rails extend forward to the front rail. Front-half of the cam
-ring (around LOAD/RETURN/DUMP) projects past the camera-rig front
-face by design — that's the open-front operator-access region the
-rig's rev-3 architecture preserves.
+rail A / rail B (both share the y = -220 bench). The back rail
+butts rail A's front face with a CORNER_GAP separator after the
+unit is placed in world; that cross-unit assertion lives in
+`../../assembly.py`. Front-half of the cam ring (around
+LOAD/RETURN/DUMP) projects past the camera-rig front face by
+design — the open-front operator-access region the rig's rev-3
+architecture preserves.
 
 Members are stock 2020 aluminum extrusion — bought, not printed —
 so no `inspect()` calls. Butt-jointed members end CORNER_GAP (0.3 mm)
@@ -51,38 +56,15 @@ from build123d import Box, Part, Pos
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from params import (  # noqa: E402
-    T_FRAME_RAIL_A_FRONT_Z,
-    TURRET_ARM_R,
+from turret.params import (  # noqa: E402
+    TURRET_FRAME_BACK_Z,
     TURRET_FRAME_CROSS_Z,
     TURRET_FRAME_FLOOR_Y,
-    TURRET_HUB_Z,
+    TURRET_FRAME_FRONT_Z,
+    TURRET_FRAME_SIDE_X,
 )
-
-
-# --- Frame perimeter geometry (private to this sub-assembly) ------------
-
-# Back X-rail centerline Z. The rail's +Z face sits CORNER_GAP forward
-# of the camera rig's rail A front face (z = T_FRAME_RAIL_A_FRONT_Z ≈
-# +18.44), so the centerline is back-face minus MEMBER/2.
-TURRET_FRAME_BACK_Z = T_FRAME_RAIL_A_FRONT_Z - 0.3 - 20.0 / 2    # ≈ +8.14
-
-# Front X-rail centerline Z. Under the RETURN station centroid
-# (z = -260). The RETURN platform's outer edge cantilevers 90 mm
-# forward of this rail (to z = -350); accepted because the platform
-# is light, the cam ring (slice e) carries the swing-load, and
-# stopping the floor here keeps the bench footprint bounded.
-TURRET_FRAME_FRONT_Z = TURRET_HUB_Z - TURRET_ARM_R               # = -260
-
-# Side Z-rails X. ±150 sits 20 mm outboard of the LOAD/DUMP centroid
-# lines at x = ±130 — gives the singulator and diverter mounting room
-# on the cross-rail's outboard end without the side rail's outer face
-# crashing the swept platform footprint at LOAD/DUMP (LOAD platform's
-# outboard X face at +220 is at y = 0, well above the y = -220 side
-# rail).
-TURRET_FRAME_SIDE_X = 150.0
 
 
 # --- Member cross-section ----------------------------------------------
@@ -129,15 +111,10 @@ assert TURRET_FRAME_FRONT_Z + MEMBER / 2 < TURRET_FRAME_CROSS_Z < TURRET_FRAME_B
     f"with at least MEMBER/2 clearance to each"
 )
 
-# Back rail must clear the camera rig's rail A front face. Both share
-# y = -220 so a z-overlap would crash in 3D (same fault mode as the
-# platform_frame tongue ↔ rail B reconciliation).
-_BACK_RAIL_BACK_FACE_Z = TURRET_FRAME_BACK_Z + MEMBER / 2
-assert _BACK_RAIL_BACK_FACE_Z + CORNER_GAP <= T_FRAME_RAIL_A_FRONT_Z, (
-    f"back rail back face ({_BACK_RAIL_BACK_FACE_Z}) needs at least "
-    f"{CORNER_GAP} mm clearance from rail A's front face "
-    f"({T_FRAME_RAIL_A_FRONT_Z:.2f}); they share y = -220 and would crash"
-)
+# Back rail back face Y-clearance vs the camera rig's rail A front
+# face is a cross-unit boundary asserted in `../../assembly.py` after
+# the turret is placed in world. Within the unit we only check the
+# self-consistency of the frame geometry.
 
 
 # --- Member helpers ----------------------------------------------------
@@ -177,14 +154,16 @@ TURRET_FRAME_PART_NAMES = tuple(_MEMBERS.keys())
 
 # --- Assembly builder --------------------------------------------------
 
-def add_turret_frame(a: Assembly) -> Assembly:
-    """Add all 2020 turret-frame members in world coordinates and
-    return the updated assembly. Exposed so the top-level scanner
+def add_turret_frame(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
+    """Add all 2020 turret-frame members and return the updated
+    assembly. Parts are positioned in turret-local coordinates;
+    `base` (default: identity) is pre-multiplied to lift them into a
+    parent frame (e.g. world). Exposed so the top-level scanner
     assembly composes via the public surface instead of reaching into
     module-private state.
     """
     for name, part in _MEMBERS.items():
-        a = a.add(name, part)
+        a = a.add(name, part, location=base)
     return a
 
 

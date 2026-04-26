@@ -68,9 +68,9 @@ from cad_khana.mechanism.check import check
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from params import (  # noqa: E402
+from camera_rig.params import (  # noqa: E402
     MIRROR_BACK_UPPER_NORMAL,
     MIRROR_BACK_UPPER_POS,
     MIRROR_BELOW_LEFT_NORMAL,

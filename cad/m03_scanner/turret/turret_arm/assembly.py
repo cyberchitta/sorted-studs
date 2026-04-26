@@ -26,17 +26,17 @@ Members (5 total — 1 printed body + 4 stock pins):
     bushing-block face to host the slice (d) platform's bonded
     hinge bracket.
 
-Coordinate frame = world frame (matches `../params.py`):
-    origin = brick centroid on the IMAGE platform top face
-    +X     = operator's right
-    +Y     = up
-    +Z     = away from operator (toward the back of the machine)
+Coordinate frame = turret-local frame (matches `../params.py`):
+    origin = hub axis at the cross-rail's top face Y plane
+    +X     = operator's right            (parallel to world +X)
+    +Y     = up                          (parallel to world +Y)
+    +Z     = away from operator          (parallel to world +Z)
 
 The spider's local origin sits at the hub axis at the pin-axis Y
-plane (world (TURRET_HUB_X, TURRET_HINGE_PIN_Y, TURRET_HUB_Z) =
-(0, -22.5, -130)). The disc + arms span y ∈ [-12.5, +12.5] locally
-(= y ∈ [-35, -10] in world), with the top face flush with the
-slice (b) shaft top at y = -10.
+plane: turret-local (TURRET_HUB_X, TURRET_HINGE_PIN_Y, TURRET_HUB_Z)
+= (0, -22.5, 0). The disc + arms span y ∈ [-12.5, +12.5] locally
+(= y ∈ [-35, -10] in world / turret-local Y), with the top face flush
+with the slice (b) shaft top at y = -10.
 
 Arm headings (around Y axis, measured from +X toward +Z):
     +X   →  LOAD station   (pin axis along ±Z)
@@ -63,9 +63,9 @@ from cad_khana.mechanism.check import check
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from params import (  # noqa: E402
+from turret.params import (  # noqa: E402
     TURRET_HINGE_PIN_D,
     TURRET_HINGE_PIN_RADIAL,
     TURRET_HINGE_PIN_Y,
@@ -307,12 +307,14 @@ ARM_PART_NAMES = ("spider",) + tuple(name for name, _, _ in _PIN_PLACEMENTS)
 
 # --- Assembly builder --------------------------------------------------
 
-def add_turret_arm(a: Assembly) -> Assembly:
-    """Add the spider + 4 hinge pins in world coordinates."""
-    base = Pos(TURRET_HUB_X, TURRET_HINGE_PIN_Y, TURRET_HUB_Z)
-    a = a.add("spider", spider(), location=base)
-    for name, world_pos, rot in _PIN_PLACEMENTS:
-        a = a.add(name, pin(), location=Pos(*world_pos) * rot)
+def add_turret_arm(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
+    """Add the spider + 4 hinge pins. Parts are positioned in
+    turret-local coordinates; `base` (default: identity) is
+    pre-multiplied to lift them into a parent frame."""
+    spider_pose = base * Pos(TURRET_HUB_X, TURRET_HINGE_PIN_Y, TURRET_HUB_Z)
+    a = a.add("spider", spider(), location=spider_pose)
+    for name, local_pos, rot in _PIN_PLACEMENTS:
+        a = a.add(name, pin(), location=base * Pos(*local_pos) * rot)
     return a
 
 

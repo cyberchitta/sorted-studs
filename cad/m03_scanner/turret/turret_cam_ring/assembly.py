@@ -26,13 +26,13 @@ Two deferrals carry into a follow-up slice:
 Members (1 part):
   * cam_ring — annular printed body, inner radius 215, outer radius
     225, Y from -30 (bottom) to -20 (top), centred on the hub axis
-    (world (0, *, -130)).
+    (turret-local (0, *, 0)).
 
-Coordinate frame = world frame (matches `../params.py`):
-    origin = brick centroid on the IMAGE platform top face
-    +X     = operator's right
-    +Y     = up
-    +Z     = away from operator (toward the back of the machine)
+Coordinate frame = turret-local frame (matches `../params.py`):
+    origin = hub axis at the cross-rail's top face Y plane
+    +X     = operator's right            (parallel to world +X)
+    +Y     = up                          (parallel to world +Y)
+    +Z     = away from operator          (parallel to world +Z)
 
 Cam ring TOP at y = -20 sits 16 mm below the platform underside at
 y = -4 (room for a Ø10 follower wheel centred at y = -15). Cam ring
@@ -59,9 +59,9 @@ from cad_khana.mechanism.check import check
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from params import (  # noqa: E402
+from turret.params import (  # noqa: E402
     PLATFORM_ACRYLIC_SIZE,
     TURRET_ARM_R,
     TURRET_HUB_X,
@@ -135,16 +135,14 @@ _RING_CENTER_Y = (TURRET_CAM_RING_TOP_Y + TURRET_CAM_RING_BOTTOM_Y) / 2
 CAM_RING_PART_NAME = "turret_cam_ring"
 
 
-def add_turret_cam_ring(
-    a: Assembly,
-    hub_x: float = TURRET_HUB_X,
-    hub_z: float = TURRET_HUB_Z,
-) -> Assembly:
-    """Place the single cam ring centred on the hub axis."""
+def add_turret_cam_ring(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
+    """Place the single cam ring centred on the hub axis. Cam ring is
+    positioned in turret-local; `base` (default: identity) is
+    pre-multiplied to lift it into a parent frame."""
     return a.add(
         CAM_RING_PART_NAME,
         cam_ring(),
-        location=Pos(hub_x, _RING_CENTER_Y, hub_z),
+        location=base * Pos(TURRET_HUB_X, _RING_CENTER_Y, TURRET_HUB_Z),
     )
 
 
