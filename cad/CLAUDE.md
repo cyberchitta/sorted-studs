@@ -27,6 +27,26 @@ Guidance for organizing Build123d / cad-khana assemblies in this repo.
    as a stub inside the sub-assembly that constrains it, not as its
    own directory.
 
+5. **Parameters live at their owning scope.** A `params.py` at any
+   level holds only that frame's anchors and the explicit interface
+   mirrors shared with peers (the `MIRROR_MOUNT_PLATE_T`-style cross-
+   boundary duplicates with assertions). Sub-assembly internals —
+   housing dimensions, bearing types, bolt patterns — stay inside the
+   sub-assembly that owns them. Constants leaking upward force future
+   readers to disentangle genuinely-shared values from private details
+   that happened to be visible.
+
+6. **Group sub-assemblies that share a natural local frame.** When a
+   set of sub-assemblies forms a relocatable unit with its own local
+   frame (e.g. a turret about a vertical hub axis, a camera rig about
+   an optical origin), give them a parent directory whose
+   `assembly.py` composes them in unit-local coordinates and whose
+   `params.py` owns the unit's anchors. The top-level then places the
+   unit in world via one transform — so "where does this unit go?"
+   is a single-number decision instead of a constant-by-constant
+   rewrite. The parent itself runs standalone (principle 2 applies
+   recursively); cross-unit checks live in the enclosing top-level.
+
 ## Directory layout example
 
 ```
