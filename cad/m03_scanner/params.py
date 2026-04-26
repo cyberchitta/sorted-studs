@@ -650,3 +650,42 @@ TURRET_ARM_SPIDER_HEIGHT = 25.0
 # slides on from above and bottoms out on a circlip / shoulder at
 # the bottom of its hub bore (not modelled).
 TURRET_ARM_SPIDER_TOP_Y = TURRET_SHAFT_TOP_Y                     # = -10
+
+
+# --- Rev-3 turret_cam_ring (slice e) -----------------------------------
+#
+# Fixed annular cam ring around the hub axis at radius
+# TURRET_CAM_RING_R = 220 (= TURRET_ARM_R + PLATFORM_ACRYLIC_SIZE/2,
+# the radius the platform's outer-edge midpoint traces during
+# rotation). Each platform's outer-edge follower (designed in a
+# follow-up slice) rolls on the cam ring's TOP face; the cam Y
+# profile around 360° controls platform tilt at each station.
+#
+# This first cut ships the cam ring at a uniform Y (level all the
+# way around) — the DUMP-station notch (downward step that drops the
+# follower so the platform tilts outer-edge-down to release the
+# brick) and any banking sectors are deferred. With a level ring,
+# all 4 platforms stay flat at all stations.
+#
+# The cam ring sits BELOW the platform (Y < platform underside at
+# y = -4) and BELOW the bracket bottom (y = -27.3 from slice d), so
+# the ring + any mounting structure clears the swept platform
+# footprint vertically. Specifically the ring TOP at y = -20 is 16 mm
+# below the platform underside (room for a Ø10 follower wheel
+# centred at y = -15) and the ring BOTTOM at y = -30 is 2.7 mm below
+# the slice (d) bracket bottom — important because the cam ring is a
+# full 360° annulus and the brackets sweep over it during indexing.
+
+# Cam ring radial inner / outer faces. 10 mm radial thickness centred
+# on TURRET_CAM_RING_R = 220.
+TURRET_CAM_RING_RADIAL_T = 10.0
+TURRET_CAM_RING_INNER_R = TURRET_CAM_RING_R - TURRET_CAM_RING_RADIAL_T / 2  # = 215
+TURRET_CAM_RING_OUTER_R = TURRET_CAM_RING_R + TURRET_CAM_RING_RADIAL_T / 2  # = 225
+
+# Cam ring vertical extent. TOP face is the cam profile (where the
+# follower rolls); BOTTOM face is where mounting structure attaches.
+# 10 mm Y thickness gives enough section depth for printed strength
+# at this radius without mass-producing a thick annulus.
+TURRET_CAM_RING_TOP_Y = -20.0
+TURRET_CAM_RING_THICKNESS = 10.0
+TURRET_CAM_RING_BOTTOM_Y = TURRET_CAM_RING_TOP_Y - TURRET_CAM_RING_THICKNESS  # = -30
