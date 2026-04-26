@@ -553,3 +553,42 @@ TURRET_FRAME_SIDE_X = 150.0
 # Center X-rail Z (= hub axis Z). Hosts hub bearing + neighbour-module
 # anchors on a single line.
 TURRET_FRAME_CROSS_Z = TURRET_HUB_Z                              # = -130
+
+
+# --- Rev-3 turret_hub (slice b) ----------------------------------------
+#
+# Printed pillow-block hub housing carrying a vertical Ø8 shaft on two
+# 608ZZ ball bearings (8 × 22 × 7). Bolts to the slice (a) turret_frame
+# cross-rail's top T-slot at the hub axis (x = TURRET_HUB_X = 0,
+# z = TURRET_HUB_Z = -130). Drive coupling (motor + belt or worm)
+# deferred until shaft layout is fixed.
+
+# Stock 8 mm hardened steel shaft. Selected to match 608ZZ bearing ID.
+TURRET_SHAFT_D = 8.0
+
+# 608ZZ ball bearing dimensions (ID 8, OD 22, width 7).
+TURRET_BEARING_OD = 22.0
+TURRET_BEARING_T = 7.0
+
+# Housing height above the cross-rail top face. 100 mm gives an 86 mm
+# clear span between the top and bottom bearings (each flush with its
+# adjacent housing face) — enough moment support for the unbalanced-
+# load case (one platform carrying a brick, three empty) without
+# dominating the print volume.
+TURRET_HUB_HOUSING_HEIGHT = 100.0
+
+# Housing top face Y in world. Cross-rail top face at y = -210
+# (= floor + MEMBER/2) plus housing height = -110.
+TURRET_HUB_HOUSING_TOP_Y = (
+    TURRET_FRAME_FLOOR_Y + 20.0 / 2 + TURRET_HUB_HOUSING_HEIGHT
+)                                                                # = -110
+
+# Shaft top Y in world. 100 mm above the housing top face — leaves
+# room for the slice (c) arm hub to clamp around the shaft above the
+# top bearing. Preliminary value: the camera sightline at z = -130
+# covers world y > -29 (camera-to-brick line passes through y ≈ +60.7
+# at this z, with a ~90 mm cone half-radius), so any structure above
+# y ≈ -30 here appears in the camera frame. Slice (c) revises this
+# once the arm-stack height is fixed; for now the shaft tip itself
+# (Ø8) is small enough to ignore as image background.
+TURRET_SHAFT_TOP_Y = -10.0
