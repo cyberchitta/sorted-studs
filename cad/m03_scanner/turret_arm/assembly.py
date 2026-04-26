@@ -66,8 +66,6 @@ from cad_khana.printability.methods import FDM
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from params import (  # noqa: E402
-    TURRET_ARM_SPIDER_HEIGHT,
-    TURRET_ARM_SPIDER_TOP_Y,
     TURRET_HINGE_PIN_D,
     TURRET_HINGE_PIN_RADIAL,
     TURRET_HINGE_PIN_Y,
@@ -77,6 +75,20 @@ from params import (  # noqa: E402
     TURRET_SHAFT_TOP_Y,
     WALL_MIN,
 )
+
+
+# --- Spider Y geometry (private to this sub-assembly) -------------------
+
+# Spider Y span. 25 mm gives ≥ WALL_MIN around the Ø5.4 pin bore
+# in the bushing blocks (12.5 - 2.7 = 9.8 mm vertical wall) and
+# matches the hub disc height for a uniform Y profile across the
+# whole printed body.
+TURRET_ARM_SPIDER_HEIGHT = 25.0
+
+# Spider top face Y in world. Flush with the shaft top so the spider
+# slides on from above and bottoms out on a circlip / shoulder at
+# the bottom of its hub bore (not modelled).
+TURRET_ARM_SPIDER_TOP_Y = TURRET_SHAFT_TOP_Y                     # = -10
 
 
 # --- Hub disc dimensions -----------------------------------------------

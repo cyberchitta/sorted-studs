@@ -55,12 +55,34 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from params import (  # noqa: E402
     T_FRAME_RAIL_A_FRONT_Z,
-    TURRET_FRAME_BACK_Z,
+    TURRET_ARM_R,
     TURRET_FRAME_CROSS_Z,
     TURRET_FRAME_FLOOR_Y,
-    TURRET_FRAME_FRONT_Z,
-    TURRET_FRAME_SIDE_X,
+    TURRET_HUB_Z,
 )
+
+
+# --- Frame perimeter geometry (private to this sub-assembly) ------------
+
+# Back X-rail centerline Z. The rail's +Z face sits CORNER_GAP forward
+# of the camera rig's rail A front face (z = T_FRAME_RAIL_A_FRONT_Z ≈
+# +18.44), so the centerline is back-face minus MEMBER/2.
+TURRET_FRAME_BACK_Z = T_FRAME_RAIL_A_FRONT_Z - 0.3 - 20.0 / 2    # ≈ +8.14
+
+# Front X-rail centerline Z. Under the RETURN station centroid
+# (z = -260). The RETURN platform's outer edge cantilevers 90 mm
+# forward of this rail (to z = -350); accepted because the platform
+# is light, the cam ring (slice e) carries the swing-load, and
+# stopping the floor here keeps the bench footprint bounded.
+TURRET_FRAME_FRONT_Z = TURRET_HUB_Z - TURRET_ARM_R               # = -260
+
+# Side Z-rails X. ±150 sits 20 mm outboard of the LOAD/DUMP centroid
+# lines at x = ±130 — gives the singulator and diverter mounting room
+# on the cross-rail's outboard end without the side rail's outer face
+# crashing the swept platform footprint at LOAD/DUMP (LOAD platform's
+# outboard X face at +220 is at y = 0, well above the y = -220 side
+# rail).
+TURRET_FRAME_SIDE_X = 150.0
 
 
 # --- Member cross-section ----------------------------------------------

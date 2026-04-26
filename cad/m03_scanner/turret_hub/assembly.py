@@ -57,18 +57,34 @@ from cad_khana.printability.methods import FDM
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from params import (  # noqa: E402
-    TURRET_BEARING_OD,
-    TURRET_BEARING_T,
     TURRET_FRAME_CROSS_Z,
     TURRET_FRAME_FLOOR_Y,
-    TURRET_HUB_HOUSING_HEIGHT,
-    TURRET_HUB_HOUSING_TOP_Y,
     TURRET_HUB_X,
     TURRET_HUB_Z,
     TURRET_SHAFT_D,
     TURRET_SHAFT_TOP_Y,
     WALL_MIN,
 )
+
+
+# --- Bearing + housing geometry (private to this sub-assembly) ----------
+
+# 608ZZ ball bearing dimensions (ID 8, OD 22, width 7).
+TURRET_BEARING_OD = 22.0
+TURRET_BEARING_T = 7.0
+
+# Housing height above the cross-rail top face. 100 mm gives an 86 mm
+# clear span between the top and bottom bearings (each flush with its
+# adjacent housing face) — enough moment support for the unbalanced-
+# load case (one platform carrying a brick, three empty) without
+# dominating the print volume.
+TURRET_HUB_HOUSING_HEIGHT = 100.0
+
+# Housing top face Y in world. Cross-rail top face at y = -210
+# (= floor + MEMBER/2) plus housing height = -110.
+TURRET_HUB_HOUSING_TOP_Y = (
+    TURRET_FRAME_FLOOR_Y + 20.0 / 2 + TURRET_HUB_HOUSING_HEIGHT
+)                                                                # = -110
 
 
 # --- Cross-rail interface ----------------------------------------------

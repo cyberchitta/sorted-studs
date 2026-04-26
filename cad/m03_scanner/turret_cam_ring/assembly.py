@@ -62,15 +62,35 @@ from cad_khana.printability.methods import FDM
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from params import (  # noqa: E402
-    TURRET_CAM_RING_BOTTOM_Y,
-    TURRET_CAM_RING_INNER_R,
-    TURRET_CAM_RING_OUTER_R,
-    TURRET_CAM_RING_THICKNESS,
-    TURRET_CAM_RING_TOP_Y,
+    PLATFORM_ACRYLIC_SIZE,
+    TURRET_ARM_R,
     TURRET_HUB_X,
     TURRET_HUB_Z,
     WALL_MIN,
 )
+
+
+# --- Cam ring geometry (private to this sub-assembly) -------------------
+
+# Platform-edge follower radius. The platform's outer edge (away from
+# hub) sits PLATFORM_ACRYLIC_SIZE/2 = 90 mm beyond the centroid, so
+# the cam ring tracks at radius = arm + half-platform_radial = 220 mm
+# from the hub axis.
+TURRET_CAM_RING_R = TURRET_ARM_R + PLATFORM_ACRYLIC_SIZE / 2  # = 220.0
+
+# Cam ring radial inner / outer faces. 10 mm radial thickness centred
+# on TURRET_CAM_RING_R = 220.
+TURRET_CAM_RING_RADIAL_T = 10.0
+TURRET_CAM_RING_INNER_R = TURRET_CAM_RING_R - TURRET_CAM_RING_RADIAL_T / 2  # = 215
+TURRET_CAM_RING_OUTER_R = TURRET_CAM_RING_R + TURRET_CAM_RING_RADIAL_T / 2  # = 225
+
+# Cam ring vertical extent. TOP face is the cam profile (where the
+# follower rolls); BOTTOM face is where mounting structure attaches.
+# 10 mm Y thickness gives enough section depth for printed strength
+# at this radius without mass-producing a thick annulus.
+TURRET_CAM_RING_TOP_Y = -20.0
+TURRET_CAM_RING_THICKNESS = 10.0
+TURRET_CAM_RING_BOTTOM_Y = TURRET_CAM_RING_TOP_Y - TURRET_CAM_RING_THICKNESS  # = -30
 
 
 # --- Sanity asserts ----------------------------------------------------

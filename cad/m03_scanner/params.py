@@ -498,12 +498,6 @@ TURRET_HUB_X = 0.0
 # arm reach = TURRET_ARM_R - PLATFORM_ACRYLIC_SIZE/2 = 40 mm.
 TURRET_ARM_R = 130.0
 
-# Platform-edge follower radius. The platform's outer edge (away from
-# hub) sits PLATFORM_ACRYLIC_SIZE/2 = 90 mm beyond the centroid, so
-# the cam ring tracks at radius = arm + half-platform_radial = 220 mm
-# from the hub axis.
-TURRET_CAM_RING_R = TURRET_ARM_R + PLATFORM_ACRYLIC_SIZE / 2  # = 220.0
-
 # Station centroid XZ positions (Y = 0 for all four).
 TURRET_STATION_IMAGE_XZ = (0.0, 0.0)
 TURRET_STATION_LOAD_XZ = (+TURRET_ARM_R, TURRET_HUB_Z)
@@ -530,26 +524,6 @@ TURRET_STATION_RETURN_XZ = (0.0, TURRET_HUB_Z - TURRET_ARM_R)
 
 TURRET_FRAME_FLOOR_Y = PLATFORM_FRAME_FLOOR_Y                    # = -220 (shared bench)
 
-# Back X-rail centerline Z. The rail's +Z face sits CORNER_GAP forward
-# of the camera rig's rail A front face (z = T_FRAME_RAIL_A_FRONT_Z ≈
-# +18.44), so the centerline is back-face minus MEMBER/2.
-TURRET_FRAME_BACK_Z = T_FRAME_RAIL_A_FRONT_Z - 0.3 - 20.0 / 2    # ≈ +8.14
-
-# Front X-rail centerline Z. Under the RETURN station centroid
-# (z = -260). The RETURN platform's outer edge cantilevers 90 mm
-# forward of this rail (to z = -350); accepted because the platform
-# is light, the cam ring (slice e) carries the swing-load, and
-# stopping the floor here keeps the bench footprint bounded.
-TURRET_FRAME_FRONT_Z = TURRET_HUB_Z - TURRET_ARM_R               # = -260
-
-# Side Z-rails X. ±150 sits 20 mm outboard of the LOAD/DUMP centroid
-# lines at x = ±130 — gives the singulator and diverter mounting room
-# on the cross-rail's outboard end without the side rail's outer face
-# crashing the swept platform footprint at LOAD/DUMP (LOAD platform's
-# outboard X face at +220 is at y = 0, well above the y = -220 side
-# rail).
-TURRET_FRAME_SIDE_X = 150.0
-
 # Center X-rail Z (= hub axis Z). Hosts hub bearing + neighbour-module
 # anchors on a single line.
 TURRET_FRAME_CROSS_Z = TURRET_HUB_Z                              # = -130
@@ -565,23 +539,6 @@ TURRET_FRAME_CROSS_Z = TURRET_HUB_Z                              # = -130
 
 # Stock 8 mm hardened steel shaft. Selected to match 608ZZ bearing ID.
 TURRET_SHAFT_D = 8.0
-
-# 608ZZ ball bearing dimensions (ID 8, OD 22, width 7).
-TURRET_BEARING_OD = 22.0
-TURRET_BEARING_T = 7.0
-
-# Housing height above the cross-rail top face. 100 mm gives an 86 mm
-# clear span between the top and bottom bearings (each flush with its
-# adjacent housing face) — enough moment support for the unbalanced-
-# load case (one platform carrying a brick, three empty) without
-# dominating the print volume.
-TURRET_HUB_HOUSING_HEIGHT = 100.0
-
-# Housing top face Y in world. Cross-rail top face at y = -210
-# (= floor + MEMBER/2) plus housing height = -110.
-TURRET_HUB_HOUSING_TOP_Y = (
-    TURRET_FRAME_FLOOR_Y + 20.0 / 2 + TURRET_HUB_HOUSING_HEIGHT
-)                                                                # = -110
 
 # Shaft top Y in world. 100 mm above the housing top face — leaves
 # room for the slice (c) arm spider to clamp around the shaft above
@@ -639,53 +596,3 @@ TURRET_HINGE_PIN_RADIAL = TURRET_ARM_R - PLATFORM_ACRYLIC_SIZE / 2  # = 40
 # Hinge pin diameter — M5 stock round (matches the rev-3
 # PLATFORM_HINGE_PIN_D so existing M5 round stock applies).
 TURRET_HINGE_PIN_D = 5.0
-
-# Spider Y span. 25 mm gives ≥ WALL_MIN around the Ø5.4 pin bore
-# in the bushing blocks (12.5 - 2.7 = 9.8 mm vertical wall) and
-# matches the hub disc height for a uniform Y profile across the
-# whole printed body.
-TURRET_ARM_SPIDER_HEIGHT = 25.0
-
-# Spider top face Y in world. Flush with the shaft top so the spider
-# slides on from above and bottoms out on a circlip / shoulder at
-# the bottom of its hub bore (not modelled).
-TURRET_ARM_SPIDER_TOP_Y = TURRET_SHAFT_TOP_Y                     # = -10
-
-
-# --- Rev-3 turret_cam_ring (slice e) -----------------------------------
-#
-# Fixed annular cam ring around the hub axis at radius
-# TURRET_CAM_RING_R = 220 (= TURRET_ARM_R + PLATFORM_ACRYLIC_SIZE/2,
-# the radius the platform's outer-edge midpoint traces during
-# rotation). Each platform's outer-edge follower (designed in a
-# follow-up slice) rolls on the cam ring's TOP face; the cam Y
-# profile around 360° controls platform tilt at each station.
-#
-# This first cut ships the cam ring at a uniform Y (level all the
-# way around) — the DUMP-station notch (downward step that drops the
-# follower so the platform tilts outer-edge-down to release the
-# brick) and any banking sectors are deferred. With a level ring,
-# all 4 platforms stay flat at all stations.
-#
-# The cam ring sits BELOW the platform (Y < platform underside at
-# y = -4) and BELOW the bracket bottom (y = -27.3 from slice d), so
-# the ring + any mounting structure clears the swept platform
-# footprint vertically. Specifically the ring TOP at y = -20 is 16 mm
-# below the platform underside (room for a Ø10 follower wheel
-# centred at y = -15) and the ring BOTTOM at y = -30 is 2.7 mm below
-# the slice (d) bracket bottom — important because the cam ring is a
-# full 360° annulus and the brackets sweep over it during indexing.
-
-# Cam ring radial inner / outer faces. 10 mm radial thickness centred
-# on TURRET_CAM_RING_R = 220.
-TURRET_CAM_RING_RADIAL_T = 10.0
-TURRET_CAM_RING_INNER_R = TURRET_CAM_RING_R - TURRET_CAM_RING_RADIAL_T / 2  # = 215
-TURRET_CAM_RING_OUTER_R = TURRET_CAM_RING_R + TURRET_CAM_RING_RADIAL_T / 2  # = 225
-
-# Cam ring vertical extent. TOP face is the cam profile (where the
-# follower rolls); BOTTOM face is where mounting structure attaches.
-# 10 mm Y thickness gives enough section depth for printed strength
-# at this radius without mass-producing a thick annulus.
-TURRET_CAM_RING_TOP_Y = -20.0
-TURRET_CAM_RING_THICKNESS = 10.0
-TURRET_CAM_RING_BOTTOM_Y = TURRET_CAM_RING_TOP_Y - TURRET_CAM_RING_THICKNESS  # = -30
