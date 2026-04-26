@@ -584,11 +584,69 @@ TURRET_HUB_HOUSING_TOP_Y = (
 )                                                                # = -110
 
 # Shaft top Y in world. 100 mm above the housing top face — leaves
-# room for the slice (c) arm hub to clamp around the shaft above the
-# top bearing. Preliminary value: the camera sightline at z = -130
-# covers world y > -29 (camera-to-brick line passes through y ≈ +60.7
-# at this z, with a ~90 mm cone half-radius), so any structure above
-# y ≈ -30 here appears in the camera frame. Slice (c) revises this
-# once the arm-stack height is fixed; for now the shaft tip itself
-# (Ø8) is small enough to ignore as image background.
+# room for the slice (c) arm spider to clamp around the shaft above
+# the top bearing. The camera sightline at z = -130 covers world
+# y > -29 (camera-to-brick line passes through y ≈ +60.7 at this z,
+# with a ~90 mm cone half-radius), so any structure above y ≈ -30
+# here appears in the camera frame. The slice (c) spider top is
+# flush with the shaft top, so the spider sits in the camera frame
+# corner; the classifier learns to ignore it.
 TURRET_SHAFT_TOP_Y = -10.0
+
+
+# --- Rev-3 turret_arm (slice c) ----------------------------------------
+#
+# Single printed "spider" body that clamps to the shaft top and
+# carries the platform-side hinge for all 4 stations. NEXT_STEPS.md
+# originally read "4 instances ... single printed body parameterised
+# by station index" — that turned out to be the wrong topology
+# (stacking 4 arms vertically on the shaft would force each platform
+# to a different Y, breaking the "all 4 platforms optically
+# equivalent" requirement). Replaced with a single 4-arm spider
+# (90° symmetry around the hub axis) printed once.
+#
+# Geometry (centred on the hub axis):
+#   * hub disc — central cylindrical clamp, OD chosen for set-screw
+#     wall (M3 + heat-set insert), shaft bore Ø8.4 (Ø8 + 0.4 dia
+#     clearance over the slice (b) shaft).
+#   * 4 radial arms — rectangular beams in +X / -X / +Z / -Z from
+#     the hub OD out to the tip bushing-block inner face.
+#   * 4 tip bushing blocks — rectangular blocks at radial 40 mm,
+#     each with one horizontal Ø5.4 pin bore aligned tangentially
+#     (perpendicular to its arm's radial direction).
+#   * 4 stock Ø5 pins captured in the bushing blocks; each
+#     protrudes tangentially to host the slice (d) platform's
+#     bonded hinge bracket.
+#
+# All 4 arms share a single Y span (the spider top face is flush
+# with the shaft top), so all 4 platform pivot axes land at the same
+# world Y → all 4 platforms can use identical bonded hinge brackets
+# and reach the same y = 0 acrylic top face.
+
+# Hinge pin axis Y (world). Chosen so the spider's top face sits
+# flush with the shaft top (y = -10) and the pin lies on the spider
+# centerline: top - SPIDER_HEIGHT/2 = -10 - 25/2 = -22.5. The
+# slice (d) platform's bonded hinge brackets reach from acrylic
+# underside (y = -4) down to this pin Y, ~18.5 mm tall.
+TURRET_HINGE_PIN_Y = -22.5
+
+# Hinge pin radial offset from hub axis. The platform centroid sits
+# at TURRET_ARM_R = 130 from the hub; its hub-side edge is
+# PLATFORM_ACRYLIC_SIZE/2 = 90 closer in. So the hinge pin axis at
+# the inner edge sits at radial 130 - 90 = 40 mm from hub axis.
+TURRET_HINGE_PIN_RADIAL = TURRET_ARM_R - PLATFORM_ACRYLIC_SIZE / 2  # = 40
+
+# Hinge pin diameter — M5 stock round (matches the rev-3
+# PLATFORM_HINGE_PIN_D so existing M5 round stock applies).
+TURRET_HINGE_PIN_D = 5.0
+
+# Spider Y span. 25 mm gives ≥ WALL_MIN around the Ø5.4 pin bore
+# in the bushing blocks (12.5 - 2.7 = 9.8 mm vertical wall) and
+# matches the hub disc height for a uniform Y profile across the
+# whole printed body.
+TURRET_ARM_SPIDER_HEIGHT = 25.0
+
+# Spider top face Y in world. Flush with the shaft top so the spider
+# slides on from above and bottoms out on a circlip / shoulder at
+# the bottom of its hub bore (not modelled).
+TURRET_ARM_SPIDER_TOP_Y = TURRET_SHAFT_TOP_Y                     # = -10
