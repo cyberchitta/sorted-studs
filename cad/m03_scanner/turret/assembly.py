@@ -3,11 +3,8 @@ M03 turret — unit-internal composition + within-unit checks.
 
 Standalone composition: every turret sub-assembly placed in
 turret-local coordinates (hub axis at origin, +Y vertical, +Z toward
-the back of the machine when placed in world). Plus every
-turret-internal `assert_no_interference` pair, except for the 8
-documented adjacent-platform overlaps that fire as
-`assert_interference` (TURRET_ARM_R = 130 is too small for the
-180 × 180 platform footprint; see the reason string below).
+the back of the machine when placed in world). Plus pairwise
+`assert_no_interference` for every turret-internal part pair.
 
 Sub-assemblies:
   * turret_frame                  — 5-member 2020 floor frame
@@ -15,7 +12,8 @@ Sub-assemblies:
   * turret_arm                    — single 4-arm spider + 4 stock pins
   * turret_platform (×4 stations) — 4 cartridges, one per station
                                     (IMAGE / LOAD / DUMP / RETURN)
-  * turret_cam_ring               — fixed annular cam ring at radius 220
+  * turret_cam_ring               — fixed annular cam ring at radius
+                                    TURRET_ARM_R + PLATFORM_ACRYLIC_SIZE/2
 """
 
 import sys
@@ -70,54 +68,11 @@ def add_turret(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
     return a
 
 
-# --- Documented adjacent-platform overlaps -----------------------------
-#
-# TURRET_ARM_R = 130 is too small for the 180 × 180 mm platforms:
-# adjacent stations have inner corners that overlap. Geometric minimum:
-# two squares 90° apart at radius R have non-overlapping inner corners
-# only when R ≥ 180 mm. Each adjacent pair (image↔load, image↔dump,
-# load↔return, dump↔return) overlaps in its acrylic and its perimeter
-# ring; diagonal pairs (image↔return, load↔dump) clear by 80 mm.
-#
-# These overlaps are documented via `assert_interference` rather than
-# skipped — when the user fixes TURRET_ARM_R to ≥ 180 in a follow-up,
-# the assertion FAILS, forcing this block to be removed at the same
-# time as the design fix.
-
-_ADJACENT_STATION_PAIRS = (
-    ("image", "load"),
-    ("image", "dump"),
-    ("load", "return"),
-    ("dump", "return"),
-)
-_OVERLAPPING_PLATFORM_PARTS = ("acrylic", "ring")
-_EXPECTED_PLATFORM_OVERLAPS = {
-    frozenset((f"platform_{s1}_{sub}", f"platform_{s2}_{sub}"))
-    for s1, s2 in _ADJACENT_STATION_PAIRS
-    for sub in _OVERLAPPING_PLATFORM_PARTS
-}
-_PLATFORM_OVERLAP_REASON = (
-    "TURRET_ARM_R = 130 is too small for the 180 × 180 platform; "
-    "adjacent platforms overlap at their inner corners. Fix in a "
-    "follow-up: raise TURRET_ARM_R to ≥ 180 (and update derived "
-    "constants). This assertion fires when the overlap is fixed — "
-    "remove it then."
-)
-
-
 def add_turret_internal_checks(a: Assembly) -> Assembly:
-    """Add every within-unit assertion: pairwise no-interference for
-    all turret part pairs, except for the 8 documented adjacent-
-    platform overlaps which use assert_interference."""
+    """Pairwise no-interference for all turret part pairs."""
     for i in range(len(TURRET_PART_NAMES)):
         for j in range(i + 1, len(TURRET_PART_NAMES)):
-            a_part, b_part = TURRET_PART_NAMES[i], TURRET_PART_NAMES[j]
-            if frozenset((a_part, b_part)) in _EXPECTED_PLATFORM_OVERLAPS:
-                a = a.assert_interference(
-                    a_part, b_part, reason=_PLATFORM_OVERLAP_REASON
-                )
-            else:
-                a = a.assert_no_interference(a_part, b_part)
+            a = a.assert_no_interference(TURRET_PART_NAMES[i], TURRET_PART_NAMES[j])
     return a
 
 

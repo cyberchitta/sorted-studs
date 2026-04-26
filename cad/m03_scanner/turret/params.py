@@ -12,7 +12,7 @@ with `+Y` vertical:
 
 The unit is placed in world by `Pos(0, 0, -TURRET_ARM_R)` in
 `../assembly.py` — pure translation, no rotation. That places hub at
-world `(0, *, -TURRET_ARM_R) = (0, *, -130)`, IMAGE platform at world
+world `(0, *, -TURRET_ARM_R) = (0, *, -185)`, IMAGE platform at world
 origin, and the four station centroids at world
 `(±R, 0, -R)` / `(0, 0, -R±R)`.
 
@@ -56,10 +56,15 @@ PLATFORM_ACRYLIC_T = 4.0
 TURRET_HUB_X = 0.0
 TURRET_HUB_Z = 0.0
 
-# Arm radius (hub axis to platform centroid). 130 mm sits in the
-# middle of the design brief's 100–150 mm range. Hub-to-hinge-edge
-# arm reach = TURRET_ARM_R - PLATFORM_ACRYLIC_SIZE/2 = 40 mm.
-TURRET_ARM_R = 130.0
+# Arm radius (hub axis to platform centroid). The design brief's
+# original 100–150 mm range was wrong: at radius R the inner corners
+# of two 180 × 180 mm platforms 90° apart only clear when R ≥ 180 mm
+# (geometric minimum: corner at (S/2, S/2) coincides with adjacent
+# platform's corner at (S/2, S/2) when R = S = 180). 185 mm gives
+# 5 mm corner-to-corner clearance — same idiom as CORNER_GAP elsewhere.
+# Hub-to-hinge-edge arm reach = TURRET_ARM_R - PLATFORM_ACRYLIC_SIZE/2
+# = 95 mm.
+TURRET_ARM_R = 185.0
 
 # Station centroid XZ positions in turret-local (Y = 0 for all four).
 TURRET_STATION_IMAGE_XZ = (0.0, +TURRET_ARM_R)
@@ -80,9 +85,9 @@ TURRET_STATION_RETURN_XZ = (0.0, -TURRET_ARM_R)
 # Topology: closed rectangle (4 perimeter rails) plus a center X-rail
 # at z = 0 (= TURRET_HUB_Z). The center rail is the mounting line
 # shared by the hub bearing (slice b, x = 0), the singulator base
-# (x = +130) and the diverter base (x = -130) — putting all three
-# M2/M3/M5 anchors on one rail keeps their mounting holes coplanar
-# with the cross-rail's T-slot.
+# (LOAD, x = +TURRET_ARM_R) and the diverter base (DUMP, x =
+# -TURRET_ARM_R) — putting all three M2/M3/M5 anchors on one rail
+# keeps their mounting holes coplanar with the cross-rail's T-slot.
 
 TURRET_FRAME_FLOOR_Y = -220.0                                # shared bench
 
@@ -92,28 +97,28 @@ TURRET_FRAME_CROSS_Z = TURRET_HUB_Z                          # = 0
 
 # Back X-rail centerline Z in turret-local. The +Z face must butt the
 # camera rig's rail A front face when placed at world Z = -ARM_R.
-# Numerical: world rail A front Z = +18.44; world placement adds -130
-# to turret-local Z, so turret-local rail A front Z = +148.44; back
-# rail back face = +148.44 - CORNER_GAP = +148.14; back rail
-# centerline = back face - MEMBER/2 = +138.14. The top-level
-# `../assembly.py` asserts this matches the rig's rail A.
-TURRET_FRAME_BACK_Z = +138.14
+# Numerical: world rail A front Z = +18.44; world placement adds
+# -ARM_R to turret-local Z, so turret-local rail A front Z = ARM_R +
+# 18.44; back rail back face = ARM_R + 18.44 - CORNER_GAP = ARM_R +
+# 18.14; back rail centerline = back face - MEMBER/2 = ARM_R + 8.14.
+# The top-level `../assembly.py` asserts this matches the rig's rail A.
+TURRET_FRAME_BACK_Z = TURRET_ARM_R + 8.14
 
 # Front X-rail centerline Z — under the RETURN station centroid
 # (turret-local (0, 0, -R)). The RETURN platform's outer edge
-# cantilevers 90 mm forward of this rail (to z = -130 - 90 = -220);
-# accepted because the platform is light, the cam ring (slice e)
-# carries the swing-load, and stopping the floor here keeps the bench
-# footprint bounded.
-TURRET_FRAME_FRONT_Z = -TURRET_ARM_R                          # = -130
+# cantilevers PLATFORM_ACRYLIC_SIZE/2 forward of this rail (to
+# z = -R - 90 = -275 at R = 185); accepted because the platform is
+# light, the cam ring (slice e) carries the swing-load, and stopping
+# the floor here keeps the bench footprint bounded.
+TURRET_FRAME_FRONT_Z = -TURRET_ARM_R                          # = -185
 
-# Side Z-rails X. ±150 sits 20 mm outboard of the LOAD/DUMP centroid
-# lines at x = ±130 — gives the singulator and diverter mounting room
-# on the cross-rail's outboard end without the side rail's outer face
-# crashing the swept platform footprint at LOAD/DUMP (LOAD platform's
-# outboard X face at +220 is at y = 0, well above the y = -220 side
-# rail).
-TURRET_FRAME_SIDE_X = 150.0
+# Side Z-rails X. Sits 20 mm outboard of the LOAD/DUMP centroid lines
+# at x = ±TURRET_ARM_R — gives the singulator and diverter mounting
+# room on the cross-rail's outboard end without the side rail's outer
+# face crashing the swept platform footprint at LOAD/DUMP (LOAD
+# platform's outboard X face at +R+90 is at y = 0, well above the
+# y = -220 side rail).
+TURRET_FRAME_SIDE_X = TURRET_ARM_R + 20.0                     # = 205
 
 
 # --- Turret hub (slice b) ----------------------------------------------
@@ -142,10 +147,10 @@ TURRET_SHAFT_TOP_Y = -10.0
 TURRET_HINGE_PIN_Y = -22.5
 
 # Hinge pin radial offset from hub axis. The platform centroid sits
-# at TURRET_ARM_R = 130 from the hub; its hub-side edge is
+# at TURRET_ARM_R from the hub; its hub-side edge is
 # PLATFORM_ACRYLIC_SIZE/2 = 90 closer in. So the hinge pin axis at
-# the inner edge sits at radial 130 - 90 = 40 mm from hub axis.
-TURRET_HINGE_PIN_RADIAL = TURRET_ARM_R - PLATFORM_ACRYLIC_SIZE / 2  # = 40
+# the inner edge sits at radial TURRET_ARM_R - 90 from hub axis.
+TURRET_HINGE_PIN_RADIAL = TURRET_ARM_R - PLATFORM_ACRYLIC_SIZE / 2  # = 95
 
 # Hinge pin diameter — M5 stock round (matches the rev-3
 # PLATFORM_HINGE_PIN_D so existing M5 round stock applies).
