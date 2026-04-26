@@ -459,3 +459,97 @@ PLATFORM_HINGE_PIN_Z = PLATFORM_FRAME_POST_Z
 # without bearing-bracket rub. Bracket is entirely under the acrylic
 # (acrylic span x ∈ [-90, +90]).
 PLATFORM_HINGE_BRACKET_X = 55.0
+
+
+# --- Rev-3 turret (replaces single tilting platform) -------------------
+#
+# 4-station rotary indexed turret described in
+# `turret_design_brief.md`. Hub axis vertical at world (0, *, -130) —
+# under the camera (camera bracket back face at z ≈ -231.6 sits 100 mm
+# behind the hub) and on the operator side of the brick. Arm radius
+# r = 130 mm puts the IMAGE platform centroid at world origin and the
+# other three stations all at z ≤ 0 (operator side); none reach
+# rail C at z = +240. Cam ring at platform-edge height (y ≈ 0); the
+# camera rig's rails sit at y = -220 (A/B) and y = +250 (D), so
+# Y-separation alone keeps the cam ring clear of the rig.
+#
+# Station centroids (all at y = 0):
+#     IMAGE   = (0,    0, 0)        — brick centred on world origin
+#     LOAD    = (+130, 0, -130)     — operator-right-and-forward
+#     DUMP    = (-130, 0, -130)     — operator-left-and-forward
+#     RETURN  = (0,    0, -260)     — directly forward of origin
+#
+# IMAGE platform's outer edge (away from hub) sits at z = +90 (closest
+# point to rail C at z = +230 — 140 mm gap). RETURN platform's outer
+# edge sits at z = -350 (90 mm forward of the camera-rig front face,
+# which the rig's "open front" decision already accommodates).
+
+# Hub axis Z. Centred under the camera, slightly forward of the camera
+# bracket back face (z ≈ -231.6). 130 mm forward of brick → 100 mm
+# forward of camera bracket — clears camera structure without
+# extending the turret further into operator space than necessary.
+TURRET_HUB_Z = -130.0
+
+# Hub axis X. Centred on the world Y/Z plane (4-fold symmetry).
+TURRET_HUB_X = 0.0
+
+# Arm radius (hub axis to platform centroid). 130 mm sits in the
+# middle of the design brief's 100–150 mm range. Hub-to-hinge-edge
+# arm reach = TURRET_ARM_R - PLATFORM_ACRYLIC_SIZE/2 = 40 mm.
+TURRET_ARM_R = 130.0
+
+# Platform-edge follower radius. The platform's outer edge (away from
+# hub) sits PLATFORM_ACRYLIC_SIZE/2 = 90 mm beyond the centroid, so
+# the cam ring tracks at radius = arm + half-platform_radial = 220 mm
+# from the hub axis.
+TURRET_CAM_RING_R = TURRET_ARM_R + PLATFORM_ACRYLIC_SIZE / 2  # = 220.0
+
+# Station centroid XZ positions (Y = 0 for all four).
+TURRET_STATION_IMAGE_XZ = (0.0, 0.0)
+TURRET_STATION_LOAD_XZ = (+TURRET_ARM_R, TURRET_HUB_Z)
+TURRET_STATION_DUMP_XZ = (-TURRET_ARM_R, TURRET_HUB_Z)
+TURRET_STATION_RETURN_XZ = (0.0, TURRET_HUB_Z - TURRET_ARM_R)
+
+
+# --- Rev-3 turret_frame (slice a) --------------------------------------
+#
+# Freestanding 2020 floor frame on the shared bench (y = -220) hosting
+# the hub support and providing the M2 → M3 → M5 mechanical interface
+# (singulator at LOAD, diverter at DUMP). Replaces the rev-3
+# platform_frame's interface role; the platform-frame stack stays in
+# tree as historical reference until cleanup. The frame's back X-rail
+# butts the camera rig's rail A front face (CORNER_GAP separator) on
+# the same y = -220 bench.
+#
+# Topology: closed rectangle (4 perimeter rails) plus a center X-rail
+# at z = TURRET_HUB_Z. The center rail is the mounting line shared by
+# the hub bearing (slice b, x = 0), the singulator base (x = +130) and
+# the diverter base (x = -130) — putting all three M2/M3/M5 anchors on
+# one rail keeps their mounting holes coplanar with the cross-rail's
+# T-slot.
+
+TURRET_FRAME_FLOOR_Y = PLATFORM_FRAME_FLOOR_Y                    # = -220 (shared bench)
+
+# Back X-rail centerline Z. The rail's +Z face sits CORNER_GAP forward
+# of the camera rig's rail A front face (z = T_FRAME_RAIL_A_FRONT_Z ≈
+# +18.44), so the centerline is back-face minus MEMBER/2.
+TURRET_FRAME_BACK_Z = T_FRAME_RAIL_A_FRONT_Z - 0.3 - 20.0 / 2    # ≈ +8.14
+
+# Front X-rail centerline Z. Under the RETURN station centroid
+# (z = -260). The RETURN platform's outer edge cantilevers 90 mm
+# forward of this rail (to z = -350); accepted because the platform
+# is light, the cam ring (slice e) carries the swing-load, and
+# stopping the floor here keeps the bench footprint bounded.
+TURRET_FRAME_FRONT_Z = TURRET_HUB_Z - TURRET_ARM_R               # = -260
+
+# Side Z-rails X. ±150 sits 20 mm outboard of the LOAD/DUMP centroid
+# lines at x = ±130 — gives the singulator and diverter mounting room
+# on the cross-rail's outboard end without the side rail's outer face
+# crashing the swept platform footprint at LOAD/DUMP (LOAD platform's
+# outboard X face at +220 is at y = 0, well above the y = -220 side
+# rail).
+TURRET_FRAME_SIDE_X = 150.0
+
+# Center X-rail Z (= hub axis Z). Hosts hub bearing + neighbour-module
+# anchors on a single line.
+TURRET_FRAME_CROSS_Z = TURRET_HUB_Z                              # = -130
