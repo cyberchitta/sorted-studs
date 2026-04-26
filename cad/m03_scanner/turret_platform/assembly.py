@@ -86,6 +86,7 @@ from params import (  # noqa: E402
     TURRET_HINGE_PIN_D,
     TURRET_HINGE_PIN_RADIAL,
     TURRET_HINGE_PIN_Y,
+    TURRET_HUB_X,
     TURRET_HUB_Z,
     WALL_MIN,
 )
@@ -263,31 +264,81 @@ def ring(
     return outer_block - inner_cut
 
 
-# --- Assembly ----------------------------------------------------------
+# --- Per-station placement helper --------------------------------------
 
-assembly = (
-    Assembly()
-    .add("acrylic", acrylic_plate())
-    .add(
-        "bracket_pos_x",
-        bracket(),
-        location=Pos(
-            BRACKET_POS_X_WORLD, BRACKET_BOTTOM_Y_WORLD, BRACKET_Z_WORLD
-        ),
-    )
-    .add(
-        "bracket_neg_x",
-        bracket(),
-        location=Pos(
-            BRACKET_NEG_X_WORLD, BRACKET_BOTTOM_Y_WORLD, BRACKET_Z_WORLD
-        ),
-    )
-    .add("ring", ring(), location=Pos(0, RING_BOTTOM_Y_WORLD, 0))
+# Rotation around the hub axis that maps the IMAGE-pose cartridge to
+# each station's world pose. Angle = world rotation around +Y axis,
+# applied AFTER first translating the cartridge to put the hub axis
+# at world origin (sandwich rotation; see add_turret_platform below).
+#
+#   IMAGE  →  IMAGE   :   0°   (identity)
+#   IMAGE  →  LOAD    : +90°   (Ry(+90°) maps platform-local +X (=world +Z
+#                              at IMAGE) to world +X — the LOAD radial
+#                              direction)
+#   IMAGE  →  RETURN  : 180°   (+Z → -Z)
+#   IMAGE  →  DUMP    : -90°   (+Z → -X)
+STATION_ANGLES = {
+    "image":  0,
+    "load":   90,
+    "return": 180,
+    "dump":  -90,
+}
+
+# IMAGE-pose part placements (world coords when at IMAGE). Used by
+# both the standalone (no rotation) and the per-station builder
+# below (rotated around the hub axis).
+_IMAGE_LOCS = (
+    ("acrylic", Pos(0, 0, 0)),
+    ("bracket_pos", Pos(BRACKET_POS_X_WORLD, BRACKET_BOTTOM_Y_WORLD, BRACKET_Z_WORLD)),
+    ("bracket_neg", Pos(BRACKET_NEG_X_WORLD, BRACKET_BOTTOM_Y_WORLD, BRACKET_Z_WORLD)),
+    ("ring", Pos(0, RING_BOTTOM_Y_WORLD, 0)),
 )
 
-_PART_NAMES = ("acrylic", "bracket_pos_x", "bracket_neg_x", "ring")
-for _i, _a in enumerate(_PART_NAMES):
-    for _b in _PART_NAMES[_i + 1:]:
+_PART_BUILDERS = {
+    "acrylic": acrylic_plate,
+    "bracket_pos": bracket,
+    "bracket_neg": bracket,
+    "ring": ring,
+}
+
+
+def add_turret_platform(
+    a: Assembly,
+    station: str,
+    hub_x: float = TURRET_HUB_X,
+    hub_z: float = TURRET_HUB_Z,
+) -> Assembly:
+    """Place one cartridge at the named station ('image', 'load',
+    'dump', 'return') in world coordinates. The cartridge geometry
+    is built in IMAGE pose; this helper applies a sandwich rotation
+    around the hub axis to land it at the station's pose. Part
+    names are prefixed with the station to avoid collisions across
+    instances ("platform_load_acrylic", etc.)."""
+    angle = STATION_ANGLES[station]
+    hub_xform = (
+        Pos(hub_x, 0, hub_z)
+        * Rot(0, angle, 0)
+        * Pos(-hub_x, 0, -hub_z)
+    )
+    for sub_name, image_loc in _IMAGE_LOCS:
+        full_name = f"platform_{station}_{sub_name}"
+        a = a.add(
+            full_name,
+            _PART_BUILDERS[sub_name](),
+            location=hub_xform * image_loc,
+        )
+    return a
+
+
+# --- Standalone assembly (IMAGE pose only) ----------------------------
+
+assembly = add_turret_platform(Assembly(), "image")
+
+_STANDALONE_NAMES = tuple(
+    f"platform_image_{sub_name}" for sub_name, _ in _IMAGE_LOCS
+)
+for _i, _a in enumerate(_STANDALONE_NAMES):
+    for _b in _STANDALONE_NAMES[_i + 1:]:
         assembly = assembly.assert_no_interference(_a, _b)
 
 

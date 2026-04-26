@@ -105,18 +105,30 @@ def cam_ring(
     return outer - inner
 
 
-# --- Assembly ----------------------------------------------------------
+# --- Assembly builder + standalone -------------------------------------
 
 # Ring centred on hub axis in world. Y placement at the ring's
 # centerline (since the part function builds it symmetric about Y = 0
 # locally).
 _RING_CENTER_Y = (TURRET_CAM_RING_TOP_Y + TURRET_CAM_RING_BOTTOM_Y) / 2
 
-assembly = Assembly().add(
-    "cam_ring",
-    cam_ring(),
-    location=Pos(TURRET_HUB_X, _RING_CENTER_Y, TURRET_HUB_Z),
-)
+CAM_RING_PART_NAME = "turret_cam_ring"
+
+
+def add_turret_cam_ring(
+    a: Assembly,
+    hub_x: float = TURRET_HUB_X,
+    hub_z: float = TURRET_HUB_Z,
+) -> Assembly:
+    """Place the single cam ring centred on the hub axis."""
+    return a.add(
+        CAM_RING_PART_NAME,
+        cam_ring(),
+        location=Pos(hub_x, _RING_CENTER_Y, hub_z),
+    )
+
+
+assembly = add_turret_cam_ring(Assembly())
 
 
 if __name__ == "__main__":
