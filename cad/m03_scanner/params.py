@@ -385,29 +385,10 @@ PLATFORM_ACRYLIC_T = 4.0
 # front outrigger has been removed correspondingly.
 PLATFORM_FRAME_FLOOR_Y = -220.0
 
-# Front-post centerlines in X. ±100 sits 10 mm outboard of the
-# 180 mm acrylic edge (acrylic at x ∈ [-90, +90]) so the cross-rail
-# tops carry hinge bearings just outside the platform footprint, and
-# clears rail A's outrigger end at x = ±270 by ~170 mm.
-PLATFORM_FRAME_POST_X = 100.0
-
-# Front-post centerline Z. -100 sits 10 mm forward of the acrylic
-# front edge (z = -90), so the cross-rail centerline passes just in
-# front of the platform's hinge edge.
-PLATFORM_FRAME_POST_Z = -100.0
-
 # Cross-rail centerline Y. Top face at -30 puts the hinge-bearing
 # upper face just below the platform top at y = 0; bearing height
 # ~25–30 mm brings the hinge bore into the acrylic edge thickness.
 PLATFORM_FRAME_CROSS_RAIL_Y = -40.0
-
-# Back-tongue tip Z. Tongue butts against rail B's new front face
-# (z ≈ 18.44, flush with rail A's front face) with a CORNER_GAP
-# (0.3 mm) separator — they share the same y = -220 plane, so they
-# can't overlap in z. Significantly shorter than the acrylic's
-# z-extent (z ∈ [-90, +90]); accepted because the platform is light
-# and its CG sits forward of the new back foot.
-PLATFORM_FRAME_TONGUE_Z_BACK = T_FRAME_RAIL_A_FRONT_Z - 0.3
 
 
 # --- Rev-3 platform hinge bearing (slice b) ----------------------------
@@ -419,12 +400,6 @@ PLATFORM_FRAME_TONGUE_Z_BACK = T_FRAME_RAIL_A_FRONT_Z - 0.3
 # modelled — stock hardware). Load cells are deferred — the rev-3
 # variant trades this body for a load-cell-pocket variant on the same
 # bolt pattern, with no change to platform_frame.
-
-# Bearing block centerlines in X. ±90 lines up with the slice (c)
-# acrylic platform edges (acrylic at x ∈ [-90, +90]); 10 mm inboard
-# of the front-post centerlines at x = ±100 and 20 mm inboard of the
-# cross-rail X-end face at x = ±110.
-PLATFORM_HINGE_BEARING_X = 90.0
 
 # Hinge pin: M5 round stock. 0.4 mm diametric clearance on the bore.
 PLATFORM_HINGE_PIN_D = 5.0
@@ -439,26 +414,8 @@ PLATFORM_HINGE_PIN_Y = -17.5
 # Hinge pin axis Z. Bearing centered on the cross-rail in Z so the
 # rail-T-slot bolts enter on the rail centerline (only line where
 # T-nuts can sit in the top slot). Same Z as the cross-rail / front
-# posts.
-PLATFORM_HINGE_PIN_Z = PLATFORM_FRAME_POST_Z
-
-
-# --- Rev-3 platform acrylic + hinge bracket (slice c) ------------------
-#
-# The "platform" in operational terms: the moving piece that hinges
-# forward to drop bricks. 180 × 180 × 4 mm PMMA plate (top face at
-# y = 0) with two small printed hinge brackets bonded to its underside
-# near the front edge. The brackets share their pin bore with the
-# slice (b) bearing pillow-blocks; one continuous Ø5 round-stock pin
-# threads through bearings + brackets together.
-
-# Hinge-bracket centerlines in X. With a 30 mm bracket width, ±55
-# puts the bracket's outboard X face at ±70 — 5 mm inboard of the
-# bearing's inboard X face at ±75 (bearing is 30 mm wide centered at
-# ±90). The 5 mm air gap along the pin axis lets the platform rotate
-# without bearing-bracket rub. Bracket is entirely under the acrylic
-# (acrylic span x ∈ [-90, +90]).
-PLATFORM_HINGE_BRACKET_X = 55.0
+# posts (= PLATFORM_FRAME_POST_Z, owned by platform_frame/).
+PLATFORM_HINGE_PIN_Z = -100.0
 
 
 # --- Rev-3 turret (replaces single tilting platform) -------------------

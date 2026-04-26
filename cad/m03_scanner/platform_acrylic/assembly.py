@@ -58,12 +58,22 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from params import (  # noqa: E402
     PLATFORM_ACRYLIC_SIZE,
     PLATFORM_ACRYLIC_T,
-    PLATFORM_HINGE_BRACKET_X,
     PLATFORM_HINGE_PIN_D,
     PLATFORM_HINGE_PIN_Y,
     PLATFORM_HINGE_PIN_Z,
     WALL_MIN,
 )
+
+
+# --- Bracket world placement (private to this sub-assembly) -------------
+
+# Hinge-bracket centerlines in X. With a 30 mm bracket width, ±55
+# puts the bracket's outboard X face at ±70 — 5 mm inboard of the
+# bearing's inboard X face at ±75 (bearing is 30 mm wide centered at
+# ±90). The 5 mm air gap along the pin axis lets the platform rotate
+# without bearing-bracket rub. Bracket is entirely under the acrylic
+# (acrylic span x ∈ [-90, +90]).
+PLATFORM_HINGE_BRACKET_X = 55.0
 
 
 # --- Acrylic plate ------------------------------------------------------

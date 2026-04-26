@@ -60,11 +60,30 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from params import (  # noqa: E402
     PLATFORM_FRAME_CROSS_RAIL_Y,
     PLATFORM_FRAME_FLOOR_Y,
-    PLATFORM_FRAME_POST_X,
-    PLATFORM_FRAME_POST_Z,
-    PLATFORM_FRAME_TONGUE_Z_BACK,
     T_FRAME_RAIL_A_FRONT_Z,
 )
+
+
+# --- Frame post / tongue placement (private to this sub-assembly) -------
+
+# Front-post centerlines in X. ±100 sits 10 mm outboard of the
+# 180 mm acrylic edge (acrylic at x ∈ [-90, +90]) so the cross-rail
+# tops carry hinge bearings just outside the platform footprint, and
+# clears rail A's outrigger end at x = ±270 by ~170 mm.
+PLATFORM_FRAME_POST_X = 100.0
+
+# Front-post centerline Z. -100 sits 10 mm forward of the acrylic
+# front edge (z = -90), so the cross-rail centerline passes just in
+# front of the platform's hinge edge.
+PLATFORM_FRAME_POST_Z = -100.0
+
+# Back-tongue tip Z. Tongue butts against rail B's new front face
+# (z ≈ 18.44, flush with rail A's front face) with a CORNER_GAP
+# (0.3 mm) separator — they share the same y = -220 plane, so they
+# can't overlap in z. Significantly shorter than the acrylic's
+# z-extent (z ∈ [-90, +90]); accepted because the platform is light
+# and its CG sits forward of the new back foot.
+PLATFORM_FRAME_TONGUE_Z_BACK = T_FRAME_RAIL_A_FRONT_Z - 0.3
 
 
 # --- Member cross-section ----------------------------------------------

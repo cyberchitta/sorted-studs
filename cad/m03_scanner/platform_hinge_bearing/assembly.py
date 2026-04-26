@@ -59,12 +59,20 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from params import (  # noqa: E402
     PLATFORM_FRAME_CROSS_RAIL_Y,
-    PLATFORM_HINGE_BEARING_X,
     PLATFORM_HINGE_PIN_D,
     PLATFORM_HINGE_PIN_Y,
     PLATFORM_HINGE_PIN_Z,
     WALL_MIN,
 )
+
+
+# --- Bearing world placement (private to this sub-assembly) -------------
+
+# Bearing block centerlines in X. ±90 lines up with the slice (c)
+# acrylic platform edges (acrylic at x ∈ [-90, +90]); 10 mm inboard
+# of the front-post centerlines at x = ±100 and 20 mm inboard of the
+# cross-rail X-end face at x = ±110.
+PLATFORM_HINGE_BEARING_X = 90.0
 
 
 # --- Block dimensions --------------------------------------------------
