@@ -44,12 +44,23 @@ Arm headings (around Y axis, measured from +X toward +Z):
     -X   →  DUMP station   (pin axis along ±Z)
     -Z   →  RETURN station (pin axis along ±X)
 
+Each arm carries a small printed "level stop" shoulder on the
+OUTBOARD half of its bushing-block top face (radial
+TURRET_HINGE_PIN_RADIAL → bushing block outer R). Top face is
+coplanar with the cartridge acrylic underside at the level pose,
+so gravity (CoM at platform centroid sits radially outboard of the
+hinge) rolls each platform onto its arm's shoulder and rests
+there. The shoulder is OUTBOARD only by design: a shoulder on the
+inboard half would catch the kicker direction (outer-up tilt drops
+the underside inboard of the hinge) and block the dump motion.
+
 Print orientation: bottom face on the build plate, +Y up. The Ø8.4
 shaft bore prints as a clean vertical hole; the 4 horizontal pin
 bores and 1 horizontal set-screw bore print as horizontal cylinders
 whose lower-half ceilings read as 90° overhangs in the ray sampler
 but bridge fine in FDM at Ø4–5.4 (same allowance as
-platform_hinge_bearing).
+platform_hinge_bearing). The 4 level-stop shoulders are simple
+extruded boxes — no overhangs.
 """
 
 import math
@@ -66,6 +77,7 @@ from cad_khana.printability.methods import FDM
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from turret.params import (  # noqa: E402
+    PLATFORM_ACRYLIC_T,
     TURRET_HINGE_PIN_D,
     TURRET_HINGE_PIN_RADIAL,
     TURRET_HINGE_PIN_Y,
@@ -130,6 +142,47 @@ _BUSHING_BLOCK_OUTER_R = (
 
 # Pin bore: Ø5.4 (0.4 mm diametric clearance over the M5 stock pin).
 PIN_BORE_D = TURRET_HINGE_PIN_D + 0.4     # = 5.4
+
+
+# --- Level stop shoulder dimensions ------------------------------------
+#
+# Each arm grows a printed shoulder on the OUTBOARD half of its
+# bushing-block top face. The shoulder top is coplanar with the
+# cartridge acrylic underside at the level pose (tangent contact —
+# `assert_no_interference` treats this as zero overlap). With the
+# platform CoM at the centroid sitting radially outboard of the hinge,
+# gravity rolls the unconstrained platform outer-down; the shoulder
+# catches it at level. Outer-up tilt (the kicker direction at DUMP)
+# raises the underside outboard of the hinge AWAY from the shoulder,
+# so the kicker stroke is unconstrained.
+#
+# Tangent extent matches BUSHING_BLOCK_W so the shoulder reuses the
+# bushing block's existing AIR_GAP=0.5 to the cartridge brackets on
+# either side; no new bracket clearance constraint is introduced.
+
+# Acrylic underside Y in spider-local. Spider-local origin is the hinge
+# pin axis Y plane (= world TURRET_HINGE_PIN_Y); acrylic underside in
+# world is at -PLATFORM_ACRYLIC_T (top face at y = 0).
+_ACRYLIC_UNDERSIDE_Y_LOCAL = -PLATFORM_ACRYLIC_T - TURRET_HINGE_PIN_Y   # = +18.5
+
+# Stop radial: from hinge axis out to the bushing block outer face.
+LEVEL_STOP_RADIAL_INNER = TURRET_HINGE_PIN_RADIAL                      # = 95
+LEVEL_STOP_RADIAL_OUTER = _BUSHING_BLOCK_OUTER_R                       # = 104
+LEVEL_STOP_RADIAL_LEN = LEVEL_STOP_RADIAL_OUTER - LEVEL_STOP_RADIAL_INNER
+LEVEL_STOP_RADIAL_CENTER = (
+    LEVEL_STOP_RADIAL_INNER + LEVEL_STOP_RADIAL_OUTER
+) / 2
+
+# Stop tangent extent — full bushing-block width.
+LEVEL_STOP_W = BUSHING_BLOCK_W                                          # = 20
+
+# Stop Y span: spider top face (= +HUB_HEIGHT/2) up to acrylic underside.
+LEVEL_STOP_BOTTOM_Y_LOCAL = HUB_HEIGHT / 2                              # = +12.5
+LEVEL_STOP_TOP_Y_LOCAL = _ACRYLIC_UNDERSIDE_Y_LOCAL                     # = +18.5
+LEVEL_STOP_HEIGHT = LEVEL_STOP_TOP_Y_LOCAL - LEVEL_STOP_BOTTOM_Y_LOCAL
+LEVEL_STOP_Y_CENTER = (
+    LEVEL_STOP_BOTTOM_Y_LOCAL + LEVEL_STOP_TOP_Y_LOCAL
+) / 2
 
 
 # --- Pin dimensions ----------------------------------------------------
@@ -198,6 +251,46 @@ assert _arm_half_angle < 45.0, (
     f"would clip the set-screw bore at heading +45°"
 )
 
+# Level stop must sit OUTBOARD of the hinge axis. A stop on the inboard
+# half (radial < TURRET_HINGE_PIN_RADIAL) would catch the kicker
+# direction (outer-up tilt drops the underside inboard of the hinge),
+# blocking the dump motion.
+assert LEVEL_STOP_RADIAL_INNER >= TURRET_HINGE_PIN_RADIAL - 1e-9, (
+    f"level stop inner R {LEVEL_STOP_RADIAL_INNER} < hinge axis R "
+    f"({TURRET_HINGE_PIN_RADIAL}); shoulder would also block the "
+    f"kicker direction (outer-up tilt)"
+)
+
+# Level stop radial extent stays within the bushing block — printed as
+# part of the block, with no overhang past its outer face.
+assert LEVEL_STOP_RADIAL_OUTER <= _BUSHING_BLOCK_OUTER_R + 1e-9, (
+    f"level stop outer R {LEVEL_STOP_RADIAL_OUTER} > bushing block "
+    f"outer R ({_BUSHING_BLOCK_OUTER_R}); shoulder would overhang"
+)
+
+# Level stop tangent width ≤ bushing block width — preserves the
+# existing AIR_GAP=0.5 between block face and cartridge brackets.
+assert LEVEL_STOP_W <= BUSHING_BLOCK_W + 1e-9, (
+    f"level stop tangent W {LEVEL_STOP_W} > bushing block W "
+    f"({BUSHING_BLOCK_W}); shoulder would crash bracket inboard face"
+)
+
+# Level stop top Y matches the acrylic underside in the world frame.
+_LEVEL_STOP_TOP_DERIVED = -PLATFORM_ACRYLIC_T - TURRET_HINGE_PIN_Y
+assert abs(LEVEL_STOP_TOP_Y_LOCAL - _LEVEL_STOP_TOP_DERIVED) < 1e-6, (
+    f"LEVEL_STOP_TOP_Y_LOCAL ({LEVEL_STOP_TOP_Y_LOCAL}) ≠ derived from "
+    f"-PLATFORM_ACRYLIC_T - TURRET_HINGE_PIN_Y ({_LEVEL_STOP_TOP_DERIVED})"
+)
+
+# Level stop has positive height (i.e. spider top face sits below the
+# acrylic underside; if the two coincide the shoulder collapses).
+assert LEVEL_STOP_HEIGHT > 0, (
+    f"level stop height {LEVEL_STOP_HEIGHT} ≤ 0; spider top "
+    f"({LEVEL_STOP_BOTTOM_Y_LOCAL}) ≥ acrylic underside "
+    f"({LEVEL_STOP_TOP_Y_LOCAL}) — check TURRET_HINGE_PIN_Y or "
+    f"TURRET_ARM_SPIDER_HEIGHT"
+)
+
 
 # --- Part functions ----------------------------------------------------
 
@@ -222,7 +315,17 @@ def _arm_unit():
         * Cylinder(PIN_BORE_D / 2, BUSHING_BLOCK_W * 3)
     )
 
-    return beam + block - pin_bore
+    # Level stop shoulder on the bushing block top face, outboard half
+    # only. Top face coplanar with cartridge acrylic underside at the
+    # level pose (tangent contact); bottom face flush with bushing
+    # block top (no air gap below — printed as a single integral
+    # extension of the block).
+    level_stop = (
+        Pos(LEVEL_STOP_RADIAL_CENTER, LEVEL_STOP_Y_CENTER, 0)
+        * Box(LEVEL_STOP_RADIAL_LEN, LEVEL_STOP_HEIGHT, LEVEL_STOP_W)
+    )
+
+    return beam + block + level_stop - pin_bore
 
 
 def spider():
