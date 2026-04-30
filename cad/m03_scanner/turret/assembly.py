@@ -12,9 +12,22 @@ Sub-assemblies:
   * turret_arm                    — single 4-arm spider + 4 stock pins
   * turret_platform (×4 stations) — 4 cartridges, one per station
                                     (IMAGE / LOAD / DUMP / RETURN)
+  * turret_dump_cam               — printed 4-lobe cam keyed to the shaft
+  * turret_dump_kicker            — bench-mounted L-lever (mount + lever
+                                    + pivot pin) at DUMP
 
-Tilt mechanism (shaft cam + bench-mounted kicker at DUMP, decided
-2026-04-30) lives in follow-up slices; see `../NEXT_STEPS.md`.
+The cam + kicker make up the active-push tilt mechanism: a cam lobe
+arrives at heading 180° at every dwell, pushes the lever's hub-end
+follower outward, and the lever's lifter pad rises against the
+DUMP-station platform's tab to tilt it outer-down. At rest (cam
+valley) the lifter retracts and per-arm hinge stops on the spider hold
+each platform level.
+
+This integrate ships REST geometry only (cam in valley orientation,
+lever at rest, lifter retracted). Cam-follower kinematics under shaft
+rotation — actual lift contact angle, peak-stroke clearance to the
+platform tab, brick-tilt sufficiency given the lever ratio — are
+deferred to a future kinematic-sweep slice.
 """
 
 import sys
@@ -28,6 +41,8 @@ from cad_khana.mechanism.check import check
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from turret.turret_arm import assembly as _turret_arm  # noqa: E402
+from turret.turret_dump_cam import assembly as _turret_dump_cam  # noqa: E402
+from turret.turret_dump_kicker import assembly as _turret_dump_kicker  # noqa: E402
 from turret.turret_frame import assembly as _turret_frame  # noqa: E402
 from turret.turret_hub import assembly as _turret_hub  # noqa: E402
 from turret.turret_platform import assembly as _turret_platform  # noqa: E402
@@ -44,12 +59,16 @@ TURRET_PLATFORM_NAMES = tuple(
     for station in TURRET_STATIONS
     for sub_name, _ in _turret_platform._IMAGE_LOCS
 )
+TURRET_DUMP_CAM_NAMES = (_turret_dump_cam.DUMP_CAM_PART_NAME,)
+TURRET_DUMP_KICKER_NAMES = _turret_dump_kicker.KICKER_PART_NAMES
 
 TURRET_PART_NAMES = (
     list(TURRET_FRAME_NAMES)
     + list(TURRET_HUB_NAMES)
     + list(TURRET_ARM_NAMES)
     + list(TURRET_PLATFORM_NAMES)
+    + list(TURRET_DUMP_CAM_NAMES)
+    + list(TURRET_DUMP_KICKER_NAMES)
 )
 
 
@@ -62,6 +81,8 @@ def add_turret(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
     a = _turret_arm.add_turret_arm(a, base=base)
     for station in TURRET_STATIONS:
         a = _turret_platform.add_turret_platform(a, station, base=base)
+    a = _turret_dump_cam.add_turret_dump_cam(a, base=base)
+    a = _turret_dump_kicker.add_turret_dump_kicker(a, base=base)
     return a
 
 
