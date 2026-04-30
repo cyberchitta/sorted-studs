@@ -17,14 +17,20 @@ Rails (see `../NEXT_STEPS.md` for the full design rationale):
     incompatible with the tilted back face crossing the rail body,
     so rail A drops just far enough that the clamp base clears the
     mount plate's lowest world-Y point with a few mm margin.
-    Split into left/right halves at the T-junction so rail B runs
-    continuously through.
-  * rail B — Z-span at the same Y, continuous through the T.
-    Forms the backbone from rail A's front face back past rail C
-    (back outrigger only). The rev-3 platform's Z-tongue lies
-    coplanar with rail A/B (single shared bench at y = -230), so
-    rail B can't extend past rail A toward the front without
-    clashing with the tongue — the front outrigger was removed.
+    Continuous through the T-junction: the two below-mirror clamps
+    load rail A symmetrically at x ≈ ±201, so the worst-case
+    bending moment lands at x = 0 — exactly where the T sits.
+    Splicing through a printed gusset there would carry that
+    moment far worse than an uninterrupted extrusion section, so
+    rail A is the continuous member and rail B butts to its back
+    face.
+  * rail B — Z-span at the same Y as rail A, butted to rail A's
+    back face with a CORNER_GAP separator and running back past
+    rail C (back outrigger only). No front extension past rail A:
+    rail A's continuous body owns the +Z front-face plane, and the
+    rev-3 platform's Z-tongue (coplanar with rail A/B at y = -220,
+    single shared bench at y = -230) butts against that same
+    front face.
   * rail C — vertical column behind the back-upper mount plate
     (x = 0, z = +240). Same logic as rail A — pushed out of the
     mount plate's volume so a short stub clamp can host the back-
@@ -161,17 +167,15 @@ RAIL_A_Y = -220.0                                # base top y = -195, plate min 
 RAIL_A_Z = _BL_BACK[2]                           # ≈ 28.44; under mount-back centre Z so beam straight up
 RAIL_A_X_HALF = 270.0                            # outrigger past mirror x=±207
 
-# Half-rails end CORNER_GAP inboard of rail B's nearest face.
-RAIL_A_INNER_X = MEMBER / 2 + CORNER_GAP         # = 10.3
 
-
-# --- Rail B — Z-span at the same Y as rail A, continuous through T -----
+# --- Rail B — Z-span at the same Y as rail A, butted behind rail A -----
 
 RAIL_B_Y = RAIL_A_Y                              # coplanar with rail A
-# Rail B's front face is flush with rail A's front face — no front
-# outrigger. The rev-3 platform tongue lives at the same Y and butts
-# against this face, precluding any forward extension here.
-RAIL_B_Z_FRONT = RAIL_A_Z - MEMBER / 2           # = 18.44
+# Rail B's front face butts rail A's back face with a CORNER_GAP
+# separator. Rail A's continuous body owns the front-face plane that
+# the rev-3 platform tongue meets, so rail B has no business extending
+# forward of rail A's back face.
+RAIL_B_Z_FRONT = RAIL_A_Z + MEMBER / 2 + CORNER_GAP   # ≈ 38.74
 
 
 # --- Rail C — vertical column behind the back-upper mirror -------------
@@ -250,10 +254,10 @@ assert RAIL_A_X_HALF > abs(MIRROR_BELOW_LEFT_POS[0]), (
     f"past the below-mirror X position (x=±{abs(MIRROR_BELOW_LEFT_POS[0])})"
 )
 
-assert RAIL_B_Z_FRONT == RAIL_A_Z - MEMBER / 2 and RAIL_B_Z_BACK > RAIL_C_Z, (
-    f"rail B must start flush with rail A's front face (no front "
-    f"outrigger; expected z={RAIL_A_Z - MEMBER / 2:.2f}) and extend "
-    f"past rail C junction (z={RAIL_C_Z:.2f}); "
+assert RAIL_B_Z_FRONT == RAIL_A_Z + MEMBER / 2 + CORNER_GAP and RAIL_B_Z_BACK > RAIL_C_Z, (
+    f"rail B must butt rail A's back face with a CORNER_GAP "
+    f"separator (expected z={RAIL_A_Z + MEMBER / 2 + CORNER_GAP:.2f}) "
+    f"and extend past rail C junction (z={RAIL_C_Z:.2f}); "
     f"got z ∈ [{RAIL_B_Z_FRONT}, {RAIL_B_Z_BACK}]"
 )
 
@@ -347,11 +351,7 @@ def mitered_brace_yz(
 
 # --- Assembly ----------------------------------------------------------
 
-_rail_a_left_xc = (-RAIL_A_X_HALF + (-RAIL_A_INNER_X)) / 2
-_rail_a_left_len = -RAIL_A_INNER_X - (-RAIL_A_X_HALF)
-
-_rail_a_right_xc = (RAIL_A_INNER_X + RAIL_A_X_HALF) / 2
-_rail_a_right_len = RAIL_A_X_HALF - RAIL_A_INNER_X
+_rail_a_len = 2 * RAIL_A_X_HALF
 
 _rail_b_zc = (RAIL_B_Z_FRONT + RAIL_B_Z_BACK) / 2
 _rail_b_len = RAIL_B_Z_BACK - RAIL_B_Z_FRONT
@@ -364,8 +364,7 @@ _rail_d_len = RAIL_D_Z_BACK - RAIL_D_Z_FRONT
 
 
 _MEMBERS = {
-    "rail_a_left": rail_x(_rail_a_left_xc, _rail_a_left_len, RAIL_A_Y, RAIL_A_Z),
-    "rail_a_right": rail_x(_rail_a_right_xc, _rail_a_right_len, RAIL_A_Y, RAIL_A_Z),
+    "rail_a": rail_x(0.0, _rail_a_len, RAIL_A_Y, RAIL_A_Z),
     "rail_b": rail_z(0.0, RAIL_B_Y, _rail_b_zc, _rail_b_len),
     "rail_c": rail_y(0.0, _rail_c_yc, _rail_c_len, RAIL_C_Z),
     "rail_d": rail_z(0.0, RAIL_D_Y, _rail_d_zc, _rail_d_len),

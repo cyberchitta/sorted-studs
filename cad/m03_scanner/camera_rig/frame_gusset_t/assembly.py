@@ -2,10 +2,11 @@
 M03 scanner — rev-3 rail A/B T-junction gusset.
 
 Printed top-side plate that stiffens the rail A ↔ rail B junction in
-the sparse scanner T-frame. Rail A is split left/right around the
-continuous rail B; this plate bridges the two rail-A halves and bolts
-into rail B's top slot so the junction carries bending without relying
-on commodity 2020 corner brackets.
+the sparse scanner T-frame. Rail A runs continuously through the
+junction and rail B butts to rail A's back face with a CORNER_GAP
+separator; this plate bridges the two rails by bolting into rail A's
+and rail B's top T-slots, so the junction carries bending without
+relying on commodity 2020 corner brackets.
 
 The gusset sits on the rails' +Y face instead of below them. The rev-3
 platform frame is coplanar with rail A/B (sharing a single bench), so
@@ -14,10 +15,12 @@ rails — a bottom-side gusset would collide with the floor / tongue.
 The top face is clear at the A/B joint: mirror pad-clamps live near
 x = ±207, far from this center gusset.
 
-The Z-arm extends back from the rail A/B junction only — rail B has no
-front outrigger past rail A (the rev-3 platform tongue precludes one),
-so the arm's front edge sits at the rail A front face and the plate is
-asymmetric in Z about the gusset's local origin.
+The Z-arm extends back from the rail A/B junction only. Rail A's
+continuous body owns the front-face plane (the rev-3 platform tongue
+butts that plane), so rail B starts behind rail A's back face and the
+Z-arm covers rail A then rail B as it extends back — its front edge
+sits at rail A's front face and the plate is asymmetric in Z about
+the gusset's local origin.
 
 Coordinate frame:
     origin : rail A/B junction on the rails' +Y face, at rail A's
@@ -74,14 +77,12 @@ BOLT_Z_OFFSETS = (
 )
 
 _PLATE_Y = T_FRAME_RAIL_A_TOP_Y + PLATE_T / 2
-_RAIL_A_INNER_X = MEMBER / 2 + 0.3
-_RAIL_A_STUB_OUTER_X = 90.0
-_RAIL_A_LEFT_XC = (-_RAIL_A_STUB_OUTER_X + -_RAIL_A_INNER_X) / 2
-_RAIL_A_RIGHT_XC = (_RAIL_A_INNER_X + _RAIL_A_STUB_OUTER_X) / 2
-_RAIL_A_STUB_LEN = _RAIL_A_STUB_OUTER_X - _RAIL_A_INNER_X
-# Rail B stub: starts flush with rail A's front face and extends back.
+# Rail A stub: continuous through the junction, centered at x = 0.
+_RAIL_A_STUB_LEN = 180.0
+# Rail B stub: butted to rail A's back face with CORNER_GAP separator.
 _RAIL_B_STUB_LEN = 150.0
-_RAIL_B_ZC = (RAIL_A_Z - MEMBER / 2) + _RAIL_B_STUB_LEN / 2
+_RAIL_B_Z_FRONT = RAIL_A_Z + MEMBER / 2 + 0.3
+_RAIL_B_ZC = _RAIL_B_Z_FRONT + _RAIL_B_STUB_LEN / 2
 
 GUSSET_LOCATION = Pos(0, T_FRAME_RAIL_A_TOP_Y, RAIL_A_Z)
 
@@ -124,14 +125,8 @@ def gusset() -> Part:
     return body
 
 
-def rail_a_stub_left() -> Part:
-    return Pos(_RAIL_A_LEFT_XC, RAIL_A_Y, RAIL_A_Z) * Box(
-        _RAIL_A_STUB_LEN, MEMBER, MEMBER
-    )
-
-
-def rail_a_stub_right() -> Part:
-    return Pos(_RAIL_A_RIGHT_XC, RAIL_A_Y, RAIL_A_Z) * Box(
+def rail_a_stub() -> Part:
+    return Pos(0.0, RAIL_A_Y, RAIL_A_Z) * Box(
         _RAIL_A_STUB_LEN, MEMBER, MEMBER
     )
 
@@ -154,15 +149,11 @@ def add_frame_gusset_t(
 assembly = (
     Assembly()
     .add("gusset", gusset(), location=GUSSET_LOCATION)
-    .add("rail_a_left", rail_a_stub_left())
-    .add("rail_a_right", rail_a_stub_right())
+    .add("rail_a", rail_a_stub())
     .add("rail_b", rail_b_stub())
-    .assert_no_interference("gusset", "rail_a_left")
-    .assert_no_interference("gusset", "rail_a_right")
+    .assert_no_interference("gusset", "rail_a")
     .assert_no_interference("gusset", "rail_b")
-    .assert_no_interference("rail_a_left", "rail_b")
-    .assert_no_interference("rail_a_right", "rail_b")
-    .assert_no_interference("rail_a_left", "rail_a_right")
+    .assert_no_interference("rail_a", "rail_b")
 )
 
 
