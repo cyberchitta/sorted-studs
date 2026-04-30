@@ -15,6 +15,11 @@ Sub-assemblies:
   * turret_dump_cam               — printed 4-lobe cam keyed to the shaft
   * turret_dump_kicker            — bench-mounted L-lever (mount + lever
                                     + pivot pin) at DUMP
+  * turret_drive                  — NEMA17 + GT2 belt + printed L-bracket
+                                    (driven 60T pulley on the shaft,
+                                    driver 20T on the motor; 3:1
+                                    reduction; bracket bolts to the
+                                    cross-rail at +X side)
 
 The cam + kicker make up the active-push tilt mechanism: a cam lobe
 arrives at heading 180° at every dwell, pushes the lever's hub-end
@@ -41,6 +46,7 @@ from cad_khana.mechanism.check import check
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from turret.turret_arm import assembly as _turret_arm  # noqa: E402
+from turret.turret_drive import assembly as _turret_drive  # noqa: E402
 from turret.turret_dump_cam import assembly as _turret_dump_cam  # noqa: E402
 from turret.turret_dump_kicker import assembly as _turret_dump_kicker  # noqa: E402
 from turret.turret_frame import assembly as _turret_frame  # noqa: E402
@@ -61,6 +67,7 @@ TURRET_PLATFORM_NAMES = tuple(
 )
 TURRET_DUMP_CAM_NAMES = (_turret_dump_cam.DUMP_CAM_PART_NAME,)
 TURRET_DUMP_KICKER_NAMES = _turret_dump_kicker.KICKER_PART_NAMES
+TURRET_DRIVE_NAMES = _turret_drive.DRIVE_PART_NAMES
 
 TURRET_PART_NAMES = (
     list(TURRET_FRAME_NAMES)
@@ -69,6 +76,7 @@ TURRET_PART_NAMES = (
     + list(TURRET_PLATFORM_NAMES)
     + list(TURRET_DUMP_CAM_NAMES)
     + list(TURRET_DUMP_KICKER_NAMES)
+    + list(TURRET_DRIVE_NAMES)
 )
 
 
@@ -83,6 +91,7 @@ def add_turret(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
         a = _turret_platform.add_turret_platform(a, station, base=base)
     a = _turret_dump_cam.add_turret_dump_cam(a, base=base)
     a = _turret_dump_kicker.add_turret_dump_kicker(a, base=base)
+    a = _turret_drive.add_turret_drive(a, base=base)
     return a
 
 
