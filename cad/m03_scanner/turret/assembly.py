@@ -12,8 +12,9 @@ Sub-assemblies:
   * turret_arm                    — single 4-arm spider + 4 stock pins
   * turret_platform (×4 stations) — 4 cartridges, one per station
                                     (IMAGE / LOAD / DUMP / RETURN)
-  * turret_cam_ring               — fixed annular cam ring at radius
-                                    TURRET_ARM_R + PLATFORM_ACRYLIC_SIZE/2
+
+Tilt mechanism (shaft cam + bench-mounted kicker at DUMP, decided
+2026-04-30) lives in follow-up slices; see `../NEXT_STEPS.md`.
 """
 
 import sys
@@ -27,7 +28,6 @@ from cad_khana.mechanism.check import check
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from turret.turret_arm import assembly as _turret_arm  # noqa: E402
-from turret.turret_cam_ring import assembly as _turret_cam_ring  # noqa: E402
 from turret.turret_frame import assembly as _turret_frame  # noqa: E402
 from turret.turret_hub import assembly as _turret_hub  # noqa: E402
 from turret.turret_platform import assembly as _turret_platform  # noqa: E402
@@ -44,14 +44,12 @@ TURRET_PLATFORM_NAMES = tuple(
     for station in TURRET_STATIONS
     for sub_name, _ in _turret_platform._IMAGE_LOCS
 )
-TURRET_CAM_RING_NAMES = (_turret_cam_ring.CAM_RING_PART_NAME,)
 
 TURRET_PART_NAMES = (
     list(TURRET_FRAME_NAMES)
     + list(TURRET_HUB_NAMES)
     + list(TURRET_ARM_NAMES)
     + list(TURRET_PLATFORM_NAMES)
-    + list(TURRET_CAM_RING_NAMES)
 )
 
 
@@ -64,7 +62,6 @@ def add_turret(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
     a = _turret_arm.add_turret_arm(a, base=base)
     for station in TURRET_STATIONS:
         a = _turret_platform.add_turret_platform(a, station, base=base)
-    a = _turret_cam_ring.add_turret_cam_ring(a, base=base)
     return a
 
 

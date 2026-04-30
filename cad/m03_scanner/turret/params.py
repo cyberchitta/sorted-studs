@@ -17,9 +17,8 @@ origin, and the four station centroids at world
 `(±R, 0, -R)` / `(0, 0, -R±R)`.
 
 Each turret sub-assembly (`turret_frame/`, `turret_hub/`,
-`turret_arm/`, `turret_platform/`, `turret_cam_ring/`) carries its
-own local frame and imports the constants below via
-`from turret.params import …`.
+`turret_arm/`, `turret_platform/`) carries its own local frame and
+imports the constants below via `from turret.params import …`.
 """
 
 # --- Print floor (matches project-wide value in ../params.py) ----------
@@ -48,9 +47,9 @@ PLATFORM_ACRYLIC_T = 4.0
 #     DUMP   = (-R,   0,  0)   — toward world -X (operator-left)
 #     RETURN = (0,    0, -R)   — toward world -Z (operator-forward)
 #
-# All 4 platforms ride at y = 0; cam ring at platform-edge height
-# (y ≈ 0). The camera rig's rails sit at y = -220 (A/B) and y = +250
-# (D), so Y-separation alone keeps the cam ring clear of the rig.
+# All 4 platforms ride at y = 0. The camera rig's rails sit at
+# y = -220 (A/B) and y = +250 (D), so Y-separation alone keeps the
+# turret swept volume clear of the rig.
 
 # Hub axis position in turret-local — origin by definition.
 TURRET_HUB_X = 0.0
@@ -108,7 +107,7 @@ TURRET_FRAME_BACK_Z = TURRET_ARM_R + 8.14
 # (turret-local (0, 0, -R)). The RETURN platform's outer edge
 # cantilevers PLATFORM_ACRYLIC_SIZE/2 forward of this rail (to
 # z = -R - 90 = -275 at R = 185); accepted because the platform is
-# light, the cam ring (slice e) carries the swing-load, and stopping
+# light, hangs off the spider arm rather than the floor, and stopping
 # the floor here keeps the bench footprint bounded.
 TURRET_FRAME_FRONT_Z = -TURRET_ARM_R                          # = -185
 
@@ -155,3 +154,34 @@ TURRET_HINGE_PIN_RADIAL = TURRET_ARM_R - PLATFORM_ACRYLIC_SIZE / 2  # = 95
 # Hinge pin diameter — M5 stock round (matches the rev-3
 # PLATFORM_HINGE_PIN_D so existing M5 round stock applies).
 TURRET_HINGE_PIN_D = 5.0
+
+
+# --- Turret dump cam (slice f1 — shaft cam + bench kicker) -------------
+#
+# Printed cam disc keyed to the slice (b) shaft. Drives the bench-
+# mounted DUMP kicker (slice f2) via a follower lever: 4 radial lobes
+# 90° apart aligned with the spider arm headings (LOAD/IMAGE/DUMP/
+# RETURN). At every indexed dwell, one lobe sits under the bench-fixed
+# follower at heading 180° and pushes the kicker outward to lift the
+# DUMP-station platform's tab; in transit the follower drops into the
+# valley between lobes and the kicker retracts.
+#
+# Profile (4-fold rotational symmetry):
+#   - base radius (valley)        TURRET_DUMP_CAM_BASE_R = 25
+#   - peak radius (lobe top)      TURRET_DUMP_CAM_PEAK_R = 30
+#   - 5 mm lobe rise sets the follower's nominal radial stroke; the
+#     slice (f2) kicker linkage maps that radial motion to the
+#     vertical lifter stroke needed for the platform tilt.
+#
+# Disc Y span: [-81, -69] (centered on TURRET_DUMP_CAM_CENTER_Y).
+# Sits between the housing top (y = -110) and the slice (c) spider
+# bottom (y = -35), leaving 29 mm below for a future drive coupling
+# and 34 mm above before the spider. Lobe-peak / lobe-ramp angular
+# split + the polygon discretisation are private to the sub-assembly
+# (`turret_dump_cam/assembly.py`).
+TURRET_DUMP_CAM_BASE_R = 25.0
+TURRET_DUMP_CAM_PEAK_R = 30.0
+TURRET_DUMP_CAM_HEIGHT = 12.0
+TURRET_DUMP_CAM_CENTER_Y = -75.0
+TURRET_DUMP_CAM_TOP_Y = TURRET_DUMP_CAM_CENTER_Y + TURRET_DUMP_CAM_HEIGHT / 2
+TURRET_DUMP_CAM_BOTTOM_Y = TURRET_DUMP_CAM_CENTER_Y - TURRET_DUMP_CAM_HEIGHT / 2
