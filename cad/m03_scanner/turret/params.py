@@ -185,3 +185,42 @@ TURRET_DUMP_CAM_HEIGHT = 12.0
 TURRET_DUMP_CAM_CENTER_Y = -75.0
 TURRET_DUMP_CAM_TOP_Y = TURRET_DUMP_CAM_CENTER_Y + TURRET_DUMP_CAM_HEIGHT / 2
 TURRET_DUMP_CAM_BOTTOM_Y = TURRET_DUMP_CAM_CENTER_Y - TURRET_DUMP_CAM_HEIGHT / 2
+
+
+# --- Turret dump kicker (slice f2 — bench-mounted lever at DUMP) -------
+#
+# Bench-mounted L-lever pivoted on a printed bracket bolted to the slice
+# (a) cross-rail's top T-slot at world (x = TURRET_DUMP_KICKER_PIVOT_X,
+# z = 0). The lever's hub-end picks off the slice (f1) shaft cam's OD at
+# heading 180° (the -X side, between hub and DUMP); the lever's lifter-
+# end carries a flat pad below the DUMP-station platform tab. At rest
+# (cam valley between dwells) the follower sits at radial BASE_R = 25
+# from the cam axis and the lifter pad is retracted; at every dwell a
+# cam lobe rotates into heading 180° and pushes the follower outward to
+# PEAK_R = 30 (5 mm radial stroke), tilting the lever and raising the
+# lifter pad against the platform tab at DUMP.
+#
+# This slice ships REST geometry only — static placement of mount,
+# lever, pin. Cam-follower kinematics under shaft rotation (lever
+# rotation angle vs cam profile, follower roller geometry, peak-stroke
+# clearance to platform tab) are deferred until slices f3/f4 add the
+# per-arm hinge stop and the platform tab; slice f5 integrate ties the
+# kinematics together.
+#
+# Pivot location: x between cam OD (-30) and DUMP centroid (-185), y
+# above cross-rail top (-200) and below cam Y-band ([-81, -69]). Axis
+# along ±Z so the lever rotates in the X-Y plane.
+TURRET_DUMP_KICKER_PIVOT_X = -110.0
+TURRET_DUMP_KICKER_PIVOT_Y = -130.0
+TURRET_DUMP_KICKER_PIVOT_Z = 0.0
+
+# Lifter pad TOP-FACE Y at rest. 17.7 mm below the slice (d) platform
+# bracket bottom (y = -27.3) — clear of the swept platform footprint at
+# any station so the lever-at-rest doesn't crash an indexing platform
+# that's not yet at DUMP. Slice f4 will hang a tab from the platform
+# underside down to this Y so peak-stroke contact lifts the platform.
+TURRET_DUMP_KICKER_LIFTER_TOP_Y = -45.0
+
+# Lifter pad X at DUMP. = -TURRET_ARM_R, directly below the DUMP-station
+# centroid in the cam-to-DUMP X-Z plane (z = 0).
+TURRET_DUMP_KICKER_LIFTER_X = -TURRET_ARM_R                         # = -185
