@@ -1,14 +1,11 @@
 """
-M03 scanner — rev-3 turret frame (slice a of the 4-station turret).
+M03 scanner — rev-4 turret frame (slice a of the 4-station turret).
 
 Standalone freestanding 2020 floor frame on the shared bench
-(y = -220) replacing the rev-3 platform_frame's role as the
-M2 → M3 → M5 mechanical interface. The single-platform stack
-(`../platform_frame/`, `../platform_hinge_bearing/`,
-`../platform_acrylic/`) is being superseded by the 4-station turret
-described in `../turret_design_brief.md`; this slice delivers just
-the floor frame, with the hub + drive, arms, platform cartridges and
-cam ring landing in later slices.
+(y = -220), the M2 → M3 → M5 mechanical interface for the 4-station
+turret described in `../turret_design_brief.md`. This slice delivers
+just the floor frame; the hub + drive, arms, platform cartridges and
+cam ring land in later slices.
 
 Members (5 total, all stock 2020 aluminum extrusion at y = -220):
   * floor_back_x   — back X-rail at z = TURRET_FRAME_BACK_Z. When the
@@ -77,7 +74,7 @@ CORNER_GAP = 0.3                # butt-joint gap
 
 # Perimeter X-rails (back, front) overhang each side rail's centerline
 # by half a member so the rail end face is flush with the side rail's
-# outer face — same convention as platform_frame.
+# outer face.
 _PERIMETER_X_LEN = 2 * TURRET_FRAME_SIDE_X + MEMBER
 
 # Side Z-rails fit between the back and front X-rails with a

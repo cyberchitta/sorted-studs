@@ -25,11 +25,9 @@ Cross-unit checks at this level:
      that would push a turret part into a rig part.
 
 The rev-3 single-platform stack (`platform_frame/`,
-`platform_hinge_bearing/`, `platform_acrylic/`) stays in tree as
-historical reference — the directories are still importable
-standalones, but their placements are no longer in this top-level
-(dropped by the rev-4 turret integrate slice). Cleanup follow-up
-in `NEXT_STEPS.md`.
+`platform_hinge_bearing/`, `platform_acrylic/`) was deleted in the
+rev-3 platform-stack cleanup commit; see
+`superseded_platform_designs.md` for the retrieval commit hash.
 """
 
 import sys
