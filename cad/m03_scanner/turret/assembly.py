@@ -20,6 +20,11 @@ Sub-assemblies:
                                     driver 20T on the motor; 3:1
                                     reduction; bracket bolts to the
                                     cross-rail at +X side)
+  * turret_homing                 — printed flag disc keyed to the shaft
+                                    + slotted opto-interrupter on a
+                                    printed bracket (bolts to the
+                                    cross-rail at -X side, between hub
+                                    housing and kicker mount)
 
 The cam + kicker make up the active-push tilt mechanism: a cam lobe
 arrives at heading 180° at every dwell, pushes the lever's hub-end
@@ -50,6 +55,7 @@ from turret.turret_drive import assembly as _turret_drive  # noqa: E402
 from turret.turret_dump_cam import assembly as _turret_dump_cam  # noqa: E402
 from turret.turret_dump_kicker import assembly as _turret_dump_kicker  # noqa: E402
 from turret.turret_frame import assembly as _turret_frame  # noqa: E402
+from turret.turret_homing import assembly as _turret_homing  # noqa: E402
 from turret.turret_hub import assembly as _turret_hub  # noqa: E402
 from turret.turret_platform import assembly as _turret_platform  # noqa: E402
 
@@ -68,6 +74,7 @@ TURRET_PLATFORM_NAMES = tuple(
 TURRET_DUMP_CAM_NAMES = (_turret_dump_cam.DUMP_CAM_PART_NAME,)
 TURRET_DUMP_KICKER_NAMES = _turret_dump_kicker.KICKER_PART_NAMES
 TURRET_DRIVE_NAMES = _turret_drive.DRIVE_PART_NAMES
+TURRET_HOMING_NAMES = _turret_homing.HOMING_PART_NAMES
 
 TURRET_PART_NAMES = (
     list(TURRET_FRAME_NAMES)
@@ -77,6 +84,7 @@ TURRET_PART_NAMES = (
     + list(TURRET_DUMP_CAM_NAMES)
     + list(TURRET_DUMP_KICKER_NAMES)
     + list(TURRET_DRIVE_NAMES)
+    + list(TURRET_HOMING_NAMES)
 )
 
 
@@ -92,6 +100,7 @@ def add_turret(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
     a = _turret_dump_cam.add_turret_dump_cam(a, base=base)
     a = _turret_dump_kicker.add_turret_dump_kicker(a, base=base)
     a = _turret_drive.add_turret_drive(a, base=base)
+    a = _turret_homing.add_turret_homing(a, base=base)
     return a
 
 
