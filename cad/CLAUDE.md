@@ -47,6 +47,30 @@ Guidance for organizing Build123d / cad-khana assemblies in this repo.
    rewrite. The parent itself runs standalone (principle 2 applies
    recursively); cross-unit checks live in the enclosing top-level.
 
+## World axes: Z is up
+
+Every module in this tree uses the same world frame:
+
+    +X  = operator's right
+    +Y  = away from operator (toward the back of the machine)
+    +Z  = up (gravity is -Z)
+
+This matches build123d's defaults (`Plane.XY` is the default work
+plane, extrusions rise in +Z) and the FDM print convention (the
+printer's nozzle moves in +Z). Every sub-assembly's local frame
+either matches world or differs by a documented `Rot(...)`; never
+adopts a different "up" axis.
+
+When importing geometry from external sources that use a different
+convention (graphics/OpenGL viewpoint synthesis is typically Y-up;
+some CAD packages use Y-up), **convert at the boundary**: rewrite
+the constants into Z-up before they enter `params.py`. Don't carry
+foreign-frame values verbatim and document the convention away —
+mixed conventions in the same repo make every cross-module
+assertion suspect, and the rotation helpers (`rotation_for_normal`
+and friends) silently produce wrong placements when fed normals
+from the wrong frame.
+
 ## Directory layout example
 
 ```
