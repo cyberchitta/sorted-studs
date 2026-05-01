@@ -11,10 +11,10 @@ their respective mount plates, so the beam is short (~35-50 mm) and
 straight up rather than rev-2's 60-118 mm tilted lever.
 
 One part design drives all three mirror instances:
-  * below-left  — clamps onto rail A's +Y face (X-span at y=-220, z=28)
-  * below-right — mirror image of below-left across the YZ plane
-  * back-upper  — clamps onto rail C's -Z face (vertical post at
-                  x=0, z=240)
+  * below-left  — clamps onto rail A's +Z face (X-span at z=-220, y=28)
+  * below-right — mirror image of below-left across the XZ plane
+  * back-upper  — clamps onto rail C's -Y face (vertical post at
+                  x=0, y=240)
 
 The two below-mirror clamps are mirror-images of each other (chirality
 from each mount's mirror_normal), not literally identical, so they're
@@ -36,8 +36,9 @@ Coordinate frame (local to this sub-assembly):
              back-face centre
     +X     = along rail long axis
     +Y     = away from rail (clamp body rises in +Y)
-    +Z     = right-handed third axis (horizontal for the below-
-             mirror instances; world -X for the back-upper)
+    +Z     = right-handed third axis (horizontal across the rail
+             for the below-mirror instances = world -Y; world +X
+             for the back-upper)
     y = 0                     : rail face (clamp bottom contact)
     y ∈ [0, BASE_H]           : clamp base body
     y > BASE_H                : beam rising toward mount pad

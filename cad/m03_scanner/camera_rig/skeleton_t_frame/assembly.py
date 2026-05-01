@@ -11,12 +11,12 @@ scan volume and eject path open by construction.
 Rails (see `../NEXT_STEPS.md` for the full design rationale):
 
   * rail A — X-span just below the below-mirror mount plates
-    (y = -220, z ≈ +28), close enough to the mount back-face plane
+    (z = -220, y ≈ +28), close enough to the mount back-face plane
     that the printed clamp is a short stub rather than the rev-2
     long beam. The "pad-on-rail" goal (zero beam reach) was
     incompatible with the tilted back face crossing the rail body,
     so rail A drops just far enough that the clamp base clears the
-    mount plate's lowest world-Y point with a few mm margin.
+    mount plate's lowest world-Z point with a few mm margin.
     Continuous through the T-junction: the two below-mirror clamps
     load rail A symmetrically at x ≈ ±201, so the worst-case
     bending moment lands at x = 0 — exactly where the T sits.
@@ -24,20 +24,19 @@ Rails (see `../NEXT_STEPS.md` for the full design rationale):
     moment far worse than an uninterrupted extrusion section, so
     rail A is the continuous member and rail B butts to its back
     face.
-  * rail B — Z-span at the same Y as rail A, butted to rail A's
+  * rail B — Y-span at the same Z as rail A, butted to rail A's
     back face with a CORNER_GAP separator and running back past
     rail C (back outrigger only). No front extension past rail A:
-    rail A's continuous body owns the +Z front-face plane, and the
-    rev-3 platform's Z-tongue (coplanar with rail A/B at y = -220,
-    single shared bench at y = -230) butts against that same
-    front face.
+    rail A's continuous body owns the +Y front-face plane, and the
+    rev-3 platform's Y-tongue (coplanar with rail A/B at z = -220,
+    single shared bench) butts against that same front face.
   * rail C — vertical column behind the back-upper mount plate
-    (x = 0, z = +240). Same logic as rail A — pushed out of the
+    (x = 0, y = +240). Same logic as rail A — pushed out of the
     mount plate's volume so a short stub clamp can host the back-
     upper mirror without a long beam. Single continuous extrusion
     from rail B's back end up past rail D to the strut anchor at
     the column top.
-  * rail D — Z-cantilever over the camera, bolted to rail C's -Z
+  * rail D — Y-cantilever over the camera, bolted to rail C's -Y
     face (T-junction). Camera pad-on-cantilever-underside clamp
     hangs below.
 
@@ -48,7 +47,7 @@ in — the central point of the rev-3 decoupled-platform architecture.
 
 The rail C ↔ rail D corner can't carry the same kind of corner
 brace: the back-upper mirror mount sits in that corner, and any
-diagonal from rail C's -Z face to rail D's -Y face crashes through
+diagonal from rail C's -Y face to rail D's -Z face crashes through
 the mount + pad-clamp volume. Instead, rail C extends straight up
 past rail D as a single column, and a strut runs from near the
 column top down-and-forward to rail D's free end. The strut +
@@ -59,22 +58,22 @@ lived in the closed L. Same structural payoff as a long
 rail-B-to-D diagonal would give, but routed entirely above the
 rig interior.
 
-Rail D bolts to rail C's -Z face (T-junction, bracketed by the
+Rail D bolts to rail C's -Y face (T-junction, bracketed by the
 rail C ↔ D printed gusset) rather than sitting on top of rail C —
 rail C runs continuously, removing one bolted joint from the load
 path between the strut anchor and rail B and replacing a stack of
 three extrusions (rail D on rail C, king post on rail D) with a
 single column.
 
-The strut sits on the +Y side of rail D's plane and on the -Z side
+The strut sits on the +Z side of rail D's plane and on the -Y side
 of rail C's plane, so the back-upper mount + pad clamp + back-
 upper mirror can occupy the lower L volume undisturbed.
 
 Coordinate frame = world frame (matches `../params.py`):
     origin = brick centroid on the platform top face
     +X     = operator's right
-    +Y     = up
-    +Z     = away from operator (toward the back of the machine)
+    +Y     = away from operator (toward the back of the machine)
+    +Z     = up
 
 All members are stock 2020 T-slot aluminum extrusion — bought, not
 printed, so no `inspect()` calls. Butt-jointed rails end CORNER_GAP
@@ -147,61 +146,61 @@ _BU_BACK = _back_face_centre(MIRROR_BACK_UPPER_POS, MIRROR_BACK_UPPER_NORMAL)
 #
 # The clamp base is BASE_H ≈ 15 mm tall and sits on the rail face that
 # faces the mount. The mount plate (110 × 110 × 5 mm, tilted) bulges
-# from its back-face centre by ~48 mm toward world -Y for the below-
-# mirrors (and ~26 mm toward world +Z for the back-upper). To keep
+# from its back-face centre by ~48 mm toward world -Z for the below-
+# mirrors (and ~26 mm toward world +Y for the back-upper). To keep
 # the clamp base clear of that plate volume with a few mm margin, the
 # rail face must sit (HALF_PLATE_PROJ + BASE_H + MARGIN) further along
 # the back-face outward normal than the back-face centre.
 #
 # Concretely for below-left:
-#   plate min world-Y ≈ -188.4 (= mirror_pos.y - 55·|m_local_Y.y| - 8·|m_normal.y|)
-#   rail +Y face must be ≤ -188.4 - margin_5 = -193.4
+#   plate min world-Z ≈ -188.4 (= mirror_pos.z - 55·|m_local_Y.z| - 8·|m_normal.z|)
+#   rail +Z face must be ≤ -188.4 - margin_5 = -193.4
 #   rail centerline ≤ -193.4 - 10 (rail half) = -203.4
 #   include BASE_H so base top ≤ -193.4: rail centerline ≤ -218.4
 # Round to -220 → 6.6 mm gap from base top to plate volume.
 #
 # For back-upper the same calculation lands rail centerline at
-# z ≥ 235.4; round to 240 → 9.6 mm gap.
+# y ≥ 235.4; round to 240 → 9.6 mm gap.
 
-RAIL_A_Y = -220.0                                # base top y = -195, plate min y ≈ -188.4 → 6.6 mm gap
-RAIL_A_Z = _BL_BACK[2]                           # ≈ 28.44; under mount-back centre Z so beam straight up
+RAIL_A_Z = -220.0                                # base top z = -195, plate min z ≈ -188.4 → 6.6 mm gap
+RAIL_A_Y = _BL_BACK[1]                           # ≈ 28.44; under mount-back centre Y so beam straight up
 RAIL_A_X_HALF = 270.0                            # outrigger past mirror x=±207
 
 
-# --- Rail B — Z-span at the same Y as rail A, butted behind rail A -----
+# --- Rail B — Y-span at the same Z as rail A, butted behind rail A -----
 
-RAIL_B_Y = RAIL_A_Y                              # coplanar with rail A
+RAIL_B_Z = RAIL_A_Z                              # coplanar with rail A
 # Rail B's front face butts rail A's back face with a CORNER_GAP
 # separator. Rail A's continuous body owns the front-face plane that
 # the rev-3 platform tongue meets, so rail B has no business extending
 # forward of rail A's back face.
-RAIL_B_Z_FRONT = RAIL_A_Z + MEMBER / 2 + CORNER_GAP   # ≈ 38.74
+RAIL_B_Y_FRONT = RAIL_A_Y + MEMBER / 2 + CORNER_GAP   # ≈ 38.74
 
 
 # --- Rail C — vertical column behind the back-upper mirror -------------
 #
-# Single continuous extrusion from rail B's +Y face up past rail D
-# to the strut anchor at the column top. RAIL_C_Y_TOP is derived
+# Single continuous extrusion from rail B's +Z face up past rail D
+# to the strut anchor at the column top. RAIL_C_Z_TOP is derived
 # below, after rail D, since the column extension above rail D is
 # the design driver for the column's height.
 
-RAIL_C_Z = 240.0                                 # base top z = 215, plate max z ≈ 205.4 → 9.6 mm gap
-# Sits on rail B's +Y face with CORNER_GAP separator.
-RAIL_C_Y_BOTTOM = RAIL_B_Y + MEMBER / 2 + CORNER_GAP    # ≈ -209.7
+RAIL_C_Y = 240.0                                 # base top y = 215, plate max y ≈ 205.4 → 9.6 mm gap
+# Sits on rail B's +Z face with CORNER_GAP separator.
+RAIL_C_Z_BOTTOM = RAIL_B_Z + MEMBER / 2 + CORNER_GAP    # ≈ -209.7
 
 # Rail B back outrigger sits 40 mm past rail C's back face.
-RAIL_B_Z_BACK = RAIL_C_Z + 40.0                  # = 280.0
+RAIL_B_Y_BACK = RAIL_C_Y + 40.0                  # = 280.0
 
 
-# --- Rail D — Z-cantilever over the camera ------------------------------
+# --- Rail D — Y-cantilever over the camera ------------------------------
 #
-# Bolts to rail C's -Z face (T-junction); centerline Y set directly
-# by clearance over the back-upper mount plate corner (y ≤ 228.4)
+# Bolts to rail C's -Y face (T-junction); centerline Z set directly
+# by clearance over the back-upper mount plate corner (z ≤ 228.4)
 # plus a few mm margin, not by sitting on rail C's top.
 
-RAIL_D_Y = 250.3                                 # bottom face y = 240.3 → 11.9 mm gap above mount corner
-RAIL_D_Z_BACK = RAIL_C_Z - MEMBER / 2 - CORNER_GAP   # = 229.7 (butted to rail C -Z face)
-RAIL_D_Z_FRONT = -280.0                          # ~53 mm past camera (z ≈ -226.6)
+RAIL_D_Z = 250.3                                 # bottom face z = 240.3 → 11.9 mm gap above mount corner
+RAIL_D_Y_BACK = RAIL_C_Y - MEMBER / 2 - CORNER_GAP   # = 229.7 (butted to rail C -Y face)
+RAIL_D_Y_FRONT = -280.0                          # ~53 mm past camera (y ≈ -226.6)
 
 
 # --- Rail C top — strut anchor elevation -------------------------------
@@ -213,36 +212,36 @@ RAIL_D_Z_FRONT = -280.0                          # ~53 mm past camera (z ≈ -22
 # on rail D's tip without driving the column unreasonably tall.
 
 COLUMN_EXT_ABOVE_D = 150.0
-RAIL_C_Y_TOP = RAIL_D_Y + MEMBER / 2 + COLUMN_EXT_ABOVE_D   # = 410.3
+RAIL_C_Z_TOP = RAIL_D_Z + MEMBER / 2 + COLUMN_EXT_ABOVE_D   # = 410.3
 
 
 # --- Rail B ↔ rail C corner brace --------------------------------------
 #
 # Single ~45° diagonal inside the lower-back L. 60 mm legs along each
 # adjacent rail face → ~85 mm hypotenuse, mitered at each end so the
-# brace body sits flush against rail B's +Y face and rail C's -Z face
+# brace body sits flush against rail B's +Z face and rail C's -Y face
 # (CORNER_GAP from each).
 
 _BRACE_LEG = 60.0                 # leg length along each adjacent rail face
 
-BRACE_BC_ON_B_Z = RAIL_C_Z - MEMBER / 2 - _BRACE_LEG     # = 170.0 (60 mm forward of rail C -Z face)
-BRACE_BC_ON_C_Y = RAIL_B_Y + MEMBER / 2 + _BRACE_LEG     # = -150.0 (60 mm above rail B +Y face)
+BRACE_BC_ON_B_Y = RAIL_C_Y - MEMBER / 2 - _BRACE_LEG     # = 170.0 (60 mm forward of rail C -Y face)
+BRACE_BC_ON_C_Z = RAIL_B_Z + MEMBER / 2 + _BRACE_LEG     # = -150.0 (60 mm above rail B +Z face)
 
 
 # --- Strut — props rail D's cantilever from the column top ------------
 #
-# Single mitered diagonal from rail C's column top corner (-Z face
-# meets +Y face) down-and-forward to rail D's free-end corner (+Y
-# face meets -Z face). The centerline reaches both rail-tip corners,
+# Single mitered diagonal from rail C's column top corner (-Y face
+# meets +Z face) down-and-forward to rail D's free-end corner (+Z
+# face meets -Y face). The centerline reaches both rail-tip corners,
 # and four half-space cutters trim the surrounding box so the strut
 # body sits flush within both corners — no overhang past either
 # rail tip and no gap inboard of either tip.
 #
 # Cuts (four half-spaces, all CORNER_GAP from a rail face):
-#   * z=RAIL_C_Z - MEMBER/2 - GAP      — strut sits against rail C -Z face
-#   * y=RAIL_C_Y_TOP - GAP             — strut top flush with column top
-#   * y=RAIL_D_Y + MEMBER/2 + GAP      — strut sits on rail D +Y face
-#   * z=RAIL_D_Z_FRONT + GAP           — strut tip flush with rail D's free end
+#   * y=RAIL_C_Y - MEMBER/2 - GAP      — strut sits against rail C -Y face
+#   * z=RAIL_C_Z_TOP - GAP             — strut top flush with column top
+#   * z=RAIL_D_Z + MEMBER/2 + GAP      — strut sits on rail D +Z face
+#   * y=RAIL_D_Y_FRONT + GAP           — strut tip flush with rail D's free end
 # The first two miter the column-side corner; the second two miter
 # the rail-D-side corner.
 
@@ -254,22 +253,22 @@ assert RAIL_A_X_HALF > abs(MIRROR_BELOW_LEFT_POS[0]), (
     f"past the below-mirror X position (x=±{abs(MIRROR_BELOW_LEFT_POS[0])})"
 )
 
-assert RAIL_B_Z_FRONT == RAIL_A_Z + MEMBER / 2 + CORNER_GAP and RAIL_B_Z_BACK > RAIL_C_Z, (
+assert RAIL_B_Y_FRONT == RAIL_A_Y + MEMBER / 2 + CORNER_GAP and RAIL_B_Y_BACK > RAIL_C_Y, (
     f"rail B must butt rail A's back face with a CORNER_GAP "
-    f"separator (expected z={RAIL_A_Z + MEMBER / 2 + CORNER_GAP:.2f}) "
-    f"and extend past rail C junction (z={RAIL_C_Z:.2f}); "
-    f"got z ∈ [{RAIL_B_Z_FRONT}, {RAIL_B_Z_BACK}]"
+    f"separator (expected y={RAIL_A_Y + MEMBER / 2 + CORNER_GAP:.2f}) "
+    f"and extend past rail C junction (y={RAIL_C_Y:.2f}); "
+    f"got y ∈ [{RAIL_B_Y_FRONT}, {RAIL_B_Y_BACK}]"
 )
 
-assert RAIL_C_Y_TOP > MIRROR_BACK_UPPER_POS[1], (
-    f"rail C top (y={RAIL_C_Y_TOP}) must clear the back-upper mirror "
-    f"centre (y={MIRROR_BACK_UPPER_POS[1]}); mount plate upper corner "
+assert RAIL_C_Z_TOP > MIRROR_BACK_UPPER_POS[2], (
+    f"rail C top (z={RAIL_C_Z_TOP}) must clear the back-upper mirror "
+    f"centre (z={MIRROR_BACK_UPPER_POS[2]}); mount plate upper corner "
     f"is a further ~52 mm above the centre"
 )
 
-assert RAIL_D_Z_FRONT < CAMERA_POS[2], (
-    f"rail D front end (z={RAIL_D_Z_FRONT}) must reach past the "
-    f"camera (z={CAMERA_POS[2]}) so the camera clamp can hang below"
+assert RAIL_D_Y_FRONT < CAMERA_POS[1], (
+    f"rail D front end (y={RAIL_D_Y_FRONT}) must reach past the "
+    f"camera (y={CAMERA_POS[1]}) so the camera clamp can hang below"
 )
 
 
@@ -281,12 +280,12 @@ def rail_x(x_centre: float, x_len: float, y: float, z: float) -> Part:
 
 
 def rail_y(x: float, y_centre: float, y_len: float, z: float) -> Part:
-    """Y-direction rail / vertical post (long axis along world +Y)."""
+    """Y-direction rail (long axis along world +Y, depth)."""
     return Pos(x, y_centre, z) * Box(MEMBER, y_len, MEMBER)
 
 
 def rail_z(x: float, y: float, z_centre: float, z_len: float) -> Part:
-    """Z-direction rail (long axis along world +Z)."""
+    """Z-direction rail / vertical post (long axis along world +Z)."""
     return Pos(x, y, z_centre) * Box(MEMBER, MEMBER, z_len)
 
 
@@ -325,15 +324,21 @@ def mitered_brace_yz(
     cutters have material to remove on both sides of the attach plane.
 
     Cross-section is MEMBER × MEMBER perpendicular to the axis; the
-    box is built +Y-oriented, rotated by Rx(tilt) to align with the
-    axis direction, translated to the midpoint, then cut.
+    box is built +Z-oriented, rotated by Rx(-tilt) to align with the
+    axis direction in the YZ plane, translated to the midpoint, then
+    cut.
     """
     assert abs(p1[0]) < 1e-9 and abs(p2[0]) < 1e-9, (
         "mitered_brace_yz assumes both endpoints lie on x = 0"
     )
     dy, dz = p2[1] - p1[1], p2[2] - p1[2]
     length = math.hypot(dy, dz)
-    tilt_deg = math.degrees(math.atan2(dz, dy))
+    # Axis direction in YZ plane: (dy, dz). The box is built with its
+    # long axis along +Z; rotate it into the (dy, dz) direction.
+    # Rx(α) maps +Z = (0,0,1) to (0, -sin α, cos α). Solving
+    # (0, -sin α, cos α) = (dy, dz)/length: sin α = -dy/length,
+    # cos α = dz/length, so α = atan2(-dy, dz).
+    tilt_deg = math.degrees(math.atan2(-dy, dz))
     midpoint = (
         (p1[0] + p2[0]) / 2,
         (p1[1] + p2[1]) / 2,
@@ -342,7 +347,7 @@ def mitered_brace_yz(
     brace = (
         Pos(*midpoint)
         * Rot(tilt_deg, 0, 0)
-        * Box(MEMBER, length + 2 * _BRACE_OVERRUN, MEMBER)
+        * Box(MEMBER, MEMBER, length + 2 * _BRACE_OVERRUN)
     )
     for c in cutters:
         brace = brace - c
@@ -353,45 +358,45 @@ def mitered_brace_yz(
 
 _rail_a_len = 2 * RAIL_A_X_HALF
 
-_rail_b_zc = (RAIL_B_Z_FRONT + RAIL_B_Z_BACK) / 2
-_rail_b_len = RAIL_B_Z_BACK - RAIL_B_Z_FRONT
+_rail_b_yc = (RAIL_B_Y_FRONT + RAIL_B_Y_BACK) / 2
+_rail_b_len = RAIL_B_Y_BACK - RAIL_B_Y_FRONT
 
-_rail_c_yc = (RAIL_C_Y_BOTTOM + RAIL_C_Y_TOP) / 2
-_rail_c_len = RAIL_C_Y_TOP - RAIL_C_Y_BOTTOM
+_rail_c_zc = (RAIL_C_Z_BOTTOM + RAIL_C_Z_TOP) / 2
+_rail_c_len = RAIL_C_Z_TOP - RAIL_C_Z_BOTTOM
 
-_rail_d_zc = (RAIL_D_Z_FRONT + RAIL_D_Z_BACK) / 2
-_rail_d_len = RAIL_D_Z_BACK - RAIL_D_Z_FRONT
+_rail_d_yc = (RAIL_D_Y_FRONT + RAIL_D_Y_BACK) / 2
+_rail_d_len = RAIL_D_Y_BACK - RAIL_D_Y_FRONT
 
 
 _MEMBERS = {
     "rail_a": rail_x(0.0, _rail_a_len, RAIL_A_Y, RAIL_A_Z),
-    "rail_b": rail_z(0.0, RAIL_B_Y, _rail_b_zc, _rail_b_len),
-    "rail_c": rail_y(0.0, _rail_c_yc, _rail_c_len, RAIL_C_Z),
-    "rail_d": rail_z(0.0, RAIL_D_Y, _rail_d_zc, _rail_d_len),
+    "rail_b": rail_y(0.0, _rail_b_yc, _rail_b_len, RAIL_B_Z),
+    "rail_c": rail_z(0.0, RAIL_C_Y, _rail_c_zc, _rail_c_len),
+    "rail_d": rail_y(0.0, _rail_d_yc, _rail_d_len, RAIL_D_Z),
     "brace_bc": mitered_brace_yz(
-        # Attach on rail B +Y face and rail C -Z face.
-        (0.0, RAIL_B_Y + MEMBER / 2, BRACE_BC_ON_B_Z),
-        (0.0, BRACE_BC_ON_C_Y, RAIL_C_Z - MEMBER / 2),
+        # Attach on rail B +Z face and rail C -Y face.
+        (0.0, BRACE_BC_ON_B_Y, RAIL_B_Z + MEMBER / 2),
+        (0.0, RAIL_C_Y - MEMBER / 2, BRACE_BC_ON_C_Z),
         cutters=[
-            # Miter against rail B +Y face — CORNER_GAP clearance so
+            # Miter against rail B +Z face — CORNER_GAP clearance so
             # the boolean intersection reads a clean zero volume.
-            _half_space("y_min", RAIL_B_Y + MEMBER / 2 + CORNER_GAP),
-            # Miter against rail C -Z face.
-            _half_space("z_max", RAIL_C_Z - MEMBER / 2 - CORNER_GAP),
+            _half_space("z_min", RAIL_B_Z + MEMBER / 2 + CORNER_GAP),
+            # Miter against rail C -Y face.
+            _half_space("y_max", RAIL_C_Y - MEMBER / 2 - CORNER_GAP),
         ],
     ),
     "strut_d": mitered_brace_yz(
         # Centerline reaches both rail-tip corners; four half-space
         # cutters trim the box to fit flush within both corners.
-        (0.0, RAIL_C_Y_TOP, RAIL_C_Z - MEMBER / 2),
-        (0.0, RAIL_D_Y + MEMBER / 2, RAIL_D_Z_FRONT),
+        (0.0, RAIL_C_Y - MEMBER / 2, RAIL_C_Z_TOP),
+        (0.0, RAIL_D_Y_FRONT, RAIL_D_Z + MEMBER / 2),
         cutters=[
-            # Column-side corner (rail C -Z face × rail C +Y face).
-            _half_space("z_max", RAIL_C_Z - MEMBER / 2 - CORNER_GAP),
-            _half_space("y_max", RAIL_C_Y_TOP - CORNER_GAP),
-            # Rail-D-side corner (rail D +Y face × rail D -Z face).
-            _half_space("y_min", RAIL_D_Y + MEMBER / 2 + CORNER_GAP),
-            _half_space("z_min", RAIL_D_Z_FRONT + CORNER_GAP),
+            # Column-side corner (rail C -Y face × rail C +Z face).
+            _half_space("y_max", RAIL_C_Y - MEMBER / 2 - CORNER_GAP),
+            _half_space("z_max", RAIL_C_Z_TOP - CORNER_GAP),
+            # Rail-D-side corner (rail D +Z face × rail D -Y face).
+            _half_space("z_min", RAIL_D_Z + MEMBER / 2 + CORNER_GAP),
+            _half_space("y_min", RAIL_D_Y_FRONT + CORNER_GAP),
         ],
     ),
 }

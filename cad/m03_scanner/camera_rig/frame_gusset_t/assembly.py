@@ -8,32 +8,32 @@ separator; this plate bridges the two rails by bolting into rail A's
 and rail B's top T-slots, so the junction carries bending without
 relying on commodity 2020 corner brackets.
 
-The gusset sits on the rails' +Y face instead of below them. The rev-3
+The gusset sits on the rails' +Z face instead of below them. The rev-3
 platform frame is coplanar with rail A/B (sharing a single bench), so
-the platform-frame floor + tongue run at the same y = -220 as the
+the platform-frame floor + tongue run at the same z = -220 as the
 rails — a bottom-side gusset would collide with the floor / tongue.
 The top face is clear at the A/B joint: mirror pad-clamps live near
 x = ±207, far from this center gusset.
 
-The Z-arm extends back from the rail A/B junction only. Rail A's
+The Y-arm extends back from the rail A/B junction only. Rail A's
 continuous body owns the front-face plane (the rev-3 platform tongue
 butts that plane), so rail B starts behind rail A's back face and the
-Z-arm covers rail A then rail B as it extends back — its front edge
-sits at rail A's front face and the plate is asymmetric in Z about
+Y-arm covers rail A then rail B as it extends back — its front edge
+sits at rail A's front face and the plate is asymmetric in Y about
 the gusset's local origin.
 
 Coordinate frame:
-    origin : rail A/B junction on the rails' +Y face, at rail A's
-             centerline Z
+    origin : rail A/B junction on the rails' +Z face, at rail A's
+             centerline Y
     +X     : along rail A
-    +Y     : away from the gripped rail face (up in scanner world)
-    +Z     : along rail B, toward the back of the rig
+    +Y     : along rail B, toward the back of the rig
+    +Z     : away from the gripped rail face (up in scanner world)
 """
 
 import sys
 from pathlib import Path
 
-from build123d import Box, Cylinder, Location, Part, Pos, Rot
+from build123d import Box, Cylinder, Location, Part, Pos
 
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
@@ -45,7 +45,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from camera_rig.params import (  # noqa: E402
     RAIL_PAD_CLAMP_BELOW_LEFT_POS,
     SKELETON_RAIL_MEMBER,
-    T_FRAME_RAIL_A_TOP_Y,
+    T_FRAME_RAIL_A_TOP_Z,
     WALL_MIN,
 )
 
@@ -53,38 +53,38 @@ from camera_rig.params import (  # noqa: E402
 # --- Parameters ---------------------------------------------------------
 
 MEMBER = SKELETON_RAIL_MEMBER
-RAIL_A_Z = RAIL_PAD_CLAMP_BELOW_LEFT_POS[2]
-RAIL_A_Y = T_FRAME_RAIL_A_TOP_Y - MEMBER / 2
+RAIL_A_Y = RAIL_PAD_CLAMP_BELOW_LEFT_POS[1]
+RAIL_A_Z = T_FRAME_RAIL_A_TOP_Z - MEMBER / 2
 
 PLATE_T = 6.0
 ARM_W = MEMBER
 ARM_X_L = 150.0
-ARM_Z_L = 130.0
+ARM_Y_L = 130.0
 
-# Z-arm front edge sits at the rail A/B front face. With no rail B
+# Y-arm front edge sits at the rail A/B front face. With no rail B
 # front outrigger, the arm extends back-only; in local coordinates
-# the arm spans z ∈ [_ARM_Z_FRONT, _ARM_Z_FRONT + ARM_Z_L].
-_ARM_Z_FRONT = -MEMBER / 2                          # = -10
-_ARM_Z_CENTER = _ARM_Z_FRONT + ARM_Z_L / 2          # = 55
+# the arm spans y ∈ [_ARM_Y_FRONT, _ARM_Y_FRONT + ARM_Y_L].
+_ARM_Y_FRONT = -MEMBER / 2                          # = -10
+_ARM_Y_CENTER = _ARM_Y_FRONT + ARM_Y_L / 2          # = 55
 
 BOLT_HOLE_D = 5.5
 BOLT_X_HALF = 42.0
-# Rail-B bolts symmetric about the (back-shifted) z-arm centerline.
-_BOLT_Z_HALF = 38.0
-BOLT_Z_OFFSETS = (
-    _ARM_Z_CENTER - _BOLT_Z_HALF,                   # ≈ 17 (world z ≈ 45.4)
-    _ARM_Z_CENTER + _BOLT_Z_HALF,                   # ≈ 93 (world z ≈ 121.4)
+# Rail-B bolts symmetric about the (back-shifted) y-arm centerline.
+_BOLT_Y_HALF = 38.0
+BOLT_Y_OFFSETS = (
+    _ARM_Y_CENTER - _BOLT_Y_HALF,                   # ≈ 17 (world y ≈ 45.4)
+    _ARM_Y_CENTER + _BOLT_Y_HALF,                   # ≈ 93 (world y ≈ 121.4)
 )
 
-_PLATE_Y = T_FRAME_RAIL_A_TOP_Y + PLATE_T / 2
+_PLATE_Z = T_FRAME_RAIL_A_TOP_Z + PLATE_T / 2
 # Rail A stub: continuous through the junction, centered at x = 0.
 _RAIL_A_STUB_LEN = 180.0
 # Rail B stub: butted to rail A's back face with CORNER_GAP separator.
 _RAIL_B_STUB_LEN = 150.0
-_RAIL_B_Z_FRONT = RAIL_A_Z + MEMBER / 2 + 0.3
-_RAIL_B_ZC = _RAIL_B_Z_FRONT + _RAIL_B_STUB_LEN / 2
+_RAIL_B_Y_FRONT = RAIL_A_Y + MEMBER / 2 + 0.3
+_RAIL_B_YC = _RAIL_B_Y_FRONT + _RAIL_B_STUB_LEN / 2
 
-GUSSET_LOCATION = Pos(0, T_FRAME_RAIL_A_TOP_Y, RAIL_A_Z)
+GUSSET_LOCATION = Pos(0, RAIL_A_Y, T_FRAME_RAIL_A_TOP_Z)
 
 
 # --- Parametric sanity --------------------------------------------------
@@ -92,12 +92,12 @@ GUSSET_LOCATION = Pos(0, T_FRAME_RAIL_A_TOP_Y, RAIL_A_Z)
 assert ARM_X_L / 2 > BOLT_X_HALF + BOLT_HOLE_D / 2 + WALL_MIN, (
     "rail-A bolt holes need edge wall inside the X arm"
 )
-_ARM_Z_BACK = _ARM_Z_FRONT + ARM_Z_L
-assert min(BOLT_Z_OFFSETS) > _ARM_Z_FRONT + BOLT_HOLE_D / 2 + WALL_MIN, (
-    "rail-B front bolt needs edge wall inside the Z arm"
+_ARM_Y_BACK = _ARM_Y_FRONT + ARM_Y_L
+assert min(BOLT_Y_OFFSETS) > _ARM_Y_FRONT + BOLT_HOLE_D / 2 + WALL_MIN, (
+    "rail-B front bolt needs edge wall inside the Y arm"
 )
-assert max(BOLT_Z_OFFSETS) < _ARM_Z_BACK - BOLT_HOLE_D / 2 - WALL_MIN, (
-    "rail-B back bolt needs edge wall inside the Z arm"
+assert max(BOLT_Y_OFFSETS) < _ARM_Y_BACK - BOLT_HOLE_D / 2 - WALL_MIN, (
+    "rail-B back bolt needs edge wall inside the Y arm"
 )
 assert ARM_W - BOLT_HOLE_D >= 2 * WALL_MIN, (
     f"bolt-hole-to-arm-edge wall {(ARM_W - BOLT_HOLE_D) / 2:.2f} mm < {WALL_MIN} mm"
@@ -106,21 +106,21 @@ assert ARM_W - BOLT_HOLE_D >= 2 * WALL_MIN, (
 
 # --- Part functions -----------------------------------------------------
 
-def _through_hole_y(hole_d: float = BOLT_HOLE_D) -> Part:
+def _through_hole_z(hole_d: float = BOLT_HOLE_D) -> Part:
     """Clearance hole through the plate into an extrusion top T-slot."""
-    return Rot(90, 0, 0) * Cylinder(hole_d / 2, PLATE_T * 3)
+    return Cylinder(hole_d / 2, PLATE_T * 3)
 
 
 def gusset() -> Part:
     """Single printed T plate in local coordinates."""
-    x_arm = Pos(0, PLATE_T / 2, 0) * Box(ARM_X_L, PLATE_T, ARM_W)
-    z_arm = Pos(0, PLATE_T / 2, _ARM_Z_CENTER) * Box(ARM_W, PLATE_T, ARM_Z_L)
-    body = x_arm + z_arm
+    x_arm = Pos(0, 0, PLATE_T / 2) * Box(ARM_X_L, ARM_W, PLATE_T)
+    y_arm = Pos(0, _ARM_Y_CENTER, PLATE_T / 2) * Box(ARM_W, ARM_Y_L, PLATE_T)
+    body = x_arm + y_arm
 
     for sx in (-1, 1):
-        body -= Pos(sx * BOLT_X_HALF, PLATE_T / 2, 0) * _through_hole_y()
-    for dz in BOLT_Z_OFFSETS:
-        body -= Pos(0, PLATE_T / 2, dz) * _through_hole_y()
+        body -= Pos(sx * BOLT_X_HALF, 0, PLATE_T / 2) * _through_hole_z()
+    for dy in BOLT_Y_OFFSETS:
+        body -= Pos(0, dy, PLATE_T / 2) * _through_hole_z()
 
     return body
 
@@ -132,7 +132,7 @@ def rail_a_stub() -> Part:
 
 
 def rail_b_stub() -> Part:
-    return Pos(0, RAIL_A_Y, _RAIL_B_ZC) * Box(MEMBER, MEMBER, _RAIL_B_STUB_LEN)
+    return Pos(0, _RAIL_B_YC, RAIL_A_Z) * Box(MEMBER, _RAIL_B_STUB_LEN, MEMBER)
 
 
 def add_frame_gusset_t(
@@ -161,7 +161,7 @@ if __name__ == "__main__":
     check(assembly, out="outputs")
     inspect(
         gusset(),
-        method=FDM(up_axis=(0, 1, 0), wall_min_mm=WALL_MIN, overhang_max_deg=45.0),
+        method=FDM(wall_min_mm=WALL_MIN, overhang_max_deg=45.0),
         out="outputs",
         name="gusset",
     )

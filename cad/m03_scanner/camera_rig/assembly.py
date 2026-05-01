@@ -4,8 +4,8 @@ M03 camera rig — unit-internal composition + within-unit checks.
 The camera rig groups the sparse 4-rail T-frame, the 3 mirror mounts +
 their pad-clamps, the camera bracket + its hanging pad-clamp, and the
 two printed gussets at the rail A/B and rail C/D joints. The rig's
-local frame matches world (the top-level scanner places the rig at
-world identity), so all coordinates here are world-equivalent.
+local frame matches world (Z-up; the top-level scanner places the rig
+at world identity), so all coordinates here are world-equivalent.
 
 Standalone composition: every rig sub-assembly placed in rig-local
 coordinates, plus all the within-unit cross-boundary

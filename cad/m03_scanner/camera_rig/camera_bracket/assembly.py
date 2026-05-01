@@ -34,9 +34,9 @@ Coordinate frame (local to this sub-assembly):
                     camera PCB's threaded corner holes)
 
 The scanner top-level assembly maps local +Z onto the camera's
-world-space look direction (from the camera position (0, +105.7,
-−226.6) toward the origin, i.e. 25° below horizontal toward +Z, +Y
-down) and places the local origin at the bracket/PCB interface
+world-space look direction (from the camera position (0, −226.6,
++105.7) toward the origin, i.e. 25° below horizontal toward +Y,
++Z down) and places the local origin at the bracket/PCB interface
 plane in world space.
 
 The CSI ribbon cable exits the PCB at one of its 38 mm edges parallel

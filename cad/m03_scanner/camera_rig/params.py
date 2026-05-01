@@ -9,8 +9,8 @@ all coordinates here are world-equivalent.
 
     origin = brick centroid at the scan position, on the platform top face
     +X     = operator's right
-    +Y     = up
-    +Z     = away from operator (toward the back of the machine)
+    +Y     = away from operator (toward the back of the machine)
+    +Z     = up
 
 Each rig sub-assembly (`skeleton_t_frame/`, `mirror_mount/`,
 `mirror_pad_clamp/`, `camera_bracket/`, `camera_pad_clamp/`,
@@ -20,8 +20,10 @@ imports the constants below via `from camera_rig.params import …`.
 Position and normal values are copied from
 `docs/m03-multi-view-scanner.md` (derived in
 `klods-syn/nbs/200_viewpoints.md` at tilt 65°, phase 90°,
-camera_dist 250 mm). Update this file and the reference doc together
-whenever any value changes.
+camera_dist 250 mm). The upstream source is Y-up; the values here
+are converted to Z-up at the boundary by swapping the second and
+third tuple components (X invariant). Update this file and the
+reference doc together whenever any value changes.
 """
 
 import math
@@ -38,12 +40,16 @@ WALL_MIN = 1.5
 
 # Camera PCB rear face in world. This is the plane where the
 # camera_bracket's local origin lands.
-CAMERA_POS = (0.0, 105.7, -226.6)
+CAMERA_POS = (0.0, -226.6, 105.7)
 
 # Pure X rotation placing the camera_bracket: local +Z (lens axis) maps
 # to the unit vector from camera toward brick origin
-# ≈ (0, -sin(25°), cos(25°)). Rot(25, 0, 0) delivers this.
-CAMERA_ROT_DEG = (25.0, 0.0, 0.0)
+# ≈ (0, +cos(25°), -sin(25°)) = (0, 0.9063, -0.4226). Solving
+# `Rot(α, 0, 0) · (0, 0, 1) = (0, -sin α, cos α) = (0, cos 25°,
+# -sin 25°)` gives α = -115° (equivalently 245°). The 25° below-
+# horizontal tilt of the lens axis is preserved; under Z-up the same
+# tilt is expressed by a rotation in the third quadrant of Rx.
+CAMERA_ROT_DEG = (-115.0, 0.0, 0.0)
 
 
 # --- Camera bracket external interface ----------------------------------
@@ -68,7 +74,9 @@ CAMERA_BRACKET_BOLT_SPACING = 52.0
 # sits on the PCB rear plane (CAMERA_POS); this is the same point
 # offset by PLATE_T along the bracket's local -Z (the back-face
 # normal), then mapped to world by Rot(CAMERA_ROT_DEG[0], 0, 0). Used
-# by RAIL_PAD_CLAMP_CAMERA_POS below.
+# by RAIL_PAD_CLAMP_CAMERA_POS below. The structure of the formula
+# is unchanged from the Y-up version; only CAMERA_ROT_DEG[0]'s value
+# changes underneath.
 _CAMERA_TILT_RAD = math.radians(CAMERA_ROT_DEG[0])
 _CAMERA_SIN_TILT = math.sin(_CAMERA_TILT_RAD)
 _CAMERA_COS_TILT = math.cos(_CAMERA_TILT_RAD)
@@ -82,16 +90,16 @@ CAMERA_BRACKET_BACK_CENTRE = (
 # --- Mirrors ------------------------------------------------------------
 
 # Physical mirror centres in world (centre of reflective face).
-MIRROR_BACK_UPPER_POS = (0.0, 176.0, 172.7)
-MIRROR_BELOW_LEFT_POS = (-201.4, -140.1, 25.4)
-MIRROR_BELOW_RIGHT_POS = (201.4, -140.1, 25.4)
+MIRROR_BACK_UPPER_POS = (0.0, 172.7, 176.0)
+MIRROR_BELOW_LEFT_POS = (-201.4, 25.4, -140.1)
+MIRROR_BELOW_RIGHT_POS = (201.4, 25.4, -140.1)
 
 # Mirror outward normals (unit). The reflective face normal points
 # along +normal toward the camera/brick; each mirror_mount's local +Z
 # maps onto this direction under `rotation_for_normal(...)`.
-MIRROR_BACK_UPPER_NORMAL = (0.0, -0.466, -0.885)
-MIRROR_BELOW_LEFT_NORMAL = (0.690, 0.616, -0.380)
-MIRROR_BELOW_RIGHT_NORMAL = (-0.690, 0.616, -0.380)
+MIRROR_BACK_UPPER_NORMAL = (0.0, -0.885, -0.466)
+MIRROR_BELOW_LEFT_NORMAL = (0.690, -0.380, 0.616)
+MIRROR_BELOW_RIGHT_NORMAL = (-0.690, -0.380, 0.616)
 
 
 # --- Mirror mount external interface ------------------------------------
@@ -158,6 +166,12 @@ def rotation_for_normal(
     # Matching component-wise to (nx, ny, nz):
     #   sin b = nx           →  b = asin(nx)
     #   tan a = -ny / nz     →  a = atan2(-ny, nz)   (for cos b > 0)
+    #
+    # The math is frame-agnostic — feed it any unit vector and it
+    # returns the (a, b) pair that lands local +Z onto it. The fact
+    # that under Z-up world the mirror normals' Z component encodes
+    # the up-down split (vs Y under the upstream Y-up source) does
+    # not change the algebra here.
     beta = math.degrees(math.asin(nx))
     cb = math.cos(math.radians(beta))
     if abs(cb) < 1e-9:
@@ -172,7 +186,7 @@ def horizontal_x_roll_deg(normal: tuple[float, float, float]) -> float:
     """Roll (`Rz` component) that sends mount-local +X onto a
     world-horizontal direction after `rotation_for_normal(normal)`
     placement. The resulting mount-local +X lies in the plane
-    perpendicular to the normal and has zero world-Y component — it
+    perpendicular to the normal and has zero world-Z component — it
     aligns with the horizontal "tilt axis" of a bracket whose frame
     is `Rot(0, heading, 0)` for this normal's heading.
 
@@ -180,13 +194,14 @@ def horizontal_x_roll_deg(normal: tuple[float, float, float]) -> float:
     `Rot(a,b,c)` semantics. Mount-local +X lands at world
     `(cos b · cos c, cos a · sin c + sin a · sin b · cos c,
       sin a · sin c − cos a · sin b · cos c)`.
-    Setting the Y component to zero:
-        cos a · sin c + sin a · sin b · cos c = 0
-      ⇒ tan c = -sin a · sin b / cos a
-    Pick the root with `cos c > 0` (so `R_11 = cos b · cos c` keeps
+    Setting the Z component to zero (under Z-up "horizontal" means
+    zero vertical / Z component):
+        sin a · sin c − cos a · sin b · cos c = 0
+      ⇒ tan c = cos a · sin b / sin a
+    Pick the root with `cos c > 0` so `R_11 = cos b · cos c` keeps
     the sign of `cos b`, i.e. mount +X stays on the +X side of the
     horizontal plane for normals with +Z component, matching the
-    bracket's +X by convention).
+    bracket's +X by convention.
     """
     nx, ny, nz = normal
     n_mag = math.sqrt(nx * nx + ny * ny + nz * nz)
@@ -201,10 +216,9 @@ def horizontal_x_roll_deg(normal: tuple[float, float, float]) -> float:
     sa = math.sin(alpha)
     ca = math.cos(alpha)
 
-    # Root with cos c > 0. If ca > 0, setting sc = -sa·sb, cc = ca
-    # (unscaled) gives the desired ratio; normalise signs so cc > 0.
-    num = -sa * sb
-    den = ca
+    # Root with cos c > 0. tan c = ca · sb / sa.
+    num = ca * sb
+    den = sa
     if den < 0:
         num, den = -num, -den
     return math.degrees(math.atan2(num, den))
@@ -225,16 +239,16 @@ def horizontal_x_roll_deg(normal: tuple[float, float, float]) -> float:
 # coordinates.
 SKELETON_RAIL_MEMBER = 20.0
 
-T_FRAME_RAIL_A_Y = -220.0                                # rail A centerline Y
-T_FRAME_RAIL_A_TOP_Y = T_FRAME_RAIL_A_Y + SKELETON_RAIL_MEMBER / 2   # = -210
-T_FRAME_RAIL_A_Z = _back_face_centre_world(
+T_FRAME_RAIL_A_Z = -220.0                                # rail A centerline Z (height)
+T_FRAME_RAIL_A_TOP_Z = T_FRAME_RAIL_A_Z + SKELETON_RAIL_MEMBER / 2   # = -210
+T_FRAME_RAIL_A_Y = _back_face_centre_world(
     MIRROR_BELOW_LEFT_POS, MIRROR_BELOW_LEFT_NORMAL
-)[2]                                                                 # ≈ 28.44
-T_FRAME_RAIL_A_FRONT_Z = T_FRAME_RAIL_A_Z - SKELETON_RAIL_MEMBER / 2 # ≈ 18.44
-T_FRAME_RAIL_C_Z = 240.0                                 # rail C centerline Z
-T_FRAME_RAIL_C_FRONT_Z = T_FRAME_RAIL_C_Z - SKELETON_RAIL_MEMBER / 2 # = 230
-T_FRAME_RAIL_D_Y = 250.3                                 # rail D centerline Y
-T_FRAME_RAIL_D_BOTTOM_Y = T_FRAME_RAIL_D_Y - SKELETON_RAIL_MEMBER / 2   # = 240.3
+)[1]                                                                 # ≈ 28.44 (depth)
+T_FRAME_RAIL_A_FRONT_Y = T_FRAME_RAIL_A_Y - SKELETON_RAIL_MEMBER / 2 # ≈ 18.44
+T_FRAME_RAIL_C_Y = 240.0                                 # rail C centerline Y (depth)
+T_FRAME_RAIL_C_FRONT_Y = T_FRAME_RAIL_C_Y - SKELETON_RAIL_MEMBER / 2 # = 230
+T_FRAME_RAIL_D_Z = 250.3                                 # rail D centerline Z (height)
+T_FRAME_RAIL_D_BOTTOM_Z = T_FRAME_RAIL_D_Z - SKELETON_RAIL_MEMBER / 2   # = 240.3
 
 
 # --- Rev-3 mirror pad-clamp placement -----------------------------------
@@ -254,12 +268,15 @@ T_FRAME_RAIL_D_BOTTOM_Y = T_FRAME_RAIL_D_Y - SKELETON_RAIL_MEMBER / 2   # = 240.
 #     +Y     : away from rail (clamp body rises in +Y)
 #     +Z     : right-handed third axis; for the below-mirrors this is
 #              the world horizontal perpendicular to the rail; for the
-#              back-upper it is world -X
+#              back-upper it is world +X
 #
 # Each instance pairs a world placement (`*_POS`) with a `Rot` that
-# carries clamp-local axes onto world axes.
+# carries clamp-local axes onto world axes. Under Z-up the below-
+# mirror clamps gain a non-identity rotation (was `Rot(0,0,0)`):
+# clamp-local +Y must map to world +Z (vertical), which `Rot(90,0,0)`
+# delivers.
 
-# Mount plate back face centres in world — used as the world Z of each
+# Mount plate back face centres in world — used as the world Y of each
 # clamp instance so the beam runs straight up to the supported mount.
 _BL_CLAMP_BACK = _back_face_centre_world(
     MIRROR_BELOW_LEFT_POS, MIRROR_BELOW_LEFT_NORMAL
@@ -275,54 +292,55 @@ assert abs(_BU_CLAMP_BACK[0]) < 1e-6, (
     "rail clamp assumes the x-symmetric (centered on the rail) pose"
 )
 
-# Below-left: clamp on rail A's +Y face, X-centred under the mount-
-# back centre. Identity rotation — clamp-local matches world.
+# Below-left: clamp on rail A's +Z face (top of rail), X-centred under
+# the mount-back centre. `Rot(90, 0, 0)` maps clamp-local +X→world +X
+# (along rail), +Y→world +Z (clamp body rises), +Z→world -Y.
 RAIL_PAD_CLAMP_BELOW_LEFT_POS = (
     _BL_CLAMP_BACK[0],                # mount-back X (= mirror_pos.x - 8·mirror_normal.x)
-    T_FRAME_RAIL_A_TOP_Y,             # rail A +Y face
-    _BL_CLAMP_BACK[2],                # mount-back Z (= rail A centerline Z, beam straight up)
+    _BL_CLAMP_BACK[1],                # mount-back Y (= rail A centerline Y, beam straight up)
+    T_FRAME_RAIL_A_TOP_Z,             # rail A +Z face (top)
 )
-RAIL_PAD_CLAMP_BELOW_LEFT_CLAMP_ROT = Rot(0, 0, 0)
+RAIL_PAD_CLAMP_BELOW_LEFT_CLAMP_ROT = Rot(90, 0, 0)
 
-# Below-right: X-mirror of below-left. Same identity rotation; the
-# mount's own X-flipped normal supplies the chirality, so the printed
-# body is the X-mirror of below-left's (different drilled holes, same
-# overall shape).
+# Below-right: X-mirror of below-left. Same rotation; the mount's own
+# X-flipped normal supplies the chirality, so the printed body is the
+# X-mirror of below-left's (different drilled holes, same overall
+# shape).
 RAIL_PAD_CLAMP_BELOW_RIGHT_POS = (
     _BR_CLAMP_BACK[0],
-    T_FRAME_RAIL_A_TOP_Y,
-    _BR_CLAMP_BACK[2],
+    _BR_CLAMP_BACK[1],
+    T_FRAME_RAIL_A_TOP_Z,
 )
-RAIL_PAD_CLAMP_BELOW_RIGHT_CLAMP_ROT = Rot(0, 0, 0)
+RAIL_PAD_CLAMP_BELOW_RIGHT_CLAMP_ROT = Rot(90, 0, 0)
 
-# Back-upper: clamp on rail C's -Z face (rail C runs along world +Y).
-# Rot(-90, -90, 0) maps clamp-local +X → world +Y (along rail), +Y →
-# world -Z (away from rail toward mount), +Z → world -X.
+# Back-upper: clamp on rail C's -Y face (rail C runs along world +Z).
+# Rot(180, 90, 0) maps clamp-local +X→world +Z (along rail C),
+# +Y→world -Y (away from rail toward mount), +Z→world +X.
 RAIL_PAD_CLAMP_BACK_UPPER_POS = (
     _BU_CLAMP_BACK[0],                # x = 0 (rail C is on the YZ plane)
-    _BU_CLAMP_BACK[1],                # mount-back Y (= rail C clamp Y)
-    T_FRAME_RAIL_C_FRONT_Z,           # rail C -Z face
+    T_FRAME_RAIL_C_FRONT_Y,           # rail C -Y face
+    _BU_CLAMP_BACK[2],                # mount-back Z (= rail C clamp Z)
 )
-RAIL_PAD_CLAMP_BACK_UPPER_CLAMP_ROT = Rot(-90, -90, 0)
+RAIL_PAD_CLAMP_BACK_UPPER_CLAMP_ROT = Rot(180, 90, 0)
 
 
 # --- Rev-3 camera pad-clamp placement -----------------------------------
 #
-# The rev-3 camera hangs below rail D — the Z-cantilever projecting
-# forward from the rail C ↔ D junction. The clamp grips rail D's -Y
+# The rev-3 camera hangs below rail D — the Y-cantilever projecting
+# forward from the rail C ↔ D junction. The clamp grips rail D's -Z
 # (underside) face directly above the camera bracket back face centre,
-# so its beam runs straight down to the bracket pad with no Z offset.
+# so its beam runs straight down to the bracket pad with no Y offset.
 #
 # Clamp-local frame (see `camera_pad_clamp/assembly.py`):
-#     origin : centre of clamp bottom face, on rail D's -Y face,
-#              at the along-rail (Z) position of the bracket back face
-#     +X     : along rail D long axis (= world +Z)
+#     origin : centre of clamp bottom face, on rail D's -Z face,
+#              at the along-rail (Y) position of the bracket back face
+#     +X     : along rail D long axis (= world +Y)
 #     +Y     : away from rail (downward in world; clamp body hangs in
 #              clamp +Y while gravity pulls in clamp +Y)
-#     +Z     : right-handed third (= world +X)
+#     +Z     : right-handed third (= world -X)
 #
-# Beam reach in clamp-local +Y is fixed by the rail D underside Y minus
-# the bracket back face Y: 240.3 - 107.81 ≈ 132.5 mm. Longer than the
+# Beam reach in clamp-local +Y is fixed by the rail D underside Z minus
+# the bracket back face Z: 240.3 - 107.81 ≈ 132.5 mm. Longer than the
 # rev-3 mirror clamps' 50–65 mm reach; rail D's height is set by
 # clearance over the back-upper mount plate corner, so it can't be
 # pushed any closer to the camera. The strut + propped-beam architecture
@@ -331,10 +349,10 @@ RAIL_PAD_CLAMP_BACK_UPPER_CLAMP_ROT = Rot(-90, -90, 0)
 
 RAIL_PAD_CLAMP_CAMERA_POS = (
     CAMERA_BRACKET_BACK_CENTRE[0],    # x = 0 (rail D centred on YZ plane)
-    T_FRAME_RAIL_D_BOTTOM_Y,          # rail D -Y face
-    CAMERA_BRACKET_BACK_CENTRE[2],    # under bracket back face centre
+    CAMERA_BRACKET_BACK_CENTRE[1],    # under bracket back face centre
+    T_FRAME_RAIL_D_BOTTOM_Z,          # rail D -Z face
 )
 
-# Rot(180, 90, 0): clamp-local +X → world +Z (along rail D toward back),
-# +Y → world -Y (down toward bracket), +Z → world +X (right-handed).
-RAIL_PAD_CLAMP_CAMERA_CLAMP_ROT = Rot(180, 90, 0)
+# Rot(-90, -90, 0): clamp-local +X→world +Y (along rail D toward back),
+# +Y→world -Z (down toward bracket), +Z→world -X.
+RAIL_PAD_CLAMP_CAMERA_CLAMP_ROT = Rot(-90, -90, 0)

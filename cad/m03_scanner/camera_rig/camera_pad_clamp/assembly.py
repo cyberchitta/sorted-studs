@@ -2,7 +2,7 @@
 M03 scanner — rev-3 camera pad-clamp.
 
 Printed clamp that hangs the camera bracket below rail D — the rev-3
-sparse T-frame's Z-cantilever (see `../skeleton_t_frame/assembly.py`).
+sparse T-frame's Y-cantilever (see `../skeleton_t_frame/assembly.py`).
 Successor to rev-2's `../camera_bracket_rail_clamp/`. Same pad-on-
 extrusion idea as `../mirror_pad_clamp/` but rotated 180°: instead of
 sitting on top of a rail with the body rising to a mount above, this
@@ -11,18 +11,18 @@ clamp grips a rail's underside and the body descends to a mount below.
 Clamp-local +Y means "away from the gripped rail face". For the mirror
 clamps the rail is below the mount, so clamp +Y rises (printable as +Y
 up). For this camera clamp the rail is above the mount, so clamp +Y
-descends — clamp-local +Y maps to world -Y. The print orientation is
+descends — clamp-local +Y maps to world -Z. The print orientation is
 still clamp +Y up (base on the build plate), independent of the
 assembled-world orientation.
 
 Coordinate frame (local to this sub-assembly):
-    origin = centre of clamp bottom face, on rail D's gripped (-Y in
-             world) face, at the along-rail (Z) position of the
+    origin = centre of clamp bottom face, on rail D's gripped (-Z in
+             world) face, at the along-rail (Y) position of the
              bracket back face centre
-    +X     = along rail D long axis (= world +Z)
+    +X     = along rail D long axis (= world +Y)
     +Y     = away from rail (downward in world; body extends in clamp
              +Y to reach the bracket pad below the rail)
-    +Z     = right-handed third (= world +X)
+    +Z     = right-handed third (= world -X)
     y = 0                     : rail face (clamp bottom contact)
     y ∈ [0, BASE_H]           : clamp base body (hugs rail underside)
     y > BASE_H                : beam descending toward mount pad
@@ -37,7 +37,7 @@ the pad are drilled along the bracket-local +Z axis (lens axis) on the
 52 × 52 bracket bolt pattern.
 
 Mount-back position in clamp-local: (0, 132.5, 0) — beam straight down
-in clamp-local +Y, no Z offset (rail D centred on the YZ plane and the
+in clamp-local +Y, no Z offset (rail D centred on the XZ plane and the
 bracket sits on x = 0). Reach is much longer than the rev-3 mirror
 clamps' 50-65 mm (rail D's height is set by clearance over the back-
 upper mount plate corner, so it can't be pushed any closer to the
