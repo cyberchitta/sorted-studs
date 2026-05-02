@@ -48,9 +48,9 @@ PLATFORM_ACRYLIC_T = 4.0
 
 # --- Inter-unit interface (camera rig ↔ turret) ------------------------
 
-# Shared bench Y. Both the camera rig's rail A/B and the turret_frame
-# floor sit on this single bench at y = -220.
-SHARED_BENCH_Y = -220.0
+# Shared bench Z. Both the camera rig's rail A/B and the turret_frame
+# floor sit on this single bench at z = -220.
+SHARED_BENCH_Z = -220.0
 
 # Butt clearance between the camera rig's rail A front face and the
 # turret_frame's back rail back face when the turret is placed in

@@ -7,8 +7,8 @@ cross-unit checks here:
   * camera_rig/ — placed at world identity (rig-local frame matches
     world). Internal composition + within-unit checks live in
     `camera_rig/assembly.py`.
-  * turret/ — placed at world `Pos(0, 0, -TURRET_ARM_R)` (turret-local
-    hub axis lands at world `(0, *, -130)`, IMAGE platform centroid at
+  * turret/ — placed at world `Pos(0, -TURRET_ARM_R, 0)` (turret-local
+    hub axis lands at world `(0, -185, *)`, IMAGE platform centroid at
     world origin). Internal composition + within-unit checks live in
     `turret/assembly.py`.
 
@@ -19,7 +19,7 @@ Cross-unit checks at this level:
   2. Boundary: the turret's back rail back face sits exactly
      `RIG_TURRET_BUTT_GAP` forward of the camera rig's rail A front
      face after the turret is placed in world. Both share the
-     `SHARED_BENCH_Y = -220` bench, so a Z-overlap would crash in 3D.
+     `SHARED_BENCH_Z = -220` bench, so a Y-overlap would crash in 3D.
   3. Interference: every turret part vs every camera-rig part — a
      comprehensive regression guard. Catches drift in either subsystem
      that would push a turret part into a rig part.
@@ -44,19 +44,19 @@ from params import (  # noqa: E402
     PLATFORM_ACRYLIC_SIZE,
     PLATFORM_ACRYLIC_T,
     RIG_TURRET_BUTT_GAP,
-    SHARED_BENCH_Y,
+    SHARED_BENCH_Z,
     WALL_MIN,
 )
 from camera_rig import assembly as _camera_rig  # noqa: E402
-from camera_rig.params import T_FRAME_RAIL_A_FRONT_Z  # noqa: E402
+from camera_rig.params import T_FRAME_RAIL_A_FRONT_Y  # noqa: E402
 from camera_rig.params import WALL_MIN as _RIG_WALL_MIN  # noqa: E402
 from turret import assembly as _turret  # noqa: E402
 from turret.params import (  # noqa: E402
     PLATFORM_ACRYLIC_SIZE as _TURRET_ACRYLIC_SIZE,
     PLATFORM_ACRYLIC_T as _TURRET_ACRYLIC_T,
     TURRET_ARM_R,
-    TURRET_FRAME_BACK_Z as _TURRET_BACK_Z_LOCAL,
-    TURRET_FRAME_FLOOR_Y as _TURRET_FLOOR_Y,
+    TURRET_FRAME_BACK_Y as _TURRET_BACK_Y_LOCAL,
+    TURRET_FRAME_FLOOR_Z as _TURRET_FLOOR_Z,
 )
 from turret.params import WALL_MIN as _TURRET_WALL_MIN  # noqa: E402
 
@@ -79,29 +79,29 @@ assert PLATFORM_ACRYLIC_T == _TURRET_ACRYLIC_T, (
     f"PLATFORM_ACRYLIC_T mismatch: top={PLATFORM_ACRYLIC_T}, "
     f"turret={_TURRET_ACRYLIC_T}"
 )
-assert _TURRET_FLOOR_Y == SHARED_BENCH_Y, (
-    f"turret floor Y ({_TURRET_FLOOR_Y}) ≠ SHARED_BENCH_Y "
-    f"({SHARED_BENCH_Y}); both units must sit on the same bench"
+assert _TURRET_FLOOR_Z == SHARED_BENCH_Z, (
+    f"turret floor Z ({_TURRET_FLOOR_Z}) ≠ SHARED_BENCH_Z "
+    f"({SHARED_BENCH_Z}); both units must sit on the same bench"
 )
 
 
 # --- Boundary assert: turret back rail butts rig rail A ---------------
 #
-# Turret is placed in world at `Pos(0, 0, -TURRET_ARM_R)` (translation
+# Turret is placed in world at `Pos(0, -TURRET_ARM_R, 0)` (translation
 # only, no rotation). The turret's back rail back face is at
-# turret-local Z = TURRET_FRAME_BACK_Z + MEMBER/2; in world that lands
-# at (TURRET_FRAME_BACK_Z + MEMBER/2) - TURRET_ARM_R. Must equal
-# T_FRAME_RAIL_A_FRONT_Z - RIG_TURRET_BUTT_GAP within numerical noise.
+# turret-local Y = TURRET_FRAME_BACK_Y + MEMBER/2; in world that lands
+# at (TURRET_FRAME_BACK_Y + MEMBER/2) - TURRET_ARM_R. Must equal
+# T_FRAME_RAIL_A_FRONT_Y - RIG_TURRET_BUTT_GAP within numerical noise.
 
 _MEMBER = 20.0          # 2020 extrusion (matches turret_frame.MEMBER)
-_TURRET_BACK_FACE_WORLD_Z = (
-    _TURRET_BACK_Z_LOCAL + _MEMBER / 2 - TURRET_ARM_R
+_TURRET_BACK_FACE_WORLD_Y = (
+    _TURRET_BACK_Y_LOCAL + _MEMBER / 2 - TURRET_ARM_R
 )
-_EXPECTED_BACK_FACE_WORLD_Z = T_FRAME_RAIL_A_FRONT_Z - RIG_TURRET_BUTT_GAP
-assert abs(_TURRET_BACK_FACE_WORLD_Z - _EXPECTED_BACK_FACE_WORLD_Z) < 1e-6, (
-    f"turret back rail back face world Z ({_TURRET_BACK_FACE_WORLD_Z:.4f}) "
+_EXPECTED_BACK_FACE_WORLD_Y = T_FRAME_RAIL_A_FRONT_Y - RIG_TURRET_BUTT_GAP
+assert abs(_TURRET_BACK_FACE_WORLD_Y - _EXPECTED_BACK_FACE_WORLD_Y) < 1e-6, (
+    f"turret back rail back face world Y ({_TURRET_BACK_FACE_WORLD_Y:.4f}) "
     f"≠ rig rail A front face minus butt gap "
-    f"({_EXPECTED_BACK_FACE_WORLD_Z:.4f}); update TURRET_FRAME_BACK_Z "
+    f"({_EXPECTED_BACK_FACE_WORLD_Y:.4f}); update TURRET_FRAME_BACK_Y "
     f"in turret/params.py"
 )
 
@@ -115,8 +115,8 @@ assembly = Assembly()
 # and are exercised by `khana check camera_rig/assembly.py`).
 assembly = _camera_rig.add_camera_rig(assembly)
 
-# Turret placed at world Pos(0, 0, -ARM_R) — translation only.
-_TURRET_WORLD_POSE = Pos(0, 0, -TURRET_ARM_R)
+# Turret placed at world Pos(0, -ARM_R, 0) — translation only.
+_TURRET_WORLD_POSE = Pos(0, -TURRET_ARM_R, 0)
 assembly = _turret.add_turret(assembly, base=_TURRET_WORLD_POSE)
 
 
