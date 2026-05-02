@@ -11,8 +11,8 @@ reference and a power cycle disagrees with the indexed station
 positions.
 
 Layout: flag disc + sensor live in the 20 mm of clear airspace between
-the slice (b) housing top (y = -110) and the slice (g) driven pulley
-bottom (y = -90). The bracket bolts to the slice (a) cross-rail's top
+the slice (b) housing top (z = -110) and the slice (g) driven pulley
+bottom (z = -90). The bracket bolts to the slice (a) cross-rail's top
 T-slot at -X side, in the gap between the hub housing (x_max = +30)
 and the slice (f2) kicker mount foot (x_min = -80). Sensor azimuth at
 heading 180° (-X direction); detect feature on the disc at the same
@@ -25,7 +25,7 @@ Members (3 functional + 2 stubs):
                         shaft via M3 set screw on a flat (real part);
                         modeled as clearance bore so
                         assert_no_interference reads tangent contact.
-                        Y-center -100 (mid-airspace; 8.5 mm clear of
+                        Z-center -100 (mid-airspace; 8.5 mm clear of
                         both housing top and pulley bottom).
   * homing_sensor     — slotted opto-interrupter stub (bought part).
                         Modeled as a body with two prongs above + below
@@ -33,12 +33,12 @@ Members (3 functional + 2 stubs):
                         them; main block sits outboard at x ∈ [-40,
                         -28], prongs reach in to x = -10 (6 mm past
                         disc OD at radius 16). Beam axis (not modeled)
-                        crosses the slot at (-12, *, 0) — aligned with
+                        crosses the slot at (-12, 0, *) — aligned with
                         the detect hole at home.
   * homing_bracket    — printed L-bracket: foot bolts to cross-rail's
-                        top T-slot at z = 0 with two M5 bolts spaced
+                        top T-slot at y = 0 with two M5 bolts spaced
                         22.5 mm along the rail; vertical post rises to
-                        sensor body Y. Sensor mounts to post's +X face
+                        sensor body Z. Sensor mounts to post's +X face
                         (toward axis). No horizontal cantilever — post
                         ends at sensor top face, sensor hangs from
                         outboard side.
@@ -51,14 +51,14 @@ imported per `cad/CLAUDE.md` principle 2):
                         for the bolt-line + foot tangent check.
 
 Coordinate frame = turret-local frame (matches `../params.py`):
-    origin = hub axis at the cross-rail's top face Y plane
+    origin = hub axis at the cross-rail's top face Z plane
     +X     = operator's right            (parallel to world +X)
-    +Y     = up                          (parallel to world +Y)
-    +Z     = away from operator          (parallel to world +Z)
+    +Y     = away from operator          (parallel to world +Y)
+    +Z     = up                          (parallel to world +Z)
 
 Detect feature design: Ø4 hole at radius 12 from axis at heading 180°
 (the home azimuth). The beam (LED in top prong → photodiode in bottom
-prong, beam axis vertical at (-12, *, 0)) is blocked by disc material
+prong, beam axis vertical at (-12, 0, *)) is blocked by disc material
 at all azimuths except home, where the hole aligns with the beam and
 photodiode sees light. The hole rotates with the disc; firmware homes
 once at startup, then step-counts. The disc is set-screwed to a flat
@@ -66,18 +66,18 @@ on the shaft, so the rotational offset between disc-home and arm-
 indexed-position can be set during physical assembly; this slice ships
 the disc at its home rotation (hole at heading 180°).
 
-Print orientation (flag): bottom face on build plate, +Y up. All
-features (OD, bore, detect hole) are vertical bores — clean print.
-Print orientation (bracket): bottom face on build plate, +Y up. Foot
-prints flat, post is a vertical extrusion. No horizontal overhangs;
-default 45° threshold suffices (no need to lift to 90° as drive_bracket
-did, since this bracket has no cantilever plate).
+Print orientation (flag): bottom face on build plate, +Z up (build123d
+default). All features (OD, bore, detect hole) are vertical bores —
+clean print. Print orientation (bracket): bottom face on build plate,
++Z up. Foot prints flat, post is a vertical extrusion. No horizontal
+overhangs; default 45° threshold suffices (no need to lift to 90° as
+drive_bracket did, since this bracket has no cantilever plate).
 """
 
 import sys
 from pathlib import Path
 
-from build123d import Box, Cylinder, Pos, Rot
+from build123d import Box, Cylinder, Pos
 
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
@@ -87,12 +87,12 @@ from cad_khana.printability.methods import FDM
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from turret.params import (  # noqa: E402
-    TURRET_FRAME_CROSS_Z,
-    TURRET_FRAME_FLOOR_Y,
+    TURRET_FRAME_CROSS_Y,
+    TURRET_FRAME_FLOOR_Z,
     TURRET_HUB_X,
-    TURRET_HUB_Z,
+    TURRET_HUB_Y,
     TURRET_SHAFT_D,
-    TURRET_SHAFT_TOP_Y,
+    TURRET_SHAFT_TOP_Z,
     WALL_MIN,
 )
 
@@ -100,21 +100,21 @@ from turret.params import (  # noqa: E402
 # --- Cross-rail interface (private mirror of slice a) ------------------
 
 MEMBER = 20.0                                              # 2020 extrusion
-RAIL_TOP_Y = TURRET_FRAME_FLOOR_Y + MEMBER / 2             # = -210
+RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2             # = -210
 
 
 # --- Adjacent-slice mirrors (private; bound assertions reference these) -
 
-# Slice (b) housing top face Y. Flag must clear this with ≥ 1 mm gap.
-HOUSING_TOP_Y = -110.0
+# Slice (b) housing top face Z. Flag must clear this with ≥ 1 mm gap.
+HOUSING_TOP_Z = -110.0
 
 # Slice (b) housing X half-extent. Bracket foot inner edge must clear
 # this with ≥ WALL_MIN gap.
 HOUSING_HALF_X = 30.0
 
-# Slice (g) driven pulley bottom face Y. Flag + sensor must clear this
+# Slice (g) driven pulley bottom face Z. Flag + sensor must clear this
 # with ≥ 1 mm gap.
-PULLEY_BOTTOM_Y = -90.0
+PULLEY_BOTTOM_Z = -90.0
 
 # Slice (f2) kicker mount foot +X face (most-toward-axis face on -X
 # side). Bracket foot outer edge must clear this with ≥ WALL_MIN gap.
@@ -131,22 +131,22 @@ FLAG_BORE_D = TURRET_SHAFT_D + 0.4                         # = 8.4
 FLAG_DETECT_HOLE_D = 4.0
 FLAG_DETECT_HOLE_R = 12.0
 
-# Y-center: mid-airspace between housing top (-110) and pulley bottom
+# Z-center: mid-airspace between housing top (-110) and pulley bottom
 # (-90). 8.5 mm clear of housing top, 8.5 mm clear of pulley bottom.
-FLAG_Y_CENTER = -100.0
-_FLAG_TOP_Y = FLAG_Y_CENTER + FLAG_T / 2                   # = -98.5
-_FLAG_BOTTOM_Y = FLAG_Y_CENTER - FLAG_T / 2                # = -101.5
+FLAG_Z_CENTER = -100.0
+_FLAG_TOP_Z = FLAG_Z_CENTER + FLAG_T / 2                   # = -98.5
+_FLAG_BOTTOM_Z = FLAG_Z_CENTER - FLAG_T / 2                # = -101.5
 
 
 # --- Sensor body (stub for bought slotted opto-interrupter) ------------
 
 # Main block: solid box behind the slot. Prongs cantilever forward
-# (toward axis) from the main block, with a slot Y-band between them.
-# Slot Y matches disc plane Y range exactly (tangent contact at top +
+# (toward axis) from the main block, with a slot Z-band between them.
+# Slot Z matches disc plane Z range exactly (tangent contact at top +
 # bottom, modeled as zero-overlap which assert_no_interference accepts).
 SENSOR_MAIN_X = 12.0                                       # body X length
-SENSOR_BODY_Y = 8.0                                        # body Y total
-SENSOR_BODY_Z = 14.0                                       # body Z width
+SENSOR_BODY_Y = 14.0                                       # body Y width (depth)
+SENSOR_BODY_Z = 8.0                                        # body Z total (vertical)
 SENSOR_PRONG_X = 18.0                                      # prong X reach
 
 # Sensor outer +X face mounts to bracket post's +X face (on -X side of
@@ -157,33 +157,33 @@ _SENSOR_PRONG_TIP_X = _SENSOR_MAIN_X_MAX + SENSOR_PRONG_X  # = -10
 _SENSOR_MAIN_CENTER_X = (SENSOR_OUTER_X + _SENSOR_MAIN_X_MAX) / 2
 _SENSOR_PRONG_CENTER_X = (_SENSOR_MAIN_X_MAX + _SENSOR_PRONG_TIP_X) / 2
 
-# Slot Y = disc plane Y. Top prong above slot, bottom prong below.
-_SLOT_Y_TOP = _FLAG_TOP_Y                                  # = -98.5
-_SLOT_Y_BOT = _FLAG_BOTTOM_Y                               # = -101.5
-_SENSOR_TOP_Y = _SLOT_Y_TOP + (SENSOR_BODY_Y - FLAG_T) / 2  # = -96
-_SENSOR_BOT_Y = _SLOT_Y_BOT - (SENSOR_BODY_Y - FLAG_T) / 2  # = -104
-_SENSOR_BODY_CENTER_Y = (_SENSOR_TOP_Y + _SENSOR_BOT_Y) / 2  # = -100
-_TOP_PRONG_CENTER_Y = (_SENSOR_TOP_Y + _SLOT_Y_TOP) / 2    # = -97.25
-_BOT_PRONG_CENTER_Y = (_SENSOR_BOT_Y + _SLOT_Y_BOT) / 2    # = -102.75
-_PRONG_T = (SENSOR_BODY_Y - FLAG_T) / 2                    # = 2.5
+# Slot Z = disc plane Z. Top prong above slot, bottom prong below.
+_SLOT_Z_TOP = _FLAG_TOP_Z                                  # = -98.5
+_SLOT_Z_BOT = _FLAG_BOTTOM_Z                               # = -101.5
+_SENSOR_TOP_Z = _SLOT_Z_TOP + (SENSOR_BODY_Z - FLAG_T) / 2  # = -96
+_SENSOR_BOT_Z = _SLOT_Z_BOT - (SENSOR_BODY_Z - FLAG_T) / 2  # = -104
+_SENSOR_BODY_CENTER_Z = (_SENSOR_TOP_Z + _SENSOR_BOT_Z) / 2  # = -100
+_TOP_PRONG_CENTER_Z = (_SENSOR_TOP_Z + _SLOT_Z_TOP) / 2    # = -97.25
+_BOT_PRONG_CENTER_Z = (_SENSOR_BOT_Z + _SLOT_Z_BOT) / 2    # = -102.75
+_PRONG_T = (SENSOR_BODY_Z - FLAG_T) / 2                    # = 2.5
 
 
 # --- Bracket geometry --------------------------------------------------
 
-# Foot: 2 M5 bolts dropping into cross-rail's top T-slot at z = 0.
+# Foot: 2 M5 bolts dropping into cross-rail's top T-slot at y = 0.
 # Centered at -X side, between the hub housing (x_max = +30) and the
 # kicker mount foot (x_min = -80). With a 31 mm wide foot at center
 # x = -47, the foot's inner edge sits 1.5 mm clear of the housing
 # (-X face -30) and the outer edge sits ≫ WALL_MIN clear of the kicker.
 BRACKET_FOOT_X = 31.0
-BRACKET_FOOT_Y = 8.0
-BRACKET_FOOT_Z = 14.0
+BRACKET_FOOT_Y = 14.0    # depth
+BRACKET_FOOT_Z = 8.0     # vertical
 _BRACKET_FOOT_CENTER_X = -47.0
 _BRACKET_FOOT_X_MIN = _BRACKET_FOOT_CENTER_X - BRACKET_FOOT_X / 2  # = -62.5
 _BRACKET_FOOT_X_MAX = _BRACKET_FOOT_CENTER_X + BRACKET_FOOT_X / 2  # = -31.5
-_BRACKET_FOOT_BOTTOM_Y = RAIL_TOP_Y                        # = -210
-_BRACKET_FOOT_TOP_Y = _BRACKET_FOOT_BOTTOM_Y + BRACKET_FOOT_Y  # = -202
-_BRACKET_FOOT_CENTER_Y = (_BRACKET_FOOT_BOTTOM_Y + _BRACKET_FOOT_TOP_Y) / 2
+_BRACKET_FOOT_BOTTOM_Z = RAIL_TOP_Z                        # = -210
+_BRACKET_FOOT_TOP_Z = _BRACKET_FOOT_BOTTOM_Z + BRACKET_FOOT_Z  # = -202
+_BRACKET_FOOT_CENTER_Z = (_BRACKET_FOOT_BOTTOM_Z + _BRACKET_FOOT_TOP_Z) / 2
 
 BRACKET_BOLT_HOLE_D = 5.5                                  # M5 clearance
 BRACKET_BOLT_SPACING_X = 22.5
@@ -194,40 +194,40 @@ _BRACKET_BOLT_HALF_X = BRACKET_BOLT_SPACING_X / 2
 # between the two M5 bolts with WALL_MIN to each. Rises from foot top
 # to sensor body top.
 BRACKET_POST_X = 14.0
-BRACKET_POST_Z = BRACKET_FOOT_Z                            # = 14
+BRACKET_POST_Y = BRACKET_FOOT_Y                            # = 14
 _BRACKET_POST_CENTER_X = _BRACKET_FOOT_CENTER_X            # = -47
 _BRACKET_POST_X_MIN = _BRACKET_POST_CENTER_X - BRACKET_POST_X / 2  # = -54
 _BRACKET_POST_X_MAX = _BRACKET_POST_CENTER_X + BRACKET_POST_X / 2  # = -40
-_BRACKET_POST_BOTTOM_Y = _BRACKET_FOOT_TOP_Y               # = -202
-_BRACKET_POST_TOP_Y = _SENSOR_TOP_Y                        # = -96
-BRACKET_POST_Y = _BRACKET_POST_TOP_Y - _BRACKET_POST_BOTTOM_Y  # = 106
-_BRACKET_POST_CENTER_Y = (_BRACKET_POST_BOTTOM_Y + _BRACKET_POST_TOP_Y) / 2
+_BRACKET_POST_BOTTOM_Z = _BRACKET_FOOT_TOP_Z               # = -202
+_BRACKET_POST_TOP_Z = _SENSOR_TOP_Z                        # = -96
+BRACKET_POST_Z = _BRACKET_POST_TOP_Z - _BRACKET_POST_BOTTOM_Z  # = 106
+_BRACKET_POST_CENTER_Z = (_BRACKET_POST_BOTTOM_Z + _BRACKET_POST_TOP_Z) / 2
 
 
 # --- Sanity asserts ----------------------------------------------------
 
 # Flag clears housing top + pulley bottom by ≥ 1 mm.
-_flag_to_housing = _FLAG_BOTTOM_Y - HOUSING_TOP_Y
+_flag_to_housing = _FLAG_BOTTOM_Z - HOUSING_TOP_Z
 assert _flag_to_housing >= 1.0, (
-    f"flag bottom ({_FLAG_BOTTOM_Y}) too close to housing top "
-    f"({HOUSING_TOP_Y}); gap {_flag_to_housing:.2f} mm < 1 mm"
+    f"flag bottom ({_FLAG_BOTTOM_Z}) too close to housing top "
+    f"({HOUSING_TOP_Z}); gap {_flag_to_housing:.2f} mm < 1 mm"
 )
-_flag_to_pulley = PULLEY_BOTTOM_Y - _FLAG_TOP_Y
+_flag_to_pulley = PULLEY_BOTTOM_Z - _FLAG_TOP_Z
 assert _flag_to_pulley >= 1.0, (
-    f"flag top ({_FLAG_TOP_Y}) too close to pulley bottom "
-    f"({PULLEY_BOTTOM_Y}); gap {_flag_to_pulley:.2f} mm < 1 mm"
+    f"flag top ({_FLAG_TOP_Z}) too close to pulley bottom "
+    f"({PULLEY_BOTTOM_Z}); gap {_flag_to_pulley:.2f} mm < 1 mm"
 )
 
 # Sensor clears housing top + pulley bottom by ≥ 1 mm.
-_sensor_to_housing = _SENSOR_BOT_Y - HOUSING_TOP_Y
+_sensor_to_housing = _SENSOR_BOT_Z - HOUSING_TOP_Z
 assert _sensor_to_housing >= 1.0, (
-    f"sensor bottom ({_SENSOR_BOT_Y}) too close to housing top "
-    f"({HOUSING_TOP_Y}); gap {_sensor_to_housing:.2f} mm < 1 mm"
+    f"sensor bottom ({_SENSOR_BOT_Z}) too close to housing top "
+    f"({HOUSING_TOP_Z}); gap {_sensor_to_housing:.2f} mm < 1 mm"
 )
-_sensor_to_pulley = PULLEY_BOTTOM_Y - _SENSOR_TOP_Y
+_sensor_to_pulley = PULLEY_BOTTOM_Z - _SENSOR_TOP_Z
 assert _sensor_to_pulley >= 1.0, (
-    f"sensor top ({_SENSOR_TOP_Y}) too close to pulley bottom "
-    f"({PULLEY_BOTTOM_Y}); gap {_sensor_to_pulley:.2f} mm < 1 mm"
+    f"sensor top ({_SENSOR_TOP_Z}) too close to pulley bottom "
+    f"({PULLEY_BOTTOM_Z}); gap {_sensor_to_pulley:.2f} mm < 1 mm"
 )
 
 # Detect hole sits inside the slot's X range (so the beam aligns with
@@ -275,9 +275,7 @@ assert _foot_to_housing >= WALL_MIN, (
     f"BRACKET_FOOT_X"
 )
 
-# Bracket foot outer edge clears kicker mount foot inner edge. Kicker
-# foot inner edge sits further -X (more negative) than bracket foot
-# outer edge, so the gap is (bracket outer) - (kicker inner).
+# Bracket foot outer edge clears kicker mount foot inner edge.
 _foot_to_kicker = _BRACKET_FOOT_X_MIN - KICKER_FOOT_X_INNER
 assert _foot_to_kicker >= WALL_MIN, (
     f"bracket foot outer edge ({_BRACKET_FOOT_X_MIN}) too close to "
@@ -286,8 +284,7 @@ assert _foot_to_kicker >= WALL_MIN, (
 )
 
 # Bolt holes fit inside the foot with WALL_MIN walls on each side, and
-# don't pass through the post (so the post sits on solid foot material
-# between the two bolts).
+# don't pass through the post.
 _inner_bolt_x = _BRACKET_FOOT_CENTER_X + _BRACKET_BOLT_HALF_X
 _outer_bolt_x = _BRACKET_FOOT_CENTER_X - _BRACKET_BOLT_HALF_X
 _bolt_to_foot_inner = _BRACKET_FOOT_X_MAX - (_inner_bolt_x + BRACKET_BOLT_HOLE_D / 2)
@@ -302,8 +299,6 @@ assert _bolt_to_foot_outer >= WALL_MIN, (
     f"({_BRACKET_FOOT_X_MIN}); gap {_bolt_to_foot_outer:.2f} mm < "
     f"WALL_MIN ({WALL_MIN})"
 )
-# Inner bolt sits +X of post (toward axis). Bolt's most-outboard edge
-# (least +X face of the hole) must clear post's +X face.
 _inner_bolt_to_post = (_inner_bolt_x - BRACKET_BOLT_HOLE_D / 2) - _BRACKET_POST_X_MAX
 assert _inner_bolt_to_post >= WALL_MIN, (
     f"inner bolt ({_inner_bolt_x}) outboard edge too close to post "
@@ -311,8 +306,6 @@ assert _inner_bolt_to_post >= WALL_MIN, (
     f"mm < WALL_MIN ({WALL_MIN}); widen BRACKET_BOLT_SPACING_X or "
     f"shrink BRACKET_POST_X"
 )
-# Outer bolt sits -X of post (away from axis). Bolt's most-inboard
-# edge (most-+X face of the hole) must clear post's -X face.
 _outer_bolt_to_post = _BRACKET_POST_X_MIN - (_outer_bolt_x + BRACKET_BOLT_HOLE_D / 2)
 assert _outer_bolt_to_post >= WALL_MIN, (
     f"outer bolt ({_outer_bolt_x}) inboard edge too close to post "
@@ -331,15 +324,14 @@ def flag(
     detect_hole_r: float = FLAG_DETECT_HOLE_R,
 ):
     """Printed disc keyed to the turret shaft below the driven pulley.
-    Centered on placement origin (axis along ±Y); bore is a Ø8.4
-    clearance hole (real part has an M3 set screw on a flat). One
-    Ø4 detect hole at radius `detect_hole_r` from axis at heading
-    180° (the -X side, where the sensor sits)."""
-    body = Rot(90, 0, 0) * Cylinder(od / 2, thickness)
-    body -= Rot(90, 0, 0) * Cylinder(bore_d / 2, thickness * 3)
+    Centered on placement origin (axis along ±Z = build123d default);
+    bore is a Ø8.4 clearance hole (real part has an M3 set screw on a
+    flat). One Ø4 detect hole at radius `detect_hole_r` from axis at
+    heading 180° (the -X side, where the sensor sits)."""
+    body = Cylinder(od / 2, thickness)
+    body -= Cylinder(bore_d / 2, thickness * 3)
     body -= (
         Pos(-detect_hole_r, 0, 0)
-        * Rot(90, 0, 0)
         * Cylinder(detect_hole_d / 2, thickness * 3)
     )
     return body
@@ -347,20 +339,20 @@ def flag(
 
 def sensor():
     """Slotted opto-interrupter stub. Bought part — no inspect call.
-    Modeled as a body with a 3-mm-tall slot in Y between two prongs.
+    Modeled as a body with a 3-mm-tall slot in Z between two prongs.
     Returned in turret-local coordinates (no `base` shift); caller
     multiplies the placement."""
     main_block = (
-        Pos(_SENSOR_MAIN_CENTER_X, _SENSOR_BODY_CENTER_Y, 0)
+        Pos(_SENSOR_MAIN_CENTER_X, 0, _SENSOR_BODY_CENTER_Z)
         * Box(SENSOR_MAIN_X, SENSOR_BODY_Y, SENSOR_BODY_Z)
     )
     top_prong = (
-        Pos(_SENSOR_PRONG_CENTER_X, _TOP_PRONG_CENTER_Y, 0)
-        * Box(SENSOR_PRONG_X, _PRONG_T, SENSOR_BODY_Z)
+        Pos(_SENSOR_PRONG_CENTER_X, 0, _TOP_PRONG_CENTER_Z)
+        * Box(SENSOR_PRONG_X, SENSOR_BODY_Y, _PRONG_T)
     )
     bot_prong = (
-        Pos(_SENSOR_PRONG_CENTER_X, _BOT_PRONG_CENTER_Y, 0)
-        * Box(SENSOR_PRONG_X, _PRONG_T, SENSOR_BODY_Z)
+        Pos(_SENSOR_PRONG_CENTER_X, 0, _BOT_PRONG_CENTER_Z)
+        * Box(SENSOR_PRONG_X, SENSOR_BODY_Y, _PRONG_T)
     )
     return main_block + top_prong + bot_prong
 
@@ -370,22 +362,21 @@ def bracket():
     vertical post rises to sensor body top. Sensor mounts to post's
     +X face (toward axis). Returned in turret-local coords."""
     foot = (
-        Pos(_BRACKET_FOOT_CENTER_X, _BRACKET_FOOT_CENTER_Y, 0)
+        Pos(_BRACKET_FOOT_CENTER_X, 0, _BRACKET_FOOT_CENTER_Z)
         * Box(BRACKET_FOOT_X, BRACKET_FOOT_Y, BRACKET_FOOT_Z)
     )
     for sx in (-1, 1):
         foot -= (
             Pos(
                 _BRACKET_FOOT_CENTER_X + sx * _BRACKET_BOLT_HALF_X,
-                _BRACKET_FOOT_CENTER_Y,
                 0,
+                _BRACKET_FOOT_CENTER_Z,
             )
-            * Rot(90, 0, 0)
-            * Cylinder(BRACKET_BOLT_HOLE_D / 2, BRACKET_FOOT_Y * 3)
+            * Cylinder(BRACKET_BOLT_HOLE_D / 2, BRACKET_FOOT_Z * 3)
         )
 
     post = (
-        Pos(_BRACKET_POST_CENTER_X, _BRACKET_POST_CENTER_Y, 0)
+        Pos(_BRACKET_POST_CENTER_X, 0, _BRACKET_POST_CENTER_Z)
         * Box(BRACKET_POST_X, BRACKET_POST_Y, BRACKET_POST_Z)
     )
 
@@ -397,12 +388,8 @@ def bracket():
 def _shaft_stub(length: float):
     """Slice (b) Ø8 turret shaft mirror. Caller positions the base at
     the rail top; this function returns a cylinder centered on its own
-    origin in X / Z, spanning Y ∈ [0, length]."""
-    return (
-        Pos(0, length / 2, 0)
-        * Rot(90, 0, 0)
-        * Cylinder(TURRET_SHAFT_D / 2, length)
-    )
+    origin in X / Y, spanning Z ∈ [0, length]."""
+    return Pos(0, 0, length / 2) * Cylinder(TURRET_SHAFT_D / 2, length)
 
 
 def _cross_rail_stub(length: float = BRACKET_FOOT_X + 40.0):
@@ -412,8 +399,8 @@ def _cross_rail_stub(length: float = BRACKET_FOOT_X + 40.0):
     return (
         Pos(
             _BRACKET_FOOT_CENTER_X,
-            TURRET_FRAME_FLOOR_Y,
-            TURRET_FRAME_CROSS_Z,
+            TURRET_FRAME_CROSS_Y,
+            TURRET_FRAME_FLOOR_Z,
         )
         * Box(length, MEMBER, MEMBER)
     )
@@ -435,7 +422,7 @@ def add_turret_homing(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
     a = a.add(
         "homing_flag",
         flag(),
-        location=base * Pos(TURRET_HUB_X, FLAG_Y_CENTER, TURRET_HUB_Z),
+        location=base * Pos(TURRET_HUB_X, TURRET_HUB_Y, FLAG_Z_CENTER),
     )
     a = a.add(
         "homing_sensor",
@@ -455,11 +442,11 @@ def add_turret_homing(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
 assembly = add_turret_homing(Assembly())
 
 # Stubs.
-_SHAFT_LEN = TURRET_SHAFT_TOP_Y - RAIL_TOP_Y               # = 200
+_SHAFT_LEN = TURRET_SHAFT_TOP_Z - RAIL_TOP_Z               # = 200
 assembly = assembly.add(
     "hub_shaft_stub",
     _shaft_stub(length=_SHAFT_LEN),
-    location=Pos(TURRET_HUB_X, RAIL_TOP_Y, TURRET_HUB_Z),
+    location=Pos(TURRET_HUB_X, TURRET_HUB_Y, RAIL_TOP_Z),
 )
 assembly = assembly.add(
     "cross_rail_stub",
@@ -468,7 +455,7 @@ assembly = assembly.add(
 
 # Pairwise no-interference. Flag-onto-shaft is tangent contact (zero
 # overlap; passes assert_no_interference). Sensor prongs vs flag: prong
-# Y faces are tangent to disc Y faces (zero overlap). Bracket foot
+# Z faces are tangent to disc Z faces (zero overlap). Bracket foot
 # tangent on cross-rail top, sensor outer face tangent on bracket post
 # +X face — also zero-overlap.
 _ALL = list(HOMING_PART_NAMES) + ["hub_shaft_stub", "cross_rail_stub"]
@@ -479,14 +466,13 @@ for _i, _a in enumerate(_ALL):
 
 if __name__ == "__main__":
     check(assembly, out="outputs")
-    # Print orientation: bottom face on the build plate (+Y up). Flag
-    # is a thin disc with a centered bore + offset detect hole — all
-    # vertical bores, clean print at default 45° overhang threshold.
+    # Print orientation: bottom face on the build plate, +Z up
+    # (build123d default). Flag is a thin disc with a centered bore +
+    # offset detect hole — all vertical bores, clean print at default
+    # 45° overhang threshold.
     inspect(
         flag(),
-        method=FDM(
-            up_axis=(0, 1, 0), wall_min_mm=WALL_MIN, overhang_max_deg=45.0
-        ),
+        method=FDM(wall_min_mm=WALL_MIN, overhang_max_deg=45.0),
         out="outputs",
         name="homing_flag",
     )
@@ -494,9 +480,7 @@ if __name__ == "__main__":
     # 45° threshold suffices.
     inspect(
         bracket(),
-        method=FDM(
-            up_axis=(0, 1, 0), wall_min_mm=WALL_MIN, overhang_max_deg=45.0
-        ),
+        method=FDM(wall_min_mm=WALL_MIN, overhang_max_deg=45.0),
         out="outputs",
         name="homing_bracket",
     )

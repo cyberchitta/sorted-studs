@@ -18,7 +18,7 @@ Members (1 printed body + 1 stock shaft):
                      (between lobes — same idiom as slice (c)
                      spider), and a 4-lobed radial profile (4-fold
                      rotational symmetry).
-  * hub_shaft_stub — stock Ø8 shaft stub. Same Ø and Y span as the
+  * hub_shaft_stub — stock Ø8 shaft stub. Same Ø and Z span as the
                      slice (b) shaft; duplicated here rather than
                      imported from the sibling because cad/CLAUDE.md
                      principle 2 forbids sibling-to-sibling imports.
@@ -27,24 +27,24 @@ Members (1 printed body + 1 stock shaft):
                      top-level integrate slice.
 
 Coordinate frame = turret-local frame (matches `../params.py`):
-    origin = hub axis at the cross-rail's top face Y plane
+    origin = hub axis at the cross-rail's top face Z plane
     +X     = operator's right            (parallel to world +X)
-    +Y     = up                          (parallel to world +Y)
-    +Z     = away from operator          (parallel to world +Z)
+    +Y     = away from operator          (parallel to world +Y)
+    +Z     = up                          (parallel to world +Z)
 
-Lobe profile (around Y axis, 4-fold symmetric):
-    lobe headings:    0° (+X / LOAD), 90° (+Z / IMAGE),
-                      180° (-X / DUMP), 270° (-Z / RETURN)
+Lobe profile (around Z axis, 4-fold symmetric):
+    lobe headings:    0° (+X / LOAD), 90° (+Y / IMAGE),
+                      180° (-X / DUMP), 270° (-Y / RETURN)
     lobe peak:        20° wide, at PEAK_R = 30 mm
     lobe ramp:        10° each side, linear PEAK_R → BASE_R
     valley between:   50° wide, at BASE_R = 25 mm
 Sum: 4 × (20° + 2 × 10°) + 4 × 50° = 360° ✓.
 
-Print orientation: bottom face on the build plate, +Y up. The Ø8.4
-shaft bore prints as a clean vertical hole; the horizontal set-screw
-bore reads as a 90° overhang in the ray sampler but bridges cleanly
-in FDM at Ø4 (same allowance as `platform_hinge_bearing` and the
-slice (c) spider).
+Print orientation: bottom face on the build plate, +Z up (build123d
+default). The Ø8.4 shaft bore prints as a clean vertical hole; the
+horizontal set-screw bore reads as a 90° overhang in the ray sampler
+but bridges cleanly in FDM at Ø4 (same allowance as
+`platform_hinge_bearing` and the slice (c) spider).
 """
 
 import math
@@ -62,15 +62,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from turret.params import (  # noqa: E402
     TURRET_DUMP_CAM_BASE_R,
-    TURRET_DUMP_CAM_BOTTOM_Y,
-    TURRET_DUMP_CAM_CENTER_Y,
+    TURRET_DUMP_CAM_BOTTOM_Z,
+    TURRET_DUMP_CAM_CENTER_Z,
     TURRET_DUMP_CAM_HEIGHT,
     TURRET_DUMP_CAM_PEAK_R,
-    TURRET_DUMP_CAM_TOP_Y,
+    TURRET_DUMP_CAM_TOP_Z,
     TURRET_HUB_X,
-    TURRET_HUB_Z,
+    TURRET_HUB_Y,
     TURRET_SHAFT_D,
-    TURRET_SHAFT_TOP_Y,
+    TURRET_SHAFT_TOP_Z,
     WALL_MIN,
 )
 
@@ -143,32 +143,32 @@ assert _ss_to_nearest_lobe_deg > LOBE_FULL_DEG / 2, (
     f"width {LOBE_FULL_DEG/2}°); pick a heading in a valley"
 )
 
-# Y-span consistency.
-_y_thickness_derived = TURRET_DUMP_CAM_TOP_Y - TURRET_DUMP_CAM_BOTTOM_Y
-assert abs(_y_thickness_derived - TURRET_DUMP_CAM_HEIGHT) < 1e-6, (
-    f"cam disc TOP - BOTTOM ({_y_thickness_derived}) ≠ HEIGHT "
+# Z-span consistency.
+_z_thickness_derived = TURRET_DUMP_CAM_TOP_Z - TURRET_DUMP_CAM_BOTTOM_Z
+assert abs(_z_thickness_derived - TURRET_DUMP_CAM_HEIGHT) < 1e-6, (
+    f"cam disc TOP - BOTTOM ({_z_thickness_derived}) ≠ HEIGHT "
     f"({TURRET_DUMP_CAM_HEIGHT}); update one to match"
 )
 
-# Cam disc Y must lie strictly between the slice (b) housing top
-# (y = -110) and the slice (c) spider bottom (y = -35). Clearance to
+# Cam disc Z must lie strictly between the slice (b) housing top
+# (z = -110) and the slice (c) spider bottom (z = -35). Clearance to
 # both neighbours is asserted in the top-level integrate slice; this
 # is a coarse range check.
-assert TURRET_DUMP_CAM_BOTTOM_Y > -110.0, (
-    f"cam bottom ({TURRET_DUMP_CAM_BOTTOM_Y}) sinks into the housing "
-    f"(top at y = -110); raise TURRET_DUMP_CAM_CENTER_Y"
+assert TURRET_DUMP_CAM_BOTTOM_Z > -110.0, (
+    f"cam bottom ({TURRET_DUMP_CAM_BOTTOM_Z}) sinks into the housing "
+    f"(top at z = -110); raise TURRET_DUMP_CAM_CENTER_Z"
 )
-assert TURRET_DUMP_CAM_TOP_Y < -35.0, (
-    f"cam top ({TURRET_DUMP_CAM_TOP_Y}) collides with the spider "
-    f"(bottom at y = -35); lower TURRET_DUMP_CAM_CENTER_Y"
+assert TURRET_DUMP_CAM_TOP_Z < -35.0, (
+    f"cam top ({TURRET_DUMP_CAM_TOP_Z}) collides with the spider "
+    f"(bottom at z = -35); lower TURRET_DUMP_CAM_CENTER_Z"
 )
 
 
 # --- Profile sampling --------------------------------------------------
 
 def _radius_at(theta_deg: float) -> float:
-    """Cam radius at angle `theta_deg` (around Y axis, measured from
-    +X heading toward +Z). Returns BASE_R in valleys, PEAK_R inside
+    """Cam radius at angle `theta_deg` (around Z axis, measured from
+    +X heading toward +Y). Returns BASE_R in valleys, PEAK_R inside
     lobe peaks, linear interp in ramps. 4-fold symmetric, so reduce
     the input to its angular distance from the nearest lobe heading
     in [0, 45]°."""
@@ -190,46 +190,42 @@ def _radius_at(theta_deg: float) -> float:
 # --- Part functions ----------------------------------------------------
 
 def dump_cam():
-    """Printed cam disc, axis along ±Y, centred on part-local origin
-    in X / Z and on Y = 0. Caller translates so the centerline lands
-    at TURRET_DUMP_CAM_CENTER_Y in the assembly frame."""
+    """Printed cam disc, axis along ±Z, centred on part-local origin
+    in X / Y and on Z = 0. Caller translates so the centerline lands
+    at TURRET_DUMP_CAM_CENTER_Z in the assembly frame."""
     n = int(round(360.0 / PROFILE_STEP_DEG))
     pts = []
     for i in range(n):
         theta_deg = i * PROFILE_STEP_DEG
         r = _radius_at(theta_deg)
-        # Polygon's local x → cam X; polygon's local y → cam Z (after
-        # the Rot(90, 0, 0) below maps polygon-Y → +Z).
+        # Polygon's local x → cam X; polygon's local y → cam Y.
         x = r * math.cos(math.radians(theta_deg))
         y = r * math.sin(math.radians(theta_deg))
         pts.append((x, y))
 
     # Polygon in build123d's XY plane (normal +Z). Extrude in +Z to
-    # height H, recenter on Z origin, then rotate so the polygon's
-    # Z-axis becomes Y. Net result: cam disc with axis along Y,
-    # spanning Y ∈ [-H/2, +H/2], with cam heading 0° at +X and cam
-    # heading 90° at +Z.
+    # height H, recenter on Z origin. Net result: cam disc with axis
+    # along Z (build123d default), spanning Z ∈ [-H/2, +H/2], with cam
+    # heading 0° at +X and cam heading 90° at +Y.
     profile = Polygon(*pts, align=None)
     body = extrude(profile, amount=TURRET_DUMP_CAM_HEIGHT)
     body = Pos(0, 0, -TURRET_DUMP_CAM_HEIGHT / 2) * body
-    body = Rot(90, 0, 0) * body
 
-    # Central Ø8.4 shaft bore (axis along ±Y).
-    body -= Rot(90, 0, 0) * Cylinder(
-        CAM_BORE_D / 2, TURRET_DUMP_CAM_HEIGHT * 3
-    )
+    # Central Ø8.4 shaft bore (axis along ±Z = build123d default).
+    body -= Cylinder(CAM_BORE_D / 2, TURRET_DUMP_CAM_HEIGHT * 3)
 
     # M3 set-screw bore at heading +45° (radial through valley region).
     # Cylinder centred at the radial midpoint between bore and outer
     # valley face; length spans bore-to-OD with a small overshoot so
     # the cylinder exits the disc on both ends (inner end pokes into
-    # the empty shaft bore).
+    # the empty shaft bore). Rot(-90, +45, 0) maps default Cylinder
+    # axis +Z onto (cos45, cos45, 0) — heading +45° in the XY plane.
     ss_radial_mid = (TURRET_DUMP_CAM_BASE_R + CAM_BORE_D / 2) / 2
     ss_length = (TURRET_DUMP_CAM_BASE_R - CAM_BORE_D / 2) + 4.0
     ss_c45 = math.sqrt(0.5)
     body -= (
-        Pos(ss_radial_mid * ss_c45, 0, ss_radial_mid * ss_c45)
-        * Rot(0, CAM_SET_SCREW_HEADING_DEG, 0)
+        Pos(ss_radial_mid * ss_c45, ss_radial_mid * ss_c45, 0)
+        * Rot(-90, CAM_SET_SCREW_HEADING_DEG, 0)
         * Cylinder(CAM_SET_SCREW_INSERT_D / 2, ss_length)
     )
 
@@ -240,12 +236,8 @@ def _shaft_stub(length: float):
     """Stock Ø8 shaft stub. Mirrors slice (b) `hub_shaft` for this
     standalone's no-interference check (sibling-to-sibling imports
     are not allowed per cad/CLAUDE.md principle 2). Caller positions
-    the stub at the rail top + extends it up to TURRET_SHAFT_TOP_Y."""
-    return (
-        Pos(0, length / 2, 0)
-        * Rot(90, 0, 0)
-        * Cylinder(TURRET_SHAFT_D / 2, length)
-    )
+    the stub at the rail top + extends it up to TURRET_SHAFT_TOP_Z."""
+    return Pos(0, 0, length / 2) * Cylinder(TURRET_SHAFT_D / 2, length)
 
 
 # --- Assembly builder --------------------------------------------------
@@ -255,31 +247,31 @@ DUMP_CAM_PART_NAME = "dump_cam"
 
 def add_turret_dump_cam(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
     """Place the dump cam centred on the hub axis at
-    TURRET_DUMP_CAM_CENTER_Y. Cam is positioned in turret-local;
+    TURRET_DUMP_CAM_CENTER_Z. Cam is positioned in turret-local;
     `base` (default: identity) is pre-multiplied to lift it into a
     parent frame (e.g. world)."""
     return a.add(
         DUMP_CAM_PART_NAME,
         dump_cam(),
         location=base * Pos(
-            TURRET_HUB_X, TURRET_DUMP_CAM_CENTER_Y, TURRET_HUB_Z
+            TURRET_HUB_X, TURRET_HUB_Y, TURRET_DUMP_CAM_CENTER_Z
         ),
     )
 
 
 # --- Standalone assembly -----------------------------------------------
 
-# Rail top at y = -210 (= TURRET_FRAME_FLOOR_Y + MEMBER/2). Shaft
-# spans rail-top up to TURRET_SHAFT_TOP_Y; duplicate the constant
+# Rail top at z = -210 (= TURRET_FRAME_FLOOR_Z + MEMBER/2). Shaft
+# spans rail-top up to TURRET_SHAFT_TOP_Z; duplicate the constant
 # locally rather than import slice (a)'s frame helpers.
-_SHAFT_BASE_Y = -210.0
-_SHAFT_LEN = TURRET_SHAFT_TOP_Y - _SHAFT_BASE_Y      # = 200
+_SHAFT_BASE_Z = -210.0
+_SHAFT_LEN = TURRET_SHAFT_TOP_Z - _SHAFT_BASE_Z      # = 200
 
 assembly = add_turret_dump_cam(Assembly())
 assembly = assembly.add(
     "hub_shaft_stub",
     _shaft_stub(length=_SHAFT_LEN),
-    location=Pos(TURRET_HUB_X, _SHAFT_BASE_Y, TURRET_HUB_Z),
+    location=Pos(TURRET_HUB_X, TURRET_HUB_Y, _SHAFT_BASE_Z),
 )
 assembly = assembly.assert_no_interference(
     DUMP_CAM_PART_NAME, "hub_shaft_stub"
@@ -288,16 +280,14 @@ assembly = assembly.assert_no_interference(
 
 if __name__ == "__main__":
     check(assembly, out="outputs")
-    # Print orientation: bottom face on build plate (+Y up). Vertical
-    # Ø8.4 bore is a clean through-hole; the horizontal set-screw
-    # bore reads as a 90° overhang on its lower half but bridges
-    # cleanly in FDM at Ø4 — same allowance taken in the slice (c)
-    # spider and platform_hinge_bearing.
+    # Print orientation: bottom face on build plate, +Z up (build123d
+    # default). Vertical Ø8.4 bore is a clean through-hole; the
+    # horizontal set-screw bore reads as a 90° overhang on its lower
+    # half but bridges cleanly in FDM at Ø4 — same allowance taken in
+    # the slice (c) spider and platform_hinge_bearing.
     inspect(
         dump_cam(),
-        method=FDM(
-            up_axis=(0, 1, 0), wall_min_mm=WALL_MIN, overhang_max_deg=90.0
-        ),
+        method=FDM(wall_min_mm=WALL_MIN, overhang_max_deg=90.0),
         out="outputs",
         name="dump_cam",
     )

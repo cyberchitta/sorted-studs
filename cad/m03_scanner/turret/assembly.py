@@ -2,7 +2,7 @@
 M03 turret — unit-internal composition + within-unit checks.
 
 Standalone composition: every turret sub-assembly placed in
-turret-local coordinates (hub axis at origin, +Y vertical, +Z toward
+turret-local coordinates (hub axis at origin, +Z vertical, +Y toward
 the back of the machine when placed in world). Plus pairwise
 `assert_no_interference` for every turret-internal part pair.
 

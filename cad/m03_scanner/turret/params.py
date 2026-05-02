@@ -3,18 +3,18 @@ M03 turret — unit-local constants.
 
 The turret is the rev-4 rotary 4-station platform stack hanging off
 its own hub axis. Its local frame uses the hub axis as the origin
-with `+Y` vertical:
+with `+Z` vertical:
 
-    origin = hub axis at the cross-rail's top face Y plane
+    origin = hub axis at the cross-rail's top face Z plane
     +X     = operator's right            (parallel to world +X)
-    +Y     = up                          (parallel to world +Y)
-    +Z     = away from operator          (parallel to world +Z)
+    +Y     = away from operator          (parallel to world +Y)
+    +Z     = up                          (parallel to world +Z)
 
-The unit is placed in world by `Pos(0, 0, -TURRET_ARM_R)` in
+The unit is placed in world by `Pos(0, -TURRET_ARM_R, 0)` in
 `../assembly.py` — pure translation, no rotation. That places hub at
-world `(0, *, -TURRET_ARM_R) = (0, *, -185)`, IMAGE platform at world
+world `(0, -TURRET_ARM_R, *) = (0, -185, *)`, IMAGE platform at world
 origin, and the four station centroids at world
-`(±R, 0, -R)` / `(0, 0, -R±R)`.
+`(±R, -R, 0)` / `(0, -R±R, 0)`.
 
 Each turret sub-assembly (`turret_frame/`, `turret_hub/`,
 `turret_arm/`, `turret_platform/`) carries its own local frame and
@@ -42,18 +42,18 @@ PLATFORM_ACRYLIC_T = 4.0
 # 4-station rotary indexed turret described in
 # `../turret_design_brief.md`. Hub axis at the unit-local origin.
 # Stations sit at distance TURRET_ARM_R from the hub on cardinal axes:
-#     IMAGE  = (0,    0, +R)   — toward world +Z (back) when placed
+#     IMAGE  = (0,    +R, 0)   — toward world +Y (back) when placed
 #     LOAD   = (+R,   0,  0)   — toward world +X (operator-right)
 #     DUMP   = (-R,   0,  0)   — toward world -X (operator-left)
-#     RETURN = (0,    0, -R)   — toward world -Z (operator-forward)
+#     RETURN = (0,    -R, 0)   — toward world -Y (operator-forward)
 #
-# All 4 platforms ride at y = 0. The camera rig's rails sit at
-# y = -220 (A/B) and y = +250 (D), so Y-separation alone keeps the
+# All 4 platforms ride at z = 0. The camera rig's rails sit at
+# z = -220 (A/B) and z = +250 (D), so Z-separation alone keeps the
 # turret swept volume clear of the rig.
 
 # Hub axis position in turret-local — origin by definition.
 TURRET_HUB_X = 0.0
-TURRET_HUB_Z = 0.0
+TURRET_HUB_Y = 0.0
 
 # Arm radius (hub axis to platform centroid). The design brief's
 # original 100–150 mm range was wrong: at radius R the inner corners
@@ -65,58 +65,58 @@ TURRET_HUB_Z = 0.0
 # = 95 mm.
 TURRET_ARM_R = 185.0
 
-# Station centroid XZ positions in turret-local (Y = 0 for all four).
-TURRET_STATION_IMAGE_XZ = (0.0, +TURRET_ARM_R)
-TURRET_STATION_LOAD_XZ = (+TURRET_ARM_R, 0.0)
-TURRET_STATION_DUMP_XZ = (-TURRET_ARM_R, 0.0)
-TURRET_STATION_RETURN_XZ = (0.0, -TURRET_ARM_R)
+# Station centroid XY positions in turret-local (Z = 0 for all four).
+TURRET_STATION_IMAGE_XY = (0.0, +TURRET_ARM_R)
+TURRET_STATION_LOAD_XY = (+TURRET_ARM_R, 0.0)
+TURRET_STATION_DUMP_XY = (-TURRET_ARM_R, 0.0)
+TURRET_STATION_RETURN_XY = (0.0, -TURRET_ARM_R)
 
 
 # --- Turret frame (slice a) --------------------------------------------
 #
-# Freestanding 2020 floor frame on the shared bench (y = -220) hosting
+# Freestanding 2020 floor frame on the shared bench (z = -220) hosting
 # the hub support and providing the M2 → M3 → M5 mechanical interface
 # (singulator at LOAD, diverter at DUMP). The back X-rail butts the
 # camera rig's rail A front face (CORNER_GAP separator) on the same
-# y = -220 bench — that boundary is asserted in the top-level
+# z = -220 bench — that boundary is asserted in the top-level
 # `../assembly.py` after the turret is placed in world.
 #
 # Topology: closed rectangle (4 perimeter rails) plus a center X-rail
-# at z = 0 (= TURRET_HUB_Z). The center rail is the mounting line
+# at y = 0 (= TURRET_HUB_Y). The center rail is the mounting line
 # shared by the hub bearing (slice b, x = 0), the singulator base
 # (LOAD, x = +TURRET_ARM_R) and the diverter base (DUMP, x =
 # -TURRET_ARM_R) — putting all three M2/M3/M5 anchors on one rail
 # keeps their mounting holes coplanar with the cross-rail's T-slot.
 
-TURRET_FRAME_FLOOR_Y = -220.0                                # shared bench
+TURRET_FRAME_FLOOR_Z = -220.0                                # shared bench
 
-# Center X-rail Z (= hub axis Z = 0 in turret-local). Hosts hub
+# Center X-rail Y (= hub axis Y = 0 in turret-local). Hosts hub
 # bearing + neighbour-module anchors on a single line.
-TURRET_FRAME_CROSS_Z = TURRET_HUB_Z                          # = 0
+TURRET_FRAME_CROSS_Y = TURRET_HUB_Y                          # = 0
 
-# Back X-rail centerline Z in turret-local. The +Z face must butt the
-# camera rig's rail A front face when placed at world Z = -ARM_R.
-# Numerical: world rail A front Z = +18.44; world placement adds
-# -ARM_R to turret-local Z, so turret-local rail A front Z = ARM_R +
+# Back X-rail centerline Y in turret-local. The +Y face must butt the
+# camera rig's rail A front face when placed at world Y = -ARM_R.
+# Numerical: world rail A front Y = +18.44; world placement adds
+# -ARM_R to turret-local Y, so turret-local rail A front Y = ARM_R +
 # 18.44; back rail back face = ARM_R + 18.44 - CORNER_GAP = ARM_R +
 # 18.14; back rail centerline = back face - MEMBER/2 = ARM_R + 8.14.
 # The top-level `../assembly.py` asserts this matches the rig's rail A.
-TURRET_FRAME_BACK_Z = TURRET_ARM_R + 8.14
+TURRET_FRAME_BACK_Y = TURRET_ARM_R + 8.14
 
-# Front X-rail centerline Z — under the RETURN station centroid
-# (turret-local (0, 0, -R)). The RETURN platform's outer edge
+# Front X-rail centerline Y — under the RETURN station centroid
+# (turret-local (0, -R, 0)). The RETURN platform's outer edge
 # cantilevers PLATFORM_ACRYLIC_SIZE/2 forward of this rail (to
-# z = -R - 90 = -275 at R = 185); accepted because the platform is
+# y = -R - 90 = -275 at R = 185); accepted because the platform is
 # light, hangs off the spider arm rather than the floor, and stopping
 # the floor here keeps the bench footprint bounded.
-TURRET_FRAME_FRONT_Z = -TURRET_ARM_R                          # = -185
+TURRET_FRAME_FRONT_Y = -TURRET_ARM_R                          # = -185
 
-# Side Z-rails X. Sits 20 mm outboard of the LOAD/DUMP centroid lines
+# Side Y-rails X. Sits 20 mm outboard of the LOAD/DUMP centroid lines
 # at x = ±TURRET_ARM_R — gives the singulator and diverter mounting
 # room on the cross-rail's outboard end without the side rail's outer
 # face crashing the swept platform footprint at LOAD/DUMP (LOAD
-# platform's outboard X face at +R+90 is at y = 0, well above the
-# y = -220 side rail).
+# platform's outboard X face at +R+90 is at z = 0, well above the
+# z = -220 side rail).
 TURRET_FRAME_SIDE_X = TURRET_ARM_R + 20.0                     # = 205
 
 
@@ -125,25 +125,25 @@ TURRET_FRAME_SIDE_X = TURRET_ARM_R + 20.0                     # = 205
 # Stock 8 mm hardened steel shaft. Selected to match 608ZZ bearing ID.
 TURRET_SHAFT_D = 8.0
 
-# Shaft top Y in world. 100 mm above the housing top face — leaves
+# Shaft top Z in world. 100 mm above the housing top face — leaves
 # room for the slice (c) arm spider to clamp around the shaft above
-# the top bearing. The camera sightline at z = -130 covers world
-# y > -29 (camera-to-brick line passes through y ≈ +60.7 at this z,
-# with a ~90 mm cone half-radius), so any structure above y ≈ -30
+# the top bearing. The camera sightline at y = -130 covers world
+# z > -29 (camera-to-brick line passes through z ≈ +60.7 at this y,
+# with a ~90 mm cone half-radius), so any structure above z ≈ -30
 # here appears in the camera frame. The slice (c) spider top is
 # flush with the shaft top, so the spider sits in the camera frame
 # corner; the classifier learns to ignore it.
-TURRET_SHAFT_TOP_Y = -10.0
+TURRET_SHAFT_TOP_Z = -10.0
 
 
 # --- Turret arm (slice c) — hinge interface ----------------------------
 #
-# Hinge pin axis Y (world). Chosen so the spider's top face sits
-# flush with the shaft top (y = -10) and the pin lies on the spider
+# Hinge pin axis Z (world). Chosen so the spider's top face sits
+# flush with the shaft top (z = -10) and the pin lies on the spider
 # centerline: top - SPIDER_HEIGHT/2 = -10 - 25/2 = -22.5. The
 # slice (d) platform's bonded hinge brackets reach from acrylic
-# underside (y = -4) down to this pin Y, ~18.5 mm tall.
-TURRET_HINGE_PIN_Y = -22.5
+# underside (z = -4) down to this pin Z, ~18.5 mm tall.
+TURRET_HINGE_PIN_Z = -22.5
 
 # Hinge pin radial offset from hub axis. The platform centroid sits
 # at TURRET_ARM_R from the hub; its hub-side edge is
@@ -173,25 +173,25 @@ TURRET_HINGE_PIN_D = 5.0
 #     slice (f2) kicker linkage maps that radial motion to the
 #     vertical lifter stroke needed for the platform tilt.
 #
-# Disc Y span: [-81, -69] (centered on TURRET_DUMP_CAM_CENTER_Y).
-# Sits between the housing top (y = -110) and the slice (c) spider
-# bottom (y = -35), leaving 29 mm below for a future drive coupling
+# Disc Z span: [-81, -69] (centered on TURRET_DUMP_CAM_CENTER_Z).
+# Sits between the housing top (z = -110) and the slice (c) spider
+# bottom (z = -35), leaving 29 mm below for a future drive coupling
 # and 34 mm above before the spider. Lobe-peak / lobe-ramp angular
 # split + the polygon discretisation are private to the sub-assembly
 # (`turret_dump_cam/assembly.py`).
 TURRET_DUMP_CAM_BASE_R = 25.0
 TURRET_DUMP_CAM_PEAK_R = 30.0
 TURRET_DUMP_CAM_HEIGHT = 12.0
-TURRET_DUMP_CAM_CENTER_Y = -75.0
-TURRET_DUMP_CAM_TOP_Y = TURRET_DUMP_CAM_CENTER_Y + TURRET_DUMP_CAM_HEIGHT / 2
-TURRET_DUMP_CAM_BOTTOM_Y = TURRET_DUMP_CAM_CENTER_Y - TURRET_DUMP_CAM_HEIGHT / 2
+TURRET_DUMP_CAM_CENTER_Z = -75.0
+TURRET_DUMP_CAM_TOP_Z = TURRET_DUMP_CAM_CENTER_Z + TURRET_DUMP_CAM_HEIGHT / 2
+TURRET_DUMP_CAM_BOTTOM_Z = TURRET_DUMP_CAM_CENTER_Z - TURRET_DUMP_CAM_HEIGHT / 2
 
 
 # --- Turret dump kicker (slice f2 — bench-mounted lever at DUMP) -------
 #
 # Bench-mounted L-lever pivoted on a printed bracket bolted to the slice
 # (a) cross-rail's top T-slot at world (x = TURRET_DUMP_KICKER_PIVOT_X,
-# z = 0). The lever's hub-end picks off the slice (f1) shaft cam's OD at
+# y = 0). The lever's hub-end picks off the slice (f1) shaft cam's OD at
 # heading 180° (the -X side, between hub and DUMP); the lever's lifter-
 # end carries a flat pad below the DUMP-station platform tab. At rest
 # (cam valley between dwells) the follower sits at radial BASE_R = 25
@@ -207,20 +207,20 @@ TURRET_DUMP_CAM_BOTTOM_Y = TURRET_DUMP_CAM_CENTER_Y - TURRET_DUMP_CAM_HEIGHT / 2
 # per-arm hinge stop and the platform tab; slice f5 integrate ties the
 # kinematics together.
 #
-# Pivot location: x between cam OD (-30) and DUMP centroid (-185), y
-# above cross-rail top (-200) and below cam Y-band ([-81, -69]). Axis
-# along ±Z so the lever rotates in the X-Y plane.
+# Pivot location: x between cam OD (-30) and DUMP centroid (-185), z
+# above cross-rail top (-200) and below cam Z-band ([-81, -69]). Axis
+# along ±Y so the lever rotates in the X-Z plane.
 TURRET_DUMP_KICKER_PIVOT_X = -110.0
-TURRET_DUMP_KICKER_PIVOT_Y = -130.0
-TURRET_DUMP_KICKER_PIVOT_Z = 0.0
+TURRET_DUMP_KICKER_PIVOT_Y = 0.0
+TURRET_DUMP_KICKER_PIVOT_Z = -130.0
 
-# Lifter pad TOP-FACE Y at rest. 17.7 mm below the slice (d) platform
-# bracket bottom (y = -27.3) — clear of the swept platform footprint at
+# Lifter pad TOP-FACE Z at rest. 17.7 mm below the slice (d) platform
+# bracket bottom (z = -27.3) — clear of the swept platform footprint at
 # any station so the lever-at-rest doesn't crash an indexing platform
 # that's not yet at DUMP. Slice f4 will hang a tab from the platform
-# underside down to this Y so peak-stroke contact lifts the platform.
-TURRET_DUMP_KICKER_LIFTER_TOP_Y = -45.0
+# underside down to this Z so peak-stroke contact lifts the platform.
+TURRET_DUMP_KICKER_LIFTER_TOP_Z = -45.0
 
 # Lifter pad X at DUMP. = -TURRET_ARM_R, directly below the DUMP-station
-# centroid in the cam-to-DUMP X-Z plane (z = 0).
+# centroid in the cam-to-DUMP X-Y plane (y = 0).
 TURRET_DUMP_KICKER_LIFTER_X = -TURRET_ARM_R                         # = -185

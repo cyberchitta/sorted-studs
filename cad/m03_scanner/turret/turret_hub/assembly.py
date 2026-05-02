@@ -4,9 +4,9 @@ M03 scanner — rev-3 turret hub (slice b of the 4-station turret).
 Standalone printed pillow-block hub housing carrying a vertical Ø8
 shaft on two 608ZZ ball bearings. Bolts to the slice (a) turret_frame
 cross-rail (top T-slot) at the hub axis (world x = TURRET_HUB_X = 0,
-z = TURRET_HUB_Z = -130). Drive coupling (motor + belt or worm) is
-deferred until shaft layout is fixed; this slice delivers the
-mechanical support, not the rotation source.
+y = TURRET_HUB_Y = -130 after world placement). Drive coupling
+(motor + belt or worm) is deferred until shaft layout is fixed; this
+slice delivers the mechanical support, not the rotation source.
 
 Members (4 total):
   * hub_housing       — printed rectangular block (HOUSING_X × HOUSING_Y
@@ -16,38 +16,40 @@ Members (4 total):
                         clearance holes spaced BOLT_SPACING_X apart along
                         the cross-rail axis. Bolts drop into the rail's
                         top T-slot (which runs along world ±X), so both
-                        sit on z = TURRET_HUB_Z (the rail centerline).
+                        sit on y = TURRET_HUB_Y (the rail centerline).
   * hub_shaft         — stock Ø8 round, axis vertical at the hub,
                         extending from the housing bottom face up to
-                        TURRET_SHAFT_TOP_Y (above the top bearing for
+                        TURRET_SHAFT_TOP_Z (above the top bearing for
                         slice (c) arm-hub attachment).
   * hub_bearing_top   — 608ZZ-equivalent annular cylinder (Ø22 OD ×
                         Ø8 ID × 7 mm) flush with the housing top face.
   * hub_bearing_bottom — same, flush with the housing bottom face.
 
 Coordinate frame = turret-local frame (matches `../params.py`):
-    origin = hub axis at the cross-rail's top face Y plane
+    origin = hub axis at the cross-rail's top face Z plane
     +X     = operator's right            (parallel to world +X)
-    +Y     = up                          (parallel to world +Y)
-    +Z     = away from operator          (parallel to world +Z)
+    +Y     = away from operator          (parallel to world +Y)
+    +Z     = up                          (parallel to world +Z)
 
 Housing bottom face sits on the cross-rail top face at
-y = TURRET_FRAME_FLOOR_Y + MEMBER/2 = -210; the hub axis runs vertical
-through turret-local (0, *, 0) by construction. Bearings press into the Ø22
-bore (tangent contact in the model, which `assert_no_interference`
-treats as zero overlap); axial retention is via shaft circlips
-(E-clips), not modelled. Shaft is captured by the bearings + circlips.
+z = TURRET_FRAME_FLOOR_Z + MEMBER/2 = -210; the hub axis runs vertical
+through turret-local (0, 0, *) by construction. Bearings press into
+the Ø22 bore (tangent contact in the model, which
+`assert_no_interference` treats as zero overlap); axial retention is
+via shaft circlips (E-clips), not modelled. Shaft is captured by the
+bearings + circlips.
 
-Print orientation: bottom face on the build plate, +Y up. The Ø22
-bearing bore is a clean vertical through-hole (no overhang); the two
-M5 bolt clearance holes likewise. No horizontal bores, no ledges —
-prints cleanly at the default 45° FDM overhang threshold.
+Print orientation: bottom face on the build plate, +Z up (build123d
+default). The Ø22 bearing bore is a clean vertical through-hole (no
+overhang); the two M5 bolt clearance holes likewise. No horizontal
+bores, no ledges — prints cleanly at the default 45° FDM overhang
+threshold.
 """
 
 import sys
 from pathlib import Path
 
-from build123d import Box, Cylinder, Pos, Rot
+from build123d import Box, Cylinder, Pos
 
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
@@ -57,12 +59,12 @@ from cad_khana.printability.methods import FDM
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from turret.params import (  # noqa: E402
-    TURRET_FRAME_CROSS_Z,
-    TURRET_FRAME_FLOOR_Y,
+    TURRET_FRAME_CROSS_Y,
+    TURRET_FRAME_FLOOR_Z,
     TURRET_HUB_X,
-    TURRET_HUB_Z,
+    TURRET_HUB_Y,
     TURRET_SHAFT_D,
-    TURRET_SHAFT_TOP_Y,
+    TURRET_SHAFT_TOP_Z,
     WALL_MIN,
 )
 
@@ -80,27 +82,27 @@ TURRET_BEARING_T = 7.0
 # dominating the print volume.
 TURRET_HUB_HOUSING_HEIGHT = 100.0
 
-# Housing top face Y in world. Cross-rail top face at y = -210
+# Housing top face Z in world. Cross-rail top face at z = -210
 # (= floor + MEMBER/2) plus housing height = -110.
-TURRET_HUB_HOUSING_TOP_Y = (
-    TURRET_FRAME_FLOOR_Y + 20.0 / 2 + TURRET_HUB_HOUSING_HEIGHT
+TURRET_HUB_HOUSING_TOP_Z = (
+    TURRET_FRAME_FLOOR_Z + 20.0 / 2 + TURRET_HUB_HOUSING_HEIGHT
 )                                                                # = -110
 
 
 # --- Cross-rail interface ----------------------------------------------
 
 MEMBER = 20.0                              # 2020 cross-rail cross-section
-RAIL_TOP_Y = TURRET_FRAME_FLOOR_Y + MEMBER / 2   # = -210
+RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2   # = -210
 
 
 # --- Housing dimensions ------------------------------------------------
 
 # X = along cross-rail (so the two T-slot bolts spread along the rail).
-# Z = across rail. Both chosen wide enough to leave ≥ WALL_MIN around
+# Y = across rail. Both chosen wide enough to leave ≥ WALL_MIN around
 # the central Ø22 bore and around each Ø5.5 bolt clearance hole.
 HOUSING_X = 60.0
-HOUSING_Y = TURRET_HUB_HOUSING_HEIGHT      # = 100
-HOUSING_Z = 50.0
+HOUSING_Y = 50.0
+HOUSING_Z = TURRET_HUB_HOUSING_HEIGHT       # = 100 (vertical)
 
 # Central bore diameter — bearing OD press fit. Modeled tangent
 # (zero radial gap); real assembly relies on FDM tolerance + light
@@ -112,9 +114,9 @@ BORE_D = TURRET_BEARING_OD
 
 # --- Bolt pattern -------------------------------------------------------
 
-# Two M5 bolts drop through the housing in -Y into the cross-rail's
+# Two M5 bolts drop through the housing in -Z into the cross-rail's
 # top T-slot. M5 clearance hole = 5.5 mm. The T-slot runs along world
-# ±X, so both bolts must sit on the rail's centerline in Z (= z = 0
+# ±X, so both bolts must sit on the rail's centerline in Y (= y = 0
 # in housing-local). Spacing must clear the central Ø22 bore on the
 # inside and the housing X-edge on the outside — both ≥ WALL_MIN.
 BOLT_HOLE_D = 5.5
@@ -125,7 +127,7 @@ _BOLT_HALF_X = BOLT_SPACING_X / 2
 # --- Shaft + bearing dimensions ----------------------------------------
 
 SHAFT_D = TURRET_SHAFT_D
-_SHAFT_LEN = TURRET_SHAFT_TOP_Y - RAIL_TOP_Y      # = 200
+_SHAFT_LEN = TURRET_SHAFT_TOP_Z - RAIL_TOP_Z      # = 200
 
 BEARING_OD = TURRET_BEARING_OD
 BEARING_ID = SHAFT_D
@@ -148,39 +150,39 @@ assert _bolt_to_edge >= WALL_MIN, (
     f"either widen HOUSING_X or shrink BOLT_SPACING_X"
 )
 
-# Bore wall to the housing X / Z edges. X is the narrower direction.
+# Bore wall to the housing X / Y edges. X is the narrower direction.
 _bore_wall_x = HOUSING_X / 2 - BORE_D / 2
 assert _bore_wall_x >= WALL_MIN, (
     f"bore-to-X-edge wall {_bore_wall_x:.2f} mm < WALL_MIN ({WALL_MIN}); "
     f"raise HOUSING_X"
 )
-_bore_wall_z = HOUSING_Z / 2 - BORE_D / 2
-assert _bore_wall_z >= WALL_MIN, (
-    f"bore-to-Z-edge wall {_bore_wall_z:.2f} mm < WALL_MIN ({WALL_MIN}); "
-    f"raise HOUSING_Z"
+_bore_wall_y = HOUSING_Y / 2 - BORE_D / 2
+assert _bore_wall_y >= WALL_MIN, (
+    f"bore-to-Y-edge wall {_bore_wall_y:.2f} mm < WALL_MIN ({WALL_MIN}); "
+    f"raise HOUSING_Y"
 )
 
-# Re-derive the world housing top Y from rail top + housing height
+# Re-derive the world housing top Z from rail top + housing height
 # and check it agrees with the params constant — guards against the
 # two drifting apart silently.
-_HOUSING_TOP_Y_DERIVED = RAIL_TOP_Y + HOUSING_Y
-assert abs(TURRET_HUB_HOUSING_TOP_Y - _HOUSING_TOP_Y_DERIVED) < 1e-6, (
-    f"TURRET_HUB_HOUSING_TOP_Y ({TURRET_HUB_HOUSING_TOP_Y}) disagrees with "
-    f"rail-top + HOUSING_Y ({_HOUSING_TOP_Y_DERIVED}); update one to match"
+_HOUSING_TOP_Z_DERIVED = RAIL_TOP_Z + HOUSING_Z
+assert abs(TURRET_HUB_HOUSING_TOP_Z - _HOUSING_TOP_Z_DERIVED) < 1e-6, (
+    f"TURRET_HUB_HOUSING_TOP_Z ({TURRET_HUB_HOUSING_TOP_Z}) disagrees with "
+    f"rail-top + HOUSING_Z ({_HOUSING_TOP_Z_DERIVED}); update one to match"
 )
 
-# The slice (a) cross-rail must run through the hub axis Z so the
-# housing centers on it. (Both should be -130 by construction.)
-assert abs(TURRET_FRAME_CROSS_Z - TURRET_HUB_Z) < 1e-6, (
-    f"cross-rail Z ({TURRET_FRAME_CROSS_Z}) ≠ hub Z ({TURRET_HUB_Z}); "
+# The slice (a) cross-rail must run through the hub axis Y so the
+# housing centers on it. (Both should be 0 by construction.)
+assert abs(TURRET_FRAME_CROSS_Y - TURRET_HUB_Y) < 1e-6, (
+    f"cross-rail Y ({TURRET_FRAME_CROSS_Y}) ≠ hub Y ({TURRET_HUB_Y}); "
     f"hub housing assumes the rail runs through the hub axis"
 )
 
 # Shaft must extend above the housing top face for slice (c) arm
 # attachment.
-assert TURRET_SHAFT_TOP_Y > _HOUSING_TOP_Y_DERIVED, (
-    f"shaft top ({TURRET_SHAFT_TOP_Y}) must sit above housing top "
-    f"({_HOUSING_TOP_Y_DERIVED}) for slice (c) arm-hub attachment"
+assert TURRET_SHAFT_TOP_Z > _HOUSING_TOP_Z_DERIVED, (
+    f"shaft top ({TURRET_SHAFT_TOP_Z}) must sit above housing top "
+    f"({_HOUSING_TOP_Z_DERIVED}) for slice (c) arm-hub attachment"
 )
 
 
@@ -198,21 +200,19 @@ def housing(
     vertical Ø22 through-bore (bearing seats top + bottom, shaft
     clearance in the middle) and two vertical M5 bolt clearance holes
     that drop into the cross-rail's top T-slot."""
-    body = Pos(0, housing_y / 2, 0) * Box(housing_x, housing_y, housing_z)
+    body = Pos(0, 0, housing_z / 2) * Box(housing_x, housing_y, housing_z)
 
-    # Central vertical through-bore (axis along ±Y).
+    # Central vertical through-bore (axis along ±Z = build123d default).
     body -= (
-        Pos(0, housing_y / 2, 0)
-        * Rot(90, 0, 0)
-        * Cylinder(bore_d / 2, housing_y * 3)
+        Pos(0, 0, housing_z / 2)
+        * Cylinder(bore_d / 2, housing_z * 3)
     )
 
-    # Two vertical M5 clearance holes (axis along ±Y).
+    # Two vertical M5 clearance holes (axis along ±Z).
     for sx in (-1, 1):
         body -= (
-            Pos(sx * bolt_half_x, housing_y / 2, 0)
-            * Rot(90, 0, 0)
-            * Cylinder(bolt_hole_d / 2, housing_y * 3)
+            Pos(sx * bolt_half_x, 0, housing_z / 2)
+            * Cylinder(bolt_hole_d / 2, housing_z * 3)
         )
 
     return body
@@ -220,13 +220,9 @@ def housing(
 
 def shaft(shaft_d: float = SHAFT_D, length: float = _SHAFT_LEN):
     """Stock Ø8 round shaft, vertical at hub axis. Origin at the
-    placement (caller positions); extends from y = 0 up to y = length
+    placement (caller positions); extends from z = 0 up to z = length
     in part-local coords."""
-    return (
-        Pos(0, length / 2, 0)
-        * Rot(90, 0, 0)
-        * Cylinder(shaft_d / 2, length)
-    )
+    return Pos(0, 0, length / 2) * Cylinder(shaft_d / 2, length)
 
 
 def bearing(
@@ -234,22 +230,22 @@ def bearing(
     bearing_id: float = BEARING_ID,
     bearing_t: float = BEARING_T,
 ):
-    """608ZZ-equivalent annular cylinder. Axis along ±Y, centered on
+    """608ZZ-equivalent annular cylinder. Axis along ±Z, centered on
     the placement origin. Stock part — modeled as an annulus to verify
     shaft-passes-through and OD-fits-bore."""
-    annulus = Rot(90, 0, 0) * Cylinder(bearing_od / 2, bearing_t)
-    annulus -= Rot(90, 0, 0) * Cylinder(bearing_id / 2, bearing_t * 3)
+    annulus = Cylinder(bearing_od / 2, bearing_t)
+    annulus -= Cylinder(bearing_id / 2, bearing_t * 3)
     return annulus
 
 
-# --- Bearing placements (housing-local Y) ------------------------------
+# --- Bearing placements (housing-local Z) ------------------------------
 
-# Top bearing: top face flush with housing top face (y = HOUSING_Y).
-# Bottom bearing: bottom face flush with housing bottom face (y = 0).
+# Top bearing: top face flush with housing top face (z = HOUSING_Z).
+# Bottom bearing: bottom face flush with housing bottom face (z = 0).
 # Cylinder is centered at its placement origin → place each at the
-# face Y minus half-thickness.
-_TOP_BEARING_Y = HOUSING_Y - BEARING_T / 2
-_BOTTOM_BEARING_Y = BEARING_T / 2
+# face Z minus half-thickness.
+_TOP_BEARING_Z = HOUSING_Z - BEARING_T / 2
+_BOTTOM_BEARING_Z = BEARING_T / 2
 
 
 # --- Assembly builder --------------------------------------------------
@@ -266,18 +262,18 @@ def add_turret_hub(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
     """Add the four turret-hub parts (housing + shaft + 2 bearings).
     Parts are positioned in turret-local coordinates; `base` (default:
     identity) is pre-multiplied to lift them into a parent frame."""
-    hub_pose = base * Pos(TURRET_HUB_X, RAIL_TOP_Y, TURRET_HUB_Z)
+    hub_pose = base * Pos(TURRET_HUB_X, TURRET_HUB_Y, RAIL_TOP_Z)
     a = a.add("hub_housing", housing(), location=hub_pose)
     a = a.add("hub_shaft", shaft(), location=hub_pose)
     a = a.add(
         "hub_bearing_top",
         bearing(),
-        location=hub_pose * Pos(0, _TOP_BEARING_Y, 0),
+        location=hub_pose * Pos(0, 0, _TOP_BEARING_Z),
     )
     a = a.add(
         "hub_bearing_bottom",
         bearing(),
-        location=hub_pose * Pos(0, _BOTTOM_BEARING_Y, 0),
+        location=hub_pose * Pos(0, 0, _BOTTOM_BEARING_Z),
     )
     return a
 
@@ -296,15 +292,12 @@ for _i, _a in enumerate(HUB_PART_NAMES):
 
 if __name__ == "__main__":
     check(assembly, out="outputs")
-    # Print orientation: bottom face on the build plate (+Y up). FDM
-    # default up_axis is +Z, so override. All bores are vertical
-    # cylinders → no overhangs to lift the threshold for; default 45°
-    # is enough.
+    # Print orientation: bottom face on the build plate, +Z up
+    # (build123d default). All bores are vertical cylinders → no
+    # overhangs to lift the threshold for; default 45° is enough.
     inspect(
         housing(),
-        method=FDM(
-            up_axis=(0, 1, 0), wall_min_mm=WALL_MIN, overhang_max_deg=45.0
-        ),
+        method=FDM(wall_min_mm=WALL_MIN, overhang_max_deg=45.0),
         out="outputs",
         name="hub_housing",
     )
