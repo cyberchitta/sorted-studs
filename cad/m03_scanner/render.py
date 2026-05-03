@@ -35,4 +35,10 @@ scene = Scene.from_assembly(detailed).with_materials(DEFAULT_OVERRIDES)
 
 
 if __name__ == "__main__":
-    render(scene, out="renders", resolution=(1920, 1080))
+    render(
+        scene,
+        out="renders",
+        resolution=(1920, 1080),
+        world_up=(0.0, 0.0, 1.0),
+        camera_direction=(1.0, -1.0, 0.7),
+    )

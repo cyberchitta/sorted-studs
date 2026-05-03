@@ -2,11 +2,16 @@
 
 Two layers compose at the call site:
 
-  * **Extrusions.** Each named 2020 straight stub is currently a solid
-    ``Box(20, 20, L)`` — the right primitive for the
-    geometric-iteration loop (interference / clearance) but visually
-    indistinguishable from MDF. ``default_detail`` swaps each for a
-    real V-slot profile from ``bd_warehouse`` at the same pose.
+  * **Extrusions.** Each named 2020 stub is currently a solid
+    ``Box(20, 20, L)`` (or a mitered-end Box for the angled braces) —
+    the right primitive for the geometric-iteration loop
+    (interference / clearance) but visually indistinguishable from
+    MDF. ``default_detail`` swaps each for a real V-slot profile
+    from ``bd_warehouse`` at the same pose. Straight rails are
+    detected from their axis-aligned bbox; mitered braces
+    (``brace_bc``, ``strut_d``) re-use the source assembly's
+    ``build_braces(body_factory=…)`` hook so the same cutters trim a
+    V-slot body identically.
   * **Fasteners.** Visible bolts at high-value joints. Currently the
     two M5 SHCS that bolt the drive bracket foot to the cross-rail's
     top T-slot. Added as new placed parts (no cheap-model counterpart).
@@ -14,11 +19,6 @@ Two layers compose at the call site:
 Use ``apply_default_detail(assembly)`` in render-time consumers — it
 runs both layers and chains the per-fastener no-interference
 assertions onto the returned assembly.
-
-Mitered braces (``brace_bc``, ``strut_d``) are excluded from the
-extrusion swap — their non-orthogonal cross-sections need a different
-build path. The cheap Box still passes every clearance check at those
-joints because V-slot 2020 is a strict subset of solid 20×20.
 
 GT2 metal pulleys (``drive_pulley_shaft``, ``drive_pulley_motor``)
 are deliberately not in the extrusion target set — they're cylindrical
@@ -48,6 +48,10 @@ from cad_khana.mechanism.assembly import Assembly, DetailOverride
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from camera_rig.skeleton_t_frame.assembly import (  # noqa: E402
+    BRACE_NAMES,
+    build_braces,
+)
 from turret.turret_drive.assembly import (  # noqa: E402
     BRACKET_BOLT_SPACING_X,
     BRACKET_FOOT_Z,
@@ -64,13 +68,21 @@ from turret.params import (  # noqa: E402
 _MEMBER = 20.0
 _AXIS_TOL = 0.5
 
-_EXTRUSION_TARGETS = frozenset(
+_STRAIGHT_EXTRUSION_TARGETS = frozenset(
     {
         "rail_a", "rail_b", "rail_c", "rail_d",
         "floor_back_x", "floor_front_x", "floor_left_y",
         "floor_right_y", "floor_cross_x",
     }
 )
+
+
+def _vslot_body(length: float) -> Part:
+    """Centred V-slot 20×20 of the requested length, oriented along
+    +Z. Matches ``_box_body`` in the source assembly so the brace
+    miter cutters apply identically.
+    """
+    return Pos(0, 0, -length / 2) * VSlotLinearRail("20x20", length=length)
 
 
 def _vslot_for_axis_aligned_box(part: Part) -> Part:
@@ -105,16 +117,23 @@ def _vslot_for_axis_aligned_box(part: Part) -> Part:
 
 
 def default_detail(assembly: Assembly) -> dict[str, Part]:
-    """Swap-only override map for the supplied assembly's straight
-    extrusions. Names in the target set that aren't present are
-    silently skipped — keeps the bundle robust to slice changes that
-    drop or rename a rail.
+    """Swap-only override map for every 2020 extrusion in the supplied
+    assembly — straight rails (axis-aligned, bbox-derived) and the
+    two mitered braces (rebuilt from the source recipe with a V-slot
+    body factory). Names absent from the assembly are silently
+    skipped, so the bundle stays robust to slice changes that drop
+    or rename a member.
     """
-    return {
-        p.name: _vslot_for_axis_aligned_box(p.part)
-        for p in assembly.parts
-        if p.name in _EXTRUSION_TARGETS
-    }
+    overrides: dict[str, Part] = {}
+    parts_by_name = {p.name: p for p in assembly.parts}
+    for name, placed in parts_by_name.items():
+        if name in _STRAIGHT_EXTRUSION_TARGETS:
+            overrides[name] = _vslot_for_axis_aligned_box(placed.part)
+    vslot_braces = build_braces(body_factory=_vslot_body)
+    for name in BRACE_NAMES:
+        if name in parts_by_name:
+            overrides[name] = vslot_braces[name]
+    return overrides
 
 
 # --- Fasteners ---------------------------------------------------------

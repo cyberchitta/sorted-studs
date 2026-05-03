@@ -100,6 +100,7 @@ Rev-3 vs rev-2 differences:
 import math
 import sys
 from pathlib import Path
+from typing import Callable
 
 from build123d import Box, Part, Pos, Rot
 
@@ -312,28 +313,42 @@ def _half_space(axis: str, plane: float) -> Part:
     raise ValueError(f"unknown axis: {axis}")
 
 
+def _box_body(length: float) -> Part:
+    """Default unmitered axial body: a centred 20×20×length Box. The
+    iteration-loop assembly uses this; ``detail_variations.py`` swaps
+    in a V-slot factory of the same outer envelope at render time."""
+    return Box(MEMBER, MEMBER, length)
+
+
 def mitered_brace_yz(
     p1: tuple[float, float, float],
     p2: tuple[float, float, float],
     cutters: list[Part],
+    body_factory: Callable[[float], Part] = _box_body,
 ) -> Part:
     """Rectangular-cross-section brace from p1 to p2 in the YZ plane
     (both endpoints at x = 0), mitered at each end by subtracting the
-    supplied half-space cutters. The unmitered box is built with
-    `_BRACE_OVERRUN` mm of extra length past each endpoint so the
-    cutters have material to remove on both sides of the attach plane.
+    supplied half-space cutters. The unmitered axial body is built
+    with `_BRACE_OVERRUN` mm of extra length past each endpoint so
+    the cutters have material to remove on both sides of the attach
+    plane.
 
     Cross-section is MEMBER × MEMBER perpendicular to the axis; the
-    box is built +Z-oriented, rotated by Rx(-tilt) to align with the
-    axis direction in the YZ plane, translated to the midpoint, then
-    cut.
+    body is built +Z-oriented (centred on the origin so the rotation
+    pivot is the brace midpoint), rotated by Rx(-tilt) to align with
+    the axis direction in the YZ plane, translated to the midpoint,
+    then cut.
+
+    ``body_factory`` lets a render-time consumer (`detail_variations`)
+    swap the cheap Box for a real V-slot profile of the same outer
+    envelope without rewriting the miter geometry.
     """
     assert abs(p1[0]) < 1e-9 and abs(p2[0]) < 1e-9, (
         "mitered_brace_yz assumes both endpoints lie on x = 0"
     )
     dy, dz = p2[1] - p1[1], p2[2] - p1[2]
     length = math.hypot(dy, dz)
-    # Axis direction in YZ plane: (dy, dz). The box is built with its
+    # Axis direction in YZ plane: (dy, dz). The body is built with its
     # long axis along +Z; rotate it into the (dy, dz) direction.
     # Rx(α) maps +Z = (0,0,1) to (0, -sin α, cos α). Solving
     # (0, -sin α, cos α) = (dy, dz)/length: sin α = -dy/length,
@@ -347,7 +362,7 @@ def mitered_brace_yz(
     brace = (
         Pos(*midpoint)
         * Rot(tilt_deg, 0, 0)
-        * Box(MEMBER, MEMBER, length + 2 * _BRACE_OVERRUN)
+        * body_factory(length + 2 * _BRACE_OVERRUN)
     )
     for c in cutters:
         brace = brace - c
@@ -368,15 +383,11 @@ _rail_d_yc = (RAIL_D_Y_FRONT + RAIL_D_Y_BACK) / 2
 _rail_d_len = RAIL_D_Y_BACK - RAIL_D_Y_FRONT
 
 
-_MEMBERS = {
-    "rail_a": rail_x(0.0, _rail_a_len, RAIL_A_Y, RAIL_A_Z),
-    "rail_b": rail_y(0.0, _rail_b_yc, _rail_b_len, RAIL_B_Z),
-    "rail_c": rail_z(0.0, RAIL_C_Y, _rail_c_zc, _rail_c_len),
-    "rail_d": rail_y(0.0, _rail_d_yc, _rail_d_len, RAIL_D_Z),
-    "brace_bc": mitered_brace_yz(
+_BRACE_RECIPES: dict[str, dict] = {
+    "brace_bc": dict(
         # Attach on rail B +Z face and rail C -Y face.
-        (0.0, BRACE_BC_ON_B_Y, RAIL_B_Z + MEMBER / 2),
-        (0.0, RAIL_C_Y - MEMBER / 2, BRACE_BC_ON_C_Z),
+        p1=(0.0, BRACE_BC_ON_B_Y, RAIL_B_Z + MEMBER / 2),
+        p2=(0.0, RAIL_C_Y - MEMBER / 2, BRACE_BC_ON_C_Z),
         cutters=[
             # Miter against rail B +Z face — CORNER_GAP clearance so
             # the boolean intersection reads a clean zero volume.
@@ -385,11 +396,11 @@ _MEMBERS = {
             _half_space("y_max", RAIL_C_Y - MEMBER / 2 - CORNER_GAP),
         ],
     ),
-    "strut_d": mitered_brace_yz(
+    "strut_d": dict(
         # Centerline reaches both rail-tip corners; four half-space
-        # cutters trim the box to fit flush within both corners.
-        (0.0, RAIL_C_Y - MEMBER / 2, RAIL_C_Z_TOP),
-        (0.0, RAIL_D_Y_FRONT, RAIL_D_Z + MEMBER / 2),
+        # cutters trim the body to fit flush within both corners.
+        p1=(0.0, RAIL_C_Y - MEMBER / 2, RAIL_C_Z_TOP),
+        p2=(0.0, RAIL_D_Y_FRONT, RAIL_D_Z + MEMBER / 2),
         cutters=[
             # Column-side corner (rail C -Y face × rail C +Z face).
             _half_space("y_max", RAIL_C_Y - MEMBER / 2 - CORNER_GAP),
@@ -399,6 +410,31 @@ _MEMBERS = {
             _half_space("y_min", RAIL_D_Y_FRONT + CORNER_GAP),
         ],
     ),
+}
+
+
+def build_braces(
+    body_factory: Callable[[float], Part] = _box_body,
+) -> dict[str, Part]:
+    """Build the two mitered braces from the recipes above. The
+    default ``_box_body`` produces the iteration-loop geometry; the
+    detail-variations layer passes a V-slot factory at render time
+    so the brace cuts re-use the same cutters with a real profile."""
+    return {
+        name: mitered_brace_yz(**recipe, body_factory=body_factory)
+        for name, recipe in _BRACE_RECIPES.items()
+    }
+
+
+BRACE_NAMES = tuple(_BRACE_RECIPES.keys())
+
+
+_MEMBERS = {
+    "rail_a": rail_x(0.0, _rail_a_len, RAIL_A_Y, RAIL_A_Z),
+    "rail_b": rail_y(0.0, _rail_b_yc, _rail_b_len, RAIL_B_Z),
+    "rail_c": rail_z(0.0, RAIL_C_Y, _rail_c_zc, _rail_c_len),
+    "rail_d": rail_y(0.0, _rail_d_yc, _rail_d_len, RAIL_D_Z),
+    **build_braces(),
 }
 
 SKELETON_T_FRAME_PART_NAMES = tuple(_MEMBERS.keys())
