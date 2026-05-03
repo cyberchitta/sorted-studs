@@ -2,9 +2,9 @@
 M03 camera rig — unit-local constants and placement helpers.
 
 The camera rig groups everything the scanner uses to image a brick at
-the brick centroid: the sparse T-frame, the camera bracket + clamp,
-and the three mirror mounts + clamps. The rig's local frame happens to
-match world (the top-level scanner places the rig at world identity);
+the brick centroid: the sparse T-frame, the merged camera clamp-bracket,
+and the three merged mirror clamp-mounts. The rig's local frame happens
+to match world (the top-level scanner places the rig at world identity);
 all coordinates here are world-equivalent.
 
     origin = brick centroid at the scan position, on the platform top face
@@ -13,9 +13,9 @@ all coordinates here are world-equivalent.
     +Z     = up
 
 Each rig sub-assembly (`skeleton_t_frame/`, `mirror_clamp_mount/`,
-`camera_bracket/`, `camera_pad_clamp/`, `frame_gusset_t/`,
-`frame_gusset_l/`) carries its own local frame and imports the
-constants below via `from camera_rig.params import …`.
+`camera_clamp_bracket/`, `frame_gusset_t/`, `frame_gusset_l/`) carries
+its own local frame and imports the constants below via
+`from camera_rig.params import …`.
 
 Position and normal values are copied from
 `docs/m03-multi-view-scanner.md` (derived in
@@ -39,10 +39,10 @@ WALL_MIN = 1.5
 # --- Camera (direct viewpoint) ------------------------------------------
 
 # Camera PCB rear face in world. This is the plane where the
-# camera_bracket's local origin lands.
+# camera_clamp_bracket's bracket-local origin lands.
 CAMERA_POS = (0.0, -226.6, 105.7)
 
-# Pure X rotation placing the camera_bracket: local +Z (lens axis) maps
+# Pure X rotation placing the camera_clamp_bracket: local +Z (lens axis) maps
 # to the unit vector from camera toward brick origin
 # ≈ (0, +cos(25°), -sin(25°)) = (0, 0.9063, -0.4226). Solving
 # `Rot(α, 0, 0) · (0, 0, 1) = (0, -sin α, cos α) = (0, cos 25°,
@@ -52,31 +52,26 @@ CAMERA_POS = (0.0, -226.6, 105.7)
 CAMERA_ROT_DEG = (-115.0, 0.0, 0.0)
 
 
-# --- Camera bracket external interface ----------------------------------
+# --- Camera clamp-bracket external interface ----------------------------
 #
-# Plate-level constants of `camera_bracket/` that the camera_pad_clamp
-# (rev-3) needs to size its mount pad and bolt pattern. Each duplicates
-# an internal constant in camera_bracket/assembly.py; change either
-# side and the top-level cross-boundary assertion catches the drift.
-
-# Square plate dimension (PLATE_W == PLATE_H in camera_bracket).
-CAMERA_BRACKET_PLATE_SIZE = 68.0
+# Plate thickness of `camera_clamp_bracket/` exposed here because
+# `CAMERA_BRACKET_BACK_CENTRE` below derives from it to position the
+# rail-D clamp directly under the plate back-face centre. Plate size +
+# PCB-mount hole spacing are no longer cross-boundary (the merged body
+# has no rev-3 corner-bolt pattern) and live private inside
+# `camera_clamp_bracket/assembly.py`.
 
 # Plate thickness along the bracket's local Z.
 CAMERA_BRACKET_PLATE_T = 5.0
 
-# Corner-bolt spacing (PLATE_W - 2·BOLT_INSET in camera_bracket, with
-# BOLT_INSET = 8.0). Same 52 mm square pattern is reused on the rev-3
-# camera pad-clamp's pad face.
-CAMERA_BRACKET_BOLT_SPACING = 52.0
-
-# Camera bracket back face centre in world. The bracket's local origin
-# sits on the PCB rear plane (CAMERA_POS); this is the same point
-# offset by PLATE_T along the bracket's local -Z (the back-face
+# Camera bracket plate back face centre in world. The bracket's local
+# origin sits on the PCB rear plane (CAMERA_POS); this is the same
+# point offset by PLATE_T along the bracket's local -Z (the back-face
 # normal), then mapped to world by Rot(CAMERA_ROT_DEG[0], 0, 0). Used
-# by RAIL_PAD_CLAMP_CAMERA_POS below. The structure of the formula
-# is unchanged from the Y-up version; only CAMERA_ROT_DEG[0]'s value
-# changes underneath.
+# by RAIL_PAD_CLAMP_CAMERA_POS below to land the clamp directly under
+# the plate-back centre so the beam runs straight up. The structure of
+# the formula is unchanged from the Y-up version; only CAMERA_ROT_DEG[0]'s
+# value changes underneath.
 _CAMERA_TILT_RAD = math.radians(CAMERA_ROT_DEG[0])
 _CAMERA_SIN_TILT = math.sin(_CAMERA_TILT_RAD)
 _CAMERA_COS_TILT = math.cos(_CAMERA_TILT_RAD)
@@ -228,7 +223,7 @@ def horizontal_x_roll_deg(normal: tuple[float, float, float]) -> float:
 # analysis in skeleton_t_frame/assembly.py.
 
 # Stock 2020 T-slot extrusion cross-section. Used here and by the
-# mirror_clamp_mount + camera_pad_clamp to match rail face Y/Z
+# mirror_clamp_mount + camera_clamp_bracket to match rail face Y/Z
 # coordinates.
 SKELETON_RAIL_MEMBER = 20.0
 
@@ -316,24 +311,24 @@ RAIL_PAD_CLAMP_BACK_UPPER_POS = (
 RAIL_PAD_CLAMP_BACK_UPPER_CLAMP_ROT = Rot(180, 90, 0)
 
 
-# --- Rev-3 camera pad-clamp placement -----------------------------------
+# --- Camera clamp-bracket placement -------------------------------------
 #
-# The rev-3 camera hangs below rail D — the Y-cantilever projecting
-# forward from the rail C ↔ D junction. The clamp grips rail D's -Z
-# (underside) face directly above the camera bracket back face centre,
-# so its beam runs straight down to the bracket pad with no Y offset.
+# The camera hangs below rail D — the Y-cantilever projecting forward
+# from the rail C ↔ D junction. The merged body's clamp grips rail D's
+# -Z (underside) face directly above the bracket plate back-face centre,
+# so its beam runs straight down to the plate with no Y offset.
 #
-# Clamp-local frame (see `camera_pad_clamp/assembly.py`):
+# Clamp-local frame (see `camera_clamp_bracket/assembly.py`):
 #     origin : centre of clamp bottom face, on rail D's -Z face,
-#              at the along-rail (Y) position of the bracket back face
+#              at the along-rail (Y) position of the plate back face
 #     +X     : along rail D long axis (= world +Y)
-#     +Y     : away from rail (downward in world; clamp body hangs in
-#              clamp +Y while gravity pulls in clamp +Y)
+#     +Y     : away from rail (downward in world; merged body extends
+#              in clamp +Y to reach the plate below the rail)
 #     +Z     : right-handed third (= world -X)
 #
 # Beam reach in clamp-local +Y is fixed by the rail D underside Z minus
-# the bracket back face Z: 240.3 - 107.81 ≈ 132.5 mm. Longer than the
-# rev-3 mirror clamps' 50–65 mm reach; rail D's height is set by
+# the plate back face Z: 240.3 - 107.81 ≈ 132.5 mm. Longer than the
+# merged mirror clamp-mounts' 50–65 mm reach; rail D's height is set by
 # clearance over the back-upper mount plate corner, so it can't be
 # pushed any closer to the camera. The strut + propped-beam architecture
 # (see `skeleton_t_frame/assembly.py`) is what keeps the cantilever
@@ -341,7 +336,7 @@ RAIL_PAD_CLAMP_BACK_UPPER_CLAMP_ROT = Rot(180, 90, 0)
 
 RAIL_PAD_CLAMP_CAMERA_POS = (
     CAMERA_BRACKET_BACK_CENTRE[0],    # x = 0 (rail D centred on YZ plane)
-    CAMERA_BRACKET_BACK_CENTRE[1],    # under bracket back face centre
+    CAMERA_BRACKET_BACK_CENTRE[1],    # under plate back face centre
     T_FRAME_RAIL_D_BOTTOM_Z,          # rail D -Z face
 )
 
