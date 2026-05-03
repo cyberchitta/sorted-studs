@@ -16,6 +16,8 @@ Each floor reuses the same sub-assemblies as `single_floor.py`:
   tall annular spider skirt that clears the floor-below's trap-open
   swing.
 - basket — `FLOOR_LAYOUT` (mixed N=6/9/12/18) replicated per floor.
+- base_floor — drive train (motor / drive shaft / motor mount) below
+  the rail datum on the base floor only.
 
 Cross-floor checks (the value the tower adds beyond `single_floor.py`):
 
@@ -42,6 +44,7 @@ from build123d import Pos, Rot
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
 
+from base_floor import assembly as _base
 from basket import assembly as _bkt
 from frame import assembly as _frame
 from params import FLOOR_H, FLOOR_LAYOUT
@@ -134,6 +137,17 @@ for idx, role in FLOOR_PLAN:
             location=fz_loc * Rot(0, 0, center_deg),
         )
 
+    # Base-floor-only: drive train (motor + drive shaft + mount) below
+    # the rail datum. Its parts live at z ∈ [-105, +5] in the floor
+    # frame — placed at fz_loc which is (0, 0, 0) for the base floor.
+    if role == "base":
+        assembly = (
+            assembly
+            .add(f"{pre}motor", _base.motor(), location=fz_loc)
+            .add(f"{pre}drive_shaft", _base.drive_shaft(), location=fz_loc)
+            .add(f"{pre}motor_mount", _base.motor_mount(), location=fz_loc)
+        )
+
 
 # --- Cross-floor checks ------------------------------------------------
 
@@ -154,6 +168,60 @@ for lower_idx in range(3):
             .assert_no_interference(f"{lower_pre}trap_open", u)
             .assert_no_interference(f"{lower_pre}column", u)
         )
+
+
+# --- Base-floor drive train cross-checks -------------------------------
+
+# Drive shaft passes coaxially up through the column-bottom stack
+# (spider hub ID ≫ shaft D, ring-bearing ID ≫ shaft D, column collar
+# square hole ≫ shaft D). Motor sits well below all frame members.
+# Motor mount sits flush with the radial-rail bottom face (tangent at
+# z = -RAIL_SIZE) and stops 1 mm short of the rail inner ends radially.
+base_pre = prefixes[0]
+shaft = f"{base_pre}drive_shaft"
+mtr = f"{base_pre}motor"
+mount = f"{base_pre}motor_mount"
+
+# Drive shaft vs base-floor column-side stack (clearance check inside
+# their respective IDs / interior cavities).
+assembly = (
+    assembly
+    .assert_no_interference(shaft, f"{base_pre}column")
+    .assert_no_interference(shaft, f"{base_pre}ring_bearing")
+    .assert_no_interference(shaft, f"{base_pre}bearing_spider")
+)
+
+# Motor body vs frame + ramp_mechanism on the base floor. Motor sits
+# at z ∈ [-105, -25], well below every other modeled part.
+for other in (
+    f"{base_pre}column",
+    f"{base_pre}ring_bearing",
+    f"{base_pre}bearing_spider",
+    f"{base_pre}ramp",
+    f"{base_pre}trap_closed",
+    f"{base_pre}trap_open",
+):
+    assembly = assembly.assert_no_interference(mtr, other)
+
+# Motor mount vs base-floor frame radials and inner hex (closest frame
+# members radially — outer hex / corner columns are ≥ 270 mm from
+# axis, well outside the mount's 89 mm reach).
+for k in range(6):
+    assembly = (
+        assembly
+        .assert_no_interference(mount, f"{base_pre}radial_{k}")
+        .assert_no_interference(mount, f"{base_pre}inner_horiz_{k}")
+    )
+
+# Motor mount vs base-floor column-side stack. All ramp_mechanism base
+# parts sit at z ≥ 0; the mount is at z ∈ [-25, -20]. Tangent contact
+# nowhere — pure z separation.
+for other in (
+    f"{base_pre}column",
+    f"{base_pre}ring_bearing",
+    f"{base_pre}bearing_spider",
+):
+    assembly = assembly.assert_no_interference(mount, other)
 
 
 if __name__ == "__main__":
