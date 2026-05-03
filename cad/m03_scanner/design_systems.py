@@ -1,54 +1,60 @@
-"""Functional-role design system for the M03 scanner.
+"""Parameterised design systems for sorted-studs.
 
-Two layers, kept separate so palette swaps don't touch the parts and
-part renames don't touch the palette:
+A "design system" is a binding from part name to color via some axis.
+The same architecture supports multiple axes — functional role,
+module, floor, sub-unit, etc. — by parameterising the axis enum and
+its per-part tagging dict.
 
-  * ``ROLE_OF`` — intrinsic. Maps every named printed / extrusion part
-    to its functional role. Hardware (steel pins, bearings, motor body),
-    optical glass, and clear acrylic map to ``None`` — they keep their
-    intrinsic material color and stay outside the design system.
-  * ``WORKSHOP`` — palette. Maps each role to a ``Color``.
-  * ``DESIGN_SYSTEM`` — the active palette binding. Re-point this to
-    swap looks; nothing in any ``assembly.py`` changes.
+Every concrete design system is a ``DesignSystem(name, tag_of, palette)``:
 
-Call sites read the active binding via ``color_of(name)``, passed
-alongside ``material=`` at each ``.add(...)``. Coverage is asserted at
-the top-level: every part in ``CAMERA_RIG_PART_NAMES + TURRET_PART_NAMES``
-must appear in ``ROLE_OF`` (``None`` allowed). Adding a part without a
-role tag fails ``khana check``.
+  * ``tag_of`` — every named printed / extrusion part maps to an axis
+    value (or ``None`` for parts outside the design system: hardware,
+    optical glass, clear acrylic).
+  * ``palette`` — each axis value maps to a ``Color``.
 
-Scope today is M03 only. M02 / M05 add their own role tags when they
-migrate; promote shared schema (``Role``, ``color_of``) to ``cad/`` when
-the second module lands.
+Today two are wired up:
+
+  * ``WORKSHOP`` — axis = functional role (what the part *does*).
+    Graphite skeleton, signal-yellow mechanism, matte-black optical
+    envelope, warm-off-white consumables.
+  * ``BAUHAUS``  — axis = module (which subsystem the part lives in).
+    Saturated primary-color wayfinding: m02 yellow, m03 red, m05 blue.
+    Today only m03 is tagged, so a Bauhaus render reads as monochrome
+    red until m02 / m05 migrate.
+
+Re-point ``DESIGN_SYSTEM`` to swap the active look. The top-level
+coverage assertion validates against ``DESIGN_SYSTEM.tag_of``, so a
+swap to a palette with missing tags fails ``khana check`` cleanly.
+
+Scope today is M03 only. M02 / M05 add their own tags to both
+``ROLE_OF`` and ``MODULE_OF`` when they migrate; promote the schema
+to ``cad/`` when the second module lands.
 """
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from enum import Enum
 
 from build123d import Color
 
 
-class Role(Enum):
-    """Functional role of a part in the machine.
+# --- Functional-role axis ---------------------------------------------
 
-    The taxonomy answers "what does this part do?", not "what does it
-    look like?". A palette decides the second question.
-    """
+class Role(Enum):
+    """Functional role of a part — what it does in the machine."""
 
     PRIMARY_STRUCTURE = "primary_structure"     # 2020 extrusions
     SECONDARY_STRUCTURE = "secondary_structure" # printed brackets / mounts
     MECHANISM = "mechanism"                     # rotating / hinged / pushing
-    OPTICAL_ENVELOPE = "optical_envelope"       # inside camera FOV (locked black)
+    OPTICAL_ENVELOPE = "optical_envelope"       # inside camera FOV
     CONSUMABLE = "consumable"                   # holds bricks; swapped often
 
 
-# --- Functional role tagging (intrinsic; shared across palettes) -------
-#
-# ``None`` means the part is outside the design system: hardware (steel,
-# motor body), optical glass (mirrors, lens, PCB), or clear acrylic.
-# Those keep their intrinsic material color from chitra-cad's catalog.
-
+# Intrinsic — what the part DOES, not how it looks. Shared across
+# every role-based palette. ``None`` means the part is outside the
+# design system (hardware, optical glass, clear acrylic) and keeps
+# its material's intrinsic color.
 ROLE_OF: dict[str, Role | None] = {
     # --- camera_rig.skeleton_t_frame (4 rails + 2 mitered braces) -----
     "rail_a": Role.PRIMARY_STRUCTURE,
@@ -87,8 +93,8 @@ ROLE_OF: dict[str, Role | None] = {
     "pin_dump": None,
     "pin_return": None,
     # --- turret.turret_platform × 4 stations × 5 sub-parts ------------
-    # acrylic stays None (clear); the printed brackets / ring / kicker
-    # tab tilt with the platform during dump → MECHANISM.
+    # Acrylic stays None (clear); printed sub-parts tilt with the
+    # platform during dump → MECHANISM.
     **{
         f"platform_{station}_{sub}": role
         for station in ("image", "load", "dump", "return")
@@ -103,51 +109,106 @@ ROLE_OF: dict[str, Role | None] = {
     # --- turret.turret_dump_cam ---------------------------------------
     "dump_cam": Role.MECHANISM,
     # --- turret.turret_dump_kicker ------------------------------------
-    "kicker_mount": Role.SECONDARY_STRUCTURE,           # bench-mounted, fixed
-    "kicker_lever": Role.MECHANISM,                     # rocks under cam
+    "kicker_mount": Role.SECONDARY_STRUCTURE,
+    "kicker_lever": Role.MECHANISM,
     "kicker_pin": None,                                 # steel
     # --- turret.turret_drive ------------------------------------------
     "drive_pulley_shaft": None,                         # GT2 pulley, hardware
     "drive_pulley_motor": None,                         # GT2 pulley, hardware
     "drive_motor": None,                                # NEMA17 cast body
-    "drive_bracket": Role.SECONDARY_STRUCTURE,          # printed L-bracket
+    "drive_bracket": Role.SECONDARY_STRUCTURE,
     # --- turret.turret_homing -----------------------------------------
-    "homing_flag": Role.MECHANISM,                      # spins with shaft
+    "homing_flag": Role.MECHANISM,
     "homing_sensor": None,                              # opto-interrupter housing
     "homing_bracket": Role.SECONDARY_STRUCTURE,
 }
 
 
-# --- Palettes ----------------------------------------------------------
+# --- Module axis ------------------------------------------------------
 
-WORKSHOP: dict[Role, Color] = {
-    Role.PRIMARY_STRUCTURE:   Color(0.18, 0.18, 0.20),  # graphite anodized
-    Role.SECONDARY_STRUCTURE: Color(0.18, 0.18, 0.20),  # graphite PLA
-    Role.MECHANISM:           Color(0.95, 0.78, 0.10),  # signal yellow
-    Role.OPTICAL_ENVELOPE:    Color(0.04, 0.04, 0.04),  # matte black (stray-light)
-    Role.CONSUMABLE:          Color(0.92, 0.90, 0.84),  # warm off-white
+class Module(Enum):
+    """Which top-level subsystem a part belongs to."""
+
+    SINGULATOR = "singulator"   # m02
+    SCANNER = "scanner"         # m03
+    DIVERTER = "diverter"       # m05
+
+
+# Every part tagged in ROLE_OF is also tagged here. Today only m03 is
+# wired, so every active entry is ``SCANNER``; m02 / m05 add their
+# parts when those modules migrate. Parts whose ROLE_OF is ``None``
+# (hardware / optical / acrylic) are also ``None`` here — design-system
+# axes share the "outside the system" set.
+MODULE_OF: dict[str, Module | None] = {
+    name: (Module.SCANNER if role is not None else None)
+    for name, role in ROLE_OF.items()
 }
 
 
-# --- Active selection --------------------------------------------------
+# --- DesignSystem -----------------------------------------------------
 
-DESIGN_SYSTEM: dict[Role, Color] = WORKSHOP
+# Type alias: the tag axis is any Enum the design system chooses (Role,
+# Module, future Floor / Unit / etc.). Python's enum hierarchy is too
+# loose to constrain this to a TypeVar cleanly, so we accept ``Enum``.
+@dataclass(frozen=True)
+class DesignSystem:
+    """A binding from part name → color via one named axis.
 
-
-def color_of(name: str) -> Color | None:
-    """Active palette's color for a named part. Returns ``None`` for
-    parts whose role is ``None`` (hardware / optical / acrylic) so the
-    placement falls back to its material's intrinsic base color.
-
-    Raises ``KeyError`` for unknown names — the top-level coverage
-    assertion catches missing tags before this would, but the explicit
-    raise here means a typo in a call site fails loudly instead of
-    silently rendering the wrong color.
+    ``tag_of`` covers every named printed / extrusion part; ``None``
+    means the part is outside the system (hardware, optical glass,
+    acrylic). ``palette`` maps each axis value to its color.
     """
-    if name not in ROLE_OF:
-        raise KeyError(
-            f"part '{name}' has no design-system role tag — add it to "
-            f"ROLE_OF in cad/m03_scanner/design_systems.py"
-        )
-    role = ROLE_OF[name]
-    return DESIGN_SYSTEM[role] if role is not None else None
+
+    name: str
+    tag_of: dict[str, Enum | None]
+    palette: dict[Enum, Color]
+
+    def color_of(self, part_name: str) -> Color | None:
+        """Active color for a named part. ``None`` falls through to the
+        material's intrinsic color. Raises ``KeyError`` for an untagged
+        part — the top-level coverage assertion catches this earlier,
+        but the explicit raise prevents silent off-palette renders.
+        """
+        if part_name not in self.tag_of:
+            raise KeyError(
+                f"part '{part_name}' has no tag in design system "
+                f"'{self.name}' — add it to the relevant tagging dict "
+                f"in cad/m03_scanner/design_systems.py"
+            )
+        tag = self.tag_of[part_name]
+        return self.palette[tag] if tag is not None else None
+
+
+# --- Palettes ---------------------------------------------------------
+
+WORKSHOP_COLORS: dict[Enum, Color] = {
+    Role.PRIMARY_STRUCTURE:   Color(0.18, 0.18, 0.20),  # graphite anodized
+    Role.SECONDARY_STRUCTURE: Color(0.18, 0.18, 0.20),  # graphite PLA
+    Role.MECHANISM:           Color(0.95, 0.78, 0.10),  # signal yellow
+    Role.OPTICAL_ENVELOPE:    Color(0.04, 0.04, 0.04),  # matte black
+    Role.CONSUMABLE:          Color(0.92, 0.90, 0.84),  # warm off-white
+}
+
+BAUHAUS_COLORS: dict[Enum, Color] = {
+    Module.SINGULATOR: Color(1.00, 0.85, 0.05),         # primary yellow
+    Module.SCANNER:    Color(0.85, 0.10, 0.10),         # primary red
+    Module.DIVERTER:   Color(0.08, 0.30, 0.75),         # primary blue
+}
+
+
+WORKSHOP = DesignSystem(name="workshop", tag_of=ROLE_OF, palette=WORKSHOP_COLORS)
+BAUHAUS = DesignSystem(name="bauhaus", tag_of=MODULE_OF, palette=BAUHAUS_COLORS)
+
+
+# --- Active selection -------------------------------------------------
+
+DESIGN_SYSTEM: DesignSystem = WORKSHOP
+
+
+def color_of(part_name: str) -> Color | None:
+    """Active design system's color for a named part.
+
+    Thin shim over ``DESIGN_SYSTEM.color_of(...)`` so call sites import
+    one symbol regardless of which palette is active.
+    """
+    return DESIGN_SYSTEM.color_of(part_name)
