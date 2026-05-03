@@ -24,15 +24,6 @@ DEFAULT_OVERRIDES: dict[str, str] = {
     # neither material yet.
     "camera_pcb": "pla_matte",
     "camera_lens": "pla_matte",
-    # Mirror glass: first-surface mirror — no mirror material in v0 table.
-    "mirror_back_upper_glass": "pla_matte",
-    "mirror_below_left_glass": "pla_matte",
-    "mirror_below_right_glass": "pla_matte",
-    # Turret platforms: clear acrylic — no transparent material in v0.
-    "platform_image_acrylic": "pla_glossy",
-    "platform_load_acrylic": "pla_glossy",
-    "platform_dump_acrylic": "pla_glossy",
-    "platform_return_acrylic": "pla_glossy",
     # Slotted opto-interrupter housing — black plastic vs generic
     # pla_matte not committed.
     "homing_sensor": "pla_matte",

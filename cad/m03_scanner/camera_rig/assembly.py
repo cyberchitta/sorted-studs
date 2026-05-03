@@ -61,6 +61,8 @@ from camera_rig.skeleton_t_frame import assembly as _skel  # noqa: E402
 
 from build123d import Rot  # noqa: E402
 
+from design_systems import color_of  # noqa: E402
+
 
 # --- Camera-rig placement constants ------------------------------------
 
@@ -142,6 +144,7 @@ def add_camera_rig(a: Assembly) -> Assembly:
             _cam_cb.clamp_bracket(mount_in_clamp=camera_mount_in_clamp),
             location=camera_clamp_loc,
             material="pla_matte",
+            color=color_of("camera_clamp_bracket"),
         )
         # camera_pcb / camera_lens material left unset — see render.py overrides.
         .add("camera_pcb", _cam_cb.camera_pcb_stub(), location=_CAMERA_LOC)
@@ -164,9 +167,12 @@ def add_camera_rig(a: Assembly) -> Assembly:
                 _mirror_cm.clamp_mount(mount_in_clamp=mount_in_clamp),
                 location=clamp_loc,
                 material="pla_matte",
+                color=color_of(f"{prefix}_clamp_mount"),
             )
-            # Glass material left unset — see render.py overrides.
-            .add(f"{prefix}_glass", _mirror_cm.mirror_stub(), location=mirror_loc)
+            .add(
+                f"{prefix}_glass", _mirror_cm.mirror_stub(),
+                location=mirror_loc, material="mirror_first_surface",
+            )
         )
     return a
 

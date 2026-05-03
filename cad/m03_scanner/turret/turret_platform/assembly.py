@@ -118,6 +118,7 @@ from turret.params import (  # noqa: E402
     TURRET_HINGE_PIN_Z,
     WALL_MIN,
 )
+from design_systems import color_of  # noqa: E402
 
 
 # --- Cartridge-local IMAGE-pose references -----------------------------
@@ -436,9 +437,8 @@ _PART_BUILDERS = {
     "kicker_tab": kicker_tab,
 }
 
-# Acrylic plate material is unsettled (chitra-cad has no transparent
-# material yet) — left unset here, render.py overrides it.
 _PART_MATERIALS = {
+    "acrylic": "acrylic_clear",
     "bracket_pos": "pla_matte",
     "bracket_neg": "pla_matte",
     "ring": "pla_matte",
@@ -467,6 +467,7 @@ def add_turret_platform(
             _PART_BUILDERS[sub_name](),
             location=base * centroid * rotation * image_loc,
             material=_PART_MATERIALS.get(sub_name),
+            color=color_of(full_name),
         )
     return a
 

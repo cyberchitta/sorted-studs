@@ -50,6 +50,7 @@ from params import (  # noqa: E402
 from camera_rig import assembly as _camera_rig  # noqa: E402
 from camera_rig.params import T_FRAME_RAIL_A_FRONT_Y  # noqa: E402
 from camera_rig.params import WALL_MIN as _RIG_WALL_MIN  # noqa: E402
+from design_systems import ROLE_OF  # noqa: E402
 from turret import assembly as _turret  # noqa: E402
 from turret.params import (  # noqa: E402
     PLATFORM_ACRYLIC_SIZE as _TURRET_ACRYLIC_SIZE,
@@ -103,6 +104,23 @@ assert abs(_TURRET_BACK_FACE_WORLD_Y - _EXPECTED_BACK_FACE_WORLD_Y) < 1e-6, (
     f"≠ rig rail A front face minus butt gap "
     f"({_EXPECTED_BACK_FACE_WORLD_Y:.4f}); update TURRET_FRAME_BACK_Y "
     f"in turret/params.py"
+)
+
+
+# --- Design-system coverage --------------------------------------------
+#
+# Every named camera-rig and turret part must appear in `ROLE_OF`
+# (`None` allowed for hardware / optical glass / acrylic — those keep
+# their material's intrinsic color). A part added without a role tag
+# fails here instead of silently rendering off-palette.
+
+_DESIGN_SYSTEM_PARTS = (
+    list(_camera_rig.CAMERA_RIG_PART_NAMES) + list(_turret.TURRET_PART_NAMES)
+)
+_untagged = [n for n in _DESIGN_SYSTEM_PARTS if n not in ROLE_OF]
+assert not _untagged, (
+    f"{len(_untagged)} m03 part(s) missing a design-system role tag in "
+    f"design_systems.py: {_untagged}"
 )
 
 

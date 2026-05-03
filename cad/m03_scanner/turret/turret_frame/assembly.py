@@ -62,6 +62,7 @@ from turret.params import (  # noqa: E402
     TURRET_FRAME_FRONT_Y,
     TURRET_FRAME_SIDE_X,
 )
+from design_systems import color_of  # noqa: E402
 
 
 # --- Member cross-section ----------------------------------------------
@@ -160,7 +161,10 @@ def add_turret_frame(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
     module-private state.
     """
     for name, part in _MEMBERS.items():
-        a = a.add(name, part, location=base, material="aluminium_anodized")
+        a = a.add(
+            name, part, location=base,
+            material="aluminium_anodized", color=color_of(name),
+        )
     return a
 
 

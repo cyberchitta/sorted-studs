@@ -117,6 +117,7 @@ from turret.params import (  # noqa: E402
     TURRET_SHAFT_TOP_Z,
     WALL_MIN,
 )
+from design_systems import color_of  # noqa: E402
 
 
 # --- Cross-rail interface (private mirror of slice a) ------------------
@@ -526,6 +527,7 @@ def add_turret_drive(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
         bracket(),
         location=base,
         material="pla_matte",
+        color=color_of("drive_bracket"),
     )
     return a
 

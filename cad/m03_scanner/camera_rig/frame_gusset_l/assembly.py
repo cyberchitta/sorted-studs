@@ -35,6 +35,7 @@ from camera_rig.params import (  # noqa: E402
     T_FRAME_RAIL_D_Z,
     WALL_MIN,
 )
+from design_systems import color_of  # noqa: E402
 
 
 # --- Parameters ---------------------------------------------------------
@@ -114,7 +115,10 @@ def add_frame_gusset_l(
     location: Location = GUSSET_LOCATION,
 ) -> Assembly:
     """Add the C/D L-junction gusset to a scanner top-level assembly."""
-    return a.add(name, gusset(), location=location, material="pla_matte")
+    return a.add(
+        name, gusset(), location=location,
+        material="pla_matte", color=color_of(name),
+    )
 
 
 # --- Assembly -----------------------------------------------------------

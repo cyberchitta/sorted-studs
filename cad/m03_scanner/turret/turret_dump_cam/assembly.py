@@ -73,6 +73,7 @@ from turret.params import (  # noqa: E402
     TURRET_SHAFT_TOP_Z,
     WALL_MIN,
 )
+from design_systems import color_of  # noqa: E402
 
 
 # --- Cam profile geometry (private to this sub-assembly) ---------------
@@ -257,6 +258,7 @@ def add_turret_dump_cam(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
             TURRET_HUB_X, TURRET_HUB_Y, TURRET_DUMP_CAM_CENTER_Z
         ),
         material="pla_matte",
+        color=color_of(DUMP_CAM_PART_NAME),
     )
 
 

@@ -67,6 +67,7 @@ from turret.params import (  # noqa: E402
     TURRET_SHAFT_TOP_Z,
     WALL_MIN,
 )
+from design_systems import color_of  # noqa: E402
 
 
 # --- Bearing + housing geometry (private to this sub-assembly) ----------
@@ -263,7 +264,10 @@ def add_turret_hub(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
     Parts are positioned in turret-local coordinates; `base` (default:
     identity) is pre-multiplied to lift them into a parent frame."""
     hub_pose = base * Pos(TURRET_HUB_X, TURRET_HUB_Y, RAIL_TOP_Z)
-    a = a.add("hub_housing", housing(), location=hub_pose, material="pla_matte")
+    a = a.add(
+        "hub_housing", housing(), location=hub_pose,
+        material="pla_matte", color=color_of("hub_housing"),
+    )
     a = a.add("hub_shaft", shaft(), location=hub_pose, material="steel")
     a = a.add(
         "hub_bearing_top",
