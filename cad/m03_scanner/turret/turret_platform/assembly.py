@@ -33,22 +33,21 @@ Members (5 total — 1 acrylic + 4 printed bonded pieces):
     slice (e)'s cam profile, a transparent silicone insert, or both.
   * kicker_tab — printed block bonded to the acrylic underside,
     positioned to sit above the slice (f2) bench-mounted lifter pad
-    when the cartridge is at the DUMP station. The slice (f2) lever
-    cantilevers from the +Y side of its bench mount, which at DUMP
-    maps to cartridge +X via Rz(+90); the lifter pad therefore lands
-    at cartridge X ∈ [+16, +28], Y ∈ [-15, +15] (cartridge-local at
-    DUMP). The tab footprint sits inside that with margin
-    (cartridge X ∈ [+18, +26], Y ∈ [-10, +10]) so the lifter has
-    overhang on all sides for misalignment. Tab bottom face at
-    cartridge Z = -43 (TAB_LIFTER_CLEARANCE_Z = 2 mm above the
+    when the cartridge is at the DUMP station. Located at the inner
+    +X corner of the platform (cart-frame X = +85, Y = -78), adjacent
+    to the +X hinge bracket — radial ≈ 115 from the brick centroid,
+    well outside the Ø172 below-mirror sightline cone (cone half-
+    radius 86 at the platform plane). Footprint 8 × 12 mm (X × Y);
+    sits inside the acrylic edge at X = +90 with 1 mm margin and
+    inboard of bracket Y face at -82 with AIR_GAP. Tab bottom face
+    at cartridge Z = -43 (TAB_LIFTER_CLEARANCE_Z = 2 mm above the
     lifter top at REST z = -45); at the cam peak the lifter rises
     and pushes the tab up, tilting the platform outer-up around its
     hinge axis so the brick slides off into the diverter. The tab
-    is necessarily inside the Ø172 below-mirror sightline cone
-    (kicker geometry forces it), accepted because it's on every
-    platform and the classifier learns to ignore the fixed feature.
-    Outboard of the hinge brackets in cartridge X (brackets ±13,
-    tab +22) and Y (brackets at y ≈ +95, tab at y = 0).
+    sits in the same camera-frame corner as the hub-side hinge
+    bracket (visible in the IMAGE platform's frame too), so the
+    visible feature set is "bracket + small adjacent block" rather
+    than an isolated mid-platform feature in clean acrylic.
 
 Coordinate frame = cartridge-local IMAGE pose:
     origin = brick centroid on platform top face
@@ -194,15 +193,20 @@ RING_BOTTOM_Z_LOCAL = BOND_GAP
 
 # --- Kicker tab dimensions (slice f4) ----------------------------------
 
-# Tab cartridge X offset. The slice (f2) lever cantilevers from the +Y
-# side of its bench mount, putting the lifter pad at turret Y ∈ [+16,
-# +28] = LEVER_Y_INSIDE / LEVER_Y_OUTSIDE. At DUMP the cartridge → turret
-# rotation Rz(+90) maps cartridge +X → turret +Y, so the lifter lives at
-# cartridge X ∈ [+16, +28]. Tab centerline at +22 puts the tab inside
-# the lifter footprint with 4 mm margin on each X side after sizing.
-TAB_X_CENTER = 22.0
-TAB_X_LEN = 8.0                # narrower than 12 mm lifter pad in X
-TAB_Y_LEN = 20.0               # narrower than 30 mm lifter pad in radial direction
+# Tab cartridge XY offset. Located at the inner +X corner of the
+# platform — outboard of the +X hinge bracket in X (bracket spans cart
+# X ∈ [+10.5, +15.5]) and inboard of the bracket's outer Y face (-82)
+# with AIR_GAP. Cart (X=+85, Y=-78) under DUMP's Rz(+90) maps to
+# turret (X=-107, Y=+85), where the slice (f2) lifter pad lands.
+# Footprint 8 × 12 mm (X × Y) — sized so the +X face clears the
+# acrylic edge at +90 with 1 mm margin, the -X face clears the
+# bracket outer X face with AIR_GAP, the +Y face clears the bracket
+# outer Y face at -82 with AIR_GAP, and the -Y face stays inside
+# the acrylic edge at -90.
+TAB_X_CENTER = 85.0
+TAB_Y_CENTER = -78.0
+TAB_X_LEN = 8.0
+TAB_Y_LEN = 12.0
 
 # Tab Z span: top BOND_GAP below acrylic underside; bottom
 # TAB_LIFTER_CLEARANCE_Z above the slice (f2) lifter pad's REST top.
@@ -276,7 +280,7 @@ assert RING_INNER >= 172.0, (
 
 # --- Kicker tab asserts ------------------------------------------------
 
-# Tab walls ≥ WALL_MIN (the box is 8 × 20 × ~38.7).
+# Tab walls ≥ WALL_MIN.
 assert TAB_X_LEN >= WALL_MIN, (
     f"tab X len {TAB_X_LEN} < WALL_MIN ({WALL_MIN})"
 )
@@ -285,34 +289,53 @@ assert TAB_Y_LEN >= WALL_MIN, (
 )
 
 # Tab footprint inside acrylic X / Y extents.
-assert TAB_X_CENTER + TAB_X_LEN / 2 <= PLATFORM_ACRYLIC_SIZE / 2, (
-    f"tab outer X face {TAB_X_CENTER + TAB_X_LEN / 2} overhangs "
-    f"acrylic edge {PLATFORM_ACRYLIC_SIZE / 2}"
+_TAB_X_OUTER = TAB_X_CENTER + TAB_X_LEN / 2
+_TAB_X_INNER = TAB_X_CENTER - TAB_X_LEN / 2
+_TAB_Y_OUTER = TAB_Y_CENTER - TAB_Y_LEN / 2          # toward -Y (more negative)
+_TAB_Y_INNER = TAB_Y_CENTER + TAB_Y_LEN / 2          # toward acrylic interior
+_ACRYLIC_HALF = PLATFORM_ACRYLIC_SIZE / 2            # = 90
+assert _TAB_X_OUTER <= _ACRYLIC_HALF, (
+    f"tab outer X face {_TAB_X_OUTER} overhangs acrylic edge "
+    f"{_ACRYLIC_HALF}"
 )
-assert TAB_Y_LEN / 2 <= PLATFORM_ACRYLIC_SIZE / 2, (
-    f"tab Y half-extent {TAB_Y_LEN / 2} overhangs acrylic edge "
-    f"{PLATFORM_ACRYLIC_SIZE / 2}"
+assert _TAB_X_INNER >= -_ACRYLIC_HALF, (
+    f"tab inner X face {_TAB_X_INNER} overhangs acrylic edge "
+    f"{-_ACRYLIC_HALF}"
+)
+assert _TAB_Y_OUTER >= -_ACRYLIC_HALF, (
+    f"tab outer Y face {_TAB_Y_OUTER} overhangs acrylic edge "
+    f"{-_ACRYLIC_HALF}"
+)
+assert _TAB_Y_INNER <= _ACRYLIC_HALF, (
+    f"tab inner Y face {_TAB_Y_INNER} overhangs acrylic edge "
+    f"{_ACRYLIC_HALF}"
 )
 
-# Tab outboard of hinge brackets in cartridge X. POS bracket spans X ∈
-# [BRACKET_POS_X - block/2, BRACKET_POS_X + block/2]; tab inboard X
-# face must sit AIR_GAP outboard of the bracket outer face.
-_TAB_INBOARD_X_FACE = TAB_X_CENTER - TAB_X_LEN / 2
-_BRACKET_POS_OUTER_X = BRACKET_POS_X_LOCAL + BRACKET_BLOCK_X / 2
-_TAB_BRACKET_X_GAP = _TAB_INBOARD_X_FACE - _BRACKET_POS_OUTER_X
-assert _TAB_BRACKET_X_GAP >= _PIN_AIR_GAP - 1e-9, (
-    f"tab inboard X face {_TAB_INBOARD_X_FACE} too close to bracket "
-    f"outer X face {_BRACKET_POS_OUTER_X} (gap "
-    f"{_TAB_BRACKET_X_GAP} < AIR_GAP {_PIN_AIR_GAP})"
+# Tab clears the +X hinge bracket. Bracket spans cart X ∈
+# [BRACKET_POS_X - BLOCK_X/2, BRACKET_POS_X + BLOCK_X/2] and
+# Y ∈ [BRACKET_Y - BLOCK_Y/2, BRACKET_Y + BLOCK_Y/2] = [-98, -82].
+# Tab is in +X / -Y of the bracket; clearance is via the AIR_GAP in
+# Y between tab inner Y face and bracket outer Y face (which is
+# the +Y direction here = closer to acrylic interior).
+_BRACKET_POS_OUTER_Y = BRACKET_Y_LOCAL + BRACKET_BLOCK_Y / 2     # = -82
+_TAB_BRACKET_Y_GAP = _TAB_Y_INNER - _BRACKET_POS_OUTER_Y
+assert _TAB_BRACKET_Y_GAP >= _PIN_AIR_GAP - 1e-9, (
+    f"tab inner Y face {_TAB_Y_INNER} too close to +X bracket outer "
+    f"Y face {_BRACKET_POS_OUTER_Y} (gap {_TAB_BRACKET_Y_GAP} < "
+    f"AIR_GAP {_PIN_AIR_GAP})"
 )
 
-# Tab Y span sits outboard of the bracket Y extent (brackets centered
-# at y = -90 in cartridge-local, span y ∈ [-98, -82]). Tab Y ∈
-# [-Y_LEN/2, +Y_LEN/2].
-_BRACKET_OUTER_Y = BRACKET_Y_LOCAL + BRACKET_BLOCK_Y / 2
-assert -TAB_Y_LEN / 2 > _BRACKET_OUTER_Y, (
-    f"tab inboard Y face {-TAB_Y_LEN / 2} ≤ bracket outer Y face "
-    f"{_BRACKET_OUTER_Y}; tab too close to brackets in Y"
+# Tab outside the Ø172 below-mirror sightline cone at the platform
+# plane. Cone radius 86 from brick centroid (cart origin); the
+# nearest tab corner to the centroid is the inner-X / inner-Y
+# corner at (TAB_X_CENTER - X/2, TAB_Y_CENTER + Y/2).
+import math as _math
+_NEAR_CORNER_R = _math.hypot(_TAB_X_INNER, _TAB_Y_INNER)
+_CONE_HALF_R = 172.0 / 2                                          # = 86
+assert _NEAR_CORNER_R > _CONE_HALF_R, (
+    f"tab nearest-to-centroid corner radial {_NEAR_CORNER_R:.2f} "
+    f"≤ Ø172 cone half-radius {_CONE_HALF_R}; tab clips the "
+    f"below-mirror sightline cone"
 )
 
 # Tab has positive height.
@@ -426,7 +449,7 @@ _IMAGE_LOCS = (
     ("bracket_pos", Pos(BRACKET_POS_X_LOCAL, BRACKET_Y_LOCAL, BRACKET_BOTTOM_Z_LOCAL)),
     ("bracket_neg", Pos(BRACKET_NEG_X_LOCAL, BRACKET_Y_LOCAL, BRACKET_BOTTOM_Z_LOCAL)),
     ("ring", Pos(0, 0, RING_BOTTOM_Z_LOCAL)),
-    ("kicker_tab", Pos(TAB_X_CENTER, 0, TAB_BOTTOM_Z_LOCAL)),
+    ("kicker_tab", Pos(TAB_X_CENTER, TAB_Y_CENTER, TAB_BOTTOM_Z_LOCAL)),
 )
 
 _PART_BUILDERS = {

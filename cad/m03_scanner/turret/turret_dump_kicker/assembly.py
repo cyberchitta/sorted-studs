@@ -1,51 +1,60 @@
 """
 M03 scanner — rev-4 turret dump kicker (slice f2 of the 4-station turret).
 
-Standalone bench-mounted L-lever pivoted on a printed bracket bolted to
-the slice (a) cross-rail's top T-slot. The lever's hub-end picks off
-the slice (f1) shaft cam at heading 180° (the -X side, between hub and
-DUMP); its lifter-end carries a flat pad below the DUMP-station
-platform. At every indexed dwell a cam lobe rotates into heading 180°
-and pushes the follower outward by 5 mm (BASE_R 25 → PEAK_R 30); the
-lever rotates around the pivot pin and the lifter pad rises to push up
-on a tab on the DUMP platform's underside, tilting the platform so the
-brick slides off into the diverter inlet below. Active-push: at rest
-(cam at valley) the lifter is retracted, so a stalled mechanism leaves
-all platforms level (no spurious dumps).
+Standalone bench-mounted 3D L-lever pivoted on a printed clevis bracket
+bolted to the slice (a) cross-rail's top T-slot. The lever's hub-end
+(in the cam plane Y=0) picks off the slice (f1) shaft cam at heading
+180° (the -X side, between hub and DUMP); a Y-cantilever then carries
+the lifter pad out to Y=+85 so the pad lands under the DUMP-station
+platform's inner +X-corner tab. At every indexed dwell a cam lobe
+rotates into heading 180° and pushes the follower outward by 5 mm
+(BASE_R 25 → PEAK_R 30); the lever rotates around the pivot pin and
+the lifter pad rises against the platform tab at DUMP, tilting the
+platform so the brick slides off into the diverter inlet below.
+Active-push: at rest (cam at valley) the lifter is retracted, so a
+stalled mechanism leaves all platforms level (no spurious dumps).
 
 This slice ships REST geometry only (cam at valley, follower at radial
 BASE_R, lifter retracted). Cam-follower kinematics under shaft rotation
-— the actual lever angle vs cam profile, follower roller geometry,
-peak-stroke contact with the platform tab — are deferred to slices
-f3/f4 (per-arm hinge stop + platform tab) and slice f5 (top-level
-integrate). Same precedent as slice f1, which shipped the cam without
-a follower: the static slice locks placement and clearances, kinematic
-verification lands when the mating parts arrive.
+— actual lever angle vs cam profile, follower roller geometry, peak-
+stroke contact with the platform tab, and verification that cam push
+rotates the lever in the direction that LIFTS the pad — are deferred
+to slices f3/f4 (per-arm hinge stop + platform tab) and slice f5
+(top-level integrate). The static slice locks placement and clearances;
+kinematic verification lands when the mating parts arrive.
 
 Members (3 total — 2 printed + 1 stock):
-  * kicker_mount  — printed bracket: foot sitting on the cross-rail's
-                    top face (z = -200) with two M5 vertical bolt-
-                    clearance holes into the rail's top T-slot, plus a
-                    pillar rising to the pivot zone with a horizontal
-                    Ø5.4 pivot-pin bore (axis along ±Y) at
-                    (TURRET_DUMP_KICKER_PIVOT_X, 0, _PIVOT_Z). Mount
-                    body lives at y ∈ [-15, +15] (centered on y = 0 so
-                    the bolt holes drill through clean foot wall).
-  * kicker_lever  — printed L-lever: hub-disc at pivot + hub arm + hub-
-                    end follower block + lifter arm + lifter pad. Lever
-                    body lives at y ∈ [+16, +28] (1 mm air gap from
-                    mount + 12 mm thick), cantilevered on the +Y side
-                    of the mount with the pivot pin spanning both.
-  * kicker_pin    — stock M5 round pin (Ø5 × 50 mm), axis along ±Y,
-                    captures the lever between the mount and a
-                    snap-ring / E-clip (not modelled).
+  * kicker_mount  — printed clevis bracket: foot sitting on the cross-
+                    rail's top face (z = -200) with two M5 vertical
+                    bolt-clearance holes into the rail's top T-slot,
+                    plus TWO pillar pieces (one at Y∈[-15,-7], one at
+                    Y∈[+7,+15]) rising to a horizontal Ø5.4 pivot-pin
+                    bore at (TURRET_DUMP_KICKER_PIVOT_X, *,
+                    PIVOT_Z). The pillar gap at Y∈[-7,+7] hosts the
+                    lever's hub disc.
+  * kicker_lever  — printed 3D L-lever: hub disc at the pivot in cam
+                    plane Y∈[-6,+6], hub-arm + hub-end block in the
+                    same Y∈[-6,+6] plane (so the cam follower roller
+                    contacts the cam OD directly, no Y-bridge), riser
+                    rising from the hub disc to a "shoulder" Z above
+                    the pillar tops, bridge-Y cantilevering in +Y to
+                    Y=+85, and a lifter beam extending in -X from the
+                    bridge-Y end to the lifter pad zone at X=-107.
+                    Top face of bridge-Y / lifter beam at Z = -45 =
+                    TURRET_DUMP_KICKER_LIFTER_TOP_Z.
+  * kicker_pin    — stock M5 round pin (Ø5), axis along ±Y, captures
+                    the lever between the two mount pillars. Pin spans
+                    pillar A outboard face to pillar B outboard face
+                    plus 1 mm overhang each side.
 
 For-standalone-only stubs (1 each, duplicated rather than sibling-
 imported per `cad/CLAUDE.md` principle 2):
-  * cross_rail_stub — 60 mm slice of the slice (a) cross-rail under the
-                      mount, for the bolt-line + foot-tangent check.
-  * cam_stub        — slice (f1) cam disc, for the lever-vs-cam clearance
-                      check at the rest position.
+  * cross_rail_stub — 80 mm slice of the slice (a) cross-rail under
+                      the mount, for the bolt-line + foot-tangent
+                      check.
+  * cam_stub        — slice (f1) cam disc, for the lever-vs-cam
+                      clearance check at the hub-end block (now in
+                      the cam plane Y=0).
 
 Coordinate frame = turret-local frame (matches `../params.py`):
     origin = hub axis at the cross-rail's top face Z plane
@@ -55,10 +64,10 @@ Coordinate frame = turret-local frame (matches `../params.py`):
 
 Print orientation (both printed parts): bottom face on the build plate,
 +Z up (build123d default). The mount has only vertical bolt holes
-(clean through-hole) and a horizontal pivot bore (Ø5.4 ceiling bridges
-fine in FDM at this diameter — same allowance as
-`platform_hinge_bearing` and the slice (c) spider). The lever has a
-horizontal pivot bore (same allowance) and no other overhangs.
+(clean through) and a horizontal pivot bore (Ø5.4 ceiling bridges fine
+in FDM at this diameter). The lever's only horizontal feature is the
+same Ø5.4 pivot bore; the rest is rectangular/cylindrical with no
+overhangs beyond 90°.
 """
 
 import math
@@ -76,13 +85,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from turret.params import (  # noqa: E402
     TURRET_DUMP_CAM_BASE_R,
-    TURRET_DUMP_CAM_BOTTOM_Z,
     TURRET_DUMP_CAM_CENTER_Z,
     TURRET_DUMP_CAM_HEIGHT,
     TURRET_DUMP_CAM_PEAK_R,
-    TURRET_DUMP_CAM_TOP_Z,
     TURRET_DUMP_KICKER_LIFTER_TOP_Z,
-    TURRET_DUMP_KICKER_LIFTER_X,
+    TURRET_DUMP_KICKER_LIFTER_TURRET_X,
+    TURRET_DUMP_KICKER_LIFTER_TURRET_Y,
     TURRET_DUMP_KICKER_PIVOT_X,
     TURRET_DUMP_KICKER_PIVOT_Y,
     TURRET_DUMP_KICKER_PIVOT_Z,
@@ -109,12 +117,14 @@ PIVOT_PIN_D = TURRET_HINGE_PIN_D                                   # = 5
 PIVOT_BORE_D = PIVOT_PIN_D + 0.4                                    # = 5.4
 
 
-# --- Mount geometry (printed bracket on cross-rail) --------------------
+# --- Mount geometry (printed clevis bracket on cross-rail) -------------
 
-# Foot dimensions (sits on rail top face). X spans along the rail so
-# both M5 bolt holes drop into the rail's top T-slot at y = 0.
+# Foot dimensions (sits on rail top face). Foot footprint matches the
+# pre-corner-move design (X_LEN=60, X∈[-140,-80] with pivot at -110)
+# so the slice (g) homing-bracket KICKER_FOOT_X_INNER mirror (= -80)
+# stays valid without coordinated update.
 MOUNT_FOOT_X = 60.0
-MOUNT_FOOT_Y = 30.0    # depth (across rail)
+MOUNT_FOOT_Y = 30.0    # depth (across rail) — full clevis width
 MOUNT_FOOT_Z = 8.0     # vertical foot height
 _MOUNT_FOOT_BOTTOM_Z = RAIL_TOP_Z                                  # = -200
 _MOUNT_FOOT_TOP_Z = _MOUNT_FOOT_BOTTOM_Z + MOUNT_FOOT_Z            # = -192
@@ -125,77 +135,121 @@ MOUNT_BOLT_HOLE_D = 5.5
 MOUNT_BOLT_SPACING_X = 35.0                                        # along rail
 _MOUNT_BOLT_HALF_X = MOUNT_BOLT_SPACING_X / 2
 
-# Pillar (rises from foot to enclose pivot bore). Centered on the foot
-# in X / Y; spans foot top up to a wall-min cap above the pivot bore.
+# Clevis pillar pieces (one each side of the lever's hub disc). Each
+# pillar is MOUNT_PILLAR_Y_THICK thick in Y, with a 1 mm air gap
+# between the pillar inner face and the lever hub disc face.
+LEVER_T = 12.0                                                     # lever Y-thickness
+_LEVER_AIR_GAP_Y = 1.0
+_LEVER_HALF_Y = LEVER_T / 2                                        # = 6
+_PILLAR_INNER_Y = _LEVER_HALF_Y + _LEVER_AIR_GAP_Y                 # = 7
+_PILLAR_OUTER_Y = MOUNT_FOOT_Y / 2                                 # = 15
+MOUNT_PILLAR_Y_THICK = _PILLAR_OUTER_Y - _PILLAR_INNER_Y           # = 8
+_PILLAR_NEG_Y_CENTER = -(_PILLAR_INNER_Y + MOUNT_PILLAR_Y_THICK / 2)
+_PILLAR_POS_Y_CENTER = +(_PILLAR_INNER_Y + MOUNT_PILLAR_Y_THICK / 2)
+
+# Pillar X / Z extents — sized to enclose the pivot bore with WALL_MIN.
 MOUNT_PILLAR_X = 25.0
-MOUNT_PILLAR_Y = MOUNT_FOOT_Y                                      # = 30 (depth)
 _MOUNT_PILLAR_BOTTOM_Z = _MOUNT_FOOT_TOP_Z                         # = -192
-_PILLAR_CAP_ABOVE_BORE = WALL_MIN + 2.0                            # = 3.5
+_PILLAR_CAP_ABOVE_BORE = WALL_MIN + 0.5                            # = 2 mm wall above bore
 _MOUNT_PILLAR_TOP_Z = (
     TURRET_DUMP_KICKER_PIVOT_Z + PIVOT_BORE_D / 2 + _PILLAR_CAP_ABOVE_BORE
-)                                                                  # ≈ -123.8
-MOUNT_PILLAR_Z = _MOUNT_PILLAR_TOP_Z - _MOUNT_PILLAR_BOTTOM_Z      # ≈ 68.2 (vertical)
+)                                                                  # ≈ -125.3
+MOUNT_PILLAR_Z = _MOUNT_PILLAR_TOP_Z - _MOUNT_PILLAR_BOTTOM_Z      # ≈ 66.7
 _MOUNT_PILLAR_CENTER_Z = (_MOUNT_PILLAR_BOTTOM_Z + _MOUNT_PILLAR_TOP_Z) / 2
 
 
-# --- Lever geometry (printed L-lever) ----------------------------------
+# --- Lever geometry (printed 3D L-lever) -------------------------------
 
-LEVER_T = 12.0                                                     # Y-thickness (depth)
-_LEVER_AIR_GAP_Y = 1.0                                             # mount→lever
-LEVER_Y_INSIDE = MOUNT_FOOT_Y / 2 + _LEVER_AIR_GAP_Y               # = +16
-LEVER_Y_OUTSIDE = LEVER_Y_INSIDE + LEVER_T                         # = +28
-LEVER_Y_CENTER = (LEVER_Y_INSIDE + LEVER_Y_OUTSIDE) / 2            # = +22
+# Lever Y range — single contiguous body in the cam plane (Y∈[-6,+6])
+# from hub disc through the riser, then cantilevering in +Y past the
+# clevis to the lifter pad at Y=+85.
+LEVER_Y_INNER = -_LEVER_HALF_Y                                     # = -6
+LEVER_Y_OUTER_AT_HUB = +_LEVER_HALF_Y                              # = +6 (at cam-plane segments)
+LEVER_Y_LIFTER = TURRET_DUMP_KICKER_LIFTER_TURRET_Y                # = +85
 
 # Hub disc (at pivot bore). OD chosen to leave WALL_MIN around bore.
 LEVER_HUB_DISC_OD = 24.0
 _LEVER_HUB_DISC_R = LEVER_HUB_DISC_OD / 2
 
-# Arm beam width (perpendicular to arm direction in X-Z plane).
+# Hub-arm beam: rectangular beam in the X-Z plane at Y∈[-6,+6] from
+# pivot to hub-end center. Width perpendicular to the arm direction in
+# the X-Z plane.
 LEVER_ARM_W = 14.0
 
-# Hub-end block (where the cam follower roller will attach in slice
-# f5). The cam material at heading 180° at REST sits inside radius
-# BASE_R = 25 from the cam axis (cam-local cross-section is the same
-# as world cross-section at REST). The lever body lives at y = +22
-# (LEVER_Y_INSIDE = +16), off the cam axis Y plane, so the hub-end's
-# inboard-inner corner at (LEVER_HUB_END_X + LEVER_HUB_END_X_LEN/2,
-# LEVER_Y_INSIDE) sees the cam profile at a heading in the cam's
-# valley region (≈ 145°, delta ≈ 35° from nearest lobe). Hub-end X is
-# pushed outboard so this corner clears BASE_R; the follower roller
-# itself bridges from the lever face down to the cam OD plane (slice
-# f5).
-LEVER_HUB_END_X = -32.0
+# Hub-end block: hosts the cam follower roller (slice f5, deferred).
+# At REST/DUMP the cam is in dwell orientation with a lobe peak at
+# heading 180° (cam OD = PEAK_R = 30 at heading 180°). The block's
+# inboard X face must clear PEAK_R + AIR_GAP. The block lives in the
+# cam plane (Y∈[-6,+6]); the cam disc Z-band [-81,-69] partially
+# overlaps the block Z range, so corner clearance is checked below.
+LEVER_HUB_END_X = -45.0
 LEVER_HUB_END_Z = TURRET_DUMP_CAM_CENTER_Z                         # = -75
 LEVER_HUB_END_X_LEN = 18.0
 LEVER_HUB_END_Z_LEN = 14.0
+_HUB_END_INBOARD_X = LEVER_HUB_END_X + LEVER_HUB_END_X_LEN / 2     # = -36
 
-# Lifter pad block (top face = LIFTER_TOP_Z at rest).
-LIFTER_PAD_X_LEN = 30.0
-LIFTER_PAD_Z_LEN = 8.0
-_LIFTER_PAD_CENTER_Z = TURRET_DUMP_KICKER_LIFTER_TOP_Z - LIFTER_PAD_Z_LEN / 2
+# Riser: vertical post from hub disc center (Z=-130) up to "shoulder"
+# Z above the pillar top, in the cam plane Y∈[-6,+6]. The shoulder
+# carries bridge-Y. Riser bottom extends down past the disc top so
+# the union with the disc is clean (no overhang gap on the disc's
+# upper sides at the riser's outer X corners).
+LEVER_RISER_X_CENTER = TURRET_DUMP_KICKER_PIVOT_X                  # = -60
+LEVER_RISER_X_LEN = 14.0
+LEVER_RISER_BOTTOM_Z = TURRET_DUMP_KICKER_PIVOT_Z                  # = -130 (disc center)
+# Shoulder Z = lifter top face minus a half pad thickness keeps the
+# riser top, bridge-Y top, and lifter pad top coplanar.
+LIFTER_BEAM_Z_LEN = 8.0                                            # = pad Z thickness
+LIFTER_BEAM_TOP_Z = TURRET_DUMP_KICKER_LIFTER_TOP_Z                # = -45
+LIFTER_BEAM_BOTTOM_Z = LIFTER_BEAM_TOP_Z - LIFTER_BEAM_Z_LEN       # = -53
+LIFTER_BEAM_CENTER_Z = (LIFTER_BEAM_TOP_Z + LIFTER_BEAM_BOTTOM_Z) / 2
+LEVER_RISER_TOP_Z = LIFTER_BEAM_TOP_Z                              # = -45
+LEVER_RISER_Z_LEN = LEVER_RISER_TOP_Z - LEVER_RISER_BOTTOM_Z       # = 85
+_LEVER_RISER_CENTER_Z = (LEVER_RISER_BOTTOM_Z + LEVER_RISER_TOP_Z) / 2
+
+# Bridge-Y: horizontal beam at the lifter Z band, extending from the
+# riser top (Y=0) in +Y to the lifter pad zone (Y=+85). Cross-section
+# in X-Z = 14 × 8 (matches riser X-extent and lifter beam Z-extent).
+BRIDGE_Y_X_LEN = LEVER_RISER_X_LEN                                 # = 14
+BRIDGE_Y_X_CENTER = LEVER_RISER_X_CENTER                           # = -60
+BRIDGE_Y_Y_START = 0.0
+BRIDGE_Y_Y_END = LEVER_Y_LIFTER                                    # = +85
+BRIDGE_Y_Y_LEN = BRIDGE_Y_Y_END - BRIDGE_Y_Y_START
+_BRIDGE_Y_Y_CENTER = (BRIDGE_Y_Y_START + BRIDGE_Y_Y_END) / 2
+
+# Lifter beam: rectangular pad block in Y∈[+77, +93] (centered on
+# Y=+85, matching the tab footprint width 8 plus 4 mm overhang each
+# side = 16 mm) and X∈[-117, -97] (pad width 20 = tab width 12 + 4 mm
+# overhang each side, centered on the lifter pad turret-X = -107).
+# The bridge-Y end (at X = LEVER_RISER_X_CENTER = -110) sits within
+# this block, so the union picks up the bridge-Y → pad transition
+# without a separate corner block.
+_LIFTER_BEAM_X_INNER = TURRET_DUMP_KICKER_LIFTER_TURRET_X + 10.0   # = -97
+_LIFTER_BEAM_X_OUTER = TURRET_DUMP_KICKER_LIFTER_TURRET_X - 10.0   # = -117
+LIFTER_BEAM_X_LEN = _LIFTER_BEAM_X_INNER - _LIFTER_BEAM_X_OUTER     # = 20
+_LIFTER_BEAM_X_CENTER = TURRET_DUMP_KICKER_LIFTER_TURRET_X         # = -107
+LIFTER_BEAM_Y_LEN = 16.0
+_LIFTER_BEAM_Y_CENTER = LEVER_Y_LIFTER                              # = +85
 
 
 # --- Pivot pin dimensions ----------------------------------------------
 
-# Spans y ∈ [-16, +29] = mount inner face minus 1 mm overhang to lever
-# outer face plus 1 mm overhang. 45 mm of stock M5 round.
+# Pin spans the clevis: from pillar A outboard face (Y=-15) to pillar
+# B outboard face (Y=+15) plus 1 mm overhang each side.
 _PIN_OVERHANG = 1.0
 _PIN_Y_INSIDE = -(MOUNT_FOOT_Y / 2) - _PIN_OVERHANG                # = -16
-_PIN_Y_OUTSIDE = LEVER_Y_OUTSIDE + _PIN_OVERHANG                   # = +29
-PIN_LENGTH = _PIN_Y_OUTSIDE - _PIN_Y_INSIDE                        # = 45
-_PIN_Y_CENTER = (_PIN_Y_INSIDE + _PIN_Y_OUTSIDE) / 2               # = +6.5
+_PIN_Y_OUTSIDE = MOUNT_FOOT_Y / 2 + _PIN_OVERHANG                  # = +16
+PIN_LENGTH = _PIN_Y_OUTSIDE - _PIN_Y_INSIDE                        # = 32
+_PIN_Y_CENTER = (_PIN_Y_INSIDE + _PIN_Y_OUTSIDE) / 2               # = 0
 
 
 # --- Sanity asserts ----------------------------------------------------
 
 # Mount: bolt-hole edge to pivot-bore edge wall (X direction). Bolt
-# holes (axis ±Z) at x = ±_MOUNT_BOLT_HALF_X = ±17.5 from pivot X.
-# Pivot bore (axis ±Y) at pivot X. Their closest approach in X-line is
-# the X-distance between bolt-hole edge (X = ±_MOUNT_BOLT_HALF_X minus
-# bolt-hole radius toward pivot) and pivot-bore edge (X = ±PIVOT_BORE_D/2).
+# holes (axis ±Z) at x = pivot ± _MOUNT_BOLT_HALF_X. Pivot bore (axis
+# ±Y) at pivot X.
 _bolt_to_bore_x = (
     _MOUNT_BOLT_HALF_X - MOUNT_BOLT_HOLE_D / 2 - PIVOT_BORE_D / 2
-)                                                                  # ≈ 12.05
+)
 assert _bolt_to_bore_x >= WALL_MIN, (
     f"bolt-hole edge to pivot-bore edge wall {_bolt_to_bore_x:.2f} mm "
     f"< WALL_MIN ({WALL_MIN}); raise MOUNT_BOLT_SPACING_X or shrink "
@@ -226,6 +280,12 @@ assert _bore_to_pillar_top >= WALL_MIN, (
     f"WALL_MIN ({WALL_MIN}); raise _PILLAR_CAP_ABOVE_BORE"
 )
 
+# Clevis pillar Y-thickness ≥ WALL_MIN.
+assert MOUNT_PILLAR_Y_THICK >= WALL_MIN, (
+    f"clevis pillar Y-thickness {MOUNT_PILLAR_Y_THICK:.2f} mm < "
+    f"WALL_MIN ({WALL_MIN}); widen MOUNT_FOOT_Y or shrink LEVER_T"
+)
+
 # Lever: hub-disc-to-bore wall.
 _disc_wall = _LEVER_HUB_DISC_R - PIVOT_BORE_D / 2
 assert _disc_wall >= WALL_MIN, (
@@ -239,8 +299,7 @@ assert _LEVER_AIR_GAP_Y > 0, (
 )
 
 # Lifter pad top Z must clear the platform underside (slice d bracket
-# bottom Z). Platform bracket bottom Z = -PLATFORM_ACRYLIC_T - BOND_GAP
-# - BRACKET_BLOCK_Z = -4 - 0.3 - 23 = -27.3.
+# bottom Z = -27.3 = -PLATFORM_ACRYLIC_T - BOND_GAP - BRACKET_BLOCK_Z).
 _PLATFORM_BRACKET_BOTTOM_Z = -27.3
 _lifter_to_platform = _PLATFORM_BRACKET_BOTTOM_Z - TURRET_DUMP_KICKER_LIFTER_TOP_Z
 assert _lifter_to_platform > 0, (
@@ -249,53 +308,80 @@ assert _lifter_to_platform > 0, (
     f"would crash the platform"
 )
 
-# Lever hub-end clears the cam OD at REST (cam at valley, BASE_R radius
-# at heading 180°). Hub-end block at (LEVER_HUB_END_X, LEVER_HUB_END_Z,
-# LEVER_Y_CENTER); its closest-to-cam-axis point is the inboard X face
-# at X = LEVER_HUB_END_X + LEVER_HUB_END_X_LEN/2 = -25 + 9 = -16. At Y
-# = LEVER_Y_INSIDE = +16, the lever's inboard corner is at radial
-# sqrt(16² + 16²) = 22.6 from cam axis — INSIDE BASE_R = 25 along the
-# unit vector to that corner. Compute the actual cam OD radius at that
-# corner's heading and check.
-_corner_x = LEVER_HUB_END_X + LEVER_HUB_END_X_LEN / 2               # = -16
-_corner_y = LEVER_Y_INSIDE                                          # = +16
-_corner_r = math.hypot(_corner_x, _corner_y)                        # ≈ 22.6
-_corner_heading_deg = math.degrees(math.atan2(_corner_y, _corner_x))
-# Cam profile (4-fold): reduce heading to delta in [0, 45].
-_delta = (_corner_heading_deg + 360.0) % 90.0
-if _delta > 45.0:
-    _delta = 90.0 - _delta
-_HALF_PEAK = 10.0                                                  # from slice f1
-_RAMP = 10.0
-if _delta <= _HALF_PEAK:
-    _cam_r = TURRET_DUMP_CAM_PEAK_R
-elif _delta <= _HALF_PEAK + _RAMP:
-    _cam_r = TURRET_DUMP_CAM_PEAK_R - (_delta - _HALF_PEAK) / _RAMP * (
-        TURRET_DUMP_CAM_PEAK_R - TURRET_DUMP_CAM_BASE_R
+# Lever hub-end block clears the cam OD at the dwell orientation (cam
+# peak at heading 180°, cam_r = PEAK_R = 30 at Y=0). Block inboard X
+# face at _HUB_END_INBOARD_X, Y∈[-LEVER_HALF_Y, +LEVER_HALF_Y]. At each
+# corner (inboard X, ±LEVER_HALF_Y) check radial > cam_r at that
+# heading.
+_HALF_PEAK_DEG = 10.0   # mirror of slice (f1) LOBE_PEAK_DEG / 2
+_RAMP_DEG = 10.0        # mirror of slice (f1) LOBE_RAMP_DEG
+
+
+def _cam_r_at(theta_deg: float) -> float:
+    delta = (theta_deg + 360.0) % 90.0
+    if delta > 45.0:
+        delta = 90.0 - delta
+    if delta <= _HALF_PEAK_DEG:
+        return TURRET_DUMP_CAM_PEAK_R
+    if delta <= _HALF_PEAK_DEG + _RAMP_DEG:
+        return TURRET_DUMP_CAM_PEAK_R - (delta - _HALF_PEAK_DEG) / _RAMP_DEG * (
+            TURRET_DUMP_CAM_PEAK_R - TURRET_DUMP_CAM_BASE_R
+        )
+    return TURRET_DUMP_CAM_BASE_R
+
+
+for _y in (-_LEVER_HALF_Y, +_LEVER_HALF_Y):
+    _r = math.hypot(_HUB_END_INBOARD_X, _y)
+    _heading_deg = math.degrees(math.atan2(_y, _HUB_END_INBOARD_X))
+    _cam_r_here = _cam_r_at(_heading_deg)
+    assert _r > _cam_r_here, (
+        f"hub-end inboard corner at ({_HUB_END_INBOARD_X}, {_y}) radial "
+        f"{_r:.2f} mm ≤ cam OD {_cam_r_here:.2f} mm at heading "
+        f"{_heading_deg:.1f}°; lever crashes the cam. Move "
+        f"LEVER_HUB_END_X further outboard or shrink LEVER_HUB_END_X_LEN."
     )
-else:
-    _cam_r = TURRET_DUMP_CAM_BASE_R
-assert _corner_r > _cam_r, (
-    f"lever hub-end inboard corner radial {_corner_r:.2f} mm ≤ cam OD "
-    f"radius {_cam_r:.2f} mm at heading {_corner_heading_deg:.1f}°; "
-    f"lever crashes the cam at REST. Move LEVER_HUB_END_X further "
-    f"outboard or shrink LEVER_HUB_END_X_LEN."
+
+
+# Lifter beam covers the tab footprint with overhang. Tab in turret-
+# local at DUMP: X∈[-113,-101], Y∈[+81,+89] (cart (X=+85, Y=-78) under
+# Rz(+90)). Lifter beam X∈[-117,-53], Y∈[+77,+93]. Tab fits inside
+# beam with ≥ 4 mm overhang.
+_TAB_TURRET_X_INNER = -101.0
+_TAB_TURRET_X_OUTER = -113.0
+_TAB_TURRET_Y_INNER = +81.0
+_TAB_TURRET_Y_OUTER = +89.0
+assert _LIFTER_BEAM_X_INNER >= _TAB_TURRET_X_INNER + 4.0, (
+    f"lifter beam X-inner {_LIFTER_BEAM_X_INNER} too close to tab "
+    f"X-inner {_TAB_TURRET_X_INNER} (overhang < 4 mm)"
+)
+assert _LIFTER_BEAM_X_OUTER <= _TAB_TURRET_X_OUTER - 4.0, (
+    f"lifter beam X-outer {_LIFTER_BEAM_X_OUTER} too close to tab "
+    f"X-outer {_TAB_TURRET_X_OUTER} (overhang < 4 mm)"
+)
+_LIFTER_BEAM_Y_INNER = _LIFTER_BEAM_Y_CENTER - LIFTER_BEAM_Y_LEN / 2
+_LIFTER_BEAM_Y_OUTER = _LIFTER_BEAM_Y_CENTER + LIFTER_BEAM_Y_LEN / 2
+assert _LIFTER_BEAM_Y_INNER <= _TAB_TURRET_Y_INNER - 4.0, (
+    f"lifter beam Y-inner {_LIFTER_BEAM_Y_INNER} too close to tab "
+    f"Y-inner {_TAB_TURRET_Y_INNER} (overhang < 4 mm)"
+)
+assert _LIFTER_BEAM_Y_OUTER >= _TAB_TURRET_Y_OUTER + 4.0, (
+    f"lifter beam Y-outer {_LIFTER_BEAM_Y_OUTER} too close to tab "
+    f"Y-outer {_TAB_TURRET_Y_OUTER} (overhang < 4 mm)"
 )
 
 
 # --- Part functions ----------------------------------------------------
 
 def kicker_mount():
-    """Printed bracket: foot + pillar with horizontal pivot bore.
-    Centered on (TURRET_DUMP_KICKER_PIVOT_X, 0, *) in turret-local;
-    bottom face on cross-rail top (z = RAIL_TOP_Z)."""
+    """Printed clevis bracket: foot + two pillars with a horizontal
+    pivot bore through both. Centered on (TURRET_DUMP_KICKER_PIVOT_X,
+    0, *) in turret-local; bottom face on cross-rail top
+    (z = RAIL_TOP_Z)."""
     foot = (
         Pos(TURRET_DUMP_KICKER_PIVOT_X, 0, _MOUNT_FOOT_CENTER_Z)
         * Box(MOUNT_FOOT_X, MOUNT_FOOT_Y, MOUNT_FOOT_Z)
     )
     # Two M5 vertical bolt clearance holes at y = 0, x = pivot ± half.
-    # Cylinder default axis +Z = vertical = correct under Z-up; no
-    # rotation needed.
     for sx in (-1, 1):
         foot -= (
             Pos(
@@ -306,15 +392,26 @@ def kicker_mount():
             * Cylinder(MOUNT_BOLT_HOLE_D / 2, MOUNT_FOOT_Z * 3)
         )
 
-    pillar = (
-        Pos(TURRET_DUMP_KICKER_PIVOT_X, 0, _MOUNT_PILLAR_CENTER_Z)
-        * Box(MOUNT_PILLAR_X, MOUNT_PILLAR_Y, MOUNT_PILLAR_Z)
+    pillar_neg = (
+        Pos(
+            TURRET_DUMP_KICKER_PIVOT_X,
+            _PILLAR_NEG_Y_CENTER,
+            _MOUNT_PILLAR_CENTER_Z,
+        )
+        * Box(MOUNT_PILLAR_X, MOUNT_PILLAR_Y_THICK, MOUNT_PILLAR_Z)
+    )
+    pillar_pos = (
+        Pos(
+            TURRET_DUMP_KICKER_PIVOT_X,
+            _PILLAR_POS_Y_CENTER,
+            _MOUNT_PILLAR_CENTER_Z,
+        )
+        * Box(MOUNT_PILLAR_X, MOUNT_PILLAR_Y_THICK, MOUNT_PILLAR_Z)
     )
 
-    body = foot + pillar
+    body = foot + pillar_neg + pillar_pos
 
-    # Pivot bore — axis along ±Y (depth direction), through the pillar.
-    # Default Cylinder axis is +Z; rotate to ±Y.
+    # Pivot bore — axis along ±Y, drilled through both pillars.
     body -= (
         Pos(
             TURRET_DUMP_KICKER_PIVOT_X,
@@ -322,32 +419,31 @@ def kicker_mount():
             TURRET_DUMP_KICKER_PIVOT_Z,
         )
         * Rot(90, 0, 0)
-        * Cylinder(PIVOT_BORE_D / 2, MOUNT_PILLAR_Y * 3)
+        * Cylinder(PIVOT_BORE_D / 2, MOUNT_FOOT_Y * 3)
     )
 
     return body
 
 
 def kicker_lever():
-    """Printed L-lever: hub disc + hub arm + hub-end block + lifter
-    arm + lifter pad. Body lives at y ∈ [LEVER_Y_INSIDE,
-    LEVER_Y_OUTSIDE], rotated in the X-Z plane around the pivot bore.
-    REST orientation: hub-end at follower-contact position (cam BASE_R
-    radius at heading 180°), lifter pad TOP face at LIFTER_TOP_Z."""
-    # Hub disc at pivot. Axis along ±Y (pivot direction). Default
-    # Cylinder axis +Z; rotate to ±Y.
+    """Printed 3D L-lever: hub disc + hub-arm + hub-end block (in cam
+    plane Y∈[-6,+6]) + riser (vertical from disc to lifter Z) +
+    bridge-Y (horizontal beam in +Y to Y=+85) + lifter beam
+    (horizontal beam in -X, top face at LIFTER_TOP_Z)."""
+    # Hub disc at pivot. Axis along ±Y.
     hub_disc = (
         Pos(
             TURRET_DUMP_KICKER_PIVOT_X,
-            LEVER_Y_CENTER,
+            0,
             TURRET_DUMP_KICKER_PIVOT_Z,
         )
         * Rot(90, 0, 0)
         * Cylinder(_LEVER_HUB_DISC_R, LEVER_T)
     )
 
-    # Hub arm: rectangular beam from pivot to hub-end center.
-    hub_arm = _arm_beam(
+    # Hub arm: rectangular beam in X-Z plane at Y=0 (centered),
+    # Y-thickness LEVER_T. Length spans pivot to hub-end center.
+    hub_arm = _hub_arm_beam(
         x0=TURRET_DUMP_KICKER_PIVOT_X,
         z0=TURRET_DUMP_KICKER_PIVOT_Z,
         x1=LEVER_HUB_END_X,
@@ -355,34 +451,40 @@ def kicker_lever():
     )
 
     hub_end_block = (
-        Pos(LEVER_HUB_END_X, LEVER_Y_CENTER, LEVER_HUB_END_Z)
+        Pos(LEVER_HUB_END_X, 0, LEVER_HUB_END_Z)
         * Box(LEVER_HUB_END_X_LEN, LEVER_T, LEVER_HUB_END_Z_LEN)
     )
 
-    # Lifter arm: rectangular beam from pivot to lifter pad center.
-    lifter_arm = _arm_beam(
-        x0=TURRET_DUMP_KICKER_PIVOT_X,
-        z0=TURRET_DUMP_KICKER_PIVOT_Z,
-        x1=TURRET_DUMP_KICKER_LIFTER_X,
-        z1=_LIFTER_PAD_CENTER_Z,
+    # Riser: vertical block from disc center up to lifter Z, in cam
+    # plane Y∈[-6,+6].
+    riser = (
+        Pos(LEVER_RISER_X_CENTER, 0, _LEVER_RISER_CENTER_Z)
+        * Box(LEVER_RISER_X_LEN, LEVER_T, LEVER_RISER_Z_LEN)
     )
 
-    lifter_pad = (
-        Pos(
-            TURRET_DUMP_KICKER_LIFTER_X,
-            LEVER_Y_CENTER,
-            _LIFTER_PAD_CENTER_Z,
-        )
-        * Box(LIFTER_PAD_X_LEN, LEVER_T, LIFTER_PAD_Z_LEN)
+    # Bridge-Y: horizontal beam at lifter Z, X-thickness 14, Y from 0
+    # to +85, Z-thickness LIFTER_BEAM_Z_LEN. Cross-section in X-Z = 14
+    # × 8; runs in Y.
+    bridge_y = (
+        Pos(BRIDGE_Y_X_CENTER, _BRIDGE_Y_Y_CENTER, LIFTER_BEAM_CENTER_Z)
+        * Box(BRIDGE_Y_X_LEN, BRIDGE_Y_Y_LEN, LIFTER_BEAM_Z_LEN)
     )
 
-    body = hub_disc + hub_arm + hub_end_block + lifter_arm + lifter_pad
+    # Lifter beam: horizontal beam at Y=+85 (centered), Y-thickness 16,
+    # X from -53 (riser inboard face) to -117 (pad outer X). Top face
+    # at LIFTER_TOP_Z.
+    lifter_beam = (
+        Pos(_LIFTER_BEAM_X_CENTER, _LIFTER_BEAM_Y_CENTER, LIFTER_BEAM_CENTER_Z)
+        * Box(LIFTER_BEAM_X_LEN, LIFTER_BEAM_Y_LEN, LIFTER_BEAM_Z_LEN)
+    )
+
+    body = hub_disc + hub_arm + hub_end_block + riser + bridge_y + lifter_beam
 
     # Pivot bore through hub disc — axis along ±Y.
     body -= (
         Pos(
             TURRET_DUMP_KICKER_PIVOT_X,
-            LEVER_Y_CENTER,
+            0,
             TURRET_DUMP_KICKER_PIVOT_Z,
         )
         * Rot(90, 0, 0)
@@ -392,11 +494,11 @@ def kicker_lever():
     return body
 
 
-def _arm_beam(x0: float, z0: float, x1: float, z1: float):
-    """Rectangular arm beam in the X-Z plane, Y-thickness LEVER_T,
-    centered at the midpoint of (x0, z0)→(x1, z1) and rotated to align
-    its long axis along that direction. Width LEVER_ARM_W
-    perpendicular to the arm in the X-Z plane.
+def _hub_arm_beam(x0: float, z0: float, x1: float, z1: float):
+    """Rectangular hub-arm beam in the X-Z plane at Y=0 (centered),
+    Y-thickness LEVER_T, centered at the midpoint of (x0, z0)→(x1, z1)
+    and rotated to align its long axis along that direction. Width
+    LEVER_ARM_W perpendicular to the arm in the X-Z plane.
 
     Box default long axis +X. Ry(α) maps +X = (1,0,0) onto
     (cos α, 0, -sin α); to land on (dx/L, 0, dz/L) we need
@@ -407,7 +509,7 @@ def _arm_beam(x0: float, z0: float, x1: float, z1: float):
     arm_len = math.hypot(dx, dz)
     arm_angle_deg = math.degrees(math.atan2(-dz, dx))
     return (
-        Pos((x0 + x1) / 2, LEVER_Y_CENTER, (z0 + z1) / 2)
+        Pos((x0 + x1) / 2, 0, (z0 + z1) / 2)
         * Rot(0, arm_angle_deg, 0)
         * Box(arm_len, LEVER_T, LEVER_ARM_W)
     )
@@ -421,10 +523,8 @@ def kicker_pin(length: float = PIN_LENGTH, d: float = PIVOT_PIN_D):
 
 # --- Stubs for the standalone (duplicated, not imported) ---------------
 
-def _cross_rail_stub(length: float = MOUNT_FOOT_X + 20.0):
-    """Slice (a) cross-rail stub under the mount. Length spans the
-    foot footprint plus a margin so the bolt-line + foot tangent
-    contact is exercised in the standalone."""
+def _cross_rail_stub(length: float = MOUNT_FOOT_X + 30.0):
+    """Slice (a) cross-rail stub under the mount."""
     return (
         Pos(TURRET_DUMP_KICKER_PIVOT_X, TURRET_FRAME_CROSS_Y, TURRET_FRAME_FLOOR_Z)
         * Box(length, MEMBER, MEMBER)
@@ -434,12 +534,11 @@ def _cross_rail_stub(length: float = MOUNT_FOOT_X + 20.0):
 def _cam_stub():
     """Slice (f1) cam disc geometry — used here only for the lever-vs-
     cam clearance check at REST. 4-lobed profile rebuilt locally per
-    cad/CLAUDE.md principle 2 (no sibling imports). The cam is pinned
-    to the dwell orientation: a lobe peak sits at heading 180° (the
-    follower face)."""
+    cad/CLAUDE.md principle 2 (no sibling imports). Cam pinned to the
+    dwell orientation: a lobe peak sits at heading 180° (the follower
+    face)."""
     from build123d import Polygon, extrude
 
-    # Profile sampling — match slice (f1)'s _radius_at.
     HALF_PEAK = 10.0
     RAMP = 10.0
     BASE_R = TURRET_DUMP_CAM_BASE_R
@@ -467,7 +566,6 @@ def _cam_stub():
     profile = Polygon(*pts, align=None)
     body = extrude(profile, amount=TURRET_DUMP_CAM_HEIGHT)
     body = Pos(0, 0, -TURRET_DUMP_CAM_HEIGHT / 2) * body
-    # Disc axis is now +Z (build123d default); no lift rotation needed.
     return Pos(0, 0, TURRET_DUMP_CAM_CENTER_Z) * body
 
 
@@ -524,13 +622,6 @@ for _i, _a in enumerate(_ALL):
 
 if __name__ == "__main__":
     check(assembly, out="outputs")
-    # Print orientation: bottom face on the build plate, +Z up
-    # (build123d default). The mount has only a vertical bolt-hole
-    # pair (clean through) and a horizontal Ø5.4 pivot bore (90°
-    # overhang at the bore ceiling bridges fine in FDM at this
-    # diameter — same allowance as platform_hinge_bearing). The lever
-    # has the same horizontal Ø5.4 pivot bore plus rectangular arms
-    # with no other overhangs.
     inspect(
         kicker_mount(),
         method=FDM(wall_min_mm=WALL_MIN, overhang_max_deg=90.0),
