@@ -1,34 +1,35 @@
 """
-M05 hex-tower — top-level diverter assembly (one generic middle floor).
+M05 hex-tower — top-level 4-floor diverter assembly.
 
-Composes the three sub-assemblies at their installed positions:
+Composes four floors with roles `[base, middle, middle, top]` stacked
+at world z = `[0, FLOOR_H, 2·FLOOR_H, 3·FLOOR_H]`. Bricks enter above
+the top floor and fall down through per-floor traps that divert them
+into the floor's baskets (or release them through to the floor below).
 
-- frame — hex rings + outer-hex vertical corner columns + vertex brackets
-- ramp_mechanism — bearing spider, ring bearing, rotating column + trap + ramp
-- basket — N angular-sector basket cells around the column
+Each floor reuses the same sub-assemblies as `single_floor.py`:
 
-and runs the interference checks that span sub-assembly boundaries.
-Per-sub-system checks stay in each sub-assembly's standalone mode;
-this file covers only the cross-boundary pairs.
+- frame — through-columns span all floors as one continuous 2020;
+  hex rings, brackets, and radial rails repeat per floor (suffixed by
+  floor index).
+- ramp_mechanism — role-dependent column-bottom stack: base sits on
+  the rail datum directly with a thin ring spider; middle/top get the
+  tall annular spider skirt that clears the floor-below's trap-open
+  swing.
+- basket — `FLOOR_LAYOUT` (mixed N=6/9/12/18) replicated per floor.
 
-Cross-boundary checks:
+Cross-floor checks (the value the tower adds beyond `single_floor.py`):
 
-- Ramp extends through the column's +X exit opening into the +X basket
-  sector → ramp vs `basket_000_06` (the N=6 basket straddling +X).
-- Baskets hang between the inner and outer hex rings → every basket
-  must clear every frame part type. The mixed floor (see
-  `params.FLOOR_LAYOUT`) breaks rotational symmetry on the basket
-  side, so all 11 baskets × 6 frame copies per part type are
-  enumerated.
-- Rotating column + bearing spider sit coaxial with the frame inner
-  hex → frame inner-hex rails must clear the column envelope and the
-  spider's saddle extents.
-- Outer hex + corner columns are radially far from the column envelope
-  (>200 mm clearance); those pairs aren't enumerated.
+- Lower floor's open-trap envelope vs upper floor's column-bottom
+  stack (column collar / ring bearing / spider hub). Replaces the
+  `lower_trap_open` stub used in `single_floor.py`.
+- Lower floor's column tube vs the same upper-floor stack — covers
+  the column-top zone (~48 mm of intrusion into the upper floor's
+  frame, since `COL_Z_TOP ≈ 268 > FLOOR_H = 220`).
 
-Trap sweep vs basket / trap vs frame are intentionally omitted: the
-trap stays inside the column envelope, and the column itself is
-already checked against the frame.
+Intra-floor pairs (basket-vs-frame, ramp-vs-basket, column-side self-
+clearance) are validated by `single_floor.py` and the standalone
+sub-assemblies; the geometry is z-translated only, so per-floor
+enumeration here would be redundant.
 """
 
 import sys
@@ -36,7 +37,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from build123d import Location, Rot
+from build123d import Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
@@ -47,127 +48,112 @@ from params import FLOOR_H, FLOOR_LAYOUT
 from ramp_mechanism import assembly as _ramp
 
 
-# --- Assembly -----------------------------------------------------------
+# --- Floor plan --------------------------------------------------------
 
-# Frame (extrusions + corner brackets) first so the frame parts exist
-# by name when the cross-boundary assertions run below.
-assembly = _frame.add_frame(Assembly())
+# (idx, role) — base at idx 0 (world z=0, the bottom). Bricks enter
+# above the top floor (idx 3, world z=3·FLOOR_H) and fall in -Z.
+FLOOR_PLAN = [
+    (0, "base"),
+    (1, "middle"),
+    (2, "middle"),
+    (3, "top"),
+]
 
-# Column-side: bearing spider, ring bearing, rotating column,
-# hinge pin + trap (closed) + fixed ramp.
-assembly = (
-    assembly
-    .add("bearing_spider", _ramp.bearing_spider())
-    .add("ring_bearing", _ramp.ring_bearing())
-    .add("column", _ramp.column())
-    .add("hinge_pin", _ramp.hinge_pin(), location=_ramp.hinge_loc)
-    .add("ramp", _ramp.ramp(), location=_ramp.ramp_loc)
-    .add(
-        "trap_closed", _ramp.trap(),
-        location=_ramp.hinge_loc * Rot(0, _ramp.TRAP_CLOSED_DEG, 0),
-    )
-    # Stand-in for the floor-below's trap at max-open (60°), mapped
-    # into this floor's frame via -FLOOR_H. Lets the single-floor
-    # model show the full steady-state stack-up before the multi-floor
-    # assembly is built.
-    .add(
-        "lower_trap_open", _ramp.trap(),
-        location=Location(
-            (_ramp.TRAP_HINGE_X, 0, _ramp.TRAP_HINGE_Z - FLOOR_H)
-        ) * Rot(0, _ramp.TRAP_OPEN_DEG, 0),
-    )
+# Through-column top z. Mirrors the single-floor default
+# (add_through_columns z_top = FLOOR_H above the floor's rail datum):
+# one extra FLOOR_H above the top floor for the brick-entry zone.
+TOP_VERT_Z = 4 * FLOOR_H
+
+
+def _floor_prefix(idx: int, role: str) -> str:
+    return f"f{idx}_{role}__"
+
+
+# --- Build -------------------------------------------------------------
+
+assembly = Assembly()
+
+# Six through-columns: one set, full-tower span. Replaces the per-
+# floor verticals from `add_frame`.
+assembly = _frame.add_through_columns(
+    assembly,
+    z_bot=-_frame.VERT_EXT_BELOW,
+    z_top=TOP_VERT_Z,
 )
 
-# Mixed-layout baskets (see params.FLOOR_LAYOUT).
-basket_names = []
-for center_deg, n_size, notches in FLOOR_LAYOUT:
-    name = f"basket_{int(round(center_deg)):03d}_{n_size:02d}"
-    basket_names.append(name)
-    assembly = assembly.add(
-        name,
-        _bkt.basket(
-            half_angle_deg=180.0 / n_size,
-            notch_left="left" in notches,
-            notch_right="right" in notches,
-            notch_middle="middle" in notches,
-        ),
-        location=Rot(0, 0, center_deg),
-    )
+# Per-floor parts.
+prefixes: list[str] = []
+for idx, role in FLOOR_PLAN:
+    pre = _floor_prefix(idx, role)
+    prefixes.append(pre)
+    fz = idx * FLOOR_H
+    fz_loc = Pos(0, 0, fz)
 
+    # Frame horizontals at this floor's rail datum.
+    assembly = _frame.add_floor_horizontals(assembly, z=fz, prefix=pre)
 
-# --- Cross-boundary checks ---------------------------------------------
-
-# Every basket vs the column-side fixed parts. lower_trap_open is a
-# stand-in for the floor below, not a physical part on this floor —
-# but it's modeled so we can assert basket walls and frame members
-# still clear it.
-for name in basket_names:
+    # Column-side: spider / ring / column / hinge pin / ramp / trap-closed.
     assembly = (
         assembly
-        .assert_no_interference(name, "column")
-        .assert_no_interference(name, "bearing_spider")
-        .assert_no_interference(name, "ring_bearing")
-        .assert_no_interference(name, "lower_trap_open")
+        .add(f"{pre}bearing_spider", _ramp.bearing_spider(role),
+             location=fz_loc)
+        .add(f"{pre}ring_bearing", _ramp.ring_bearing(role),
+             location=fz_loc)
+        .add(f"{pre}column", _ramp.column(role),
+             location=fz_loc)
+        .add(f"{pre}hinge_pin", _ramp.hinge_pin(),
+             location=fz_loc * _ramp.hinge_loc)
+        .add(f"{pre}ramp", _ramp.ramp(),
+             location=fz_loc * _ramp.ramp_loc)
+        .add(
+            f"{pre}trap_closed", _ramp.trap(),
+            location=fz_loc * _ramp.hinge_loc * Rot(0, _ramp.TRAP_CLOSED_DEG, 0),
+        )
     )
-
-# Ramp tip lands in the N=6 basket that straddles +X.
-assembly = assembly.assert_no_interference("basket_000_06", "ramp")
-
-# Every basket vs every frame copy of each part type. The frame has
-# 6-fold rotational symmetry but the mixed basket layout doesn't, so
-# every basket is checked against all six frame copies. This is also
-# the authoritative test of the notch cutouts against the real
-# outer-hex through-columns (outer_vert_k) — if a notch is missing
-# or misaligned, basket-vs-outer_vert interference fails here.
-for name in basket_names:
-    for k in range(6):
-        assembly = (
-            assembly
-            .assert_no_interference(name, f"outer_horiz_{k}")
-            .assert_no_interference(name, f"outer_vert_{k}")
-            .assert_no_interference(name, f"outer_vertex_bracket_{k}")
-            .assert_no_interference(name, f"inner_horiz_{k}")
-            .assert_no_interference(name, f"inner_vertex_bracket_{k}")
-            .assert_no_interference(name, f"radial_{k}")
+    # Trap at max-open: only needed on floors that have an upper
+    # neighbour (its envelope reaches up into that next floor's
+    # column-bottom zone). Top floor's trap-open has nothing above it
+    # to test against — skip to keep the check matrix focused.
+    if idx < 3:
+        assembly = assembly.add(
+            f"{pre}trap_open", _ramp.trap(),
+            location=fz_loc * _ramp.hinge_loc * Rot(0, _ramp.TRAP_OPEN_DEG, 0),
         )
 
-# Column-side vs inner hex + radial rails (the frame parts radially
-# closest to the column envelope). Outer hex / corner columns /
-# brackets are all ≥ 272 mm from the axis — far outside the column's
-# ~68 mm corner reach — and are omitted.
-#
-# Spider now hangs off the radial rails (saddles at azimuth (k+0.5)·60°,
-# aligned with the rail axes). The saddle grips the rail's inner end;
-# we model this as an asserted no-interference today — shape-level
-# tangent contact at the rail outer faces reads as zero clearance but
-# zero overlap volume, which passes. If the saddle is later modeled as
-# a physical clamp that closes 3D around the extrusion, expect to
-# relax this to assert_interference with a reason.
-for k in range(6):
-    inner = f"inner_horiz_{k}"
-    radial = f"radial_{k}"
-    assembly = (
-        assembly
-        .assert_no_interference("column", inner)
-        .assert_no_interference("ring_bearing", inner)
-        .assert_no_interference("bearing_spider", inner)
-        .assert_no_interference("column", radial)
-        .assert_no_interference("ring_bearing", radial)
-        .assert_no_interference("bearing_spider", radial)
-        # Lower-floor trap-open intrusion vs the frame members radially
-        # closest to the axis. Inner hex + rails sit at z ∈ [-20, 0]
-        # (top face at z=0); the intrusion sweeps up through the axis
-        # region and must clear them.
-        .assert_no_interference("lower_trap_open", inner)
-        .assert_no_interference("lower_trap_open", radial)
-    )
+    # Baskets per the mixed FLOOR_LAYOUT.
+    for center_deg, n_size, notches in FLOOR_LAYOUT:
+        bname = f"{pre}basket_{int(round(center_deg)):03d}_{n_size:02d}"
+        assembly = assembly.add(
+            bname,
+            _bkt.basket(
+                half_angle_deg=180.0 / n_size,
+                notch_left="left" in notches,
+                notch_right="right" in notches,
+                notch_middle="middle" in notches,
+            ),
+            location=fz_loc * Rot(0, 0, center_deg),
+        )
 
-# Ramp extends radially past the inner hex (tip at x≈147) but stays
-# at z ≥ 50 while the inner hex sits at z ∈ [-20, 0]. Still worth
-# asserting in case either moves.
-for k in range(6):
-    assembly = assembly.assert_no_interference("ramp", f"inner_horiz_{k}")
-    assembly = assembly.assert_no_interference("ramp", f"radial_{k}")
+
+# --- Cross-floor checks ------------------------------------------------
+
+# Adjacent-floor pairs only. Non-adjacent floors are >1·FLOOR_H apart
+# and the trap-open envelope reaches at most ~70 mm above its hinge,
+# so floor i+2 is comfortably out of range.
+for lower_idx in range(3):
+    lower_pre = prefixes[lower_idx]
+    upper_pre = prefixes[lower_idx + 1]
+    upper_stack = [
+        f"{upper_pre}column",
+        f"{upper_pre}ring_bearing",
+        f"{upper_pre}bearing_spider",
+    ]
+    for u in upper_stack:
+        assembly = (
+            assembly
+            .assert_no_interference(f"{lower_pre}trap_open", u)
+            .assert_no_interference(f"{lower_pre}column", u)
+        )
 
 
 if __name__ == "__main__":

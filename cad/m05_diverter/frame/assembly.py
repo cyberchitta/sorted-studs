@@ -137,28 +137,34 @@ def _horiz_ext(length: float) -> Part:
     return Pos(0, 0, -EXT_SIZE / 2.0) * Box(length, EXT_SIZE, EXT_SIZE)
 
 
-# Through-column: the vertical extrusion extends below z=0 far enough
-# to cover the outer-vertex bracket's below-floor body (hub bottom at
+# Through-column reach below the floor datum: enough to cover the
+# outer-vertex bracket's below-floor body (hub bottom at
 # BRACKET_Z_TOP - PLATE_T = -26) with a small clearance. In the real
-# tower each column is one continuous 2020 spanning all floors; this
-# is the per-floor slice that happens to be visible in this model.
+# tower each column is one continuous 2020 spanning all floors; in
+# the single-floor wrapper, `add_through_columns` defaults to a span
+# of [-VERT_EXT_BELOW, FLOOR_H] for the visible per-floor slice.
 VERT_EXT_BELOW = -(BRACKET_Z_TOP - OUTER_BRACKET_PLATE_T) + 10.0  # 36
 
 
-def _vert_ext(z_top: float = FLOOR_H) -> Part:
-    """2020 through-column passing through the floor datum. Extends
-    from z=-VERT_EXT_BELOW below the datum up to z=z_top above it."""
-    z_bot = -VERT_EXT_BELOW
-    length = z_top - z_bot
-    return Pos(0, 0, (z_bot + z_top) / 2.0) * Box(EXT_SIZE, EXT_SIZE, length)
+# --- Assembly builders --------------------------------------------------
 
+def add_floor_horizontals(
+    a: Assembly,
+    z: float = 0.0,
+    prefix: str = "",
+) -> Assembly:
+    """Add one floor's worth of horizontal frame members + brackets at
+    the given world z (= rail-top datum for that floor).
 
-# --- Assembly builder ---------------------------------------------------
+    Adds: outer hex (`{prefix}outer_horiz_k`), inner hex
+    (`{prefix}inner_horiz_k`), radial rails (`{prefix}radial_k`),
+    outer-vertex brackets (`{prefix}outer_vertex_bracket_k`), and
+    inner-vertex brackets (`{prefix}inner_vertex_bracket_k`).
 
-def add_frame(a: Assembly) -> Assembly:
-    """Add all frame parts (extrusions + brackets) for one generic
-    floor and return the updated assembly. Exposed so the top-level
-    diverter assembly can compose frame + ramp_mechanism + baskets."""
+    Through-columns are NOT added here — they span all floors and live
+    in `add_through_columns`.
+    """
+    z_loc = Pos(0, 0, z)
     for k in range(6):
         # Shared vertex azimuth for outer and inner hex.
         v_angle = (k + 0.5) * 60.0
@@ -167,29 +173,18 @@ def add_frame(a: Assembly) -> Assembly:
         vx_in = R_VERT_INNER * math.cos(math.radians(v_angle))
         vy_in = R_VERT_INNER * math.sin(math.radians(v_angle))
 
-        # Rotate the vertical extrusion by v_angle so one of its four
-        # faces lines up with the outer bracket's vert-arm plate
-        # (bracket local -X = world +X rotated by v_angle at V_k). The
-        # 2020's 4-fold square cross-section makes v_angle mod 90°
-        # the only thing that matters.
-        a = a.add(
-            f"outer_vert_{k}",
-            _vert_ext(FLOOR_H),
-            location=Pos(vx_out, vy_out, 0.0) * Rot(0, 0, v_angle),
-        )
-
         # Outer-vertex bracket: local +X points INWARD toward hex center.
         a = a.add(
-            f"outer_vertex_bracket_{k}",
+            f"{prefix}outer_vertex_bracket_{k}",
             outer_bracket(),
-            location=Pos(vx_out, vy_out, 0.0) * Rot(0, 0, v_angle + 180.0),
+            location=z_loc * Pos(vx_out, vy_out, 0.0) * Rot(0, 0, v_angle + 180.0),
         )
 
         # Inner-vertex bracket: same orientation convention as outer.
         a = a.add(
-            f"inner_vertex_bracket_{k}",
+            f"{prefix}inner_vertex_bracket_{k}",
             inner_bracket(),
-            location=Pos(vx_in, vy_in, 0.0) * Rot(0, 0, v_angle + 180.0),
+            location=z_loc * Pos(vx_in, vy_in, 0.0) * Rot(0, 0, v_angle + 180.0),
         )
 
         # Outer horizontal on edge k (between V_k and V_{k+1}).
@@ -198,9 +193,9 @@ def add_frame(a: Assembly) -> Assembly:
         oex = R_HEX_OUTER * math.cos(math.radians(oe_angle))
         oey = R_HEX_OUTER * math.sin(math.radians(oe_angle))
         a = a.add(
-            f"outer_horiz_{k}",
+            f"{prefix}outer_horiz_{k}",
             _horiz_ext(OUTER_HORIZ_LEN),
-            location=Pos(oex, oey, 0.0) * Rot(0, 0, oe_angle + 90.0),
+            location=z_loc * Pos(oex, oey, 0.0) * Rot(0, 0, oe_angle + 90.0),
         )
 
         # Inner horizontal on inner-hex edge k — same indexing + edge
@@ -209,9 +204,9 @@ def add_frame(a: Assembly) -> Assembly:
         iex = R_HEX_INNER * math.cos(math.radians(ie_angle))
         iey = R_HEX_INNER * math.sin(math.radians(ie_angle))
         a = a.add(
-            f"inner_horiz_{k}",
+            f"{prefix}inner_horiz_{k}",
             _horiz_ext(INNER_HORIZ_LEN),
-            location=Pos(iex, iey, 0.0) * Rot(0, 0, ie_angle + 90.0),
+            location=z_loc * Pos(iex, iey, 0.0) * Rot(0, 0, ie_angle + 90.0),
         )
 
         # Radial rail on basket boundary k (between baskets k and k+1).
@@ -222,11 +217,54 @@ def add_frame(a: Assembly) -> Assembly:
         rx = r_mid * math.cos(math.radians(r_angle))
         ry = r_mid * math.sin(math.radians(r_angle))
         a = a.add(
-            f"radial_{k}",
+            f"{prefix}radial_{k}",
             _horiz_ext(RADIAL_LEN),
-            location=Pos(rx, ry, 0.0) * Rot(0, 0, r_angle),
+            location=z_loc * Pos(rx, ry, 0.0) * Rot(0, 0, r_angle),
         )
 
+    return a
+
+
+def add_through_columns(
+    a: Assembly,
+    z_bot: float = -VERT_EXT_BELOW,
+    z_top: float = FLOOR_H,
+) -> Assembly:
+    """Add the six outer-hex vertical 2020 corner columns spanning
+    [z_bot, z_top]. Single-floor default matches the historical
+    behavior; a multi-floor tower passes the full-tower span here so
+    one continuous extrusion replaces per-floor stacks.
+
+    Names: `outer_vert_k` for k in 0..5 (no floor prefix — these are
+    global to the tower).
+    """
+    length = z_top - z_bot
+    z_center = (z_bot + z_top) / 2.0
+    column = Pos(0, 0, z_center) * Box(EXT_SIZE, EXT_SIZE, length)
+    for k in range(6):
+        v_angle = (k + 0.5) * 60.0
+        vx_out = R_VERT_OUTER * math.cos(math.radians(v_angle))
+        vy_out = R_VERT_OUTER * math.sin(math.radians(v_angle))
+        # Rotate by v_angle so one of the 2020's faces lines up with
+        # the outer bracket's vert-arm plate (bracket local -X = world
+        # +X rotated by v_angle at V_k). The 2020's 4-fold cross-
+        # section makes v_angle mod 90° the only thing that matters.
+        a = a.add(
+            f"outer_vert_{k}",
+            column,
+            location=Pos(vx_out, vy_out, 0.0) * Rot(0, 0, v_angle),
+        )
+    return a
+
+
+def add_frame(a: Assembly) -> Assembly:
+    """Single-floor convenience wrapper: one floor's horizontals at
+    z=0 plus through-columns spanning [-VERT_EXT_BELOW, FLOOR_H].
+    Multi-floor consumers should call `add_floor_horizontals` per
+    floor and `add_through_columns` once for the full tower span.
+    """
+    a = add_floor_horizontals(a, z=0.0, prefix="")
+    a = add_through_columns(a, z_bot=-VERT_EXT_BELOW, z_top=FLOOR_H)
     return a
 
 

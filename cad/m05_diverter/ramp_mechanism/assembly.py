@@ -178,6 +178,14 @@ COL_BASE_CLEARANCE = 5.0
 RAIL_TOP_Z = 0.0                                     # frame datum (rail top face)
 COL_Z_TOP = max(OPENING_Z_TOP, _TRAP_FREE_Z_OPEN) + 10.0
 
+# Lower-floor column-top intrusion. The floor below's column extends
+# up to its own COL_Z_TOP (≈ 268), so in this floor's local frame
+# (mapped via -FLOOR_H) it reaches z = COL_Z_TOP - FLOOR_H. The
+# coaxial-stack constraint is symmetric with the trap-open one: this
+# floor's column-bottom must sit above whichever lower-floor part
+# pokes up highest.
+LOWER_COL_TOP_Z_MAX = COL_Z_TOP - FLOOR_H
+
 FLOOR_ROLES = ("base", "middle", "top")
 
 
@@ -185,15 +193,16 @@ def _col_z_bot(role: str) -> float:
     """Bottom of the rotating column for a given floor role.
 
     Middle and top floors have a floor below whose trap-open swing
-    intrudes upward into this floor's column-bottom zone; the column
-    collar must sit above that intrusion plus `COL_BASE_CLEARANCE`.
-    Base has no floor below, so the collar sits directly at the rail
-    datum.
+    AND column-top both intrude upward into this floor's column-
+    bottom zone; the column collar must sit above whichever intrudes
+    higher, plus `COL_BASE_CLEARANCE`. Base has no floor below, so
+    the collar sits directly at the rail datum.
     """
     if role == "base":
         return RAIL_TOP_Z
     if role in ("middle", "top"):
-        return LOWER_TRAP_OPEN_Z_MAX + COL_BASE_CLEARANCE
+        intrusion = max(LOWER_TRAP_OPEN_Z_MAX, LOWER_COL_TOP_Z_MAX)
+        return intrusion + COL_BASE_CLEARANCE
     raise ValueError(f"unknown floor role: {role!r} (expected one of {FLOOR_ROLES})")
 
 # Ring bearing
