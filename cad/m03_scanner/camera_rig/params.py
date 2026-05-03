@@ -12,10 +12,10 @@ all coordinates here are world-equivalent.
     +Y     = away from operator (toward the back of the machine)
     +Z     = up
 
-Each rig sub-assembly (`skeleton_t_frame/`, `mirror_mount/`,
-`mirror_pad_clamp/`, `camera_bracket/`, `camera_pad_clamp/`,
-`frame_gusset_t/`, `frame_gusset_l/`) carries its own local frame and
-imports the constants below via `from camera_rig.params import …`.
+Each rig sub-assembly (`skeleton_t_frame/`, `mirror_clamp_mount/`,
+`camera_bracket/`, `camera_pad_clamp/`, `frame_gusset_t/`,
+`frame_gusset_l/`) carries its own local frame and imports the
+constants below via `from camera_rig.params import …`.
 
 Position and normal values are copied from
 `docs/m03-multi-view-scanner.md` (derived in
@@ -95,8 +95,8 @@ MIRROR_BELOW_LEFT_POS = (-201.4, 25.4, -140.1)
 MIRROR_BELOW_RIGHT_POS = (201.4, 25.4, -140.1)
 
 # Mirror outward normals (unit). The reflective face normal points
-# along +normal toward the camera/brick; each mirror_mount's local +Z
-# maps onto this direction under `rotation_for_normal(...)`.
+# along +normal toward the camera/brick; each mirror_clamp_mount's
+# mount-local +Z maps onto this direction under `rotation_for_normal(...)`.
 MIRROR_BACK_UPPER_NORMAL = (0.0, -0.885, -0.466)
 MIRROR_BELOW_LEFT_NORMAL = (0.690, -0.380, 0.616)
 MIRROR_BELOW_RIGHT_NORMAL = (-0.690, -0.380, 0.616)
@@ -104,31 +104,24 @@ MIRROR_BELOW_RIGHT_NORMAL = (-0.690, -0.380, 0.616)
 
 # --- Mirror mount external interface ------------------------------------
 #
-# Plate-level constants of `mirror_mount/` that the rev-3
-# mirror_pad_clamp + skeleton_t_frame need to size their pad and to
-# project the plate's worst-case corner against the rail clearance
-# envelope. Each duplicates an internal constant in
-# mirror_mount/assembly.py; the top-level cross-boundary tangent-
-# contact assertion catches drift.
+# Plate-level constants of `mirror_clamp_mount/` exposed here because
+# `skeleton_t_frame/` and the `_back_face_centre_world(...)` helper
+# below need them to project the mount plate's worst-case corner
+# against the rail clearance envelope and to derive rail Y positions
+# from the mount-back centre. Plate size + bolt spacing are no longer
+# cross-boundary (the merged body has no mount bolts) and live private
+# inside `mirror_clamp_mount/assembly.py`.
 
 # Mirror glass thickness.
 MIRROR_MOUNT_MIRROR_T = 3.0
 
-# Printed plate thickness (rigid rev 1).
+# Printed plate thickness (rev-4 merged body).
 MIRROR_MOUNT_PLATE_T = 5.0
 
 # Offset from mirror reflective face to plate back face along mount-
-# local -Z (= outward-normal direction reversed). Rev-3 mirror_pad_clamp
-# pads land coplanar with this plane minus MOUNT_GAP.
+# local -Z (= outward-normal direction reversed). The merged body's
+# beam meets the plate at this depth.
 MIRROR_MOUNT_BACK_OFFSET = MIRROR_MOUNT_MIRROR_T + MIRROR_MOUNT_PLATE_T
-
-# Square plate size (PLATE_W == PLATE_H in mirror_mount).
-MIRROR_MOUNT_PLATE_SIZE = 110.0
-
-# Corner-bolt spacing (PLATE_SIZE - 2·BOLT_INSET in mirror_mount, with
-# BOLT_INSET = 8.0). Same 94 mm square pattern is reused on the rev-3
-# mirror pad-clamp's pad face.
-MIRROR_MOUNT_BOLT_SPACING = 94.0
 
 
 def _back_face_centre_world(pos, normal, offset=MIRROR_MOUNT_BACK_OFFSET):
@@ -144,9 +137,9 @@ def rotation_for_normal(
 ) -> Rot:
     """Rotation that carries a sub-assembly's local +Z onto `normal`.
 
-    Used to orient each mirror_mount: the mount's local +Z is the
-    mirror outward normal, and this returns the `Rot(...)` that places
-    that direction correctly in world space.
+    Used to orient each mirror_clamp_mount: the mount's local +Z is
+    the mirror outward normal, and this returns the `Rot(...)` that
+    places that direction correctly in world space.
 
     Roll about the target normal is unconstrained for the square mirror
     + threefold adjuster triangle at this rev. `roll_deg` sets the
@@ -235,7 +228,7 @@ def horizontal_x_roll_deg(normal: tuple[float, float, float]) -> float:
 # analysis in skeleton_t_frame/assembly.py.
 
 # Stock 2020 T-slot extrusion cross-section. Used here and by the
-# rev-3 mirror_pad_clamp + camera_pad_clamp to match rail face Y/Z
+# mirror_clamp_mount + camera_pad_clamp to match rail face Y/Z
 # coordinates.
 SKELETON_RAIL_MEMBER = 20.0
 
@@ -251,16 +244,15 @@ T_FRAME_RAIL_D_Z = 250.3                                 # rail D centerline Z (
 T_FRAME_RAIL_D_BOTTOM_Z = T_FRAME_RAIL_D_Z - SKELETON_RAIL_MEMBER / 2   # = 240.3
 
 
-# --- Rev-3 mirror pad-clamp placement -----------------------------------
+# --- Mirror clamp-mount placement --------------------------------------
 #
-# Three world placements of the single `mirror_pad_clamp/` body. Same
-# conceptual role as the rev-2 RAIL_CLAMP_* (now removed) — print one
-# body, parameterise it by `mount_in_clamp` for each mirror — but the
-# rev-3 rail positions put the mount-back at ≈ (0, 65, 0) in clamp-
-# local for the below-mirrors and ≈ (0, 50, 0) for the back-upper, so
-# the beam runs straight up rather than rev-2's 38–48° tilt.
+# Three world placements of the single `mirror_clamp_mount/` body —
+# print one body, parameterise it by `mount_in_clamp` for each mirror.
+# The rev-3 rail positions put the mount-back at ≈ (0, 65, 0) in
+# clamp-local for the below-mirrors and ≈ (0, 50, 0) for the back-
+# upper, so the beam runs straight up.
 #
-# Clamp-local frame (see `mirror_pad_clamp/assembly.py`):
+# Clamp-local frame (see `mirror_clamp_mount/assembly.py`):
 #     origin : centre of clamp bottom face, on the rail face the clamp
 #              grips, directly under the mount plate back-face centre
 #              along the rail axis

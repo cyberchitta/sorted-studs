@@ -1,11 +1,11 @@
 """
 M03 camera rig — unit-internal composition + within-unit checks.
 
-The camera rig groups the sparse 4-rail T-frame, the 3 mirror mounts +
-their pad-clamps, the camera bracket + its hanging pad-clamp, and the
-two printed gussets at the rail A/B and rail C/D joints. The rig's
-local frame matches world (Z-up; the top-level scanner places the rig
-at world identity), so all coordinates here are world-equivalent.
+The camera rig groups the sparse 4-rail T-frame, the 3 merged mirror
+clamp-mounts, the camera bracket + its hanging pad-clamp, and the two
+printed gussets at the rail A/B and rail C/D joints. The rig's local
+frame matches world (Z-up; the top-level scanner places the rig at
+world identity), so all coordinates here are world-equivalent.
 
 Standalone composition: every rig sub-assembly placed in rig-local
 coordinates, plus all the within-unit cross-boundary
@@ -14,8 +14,7 @@ coordinates, plus all the within-unit cross-boundary
 
 Sub-assemblies:
   * skeleton_t_frame              — sparse 4-rail T-frame + braces
-  * mirror_mount (×3)             — rev-1 rigid mounts
-  * mirror_pad_clamp (×3)         — short-stub mirror clamps
+  * mirror_clamp_mount (×3)       — merged clamp + plate + mirror bond
   * camera_bracket                — rev-1 bracket + PCB + lens stubs
   * camera_pad_clamp              — rev-3 hanging pad-clamp on rail D
   * frame_gusset_t + frame_gusset_l — printed gussets at the rail
@@ -59,8 +58,7 @@ from camera_rig.camera_bracket import assembly as _cam  # noqa: E402
 from camera_rig.camera_pad_clamp import assembly as _cam_pad_clamp  # noqa: E402
 from camera_rig.frame_gusset_l import assembly as _gusset_l  # noqa: E402
 from camera_rig.frame_gusset_t import assembly as _gusset_t  # noqa: E402
-from camera_rig.mirror_mount import assembly as _mirror  # noqa: E402
-from camera_rig.mirror_pad_clamp import assembly as _pad_clamp  # noqa: E402
+from camera_rig.mirror_clamp_mount import assembly as _mirror_cm  # noqa: E402
 from camera_rig.skeleton_t_frame import assembly as _skel  # noqa: E402
 
 from build123d import Rot  # noqa: E402
@@ -70,44 +68,26 @@ from build123d import Rot  # noqa: E402
 
 _CAMERA_LOC = Pos(*CAMERA_POS) * Rot(*CAMERA_ROT_DEG)
 
-_MIRROR_POSES = {
-    "mirror_back_upper": (
-        Pos(*MIRROR_BACK_UPPER_POS)
-        * rotation_for_normal(
-            MIRROR_BACK_UPPER_NORMAL,
-            roll_deg=horizontal_x_roll_deg(MIRROR_BACK_UPPER_NORMAL),
-        )
-    ),
-    "mirror_below_left": (
-        Pos(*MIRROR_BELOW_LEFT_POS)
-        * rotation_for_normal(
-            MIRROR_BELOW_LEFT_NORMAL,
-            roll_deg=horizontal_x_roll_deg(MIRROR_BELOW_LEFT_NORMAL),
-        )
-    ),
-    "mirror_below_right": (
-        Pos(*MIRROR_BELOW_RIGHT_POS)
-        * rotation_for_normal(
-            MIRROR_BELOW_RIGHT_NORMAL,
-            roll_deg=horizontal_x_roll_deg(MIRROR_BELOW_RIGHT_NORMAL),
-        )
-    ),
-}
-
-_PAD_CLAMP_SPECS = {
-    "pad_clamp_below_left": {
+# Per-instance specs for the three merged mirror clamp-mounts. Each
+# instance contributes one printed body (`{prefix}_clamp_mount`) placed
+# at the clamp pose and one mirror stub (`{prefix}_glass`) placed at
+# the mirror pose. The printed body's plate orientation is parameterised
+# by `mount_in_clamp` so all three derive from one `clamp_mount(...)`
+# function.
+_MIRROR_INSTANCES = {
+    "mirror_below_left": {
         "clamp_pos": RAIL_PAD_CLAMP_BELOW_LEFT_POS,
         "clamp_rot": RAIL_PAD_CLAMP_BELOW_LEFT_CLAMP_ROT,
         "mirror_pos": MIRROR_BELOW_LEFT_POS,
         "mirror_normal": MIRROR_BELOW_LEFT_NORMAL,
     },
-    "pad_clamp_below_right": {
+    "mirror_below_right": {
         "clamp_pos": RAIL_PAD_CLAMP_BELOW_RIGHT_POS,
         "clamp_rot": RAIL_PAD_CLAMP_BELOW_RIGHT_CLAMP_ROT,
         "mirror_pos": MIRROR_BELOW_RIGHT_POS,
         "mirror_normal": MIRROR_BELOW_RIGHT_NORMAL,
     },
-    "pad_clamp_back_upper": {
+    "mirror_back_upper": {
         "clamp_pos": RAIL_PAD_CLAMP_BACK_UPPER_POS,
         "clamp_rot": RAIL_PAD_CLAMP_BACK_UPPER_CLAMP_ROT,
         "mirror_pos": MIRROR_BACK_UPPER_POS,
@@ -125,10 +105,9 @@ GUSSET_NAMES = ("gusset_t_ab", "gusset_l_cd")
 CAMERA_BRACKET_NAMES = ("camera_plate", "camera_pcb", "camera_lens")
 MIRROR_PART_NAMES = tuple(
     name
-    for prefix in _MIRROR_POSES
-    for name in (f"{prefix}_bracket", f"{prefix}_glass")
+    for prefix in _MIRROR_INSTANCES
+    for name in (f"{prefix}_clamp_mount", f"{prefix}_glass")
 )
-PAD_CLAMP_NAMES = tuple(_PAD_CLAMP_SPECS.keys())
 CAMERA_CLAMP_NAME = "pad_clamp_camera"
 
 CAMERA_RIG_PART_NAMES = (
@@ -136,7 +115,6 @@ CAMERA_RIG_PART_NAMES = (
     + list(GUSSET_NAMES)
     + list(CAMERA_BRACKET_NAMES)
     + list(MIRROR_PART_NAMES)
-    + list(PAD_CLAMP_NAMES)
     + [CAMERA_CLAMP_NAME]
 )
 
@@ -156,22 +134,26 @@ def add_camera_rig(a: Assembly) -> Assembly:
         .add("camera_pcb", _cam.camera_pcb_stub(), location=_CAMERA_LOC)
         .add("camera_lens", _cam.lens_stub(), location=_CAMERA_LOC)
     )
-    # Three mirror mounts. Glass material left unset — see render.py overrides.
-    for prefix, loc in _MIRROR_POSES.items():
+    # Three merged mirror clamp-mounts. Each is one printed body at the
+    # clamp pose; the mirror stub sits at the mirror pose for diagnostics
+    # + render material override.
+    for prefix, spec in _MIRROR_INSTANCES.items():
+        clamp_loc = Pos(*spec["clamp_pos"]) * spec["clamp_rot"]
+        mirror_loc = Pos(*spec["mirror_pos"]) * rotation_for_normal(
+            spec["mirror_normal"],
+            roll_deg=horizontal_x_roll_deg(spec["mirror_normal"]),
+        )
+        mount_in_clamp = _mirror_cm.mount_in_clamp_for(**spec)
         a = (
             a
-            .add(f"{prefix}_bracket", _mirror.bracket(), location=loc, material="pla_matte")
-            .add(f"{prefix}_glass", _mirror.mirror_stub(), location=loc)
-        )
-    # Three mirror pad clamps.
-    for name, spec in _PAD_CLAMP_SPECS.items():
-        loc = Pos(*spec["clamp_pos"]) * spec["clamp_rot"]
-        mount_in_clamp = _pad_clamp.mount_in_clamp_for(**spec)
-        a = a.add(
-            name,
-            _pad_clamp.clamp(mount_in_clamp=mount_in_clamp),
-            location=loc,
-            material="pla_matte",
+            .add(
+                f"{prefix}_clamp_mount",
+                _mirror_cm.clamp_mount(mount_in_clamp=mount_in_clamp),
+                location=clamp_loc,
+                material="pla_matte",
+            )
+            # Glass material left unset — see render.py overrides.
+            .add(f"{prefix}_glass", _mirror_cm.mirror_stub(), location=mirror_loc)
         )
     # Camera pad clamp.
     camera_clamp_loc = (
@@ -202,24 +184,13 @@ def add_camera_rig_internal_checks(a: Assembly) -> Assembly:
         for member in SKELETON_NAMES:
             a = a.assert_no_interference(internal, member)
 
-    # Mirror mounts vs camera bracket triplet — regression.
+    # Mirror clamp-mounts + glass vs camera bracket triplet — regression.
     for mp in MIRROR_PART_NAMES:
         for cp in CAMERA_BRACKET_NAMES:
             a = a.assert_no_interference(mp, cp)
 
-    # Mirror pad-clamps vs every mirror mount + camera bracket + each
-    # other (regression / tangent).
-    for clamp_name in PAD_CLAMP_NAMES:
-        for mp in MIRROR_PART_NAMES:
-            a = a.assert_no_interference(clamp_name, mp)
-        for cp in CAMERA_BRACKET_NAMES:
-            a = a.assert_no_interference(clamp_name, cp)
-    for i in range(len(PAD_CLAMP_NAMES)):
-        for j in range(i + 1, len(PAD_CLAMP_NAMES)):
-            a = a.assert_no_interference(PAD_CLAMP_NAMES[i], PAD_CLAMP_NAMES[j])
-
     # Camera pad clamp vs everything else camera-rig.
-    for other in MIRROR_PART_NAMES + PAD_CLAMP_NAMES + CAMERA_BRACKET_NAMES:
+    for other in MIRROR_PART_NAMES + CAMERA_BRACKET_NAMES:
         a = a.assert_no_interference(CAMERA_CLAMP_NAME, other)
 
     # Frame gussets vs all non-skeleton internals (skeleton checked above).
