@@ -26,8 +26,13 @@ Standalone validation here covers the column-side parts only. Basket
 placement + ramp-vs-basket clearance are checked in the top-level
 `../assembly.py`.
 
-This is an **intermediate-floor** model — the base floor additionally
-has a shaft + motor mount + bearing boss to drive rotation.
+The model is parameterized on **floor role** ∈ {"base", "middle",
+"top"}. Middle and top share geometry (both experience an
+upward-intruding trap from the floor below). Base has no floor below,
+so the column collar can sit directly at the rail-top datum and the
+bearing spider collapses from a tall annular skirt to a thin ring.
+Motor / shaft / hopper attachments are deferred — see the rolling
+NEXT_STEPS doc.
 
 Coordinate frame:
     origin = column axis ∩ floor datum (z=0 = bearing/spider base)
@@ -171,8 +176,25 @@ LOWER_TRAP_OPEN_Z_MAX = (
 )
 COL_BASE_CLEARANCE = 5.0
 RAIL_TOP_Z = 0.0                                     # frame datum (rail top face)
-COL_Z_BOT = LOWER_TRAP_OPEN_Z_MAX + COL_BASE_CLEARANCE
 COL_Z_TOP = max(OPENING_Z_TOP, _TRAP_FREE_Z_OPEN) + 10.0
+
+FLOOR_ROLES = ("base", "middle", "top")
+
+
+def _col_z_bot(role: str) -> float:
+    """Bottom of the rotating column for a given floor role.
+
+    Middle and top floors have a floor below whose trap-open swing
+    intrudes upward into this floor's column-bottom zone; the column
+    collar must sit above that intrusion plus `COL_BASE_CLEARANCE`.
+    Base has no floor below, so the collar sits directly at the rail
+    datum.
+    """
+    if role == "base":
+        return RAIL_TOP_Z
+    if role in ("middle", "top"):
+        return LOWER_TRAP_OPEN_Z_MAX + COL_BASE_CLEARANCE
+    raise ValueError(f"unknown floor role: {role!r} (expected one of {FLOOR_ROLES})")
 
 # Ring bearing
 RING_BEARING_ID = COLLAR_OD + 2 * COLLAR_CLEARANCE
@@ -212,21 +234,20 @@ def _cyl_along_y(r: float, length: float) -> Part:
 
 # --- Part functions -----------------------------------------------------
 
-def bearing_spider() -> Part:
+def bearing_spider(role: str = "middle") -> Part:
     """Printed hub that holds the ring bearing coaxial with the column.
     Six integrated saddles grip the tops of radial 2020 aluminum
     extrusions; the extrusions carry the span out to the inner hex.
 
     The hub is an annular skirt that spans from the rail top (where
     the saddles anchor) up to the column collar top (where the ring
-    bearing sits inside the hub ID). When COL_Z_BOT > RAIL_TOP_Z —
-    which is the case on every intermediate floor so the column clears
-    the lower floor's trap-open swing — the hub becomes a tall riser;
-    on the base floor (no lower intrusion) it collapses back to the
-    original COLLAR_T-thick ring.
+    bearing sits inside the hub ID). On middle/top floors the column
+    bottom is raised to clear the lower floor's trap-open swing, so
+    the hub is a tall riser; on the base floor (no lower intrusion)
+    the hub collapses back to a `COLLAR_T`-thick ring.
     """
     hub_z_bot = RAIL_TOP_Z
-    hub_z_top = COL_Z_BOT + COLLAR_T
+    hub_z_top = _col_z_bot(role) + COLLAR_T
     hub_t = hub_z_top - hub_z_bot
     hub_z_center = (hub_z_bot + hub_z_top) / 2
     # Saddle reference is anchored to the rail (NOT the column bottom).
@@ -276,21 +297,22 @@ def bearing_spider() -> Part:
     return body
 
 
-def ring_bearing() -> Part:
+def ring_bearing(role: str = "middle") -> Part:
     """Stationary annular bearing at floor level."""
-    z_center = COL_Z_BOT + COLLAR_T / 2
+    z_center = _col_z_bot(role) + COLLAR_T / 2
     body = Pos(0, 0, z_center) * Cylinder(RING_BEARING_OD / 2, COLLAR_T)
     hole = Pos(0, 0, z_center) * Cylinder(RING_BEARING_ID / 2, COLLAR_T * 2)
     return body - hole
 
 
-def column() -> Part:
+def column(role: str = "middle") -> Part:
     """Square-section tube with a bottom collar, an exit opening in the
     +X wall sized for the ramp + brick clearance, and hinge bosses
     on the +X interior wall at the trap hinge line.
     """
-    col_h = COL_Z_TOP - COL_Z_BOT
-    col_z_center = (COL_Z_TOP + COL_Z_BOT) / 2
+    z_bot = _col_z_bot(role)
+    col_h = COL_Z_TOP - z_bot
+    col_z_center = (COL_Z_TOP + z_bot) / 2
 
     outer = Pos(0, 0, col_z_center) * Box(COL_OUTER_SIDE, COL_OUTER_SIDE, col_h)
     inner = Pos(0, 0, col_z_center) * Box(
@@ -307,7 +329,7 @@ def column() -> Part:
     tube = tube - cut
 
     # Bottom collar with square hole
-    collar_z = COL_Z_BOT + COLLAR_T / 2
+    collar_z = z_bot + COLLAR_T / 2
     collar_disc = Pos(0, 0, collar_z) * Cylinder(COLLAR_OD / 2, COLLAR_T)
     collar_hole = Pos(0, 0, collar_z) * Box(
         COL_INTERIOR_SIDE, COL_INTERIOR_SIDE, COLLAR_T * 2
@@ -367,86 +389,118 @@ hinge_loc = Location((TRAP_HINGE_X, 0, TRAP_HINGE_Z))
 ramp_loc = Location((RAMP_ROOT_X, 0, RAMP_ROOT_Z))
 # Lower floor's trap at max-open (60°), mapped into this floor's frame.
 # Not a part of this floor — it's a stand-in for the intrusion from
-# below. The model includes it so basic stack-up interference is caught
-# before we build the full multi-floor assembly.
+# below. Included for middle/top roles only; base has no floor below.
 lower_trap_loc = Location(
     (TRAP_HINGE_X, 0, TRAP_HINGE_Z - FLOOR_H)
 ) * Rot(0, TRAP_OPEN_DEG, 0)
 
-assembly = Assembly()
-assembly = (
-    assembly
-    .add("bearing_spider", bearing_spider())
-    .add("ring_bearing", ring_bearing())
-    .add("column", column())
-    .add("hinge_pin", hinge_pin(), location=hinge_loc)
-    .add("ramp", ramp(), location=ramp_loc)
-    .add("trap_closed", trap(), location=hinge_loc * Rot(0, TRAP_CLOSED_DEG, 0))
-    .add("trap_open", trap(), location=hinge_loc * Rot(0, TRAP_OPEN_DEG, 0))
-    .add("lower_trap_open", trap(), location=lower_trap_loc)
-)
-for angle in TRAP_SAMPLES:
-    assembly = assembly.add(
-        f"trap_at_{int(angle)}", trap(),
-        location=hinge_loc * Rot(0, angle, 0),
-    )
 
-assembly = (
-    assembly
-    # Fixed parts don't interfere with each other
-    .assert_no_interference("bearing_spider", "ring_bearing")
-    .assert_no_interference("bearing_spider", "column")
-    .assert_no_interference("ring_bearing", "column")
-    .assert_no_interference("hinge_pin", "column")
-    .assert_no_interference("ramp", "column")
-    .assert_no_interference("ramp", "bearing_spider")
-    .assert_no_interference("ramp", "ring_bearing")
-    .assert_no_interference("ramp", "hinge_pin")
-    # Trap closed — horizontal plate inside column, above ramp
-    .assert_no_interference("trap_closed", "column")
-    .assert_no_interference("trap_closed", "bearing_spider")
-    .assert_no_interference("trap_closed", "ring_bearing")
-    .assert_no_interference("trap_closed", "ramp")
-    # Trap open — free end up, still inside column
-    .assert_no_interference("trap_open", "column")
-    .assert_no_interference("trap_open", "bearing_spider")
-    .assert_no_interference("trap_open", "ring_bearing")
-    .assert_no_interference("trap_open", "ramp")
-    # Lower-floor trap-open intrusion — must clear THIS floor's column-
-    # bottom stack (collar / ring bearing / spider hub) and the ramp.
-    .assert_no_interference("lower_trap_open", "column")
-    .assert_no_interference("lower_trap_open", "bearing_spider")
-    .assert_no_interference("lower_trap_open", "ring_bearing")
-    .assert_no_interference("lower_trap_open", "ramp")
-)
-for angle in TRAP_SAMPLES:
-    name = f"trap_at_{int(angle)}"
-    assembly = (
-        assembly
-        .assert_no_interference(name, "column")
-        .assert_no_interference(name, "bearing_spider")
-        .assert_no_interference(name, "ring_bearing")
-        .assert_no_interference(name, "ramp")
+def make_assembly(role: str = "middle") -> Assembly:
+    """Build the standalone single-floor assembly for the given role.
+
+    `role` ∈ FLOOR_ROLES. Middle and top are geometrically identical
+    here (both experience an upward-intruding trap from the floor
+    below); base omits the lower-trap-open stand-in and its
+    assertions, and gets a collapsed bearing-spider / column-bottom.
+    """
+    a = Assembly()
+    a = (
+        a
+        .add("bearing_spider", bearing_spider(role))
+        .add("ring_bearing", ring_bearing(role))
+        .add("column", column(role))
+        .add("hinge_pin", hinge_pin(), location=hinge_loc)
+        .add("ramp", ramp(), location=ramp_loc)
+        .add("trap_closed", trap(), location=hinge_loc * Rot(0, TRAP_CLOSED_DEG, 0))
+        .add("trap_open", trap(), location=hinge_loc * Rot(0, TRAP_OPEN_DEG, 0))
     )
+    if role != "base":
+        a = a.add("lower_trap_open", trap(), location=lower_trap_loc)
+    for angle in TRAP_SAMPLES:
+        a = a.add(
+            f"trap_at_{int(angle)}", trap(),
+            location=hinge_loc * Rot(0, angle, 0),
+        )
+
+    a = (
+        a
+        # Fixed parts don't interfere with each other
+        .assert_no_interference("bearing_spider", "ring_bearing")
+        .assert_no_interference("bearing_spider", "column")
+        .assert_no_interference("ring_bearing", "column")
+        .assert_no_interference("hinge_pin", "column")
+        .assert_no_interference("ramp", "column")
+        .assert_no_interference("ramp", "bearing_spider")
+        .assert_no_interference("ramp", "ring_bearing")
+        .assert_no_interference("ramp", "hinge_pin")
+        # Trap closed — horizontal plate inside column, above ramp
+        .assert_no_interference("trap_closed", "column")
+        .assert_no_interference("trap_closed", "bearing_spider")
+        .assert_no_interference("trap_closed", "ring_bearing")
+        .assert_no_interference("trap_closed", "ramp")
+        # Trap open — free end up, still inside column
+        .assert_no_interference("trap_open", "column")
+        .assert_no_interference("trap_open", "bearing_spider")
+        .assert_no_interference("trap_open", "ring_bearing")
+        .assert_no_interference("trap_open", "ramp")
+    )
+    if role != "base":
+        a = (
+            a
+            # Lower-floor trap-open intrusion — must clear THIS floor's
+            # column-bottom stack (collar / ring bearing / spider hub)
+            # and the ramp.
+            .assert_no_interference("lower_trap_open", "column")
+            .assert_no_interference("lower_trap_open", "bearing_spider")
+            .assert_no_interference("lower_trap_open", "ring_bearing")
+            .assert_no_interference("lower_trap_open", "ramp")
+        )
+    for angle in TRAP_SAMPLES:
+        name = f"trap_at_{int(angle)}"
+        a = (
+            a
+            .assert_no_interference(name, "column")
+            .assert_no_interference(name, "bearing_spider")
+            .assert_no_interference(name, "ring_bearing")
+            .assert_no_interference(name, "ramp")
+        )
+    return a
+
+
+# Module-level "default" assembly — preserved so the top-level
+# `m05_diverter/assembly.py` and other consumers can import a ready-
+# built middle-floor assembly without going through `make_assembly`.
+assembly = make_assembly("middle")
 
 
 if __name__ == "__main__":
-    check(assembly, out="outputs")
+    for role in FLOOR_ROLES:
+        check(make_assembly(role), out=f"outputs/{role}")
     method = FDM(wall_min_mm=WALL_MIN, overhang_max_deg=90.0)
     # Per-part waivers for known printability false positives. A new
     # failure on any part NOT listed here will raise. Full per-part
-    # diagnostics still land in outputs/<name>-printability.json.
+    # diagnostics still land in outputs/<role>/<name>-printability.json.
     waivers = {
         "bearing_spider": "ray-sampling artifact at hub annulus + saddle bolt-hole edges",
         "ring_bearing": "ray-sampling artifact at thin annulus edges",
     }
-    for name, part_fn in [
-        ("bearing_spider", bearing_spider),
-        ("ring_bearing", ring_bearing),
-        ("column", column),
-        ("trap", trap),
-        ("ramp", ramp),
-    ]:
+    for role in FLOOR_ROLES:
+        for name, part in [
+            ("bearing_spider", bearing_spider(role)),
+            ("ring_bearing", ring_bearing(role)),
+            ("column", column(role)),
+        ]:
+            try:
+                inspect(part, method=method, out=f"outputs/{role}", name=name)
+            except SystemExit:
+                if name not in waivers:
+                    raise
+                print(
+                    f"WAIVED: {role}/{name} printability ({waivers[name]})",
+                    file=sys.stderr,
+                )
+    # Trap and ramp are role-independent — inspect once at the top.
+    for name, part_fn in [("trap", trap), ("ramp", ramp)]:
         try:
             inspect(part_fn(), method=method, out="outputs", name=name)
         except SystemExit:
