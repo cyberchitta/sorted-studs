@@ -11,22 +11,32 @@ Each floor reuses the same sub-assemblies as `single_floor.py`:
 - frame — through-columns span all floors as one continuous 2020;
   hex rings, brackets, and radial rails repeat per floor (suffixed by
   floor index).
-- ramp_mechanism — role-dependent column-bottom stack: base sits on
-  the rail datum directly with a thin ring spider; middle/top get the
-  tall annular spider skirt that clears the floor-below's trap-open
-  swing.
+- ramp_mechanism — top-bearing architecture: bearing+spider geometry
+  is uniform across roles (short ring at z_local 0..5). Roles differ
+  only at the column bottom: base has a bottom collar (motor + ring-
+  gear interface); middle/top have a bottom face flange that mates
+  with the column below at the joint plane (z_world = N·220 + 273).
+  Each column carries a rotating collar at z_local 220..225 that the
+  bearing of the floor *above* grips.
 - basket — `FLOOR_LAYOUT` (mixed N=6/9/12/18) replicated per floor.
 - base_floor — drive train (motor / drive shaft / motor mount) below
-  the rail datum on the base floor only.
+  the rail datum on the base floor only. NOTE: drive_shaft is now
+  obsolete (Lego falls through the column axis); see m05_diverter/
+  NEXT_STEPS.md "Base-floor drive train" for the off-axis-pinion
+  rework.
 
 Cross-floor checks (the value the tower adds beyond `single_floor.py`):
 
-- Lower floor's open-trap envelope vs upper floor's column-bottom
-  stack (column collar / ring bearing / spider hub). Replaces the
-  `lower_trap_open` stub used in `single_floor.py`.
-- Lower floor's column tube vs the same upper-floor stack — covers
-  the column-top zone (~48 mm of intrusion into the upper floor's
-  frame, since `COL_Z_TOP ≈ 268 > FLOOR_H = 220`).
+- Upper floor's bearing+spider engages lower floor's column rotating
+  collar (z_local 220..225 of lower = z_local 0..5 of upper). Grease
+  film clearance — `assert_no_interference` guards the radial gap.
+- Lower column top (z = 273 in lower local) vs upper column bottom
+  (z = 53 in upper local) tangent at the joint plane. The two flanges
+  meet face-to-face; assert_no_interference allows that contact.
+- Lower floor's open-trap envelope (max-open free end at z ≈ 36 mm
+  above the upper floor's bracket) vs upper floor's column-bottom
+  stack — the trap-open zone must thread cleanly between the bearing
+  (z ≤ 5) and this floor's column-bottom (z ≥ 53).
 
 Intra-floor pairs (basket-vs-frame, ramp-vs-basket, column-side self-
 clearance) are validated by `single_floor.py` and the standalone

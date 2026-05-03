@@ -2,11 +2,12 @@
 M05 hex-tower — rotating square-column trap + fixed ramp (generic floor).
 
 Column-side sub-assembly of the rotating-column delivery design for
-Approach F. The column is a square tube with a circular collar at the
-bottom (bearing interface); the collar rides in a fixed ring bearing
-held coaxial with the column by a **spider bracket** — a short printed
-hub with six integrated saddles that clamp over the top of radial 2020
-aluminum extrusions running out to the inner-hex frame.
+Approach F. The column is a square tube; a circular **rotating collar**
+at z_local = 220..225 of *each* column rides inside the **bearing of
+the floor above** (a short ring at that floor's z_local = 0..5, held
+coaxial with the column by a 6-saddle spider that clamps onto radial
+2020 aluminum extrusions). Columns couple end-to-end at z_world =
+N·220 + 273 via face flanges integrated into each column's top.
 
 Delivery is split into two decoupled jobs:
 - **Trap** — a flat plate hinged at the +X interior wall. Closed =
@@ -27,12 +28,28 @@ placement + ramp-vs-basket clearance are checked in the top-level
 `../assembly.py`.
 
 The model is parameterized on **floor role** ∈ {"base", "middle",
-"top"}. Middle and top share geometry (both experience an
-upward-intruding trap from the floor below). Base has no floor below,
-so the column collar can sit directly at the rail-top datum and the
-bearing spider collapses from a tall annular skirt to a thin ring.
-Motor / shaft / hopper attachments are deferred — see the rolling
-NEXT_STEPS doc.
+"top"}. Under the **top-bearing architecture** the bearing+spider
+geometry is uniform across all roles (a short ring at z_local = 0..5
+gripping the lower column's body where its rotating collar sits at
+z_lower_local = 220..225). Roles differ only in the column itself:
+
+- **base** — column body extends 0..273 in its own local frame, with
+  a bottom collar at 0..5 (motor + ring-gear interface; off-axis pinion
+  drives this collar via the base-floor bearing slot at z_world = 0).
+  Body, rotating collar at 220..225, top flange at 268..273.
+- **middle**, **top** — column body extends 53..273; bottom face at
+  z = 53 mates with the lower column's top flange (z_lower_local =
+  268..273) at z_world = N·220 + 273. No bottom collar. Top floor
+  additionally has its rotating collar engaged from above by the
+  ceiling bearing in the hopper sub-assembly (not modeled here).
+
+The bearing slot on **this** floor sits at z_local = 0..5 and engages
+the *lower* column's rotating collar — represented in the standalone
+middle/top assembly by `lower_column` placed at z = -FLOOR_H. Without
+that stand-in there is nothing here for this floor's bearing to grip.
+
+Motor pinion + ring gear, ceiling bearing, castellated joint tabs,
+and trap actuator are deferred — see the rolling NEXT_STEPS docs.
 
 Coordinate frame:
     origin = column axis ∩ floor datum (z=0 = bearing/spider base)
@@ -75,7 +92,11 @@ from params import (
 
 # --- Derived parameters -------------------------------------------------
 
-# Bottom collar (bearing interface)
+# Circular features on the column (rotating collar at mid-height,
+# top flange at the joint plane, optional bottom collar on base).
+# OD ≈ 138 — circumscribes the square section corners (96·√2 ≈ 135.8)
+# with ~1 mm radial overhang so the bearing rolls on a continuous
+# circular surface rather than only touching the four corners.
 COLLAR_CLEARANCE = 1.0
 COLLAR_OD = COL_OUTER_SIDE * math.sqrt(2) + 2 * COLLAR_CLEARANCE  # ≈ 138
 COLLAR_T = 5.0
@@ -158,33 +179,65 @@ assert RAMP_W <= BASKET_SLOT_W_AT_TIP, (
     f"increase R_BASKET_INNER, or decrease N_BASKETS_PER_FLOOR."
 )
 
-# Column height — above trap open position, above opening top
+# Column height — pinned by the column-to-column joint plane. Joints
+# stack at z_world = N·FLOOR_H + COL_Z_TOP, with each column extending
+# (COL_Z_TOP - FLOOR_H) above the floor's own bracket level to form the
+# overhang that the floor *above* grips. The 53 mm overhang must clear
+# both the trap-open free-end Z and the +X opening top — asserted below.
+RAIL_TOP_Z = 0.0                                     # frame datum (rail top face)
+COL_Z_TOP = 273.0                                    # joint plane in this floor's frame
+
 _TRAP_OPEN_RAD = math.radians(TRAP_OPEN_DEG)
 _TRAP_FREE_Z_OPEN = TRAP_HINGE_Z + TRAP_L * math.sin(_TRAP_OPEN_RAD) + TRAP_T / 2
+assert COL_Z_TOP >= max(OPENING_Z_TOP, _TRAP_FREE_Z_OPEN) + 5.0, (
+    f"COL_Z_TOP ({COL_Z_TOP}) too low — trap-open free Z "
+    f"({_TRAP_FREE_Z_OPEN:.1f}) or opening top ({OPENING_Z_TOP:.1f}) "
+    f"reaches inside the joint zone."
+)
 
-# Lower-floor trap intrusion. The floor below has an identical trap
-# at its own TRAP_HINGE_Z; mapped into this floor's local frame via
-# -FLOOR_H, its max-open (60°) free end reaches up to the Z below
-# (includes plate tip geometry — knuckle radius and tilted half-
-# thickness). The column's bottom collar + bearing + spider must sit
-# above this with COL_BASE_CLEARANCE so the two floors stack cleanly.
+# Joint flange thickness at the column top. Top 5 mm of the column
+# carries a circular face flange (OD = COLLAR_OD) for end-to-end
+# coupling with the column above. Castellated tab geometry deferred —
+# see m05_diverter/NEXT_STEPS.md "Column-to-column joint".
+JOINT_FLANGE_T = COLLAR_T                            # 5.0
+JOINT_FLANGE_Z_BOT = COL_Z_TOP - JOINT_FLANGE_T      # 268
+JOINT_FLANGE_Z_TOP = COL_Z_TOP                       # 273
+
+# Rotating collar — circular OD on the column at mid-height that the
+# bearing on the floor *above* grips (so this floor's bearing engages
+# the *lower* column's rotating collar). Sits at z_local = 220..225,
+# which falls inside `OPENING_Z_BOT.._TOP = 164..258` — so the collar
+# is split by the +X opening into a ~270° partial ring. Mechanically
+# fine for low RPM / low load.
+ROT_COLLAR_T = COLLAR_T                              # 5.0
+ROT_COLLAR_Z_BOT = FLOOR_H                           # 220
+ROT_COLLAR_Z_TOP = ROT_COLLAR_Z_BOT + ROT_COLLAR_T   # 225
+assert OPENING_Z_BOT <= ROT_COLLAR_Z_BOT and ROT_COLLAR_Z_TOP <= OPENING_Z_TOP, (
+    f"Rotating collar at z={ROT_COLLAR_Z_BOT}..{ROT_COLLAR_Z_TOP} not "
+    f"inside opening z={OPENING_Z_BOT:.1f}..{OPENING_Z_TOP:.1f}; the "
+    f"partial-ring split assumption no longer holds."
+)
+
+# Bearing engagement plane on this floor — short ring at z = 0..5,
+# uniform across all roles. Engages the lower column's rotating collar
+# (z_lower_local 220..225 = z_local 0..5) for middle/top, or the base
+# column's own bottom collar (z_base_local 0..5) for the base slot.
+BEARING_T = COLLAR_T                                 # 5.0
+BEARING_Z_BOT = RAIL_TOP_Z                           # 0
+BEARING_Z_TOP = BEARING_Z_BOT + BEARING_T            # 5
+
+# Lower-floor trap intrusion. Floor below's trap at max-open (60°)
+# reaches up into this floor's frame to the Z below. With the bearing
+# at 0..5 and this floor's column-bottom at 53, the trap envelope
+# (~36 mm) sits in the open volume between them — the assertion is
+# that it doesn't punch into either.
 LOWER_TRAP_OPEN_Z_MAX = (
     TRAP_HINGE_Z
     + (TRAP_L + KNUCKLE_OD / 2) * math.sin(_TRAP_OPEN_RAD)
     + (TRAP_T / 2) * math.cos(_TRAP_OPEN_RAD)
     - FLOOR_H
 )
-COL_BASE_CLEARANCE = 5.0
-RAIL_TOP_Z = 0.0                                     # frame datum (rail top face)
-COL_Z_TOP = max(OPENING_Z_TOP, _TRAP_FREE_Z_OPEN) + 10.0
-
-# Lower-floor column-top intrusion. The floor below's column extends
-# up to its own COL_Z_TOP (≈ 268), so in this floor's local frame
-# (mapped via -FLOOR_H) it reaches z = COL_Z_TOP - FLOOR_H. The
-# coaxial-stack constraint is symmetric with the trap-open one: this
-# floor's column-bottom must sit above whichever lower-floor part
-# pokes up highest.
-LOWER_COL_TOP_Z_MAX = COL_Z_TOP - FLOOR_H
+LOWER_COL_TOP_Z_MAX = COL_Z_TOP - FLOOR_H            # 53 — joint plane
 
 FLOOR_ROLES = ("base", "middle", "top")
 
@@ -192,17 +245,15 @@ FLOOR_ROLES = ("base", "middle", "top")
 def _col_z_bot(role: str) -> float:
     """Bottom of the rotating column for a given floor role.
 
-    Middle and top floors have a floor below whose trap-open swing
-    AND column-top both intrude upward into this floor's column-
-    bottom zone; the column collar must sit above whichever intrudes
-    higher, plus `COL_BASE_CLEARANCE`. Base has no floor below, so
-    the collar sits directly at the rail datum.
+    Base sits at the rail datum (z=0). Middle/top sit at the joint
+    plane (z=53); they meet the lower column's top flange tangent at
+    that plane. No clearance gap — the columns are designed to mate
+    face-to-face under gravity preload.
     """
     if role == "base":
         return RAIL_TOP_Z
     if role in ("middle", "top"):
-        intrusion = max(LOWER_TRAP_OPEN_Z_MAX, LOWER_COL_TOP_Z_MAX)
-        return intrusion + COL_BASE_CLEARANCE
+        return LOWER_COL_TOP_Z_MAX
     raise ValueError(f"unknown floor role: {role!r} (expected one of {FLOOR_ROLES})")
 
 # Ring bearing
@@ -248,23 +299,18 @@ def bearing_spider(role: str = "middle") -> Part:
     Six integrated saddles grip the tops of radial 2020 aluminum
     extrusions; the extrusions carry the span out to the inner hex.
 
-    The hub is an annular skirt that spans from the rail top (where
-    the saddles anchor) up to the column collar top (where the ring
-    bearing sits inside the hub ID). On middle/top floors the column
-    bottom is raised to clear the lower floor's trap-open swing, so
-    the hub is a tall riser; on the base floor (no lower intrusion)
-    the hub collapses back to a `COLLAR_T`-thick ring.
+    Geometry is **uniform across all roles** under the top-bearing
+    architecture: a short annular ring at z = 0..BEARING_T (5 mm) with
+    six saddles. The bearing this hub holds engages whatever column
+    passes through z = 0..5 — for middle/top that's the *lower*
+    column's rotating collar (mapped from z_lower_local 220..225);
+    for base it's the base column's own bottom collar.
     """
-    hub_z_bot = RAIL_TOP_Z
-    hub_z_top = _col_z_bot(role) + COLLAR_T
+    hub_z_bot = BEARING_Z_BOT
+    hub_z_top = BEARING_Z_TOP
     hub_t = hub_z_top - hub_z_bot
     hub_z_center = (hub_z_bot + hub_z_top) / 2
-    # Saddle reference is anchored to the rail (NOT the column bottom).
-    # The rail's top face is at RAIL_TOP_Z; the original saddle geometry
-    # used `COL_Z_BOT + COLLAR_T` as the anchor, which gave a 5 mm
-    # riser above the rail. Preserve that offset here so the U-channel
-    # clamps the rail the same way regardless of hub height.
-    ext_top_z = RAIL_TOP_Z + COLLAR_T
+    ext_top_z = BEARING_Z_TOP                          # saddle clamps just above rail
 
     hub_outer = Pos(0, 0, hub_z_center) * Cylinder(SPIDER_HUB_OD / 2, hub_t)
     hub_inner = Pos(0, 0, hub_z_center) * Cylinder(SPIDER_HUB_ID / 2, hub_t * 2)
@@ -307,17 +353,40 @@ def bearing_spider(role: str = "middle") -> Part:
 
 
 def ring_bearing(role: str = "middle") -> Part:
-    """Stationary annular bearing at floor level."""
-    z_center = _col_z_bot(role) + COLLAR_T / 2
-    body = Pos(0, 0, z_center) * Cylinder(RING_BEARING_OD / 2, COLLAR_T)
-    hole = Pos(0, 0, z_center) * Cylinder(RING_BEARING_ID / 2, COLLAR_T * 2)
+    """Stationary annular bearing at this floor's bracket level (z =
+    0..BEARING_T). Uniform across roles — see `bearing_spider` for the
+    per-role engagement story.
+    """
+    del role  # geometry is uniform; argument kept for symmetry / future role split
+    z_center = (BEARING_Z_BOT + BEARING_Z_TOP) / 2
+    body = Pos(0, 0, z_center) * Cylinder(RING_BEARING_OD / 2, BEARING_T)
+    hole = Pos(0, 0, z_center) * Cylinder(RING_BEARING_ID / 2, BEARING_T * 2)
     return body - hole
 
 
+def _circular_feature(z_bot: float, z_top: float) -> Part:
+    """Annular feature on the column — circular OD = COLLAR_OD with the
+    column interior (square hole) removed. Used for the rotating
+    collar, the top joint flange, and the base column's bottom collar.
+    """
+    h = z_top - z_bot
+    z_center = (z_top + z_bot) / 2
+    disc = Pos(0, 0, z_center) * Cylinder(COLLAR_OD / 2, h)
+    hole = Pos(0, 0, z_center) * Box(
+        COL_INTERIOR_SIDE, COL_INTERIOR_SIDE, h * 2
+    )
+    return disc - hole
+
+
 def column(role: str = "middle") -> Part:
-    """Square-section tube with a bottom collar, an exit opening in the
-    +X wall sized for the ramp + brick clearance, and hinge bosses
-    on the +X interior wall at the trap hinge line.
+    """Square-section tube with a +X exit opening, hinge bosses, a
+    rotating collar at mid-height (the bearing-engagement surface for
+    the floor *above*), a top joint flange, and — for the base role
+    only — a bottom collar where the motor pinion meets the ring gear.
+
+    Roles differ only in what sits at the column bottom:
+    - **base**: body 0..273, bottom collar at 0..5 (ring-gear interface).
+    - **middle**, **top**: body 53..273, mating face at z=53.
     """
     z_bot = _col_z_bot(role)
     col_h = COL_Z_TOP - z_bot
@@ -329,21 +398,34 @@ def column(role: str = "middle") -> Part:
     )
     tube = outer - inner
 
-    # Exit opening on +X wall
+    # Rotating collar — circular OD at z 220..225 that the bearing on
+    # the floor *above* grips. Added BEFORE the +X opening cut so the
+    # opening also slices the collar into a partial ring.
+    tube = tube + _circular_feature(ROT_COLLAR_Z_BOT, ROT_COLLAR_Z_TOP)
+
+    # Top joint flange — castellated face flange placeholder (smooth
+    # disc here; tab geometry deferred per NEXT_STEPS).
+    tube = tube + _circular_feature(JOINT_FLANGE_Z_BOT, JOINT_FLANGE_Z_TOP)
+
+    # Role-specific bottom feature.
+    if role == "base":
+        # Bottom collar at z 0..5 — motor pinion engages a ring gear
+        # integrated with this collar's OD (gear teeth not modeled).
+        tube = tube + _circular_feature(BEARING_Z_BOT, BEARING_Z_TOP)
+    else:
+        # Middle/top: bottom face flange mating with the lower column's
+        # top flange at z = LOWER_COL_TOP_Z_MAX (= 53). Same OD; the two
+        # flanges contact face-to-face at the joint plane.
+        tube = tube + _circular_feature(z_bot, z_bot + JOINT_FLANGE_T)
+
+    # Exit opening on +X wall — cuts the tube AND any circular feature
+    # that overlaps its z range (rotating collar at 220..225 ⊂ 164..258).
     cut_z_center = (OPENING_Z_TOP + OPENING_Z_BOT) / 2
     cut_h = OPENING_Z_TOP - OPENING_Z_BOT
     cut = Pos(COL_OUTER_SIDE, 0, cut_z_center) * Box(
         COL_OUTER_SIDE * 2, OPENING_W, cut_h
     )
     tube = tube - cut
-
-    # Bottom collar with square hole
-    collar_z = z_bot + COLLAR_T / 2
-    collar_disc = Pos(0, 0, collar_z) * Cylinder(COLLAR_OD / 2, COLLAR_T)
-    collar_hole = Pos(0, 0, collar_z) * Box(
-        COL_INTERIOR_SIDE, COL_INTERIOR_SIDE, COLLAR_T * 2
-    )
-    tube = tube + (collar_disc - collar_hole)
 
     # Hinge bosses — inside surface of +X wall, ±Y of the opening, at
     # TRAP_HINGE_Z. They extend -X (inward) to anchor the pin.
@@ -396,21 +478,27 @@ def ramp() -> Part:
 
 hinge_loc = Location((TRAP_HINGE_X, 0, TRAP_HINGE_Z))
 ramp_loc = Location((RAMP_ROOT_X, 0, RAMP_ROOT_Z))
-# Lower floor's trap at max-open (60°), mapped into this floor's frame.
-# Not a part of this floor — it's a stand-in for the intrusion from
-# below. Included for middle/top roles only; base has no floor below.
+# Lower-floor stand-ins (middle/top roles only; base has no floor below).
+# Both are mapped into this floor's frame via -FLOOR_H.
+# - lower_trap_open: the floor below's trap at max-open (60°). Reaches
+#   z ≈ 36 — must clear bearing/spider (z ≤ 5) and this floor's column
+#   (z ≥ 53), with the open volume in between.
+# - lower_column: the floor below's column body. Its top reaches
+#   z = LOWER_COL_TOP_Z_MAX (= 53) and its rotating collar sits inside
+#   this floor's bearing at z = 0..5 (engagement surface).
 lower_trap_loc = Location(
     (TRAP_HINGE_X, 0, TRAP_HINGE_Z - FLOOR_H)
 ) * Rot(0, TRAP_OPEN_DEG, 0)
+lower_column_loc = Location((0, 0, -FLOOR_H))
 
 
 def make_assembly(role: str = "middle") -> Assembly:
     """Build the standalone single-floor assembly for the given role.
 
     `role` ∈ FLOOR_ROLES. Middle and top are geometrically identical
-    here (both experience an upward-intruding trap from the floor
-    below); base omits the lower-trap-open stand-in and its
-    assertions, and gets a collapsed bearing-spider / column-bottom.
+    here (both experience the same upward-intruding lower-floor
+    column + trap-open envelope); base omits the lower-floor stand-ins
+    and includes its bottom collar instead.
     """
     a = Assembly()
     a = (
@@ -424,7 +512,18 @@ def make_assembly(role: str = "middle") -> Assembly:
         .add("trap_open", trap(), location=hinge_loc * Rot(0, TRAP_OPEN_DEG, 0))
     )
     if role != "base":
-        a = a.add("lower_trap_open", trap(), location=lower_trap_loc)
+        # Lower floor's column placed at -FLOOR_H. Modeled as `column("middle")`
+        # for both middle (lower=base|middle) and top (lower=middle); the
+        # difference between base and middle lower columns lives at
+        # z_lower_local = 0..5 (the bottom collar), which maps to
+        # z_local = -220..-215 — far below anything modeled in this
+        # frame. Using "middle" as the generic stand-in keeps this
+        # assembly role-independent of which floor the lower one is.
+        a = (
+            a
+            .add("lower_column", column("middle"), location=lower_column_loc)
+            .add("lower_trap_open", trap(), location=lower_trap_loc)
+        )
     for angle in TRAP_SAMPLES:
         a = a.add(
             f"trap_at_{int(angle)}", trap(),
@@ -456,9 +555,24 @@ def make_assembly(role: str = "middle") -> Assembly:
     if role != "base":
         a = (
             a
+            # Bearing/spider engage the LOWER column's rotating collar
+            # via grease film (no interference). Spider hub and lower-
+            # column body must also clear (spider sits radially outside
+            # the bearing, far from the column).
+            .assert_no_interference("bearing_spider", "lower_column")
+            .assert_no_interference("ring_bearing", "lower_column")
+            # This floor's column tangent-meets the lower column at
+            # z=53 (joint plane). assert_no_interference allows
+            # face-to-face contact.
+            .assert_no_interference("column", "lower_column")
+            # Ramp / trap / hinge live well above the joint plane,
+            # so they're clear of the lower column entirely.
+            .assert_no_interference("ramp", "lower_column")
+            .assert_no_interference("hinge_pin", "lower_column")
+            .assert_no_interference("trap_closed", "lower_column")
+            .assert_no_interference("trap_open", "lower_column")
             # Lower-floor trap-open intrusion — must clear THIS floor's
-            # column-bottom stack (collar / ring bearing / spider hub)
-            # and the ramp.
+            # column-bottom stack (bearing / spider / column / ramp).
             .assert_no_interference("lower_trap_open", "column")
             .assert_no_interference("lower_trap_open", "bearing_spider")
             .assert_no_interference("lower_trap_open", "ring_bearing")
