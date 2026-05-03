@@ -141,16 +141,16 @@ def add_frame_gusset_t(
     location: Location = GUSSET_LOCATION,
 ) -> Assembly:
     """Add the A/B T-junction gusset to a scanner top-level assembly."""
-    return a.add(name, gusset(), location=location)
+    return a.add(name, gusset(), location=location, material="plastic_matte")
 
 
 # --- Assembly -----------------------------------------------------------
 
 assembly = (
     Assembly()
-    .add("gusset", gusset(), location=GUSSET_LOCATION)
-    .add("rail_a", rail_a_stub())
-    .add("rail_b", rail_b_stub())
+    .add("gusset", gusset(), location=GUSSET_LOCATION, material="plastic_matte")
+    .add("rail_a", rail_a_stub(), material="aluminium_anodized")
+    .add("rail_b", rail_b_stub(), material="aluminium_anodized")
     .assert_no_interference("gusset", "rail_a")
     .assert_no_interference("gusset", "rail_b")
     .assert_no_interference("rail_a", "rail_b")

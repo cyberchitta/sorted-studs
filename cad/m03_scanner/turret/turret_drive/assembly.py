@@ -507,21 +507,25 @@ def add_turret_drive(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
         "drive_pulley_shaft",
         driven_pulley(),
         location=base * Pos(TURRET_HUB_X, TURRET_HUB_Y, PULLEY_Z_CENTER),
+        material="aluminium_anodized",
     )
     a = a.add(
         "drive_pulley_motor",
         driver_pulley(),
         location=base * Pos(MOTOR_X, MOTOR_Y, PULLEY_Z_CENTER),
+        material="aluminium_anodized",
     )
     a = a.add(
         "drive_motor",
         motor(),
         location=base * Pos(MOTOR_X, MOTOR_Y, _MOTOR_BODY_CENTER_Z),
+        material="motor_casing",
     )
     a = a.add(
         "drive_bracket",
         bracket(),
         location=base,
+        material="plastic_matte",
     )
     return a
 
@@ -536,10 +540,12 @@ assembly = assembly.add(
     "hub_shaft_stub",
     _shaft_stub(length=_SHAFT_LEN),
     location=Pos(TURRET_HUB_X, TURRET_HUB_Y, RAIL_TOP_Z),
+    material="steel",
 )
 assembly = assembly.add(
     "cross_rail_stub",
     _cross_rail_stub(),
+    material="aluminium_anodized",
 )
 
 # Pairwise no-interference. Pulley-onto-shaft is tangent contact (zero

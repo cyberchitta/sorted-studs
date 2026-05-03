@@ -423,7 +423,10 @@ def add_turret_homing(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
         "homing_flag",
         flag(),
         location=base * Pos(TURRET_HUB_X, TURRET_HUB_Y, FLAG_Z_CENTER),
+        material="plastic_matte",
     )
+    # homing_sensor material left unset — opto-interrupter housing,
+    # render.py overrides.
     a = a.add(
         "homing_sensor",
         sensor(),
@@ -433,6 +436,7 @@ def add_turret_homing(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
         "homing_bracket",
         bracket(),
         location=base,
+        material="plastic_matte",
     )
     return a
 
@@ -447,10 +451,12 @@ assembly = assembly.add(
     "hub_shaft_stub",
     _shaft_stub(length=_SHAFT_LEN),
     location=Pos(TURRET_HUB_X, TURRET_HUB_Y, RAIL_TOP_Z),
+    material="steel",
 )
 assembly = assembly.add(
     "cross_rail_stub",
     _cross_rail_stub(),
+    material="aluminium_anodized",
 )
 
 # Pairwise no-interference. Flag-onto-shaft is tangent contact (zero

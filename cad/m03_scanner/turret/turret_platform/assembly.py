@@ -436,6 +436,15 @@ _PART_BUILDERS = {
     "kicker_tab": kicker_tab,
 }
 
+# Acrylic plate material is unsettled (chitra-cad has no transparent
+# material yet) — left unset here, render.py overrides it.
+_PART_MATERIALS = {
+    "bracket_pos": "plastic_matte",
+    "bracket_neg": "plastic_matte",
+    "ring": "plastic_matte",
+    "kicker_tab": "plastic_matte",
+}
+
 
 def add_turret_platform(
     a: Assembly, station: str, base=Pos(0, 0, 0)
@@ -457,6 +466,7 @@ def add_turret_platform(
             full_name,
             _PART_BUILDERS[sub_name](),
             location=base * centroid * rotation * image_loc,
+            material=_PART_MATERIALS.get(sub_name),
         )
     return a
 

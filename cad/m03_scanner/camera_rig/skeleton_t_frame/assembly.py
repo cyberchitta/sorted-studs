@@ -413,7 +413,7 @@ def add_skeleton_t_frame(a: Assembly) -> Assembly:
     into module-private state.
     """
     for name, part in _MEMBERS.items():
-        a = a.add(name, part)
+        a = a.add(name, part, material="aluminium_anodized")
     return a
 
 

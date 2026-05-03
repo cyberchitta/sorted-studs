@@ -256,6 +256,7 @@ def add_turret_dump_cam(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
         location=base * Pos(
             TURRET_HUB_X, TURRET_HUB_Y, TURRET_DUMP_CAM_CENTER_Z
         ),
+        material="plastic_matte",
     )
 
 
@@ -272,6 +273,7 @@ assembly = assembly.add(
     "hub_shaft_stub",
     _shaft_stub(length=_SHAFT_LEN),
     location=Pos(TURRET_HUB_X, TURRET_HUB_Y, _SHAFT_BASE_Z),
+    material="steel",
 )
 assembly = assembly.assert_no_interference(
     DUMP_CAM_PART_NAME, "hub_shaft_stub"
