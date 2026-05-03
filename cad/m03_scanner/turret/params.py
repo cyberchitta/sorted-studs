@@ -240,9 +240,18 @@ TURRET_DUMP_KICKER_PIVOT_Z = -130.0
 # underside down to this Z so peak-stroke contact lifts the platform.
 TURRET_DUMP_KICKER_LIFTER_TOP_Z = -45.0
 
-# Lifter pad XY in turret-local. Resolves the cart-frame inner-corner
-# tab position (X=+85, Y=-78) under the DUMP rotation Rz(+90):
-#     turret_x = -ARM_R - cart_y = -185 - (-78) = -107
-#     turret_y = cart_x          =          +85
-TURRET_DUMP_KICKER_LIFTER_TURRET_X = -107.0
-TURRET_DUMP_KICKER_LIFTER_TURRET_Y = +85.0
+# Lifter pad XY in turret-local. Resolves the cart-frame tab position
+# (X=+80, Y=-92) under the DUMP rotation Rz(+90). The pad is centered
+# under the tab geometry; the kicker beam is sized to cover both
+# the bridge-Y endpoint (at X=-110) and the tab footprint, yielding
+# a net outer-DOWN torque about the hinge (the inboard half of the
+# tab — past the hinge, ≈ 12 × 18 mm — has more area-weighted
+# leverage than the outboard half ≈ 8 × 18 mm; net moment is
+# (12·18·6 − 8·18·4) ∝ +720 outer-down, ~56% of inboard-only).
+#     turret_x = -ARM_R - cart_y = -185 - (-92) = -93 (tab geometric center)
+#     turret_y = cart_x          =          +80
+# Lifter pad CENTER (the contact zone the kicker beam wraps around)
+# sits 4 mm in +X from the tab geometric center, biased onto the
+# inboard half of the tab.
+TURRET_DUMP_KICKER_LIFTER_TURRET_X = -89.0
+TURRET_DUMP_KICKER_LIFTER_TURRET_Y = +80.0

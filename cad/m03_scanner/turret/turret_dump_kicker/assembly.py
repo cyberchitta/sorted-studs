@@ -5,14 +5,19 @@ Standalone bench-mounted 3D L-lever pivoted on a printed clevis bracket
 bolted to the slice (a) cross-rail's top T-slot. The lever's hub-end
 (in the cam plane Y=0) picks off the slice (f1) shaft cam at heading
 180° (the -X side, between hub and DUMP); a Y-cantilever then carries
-the lifter pad out to Y=+85 so the pad lands under the DUMP-station
-platform's inner +X-corner tab. At every indexed dwell a cam lobe
-rotates into heading 180° and pushes the follower outward by 5 mm
-(BASE_R 25 → PEAK_R 30); the lever rotates around the pivot pin and
-the lifter pad rises against the platform tab at DUMP, tilting the
-platform so the brick slides off into the diverter inlet below.
-Active-push: at rest (cam at valley) the lifter is retracted, so a
-stalled mechanism leaves all platforms level (no spurious dumps).
+the lifter pad out to Y=+80 so the pad lands under the DUMP-station
+platform's straddle-the-hinge tab (slice f4). At every indexed dwell
+a cam lobe rotates into heading 180° and pushes the follower outward
+by 5 mm (BASE_R 25 → PEAK_R 30); the lever rotates around the pivot
+pin and the lifter pad rises against the platform tab at DUMP. The
+push-up acts on the tab with the inboard half (PAST the hinge into
+hub-side air) carrying more area-weighted leverage than the outboard
+half (bonded to the acrylic), giving a NET outer-DOWN torque about
+the hinge — the platform tilts so the brick slides off the OUTER
+edge into the diverter inlet below. Active-push: at rest (cam at
+valley) the lifter is retracted, so a stalled mechanism leaves all
+platforms level (no spurious dumps); the per-hinge torsion spring
+holds them at level when the kicker isn't engaged.
 
 This slice ships REST geometry only (cam at valley, follower at radial
 BASE_R, lifter retracted). Cam-follower kinematics under shaft rotation
@@ -216,19 +221,22 @@ BRIDGE_Y_Y_END = LEVER_Y_LIFTER                                    # = +85
 BRIDGE_Y_Y_LEN = BRIDGE_Y_Y_END - BRIDGE_Y_Y_START
 _BRIDGE_Y_Y_CENTER = (BRIDGE_Y_Y_START + BRIDGE_Y_Y_END) / 2
 
-# Lifter beam: rectangular pad block in Y∈[+77, +93] (centered on
-# Y=+85, matching the tab footprint width 8 plus 4 mm overhang each
-# side = 16 mm) and X∈[-117, -97] (pad width 20 = tab width 12 + 4 mm
-# overhang each side, centered on the lifter pad turret-X = -107).
-# The bridge-Y end (at X = LEVER_RISER_X_CENTER = -110) sits within
-# this block, so the union picks up the bridge-Y → pad transition
-# without a separate corner block.
-_LIFTER_BEAM_X_INNER = TURRET_DUMP_KICKER_LIFTER_TURRET_X + 10.0   # = -97
-_LIFTER_BEAM_X_OUTER = TURRET_DUMP_KICKER_LIFTER_TURRET_X - 10.0   # = -117
-LIFTER_BEAM_X_LEN = _LIFTER_BEAM_X_INNER - _LIFTER_BEAM_X_OUTER     # = 20
-_LIFTER_BEAM_X_CENTER = TURRET_DUMP_KICKER_LIFTER_TURRET_X         # = -107
-LIFTER_BEAM_Y_LEN = 16.0
-_LIFTER_BEAM_Y_CENTER = LEVER_Y_LIFTER                              # = +85
+# Lifter beam: rectangular pad block sized to cover both the bridge-Y
+# endpoint (at X = LEVER_RISER_X_CENTER = -110, where the Y-cantilever
+# meets the pad zone) AND the platform tab footprint at the new
+# inboard-of-hinge position. Tab plan in turret at DUMP: X ∈
+# [-103, -83], Y ∈ [+71, +89]. Beam X ∈ [-117, -81] spans from the
+# bridge-Y outboard X face (-117) through the tab span and out to a
+# 2 mm overhang past the tab inboard tip (-83+2=-81 ish). Beam Y ∈
+# [+69, +91] gives 2 mm overhang past tab Y on each side. Beam
+# fully wraps the bridge-Y endpoint AND the tab; no separate corner
+# block needed.
+_LIFTER_BEAM_X_INNER = -81.0                                       # +X end (away from pivot)
+_LIFTER_BEAM_X_OUTER = -117.0                                      # -X end (toward pivot)
+LIFTER_BEAM_X_LEN = _LIFTER_BEAM_X_INNER - _LIFTER_BEAM_X_OUTER     # = 36
+_LIFTER_BEAM_X_CENTER = (_LIFTER_BEAM_X_INNER + _LIFTER_BEAM_X_OUTER) / 2  # = -99
+LIFTER_BEAM_Y_LEN = 22.0
+_LIFTER_BEAM_Y_CENTER = LEVER_Y_LIFTER                              # = +80
 
 
 # --- Pivot pin dimensions ----------------------------------------------
@@ -342,31 +350,39 @@ for _y in (-_LEVER_HALF_Y, +_LEVER_HALF_Y):
     )
 
 
-# Lifter beam covers the tab footprint with overhang. Tab in turret-
-# local at DUMP: X∈[-113,-101], Y∈[+81,+89] (cart (X=+85, Y=-78) under
-# Rz(+90)). Lifter beam X∈[-117,-53], Y∈[+77,+93]. Tab fits inside
-# beam with ≥ 4 mm overhang.
-_TAB_TURRET_X_INNER = -101.0
-_TAB_TURRET_X_OUTER = -113.0
-_TAB_TURRET_Y_INNER = +81.0
-_TAB_TURRET_Y_OUTER = +89.0
-assert _LIFTER_BEAM_X_INNER >= _TAB_TURRET_X_INNER + 4.0, (
+# Lifter beam covers the tab footprint. Tab in turret-local at DUMP:
+# cart (X=+80, Y=-92) ± (9, 10) under Rz(+90) maps to turret X ∈
+# [-103, -83] (= -cart_y - 185), Y ∈ [+71, +89] (= cart_x). Lifter
+# beam X ∈ [-117, -81], Y ∈ [+69, +91]. Tab X fully inside beam X
+# (-117 < -103 and -81 > -83 + 2 = -81); tab Y fully inside beam Y
+# (-69 < +71 - 2 = +69 and +91 > +89 + 2 = +91); the beam fully
+# covers the tab plan and also wraps the bridge-Y endpoint at X
+# ∈ [-117, -103]. The torque biased toward outer-DOWN comes from
+# the inboard-half-of-tab dominating the area-times-lever
+# integral (see TURRET_DUMP_KICKER_LIFTER_TURRET_X comment in
+# `../params.py`).
+_TAB_TURRET_X_INNER_AT_DUMP = -83.0    # tab inboard-end (less negative X)
+_TAB_TURRET_X_OUTER_AT_DUMP = -103.0   # tab outboard-end (more negative X)
+_TAB_TURRET_Y_NEG_AT_DUMP = +71.0
+_TAB_TURRET_Y_POS_AT_DUMP = +89.0
+assert _LIFTER_BEAM_X_INNER >= _TAB_TURRET_X_INNER_AT_DUMP + 2.0 - 1e-9, (
     f"lifter beam X-inner {_LIFTER_BEAM_X_INNER} too close to tab "
-    f"X-inner {_TAB_TURRET_X_INNER} (overhang < 4 mm)"
+    f"X-inner {_TAB_TURRET_X_INNER_AT_DUMP} (overhang < 2 mm)"
 )
-assert _LIFTER_BEAM_X_OUTER <= _TAB_TURRET_X_OUTER - 4.0, (
-    f"lifter beam X-outer {_LIFTER_BEAM_X_OUTER} too close to tab "
-    f"X-outer {_TAB_TURRET_X_OUTER} (overhang < 4 mm)"
+assert _LIFTER_BEAM_X_OUTER <= _TAB_TURRET_X_OUTER_AT_DUMP, (
+    f"lifter beam X-outer {_LIFTER_BEAM_X_OUTER} doesn't reach tab "
+    f"X-outer {_TAB_TURRET_X_OUTER_AT_DUMP}; bridge-Y endpoint may "
+    f"be unsupported"
 )
 _LIFTER_BEAM_Y_INNER = _LIFTER_BEAM_Y_CENTER - LIFTER_BEAM_Y_LEN / 2
 _LIFTER_BEAM_Y_OUTER = _LIFTER_BEAM_Y_CENTER + LIFTER_BEAM_Y_LEN / 2
-assert _LIFTER_BEAM_Y_INNER <= _TAB_TURRET_Y_INNER - 4.0, (
-    f"lifter beam Y-inner {_LIFTER_BEAM_Y_INNER} too close to tab "
-    f"Y-inner {_TAB_TURRET_Y_INNER} (overhang < 4 mm)"
+assert _LIFTER_BEAM_Y_INNER <= _TAB_TURRET_Y_NEG_AT_DUMP - 2.0 + 1e-9, (
+    f"lifter beam Y-inner {_LIFTER_BEAM_Y_INNER} > tab Y-neg "
+    f"{_TAB_TURRET_Y_NEG_AT_DUMP} - 2 mm overhang"
 )
-assert _LIFTER_BEAM_Y_OUTER >= _TAB_TURRET_Y_OUTER + 4.0, (
-    f"lifter beam Y-outer {_LIFTER_BEAM_Y_OUTER} too close to tab "
-    f"Y-outer {_TAB_TURRET_Y_OUTER} (overhang < 4 mm)"
+assert _LIFTER_BEAM_Y_OUTER >= _TAB_TURRET_Y_POS_AT_DUMP + 2.0 - 1e-9, (
+    f"lifter beam Y-outer {_LIFTER_BEAM_Y_OUTER} < tab Y-pos "
+    f"{_TAB_TURRET_Y_POS_AT_DUMP} + 2 mm overhang"
 )
 
 

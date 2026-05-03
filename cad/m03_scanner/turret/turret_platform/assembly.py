@@ -33,21 +33,25 @@ Members (5 total — 1 acrylic + 4 printed bonded pieces):
     slice (e)'s cam profile, a transparent silicone insert, or both.
   * kicker_tab — printed block bonded to the acrylic underside,
     positioned to sit above the slice (f2) bench-mounted lifter pad
-    when the cartridge is at the DUMP station. Located at the inner
-    +X corner of the platform (cart-frame X = +85, Y = -78), adjacent
-    to the +X hinge bracket — radial ≈ 115 from the brick centroid,
-    well outside the Ø172 below-mirror sightline cone (cone half-
-    radius 86 at the platform plane). Footprint 8 × 12 mm (X × Y);
-    sits inside the acrylic edge at X = +90 with 1 mm margin and
-    inboard of bracket Y face at -82 with AIR_GAP. Tab bottom face
-    at cartridge Z = -43 (TAB_LIFTER_CLEARANCE_Z = 2 mm above the
-    lifter top at REST z = -45); at the cam peak the lifter rises
-    and pushes the tab up, tilting the platform outer-up around its
-    hinge axis so the brick slides off into the diverter. The tab
-    sits in the same camera-frame corner as the hub-side hinge
-    bracket (visible in the IMAGE platform's frame too), so the
-    visible feature set is "bracket + small adjacent block" rather
-    than an isolated mid-platform feature in clean acrylic.
+    when the cartridge is at the DUMP station. The tab STRADDLES
+    the hinge axis: the outboard half (cart-frame Y ∈ [-90, -82])
+    bonds to the acrylic underside; the inboard half (Y ∈ [-102,
+    -90]) cantilevers PAST the acrylic inner edge into hub-side
+    air. The lifter pad lands ONLY under the inboard cantilever
+    (cart-frame Y centered ≈ -96), so push-up creates an
+    outer-DOWN torque about the hinge — brick slides outboard off
+    the platform's outer edge into the diverter inlet. Footprint
+    20 × 20 mm (X × Y), centered at cart-frame (X=+85, Y=-92);
+    the closest tab corner to the brick centroid sits at radial
+    ≈ 111 mm, well outside the Ø172 below-mirror sightline cone
+    (half-radius 86 at platform plane, ≈ 94 at the tab's lower Z).
+    Tab bottom face at cartridge Z = -43 (TAB_LIFTER_CLEARANCE_Z
+    = 2 mm above the lifter top at REST z = -45); at the cam peak
+    the lifter rises and pushes the inboard half of the tab up,
+    tilting the platform outer-down. The tab is visible in the
+    IMAGE platform's camera frame as a small block adjacent to
+    the hub-side hinge bracket — the classifier learns to ignore
+    it (identical on every cartridge).
 
 Coordinate frame = cartridge-local IMAGE pose:
     origin = brick centroid on platform top face
@@ -193,20 +197,30 @@ RING_BOTTOM_Z_LOCAL = BOND_GAP
 
 # --- Kicker tab dimensions (slice f4) ----------------------------------
 
-# Tab cartridge XY offset. Located at the inner +X corner of the
-# platform — outboard of the +X hinge bracket in X (bracket spans cart
-# X ∈ [+10.5, +15.5]) and inboard of the bracket's outer Y face (-82)
-# with AIR_GAP. Cart (X=+85, Y=-78) under DUMP's Rz(+90) maps to
-# turret (X=-107, Y=+85), where the slice (f2) lifter pad lands.
-# Footprint 8 × 12 mm (X × Y) — sized so the +X face clears the
-# acrylic edge at +90 with 1 mm margin, the -X face clears the
-# bracket outer X face with AIR_GAP, the +Y face clears the bracket
-# outer Y face at -82 with AIR_GAP, and the -Y face stays inside
-# the acrylic edge at -90.
-TAB_X_CENTER = 85.0
-TAB_Y_CENTER = -78.0
-TAB_X_LEN = 8.0
-TAB_Y_LEN = 12.0
+# Tab cartridge XY offset. Tab STRADDLES the hinge axis (cart-frame
+# Y = PIN_AXIS_Y_LOCAL = -90): outboard half bonds to acrylic
+# underside; inboard half cantilevers past the acrylic edge into
+# hub-side air. The lifter pad lands under the inboard half only,
+# so push-up gives outer-DOWN torque about the hinge.
+#
+# X centered at +80 with 18 mm span → tab X ∈ [+71, +89], 1 mm
+# margin to the acrylic +X edge at +90, and 55+ mm clear of the +X
+# bracket outboard X face at +15.5. Y centered at -92 — slightly
+# inboard of the hinge — so the 20 mm Y span splits 8 mm bonded
+# outboard (Y ∈ [-90, -82]) + 12 mm cantilevered inboard
+# (Y ∈ [-102, -90]). Closest tab corner to brick centroid:
+# (X=+71, Y=-82), radial = √(71² + 82²) ≈ 108.5 mm — clears the
+# Ø172 below-mirror sightline cone with margin even at the tab's
+# lower Z (cone half-radius ≈ 94 mm at z = -43).
+#
+# Cart (X=+80, Y=-92) under DUMP's Rz(+90) → turret (X=-93, Y=+80).
+# The lifter pad (slice f2) sits under the INBOARD half only —
+# turret X ∈ [-103, -95] (cart Y ∈ [-102, -90]) — to bias the contact
+# to the inboard side of the hinge.
+TAB_X_CENTER = 80.0
+TAB_Y_CENTER = -92.0
+TAB_X_LEN = 18.0
+TAB_Y_LEN = 20.0
 
 # Tab Z span: top BOND_GAP below acrylic underside; bottom
 # TAB_LIFTER_CLEARANCE_Z above the slice (f2) lifter pad's REST top.
@@ -288,54 +302,77 @@ assert TAB_Y_LEN >= WALL_MIN, (
     f"tab Y len {TAB_Y_LEN} < WALL_MIN ({WALL_MIN})"
 )
 
-# Tab footprint inside acrylic X / Y extents.
+# Tab X stays inside acrylic X edges (no X overhang).
 _TAB_X_OUTER = TAB_X_CENTER + TAB_X_LEN / 2
 _TAB_X_INNER = TAB_X_CENTER - TAB_X_LEN / 2
-_TAB_Y_OUTER = TAB_Y_CENTER - TAB_Y_LEN / 2          # toward -Y (more negative)
-_TAB_Y_INNER = TAB_Y_CENTER + TAB_Y_LEN / 2          # toward acrylic interior
 _ACRYLIC_HALF = PLATFORM_ACRYLIC_SIZE / 2            # = 90
 assert _TAB_X_OUTER <= _ACRYLIC_HALF, (
-    f"tab outer X face {_TAB_X_OUTER} overhangs acrylic edge "
+    f"tab outer X face {_TAB_X_OUTER} overhangs acrylic X edge "
     f"{_ACRYLIC_HALF}"
 )
 assert _TAB_X_INNER >= -_ACRYLIC_HALF, (
-    f"tab inner X face {_TAB_X_INNER} overhangs acrylic edge "
+    f"tab inner X face {_TAB_X_INNER} overhangs acrylic X edge "
     f"{-_ACRYLIC_HALF}"
-)
-assert _TAB_Y_OUTER >= -_ACRYLIC_HALF, (
-    f"tab outer Y face {_TAB_Y_OUTER} overhangs acrylic edge "
-    f"{-_ACRYLIC_HALF}"
-)
-assert _TAB_Y_INNER <= _ACRYLIC_HALF, (
-    f"tab inner Y face {_TAB_Y_INNER} overhangs acrylic edge "
-    f"{_ACRYLIC_HALF}"
 )
 
-# Tab clears the +X hinge bracket. Bracket spans cart X ∈
-# [BRACKET_POS_X - BLOCK_X/2, BRACKET_POS_X + BLOCK_X/2] and
-# Y ∈ [BRACKET_Y - BLOCK_Y/2, BRACKET_Y + BLOCK_Y/2] = [-98, -82].
-# Tab is in +X / -Y of the bracket; clearance is via the AIR_GAP in
-# Y between tab inner Y face and bracket outer Y face (which is
-# the +Y direction here = closer to acrylic interior).
-_BRACKET_POS_OUTER_Y = BRACKET_Y_LOCAL + BRACKET_BLOCK_Y / 2     # = -82
-_TAB_BRACKET_Y_GAP = _TAB_Y_INNER - _BRACKET_POS_OUTER_Y
-assert _TAB_BRACKET_Y_GAP >= _PIN_AIR_GAP - 1e-9, (
-    f"tab inner Y face {_TAB_Y_INNER} too close to +X bracket outer "
-    f"Y face {_BRACKET_POS_OUTER_Y} (gap {_TAB_BRACKET_Y_GAP} < "
+# Tab Y straddles the hinge: outboard half bonds to acrylic, inboard
+# half cantilevers past the acrylic edge. Naming: "Y_PAST_HINGE" is
+# the hub-side end (more negative Y), "Y_INTO_ACRYLIC" is the
+# brick-side end (less negative Y).
+_TAB_Y_PAST_HINGE = TAB_Y_CENTER - TAB_Y_LEN / 2     # most negative Y
+_TAB_Y_INTO_ACRYLIC = TAB_Y_CENTER + TAB_Y_LEN / 2   # least negative Y
+_HINGE_Y = PIN_AXIS_Y_LOCAL                          # = -90 (acrylic inner edge)
+_TAB_BOND_OVERLAP_Y = _TAB_Y_INTO_ACRYLIC - _HINGE_Y
+_TAB_INBOARD_OVERHANG_Y = _HINGE_Y - _TAB_Y_PAST_HINGE
+assert _TAB_BOND_OVERLAP_Y >= WALL_MIN, (
+    f"tab acrylic-bond overlap in Y is {_TAB_BOND_OVERLAP_Y:.2f} "
+    f"mm < WALL_MIN ({WALL_MIN}); tab top doesn't have enough "
+    f"bonded surface — shift TAB_Y_CENTER toward 0 or grow TAB_Y_LEN"
+)
+assert _TAB_INBOARD_OVERHANG_Y >= WALL_MIN, (
+    f"tab inboard overhang in Y is {_TAB_INBOARD_OVERHANG_Y:.2f} "
+    f"mm < WALL_MIN ({WALL_MIN}); push-up here would tilt the "
+    f"wrong way (outer-up) — push TAB_Y_CENTER more negative"
+)
+assert _TAB_Y_INTO_ACRYLIC <= _ACRYLIC_HALF, (
+    f"tab acrylic-bond end {_TAB_Y_INTO_ACRYLIC} overhangs acrylic "
+    f"+Y edge {_ACRYLIC_HALF}"
+)
+
+# Tab clears the +X hinge bracket. The bracket spans cart X ∈
+# [+10.5, +15.5], Y ∈ [-98, -82]. The tab now spans a much wider
+# X range (centered at +85) and crosses the hinge in Y, so it must
+# clear the bracket on the +X side via an X-direction gap.
+_BRACKET_POS_OUTER_X = BRACKET_POS_X_LOCAL + BRACKET_BLOCK_X / 2  # = +15.5
+_TAB_BRACKET_X_GAP = _TAB_X_INNER - _BRACKET_POS_OUTER_X
+assert _TAB_BRACKET_X_GAP >= _PIN_AIR_GAP - 1e-9, (
+    f"tab inner X face {_TAB_X_INNER} too close to +X bracket outer "
+    f"X face {_BRACKET_POS_OUTER_X} (gap {_TAB_BRACKET_X_GAP} < "
     f"AIR_GAP {_PIN_AIR_GAP})"
 )
 
 # Tab outside the Ø172 below-mirror sightline cone at the platform
-# plane. Cone radius 86 from brick centroid (cart origin); the
-# nearest tab corner to the centroid is the inner-X / inner-Y
-# corner at (TAB_X_CENTER - X/2, TAB_Y_CENTER + Y/2).
+# plane AND at the tab's bottom Z (cone diverges below the platform
+# at ~10° half-angle). Closest tab corner to brick centroid:
+# X_INNER (least +X), Y_INTO_ACRYLIC (least -Y, closest to centroid
+# in Y).
 import math as _math
-_NEAR_CORNER_R = _math.hypot(_TAB_X_INNER, _TAB_Y_INNER)
-_CONE_HALF_R = 172.0 / 2                                          # = 86
-assert _NEAR_CORNER_R > _CONE_HALF_R, (
+_NEAR_CORNER_R = _math.hypot(_TAB_X_INNER, _TAB_Y_INTO_ACRYLIC)
+_CONE_HALF_R_AT_PLATFORM = 172.0 / 2                              # = 86
+# Cone diverges at ~10° below the platform; at the tab's lower Z
+# (TAB_BOTTOM_Z_LOCAL = -43, so 43 mm below platform top z = 0)
+# the half-radius is ~94 mm.
+_CONE_DIVERGE_TAN = 0.176                                         # tan(10°)
+_TAB_LOWER_Z_BELOW_PLATFORM = -TAB_BOTTOM_Z_LOCAL                 # = +43
+_CONE_HALF_R_AT_TAB_BOTTOM = (
+    _CONE_HALF_R_AT_PLATFORM
+    + _TAB_LOWER_Z_BELOW_PLATFORM * _CONE_DIVERGE_TAN
+)
+assert _NEAR_CORNER_R > _CONE_HALF_R_AT_TAB_BOTTOM, (
     f"tab nearest-to-centroid corner radial {_NEAR_CORNER_R:.2f} "
-    f"≤ Ø172 cone half-radius {_CONE_HALF_R}; tab clips the "
-    f"below-mirror sightline cone"
+    f"≤ Ø172 cone half-radius {_CONE_HALF_R_AT_TAB_BOTTOM:.2f} at "
+    f"tab bottom Z; tab clips the below-mirror sightline cone — "
+    f"shift TAB_X_CENTER outboard or TAB_Y_CENTER more negative"
 )
 
 # Tab has positive height.
