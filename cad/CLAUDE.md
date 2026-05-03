@@ -87,6 +87,23 @@ Use underscores in directory names so Python can import them
 normally; hyphens block package imports and force `importlib`
 workarounds.
 
+## Running checks
+
+`cad-khana` and `chitra-cad` are installed (editable) in the repo's
+`uv`-managed venv at `.venv/`. Invoke the CLI directly:
+
+```
+.venv/bin/khana check  <path/to/assembly.py>   # diagnostics only
+.venv/bin/khana build  <path/to/assembly.py>   # also write STL/STEP
+.venv/bin/khana view   <path/to/assembly.py>   # push to the OCP viewer
+.venv/bin/khana render <path/to/assembly.py>   # ortho + iso PNGs
+```
+
+`uv run khana …` works too. After any geometry change, run
+`khana check` on the affected sub-assembly's `assembly.py` and the
+top-level `assembly.py` that includes it before claiming the slice is
+done — exit 0 means assertions and printability inspects all passed.
+
 ## Commit message draft
 
 Whenever a CAD slice updates a module's `NEXT_STEPS.md` (or
