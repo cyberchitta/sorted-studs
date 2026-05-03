@@ -519,13 +519,13 @@ def add_turret_drive(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
         "drive_motor",
         motor(),
         location=base * Pos(MOTOR_X, MOTOR_Y, _MOTOR_BODY_CENTER_Z),
-        material="motor_casing",
+        material="cast_aluminium_dark",
     )
     a = a.add(
         "drive_bracket",
         bracket(),
         location=base,
-        material="plastic_matte",
+        material="pla_matte",
     )
     return a
 

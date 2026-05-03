@@ -420,7 +420,7 @@ def add_turret_arm(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
     turret-local coordinates; `base` (default: identity) is
     pre-multiplied to lift them into a parent frame."""
     spider_pose = base * Pos(TURRET_HUB_X, TURRET_HUB_Y, TURRET_HINGE_PIN_Z)
-    a = a.add("spider", spider(), location=spider_pose, material="plastic_matte")
+    a = a.add("spider", spider(), location=spider_pose, material="pla_matte")
     for name, local_pos, rot in _PIN_PLACEMENTS:
         a = a.add(
             name, pin(), location=base * Pos(*local_pos) * rot, material="steel"

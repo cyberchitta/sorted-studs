@@ -479,8 +479,8 @@ def add_turret_dump_kicker(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
     """Place the kicker mount + lever + pin in turret-local. `base`
     (default: identity) is pre-multiplied to lift the assembly into a
     parent frame (e.g. world)."""
-    a = a.add("kicker_mount", kicker_mount(), location=base, material="plastic_matte")
-    a = a.add("kicker_lever", kicker_lever(), location=base, material="plastic_matte")
+    a = a.add("kicker_mount", kicker_mount(), location=base, material="pla_matte")
+    a = a.add("kicker_lever", kicker_lever(), location=base, material="pla_matte")
     # Pin axis = pivot bore axis = ±Y. Rotate default Cylinder (+Z) to
     # ±Y, then place centered along the bore axis.
     a = a.add(
@@ -504,7 +504,7 @@ assembly = add_turret_dump_kicker(Assembly())
 assembly = assembly.add(
     "cross_rail_stub", _cross_rail_stub(), material="aluminium_anodized"
 )
-assembly = assembly.add("cam_stub", _cam_stub(), material="plastic_matte")
+assembly = assembly.add("cam_stub", _cam_stub(), material="pla_matte")
 
 # All pairwise no-interference between kicker parts and stubs. The pin
 # tangent-fits the bores (zero-overlap in the model); foot tangent-sits

@@ -439,10 +439,10 @@ _PART_BUILDERS = {
 # Acrylic plate material is unsettled (chitra-cad has no transparent
 # material yet) — left unset here, render.py overrides it.
 _PART_MATERIALS = {
-    "bracket_pos": "plastic_matte",
-    "bracket_neg": "plastic_matte",
-    "ring": "plastic_matte",
-    "kicker_tab": "plastic_matte",
+    "bracket_pos": "pla_matte",
+    "bracket_neg": "pla_matte",
+    "ring": "pla_matte",
+    "kicker_tab": "pla_matte",
 }
 
 

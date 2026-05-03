@@ -151,7 +151,7 @@ def add_camera_rig(a: Assembly) -> Assembly:
     # Camera bracket + PCB + lens stand-in.
     a = (
         a
-        .add("camera_plate", _cam.bracket(), location=_CAMERA_LOC, material="plastic_matte")
+        .add("camera_plate", _cam.bracket(), location=_CAMERA_LOC, material="pla_matte")
         # camera_pcb / camera_lens material left unset — see render.py overrides.
         .add("camera_pcb", _cam.camera_pcb_stub(), location=_CAMERA_LOC)
         .add("camera_lens", _cam.lens_stub(), location=_CAMERA_LOC)
@@ -160,7 +160,7 @@ def add_camera_rig(a: Assembly) -> Assembly:
     for prefix, loc in _MIRROR_POSES.items():
         a = (
             a
-            .add(f"{prefix}_bracket", _mirror.bracket(), location=loc, material="plastic_matte")
+            .add(f"{prefix}_bracket", _mirror.bracket(), location=loc, material="pla_matte")
             .add(f"{prefix}_glass", _mirror.mirror_stub(), location=loc)
         )
     # Three mirror pad clamps.
@@ -171,7 +171,7 @@ def add_camera_rig(a: Assembly) -> Assembly:
             name,
             _pad_clamp.clamp(mount_in_clamp=mount_in_clamp),
             location=loc,
-            material="plastic_matte",
+            material="pla_matte",
         )
     # Camera pad clamp.
     camera_clamp_loc = (
@@ -187,7 +187,7 @@ def add_camera_rig(a: Assembly) -> Assembly:
         CAMERA_CLAMP_NAME,
         _cam_pad_clamp.clamp(mount_in_clamp=camera_mount_in_clamp),
         location=camera_clamp_loc,
-        material="plastic_matte",
+        material="pla_matte",
     )
     return a
 

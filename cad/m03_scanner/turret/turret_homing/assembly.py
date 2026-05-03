@@ -423,7 +423,7 @@ def add_turret_homing(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
         "homing_flag",
         flag(),
         location=base * Pos(TURRET_HUB_X, TURRET_HUB_Y, FLAG_Z_CENTER),
-        material="plastic_matte",
+        material="pla_matte",
     )
     # homing_sensor material left unset — opto-interrupter housing,
     # render.py overrides.
@@ -436,7 +436,7 @@ def add_turret_homing(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
         "homing_bracket",
         bracket(),
         location=base,
-        material="plastic_matte",
+        material="pla_matte",
     )
     return a
 

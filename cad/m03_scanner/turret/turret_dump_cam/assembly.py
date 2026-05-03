@@ -256,7 +256,7 @@ def add_turret_dump_cam(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
         location=base * Pos(
             TURRET_HUB_X, TURRET_HUB_Y, TURRET_DUMP_CAM_CENTER_Z
         ),
-        material="plastic_matte",
+        material="pla_matte",
     )
 
 
