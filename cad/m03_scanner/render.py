@@ -26,6 +26,7 @@ from assembly import assembly  # noqa: E402
 from detail_variations import apply_default_detail  # noqa: E402
 from material_variations import DEFAULT_OVERRIDES  # noqa: E402
 
+from chitra_cad.framing import HERO_3Q  # noqa: E402
 from chitra_cad.render import render  # noqa: E402
 from chitra_cad.scene import Scene  # noqa: E402
 
@@ -40,5 +41,5 @@ if __name__ == "__main__":
         out="outputs/renders",
         resolution=(1920, 1080),
         world_up=(0.0, 0.0, 1.0),
-        camera_direction=(1.0, -1.0, 0.7),
+        framing=HERO_3Q,
     )

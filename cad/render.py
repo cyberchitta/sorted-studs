@@ -38,6 +38,7 @@ from pathlib import Path
 from build123d import Location, Pos
 
 from cad_khana.mechanism.assembly import Assembly
+from chitra_cad.framing import HERO_3Q
 from chitra_cad.render import render
 from chitra_cad.scene import Scene
 
@@ -207,7 +208,7 @@ def render_schema(schema: str) -> None:
         out=f"outputs/renders/{schema}",
         resolution=(1920, 1080),
         world_up=(0.0, 0.0, 1.0),
-        camera_direction=(1.0, -1.0, 0.7),
+        framing=HERO_3Q,
     )
 
 
