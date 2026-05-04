@@ -46,6 +46,7 @@ from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
 
 from design_systems import color_of
+from materials import material_of
 from params import (
     MOTOR_BASE_Z,
     MOUNT_Z,
@@ -131,14 +132,14 @@ assembly = (
     Assembly()
     .add(
         "stem", stem(),
-        material="pla_matte", color=color_of("stem"),
+        material=material_of("stem"), color=color_of("stem"),
     )
     .add(
         "motor", motor(),
         # `motor` is tagged None in the design system (NEMA-17 cast
         # body — outside palette); falls through to the material's
         # intrinsic color.
-        material="cast_aluminium_dark",
+        material=material_of("motor"),
     )
     .assert_no_interference("stem", "motor")
 )

@@ -49,6 +49,7 @@ from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
 from design_systems import color_of
+from materials import material_of
 from params import (
     EXIT_ARC_DEG,
     ROTOR_BASE_DIAMETER,
@@ -207,7 +208,7 @@ def stator(
 STATOR_PART_NAMES = ("stator",)
 
 assembly = Assembly().add(
-    "stator", stator(), material="pla_matte", color=color_of("stator"),
+    "stator", stator(), material=material_of("stator"), color=color_of("stator"),
 )
 
 

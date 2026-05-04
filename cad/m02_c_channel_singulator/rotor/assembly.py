@@ -68,6 +68,7 @@ from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
 from design_systems import color_of
+from materials import material_of
 from params import (
     BOSS_BOTTOM_Z,
     BOSS_TOP_Z,
@@ -211,7 +212,7 @@ def rotor(
 ROTOR_PART_NAMES = ("rotor",)
 
 assembly = Assembly().add(
-    "rotor", rotor(), material="pla_matte", color=color_of("rotor"),
+    "rotor", rotor(), material=material_of("rotor"), color=color_of("rotor"),
 )
 
 

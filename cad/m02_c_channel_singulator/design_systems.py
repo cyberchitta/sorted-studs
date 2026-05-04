@@ -4,7 +4,8 @@ Schema (``Role``, ``Module``, ``DesignSystem``, palettes,
 ``DESIGN_SYSTEM_NAME`` switch, ``compose`` helper) lives in
 ``cad/design_systems.py``; this file holds only m02's tag dicts and
 binds the module-local ``DESIGN_SYSTEM`` + ``color_of`` shim that
-m02 sub-assemblies import.
+m02 sub-assemblies and the top-level assembly import. Material is a
+physical property, not a render axis — see ``materials.py``.
 
 m02 has four named parts: ``rotor`` (rotates, MECHANISM),
 ``stator`` (fixed structural shell, SECONDARY_STRUCTURE), ``stem``
