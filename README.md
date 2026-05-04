@@ -40,28 +40,28 @@ iterate on their own systems.
 
 ### Compute Architecture
 
-The system has two compute layers connected over local WiFi:
+The system has three compute layers connected over local WiFi:
 
 **Real-time layer** — Arduino Mega handles motor control, sensors, and diverter
 positioning. An ESP32 bridges the Arduino's serial interface to WiFi as HTTP endpoints.
 
-**Application layer** — runs the classification pipeline, inventory, planning, and UI.
-Two modes:
+**Capture layer** — four ESP32-CAM nodes (one per tetrahedral vertex around the
+brick) each run stock CameraWebServer firmware exposing an HTTP `/capture`
+endpoint. Pure capture devices, no on-board inference.
 
-| Mode       | Application Layer | iPhone Role        | Mac Role                           |
-| ---------- | ----------------- | ------------------ | ---------------------------------- |
-| Dev        | Mac               | Camera only (HTTP) | Inference (PyTorch), orchestration |
-| Deployment | iPhone            | Camera + inference | Not required                       |
-
-Both modes use identical HTTP interfaces between layers. Switching is a single
-URL configuration change on the ESP32.
+**Application layer** — Mac runs the classification pipeline, inventory, planning,
+and UI. During each scan the Mac fans 4 parallel HTTP GETs to
+`cameraN.local/capture`, fuses the views, runs inference (PyTorch / CoreML), and
+returns a routing decision to the Arduino. An iPhone-as-inference-host path was
+considered earlier and is deferred indefinitely; the Mac is the live capture +
+inference host.
 
 ### Data Flow
 
 ```
-Camera frame (single image, multiple views via mirrors)
-  → Image preprocessing (crop per view, normalize, background subtract)
-    → Classification model (part ID + color ID + confidence)
+4 camera frames (one per tetrahedral vertex, captured in parallel)
+  → Image preprocessing (per-view crop, normalize, background subtract)
+    → Multi-view classification model (part ID + color ID + confidence)
       → Inventory record { part_id, color_id, quantity, bin_location, timestamp }
         → Rebrickable sync (push inventory, pull set/MOC part lists)
           → Coverage analysis (which sets can be built, what's missing)
@@ -77,8 +77,10 @@ Camera frame (single image, multiple views via mirrors)
   ("send to bin N") from the classification engine. All intelligence lives in software.
 - **Fail-safe defaults.** Any brick the system can't confidently identify goes to a
   designated "uncertain" bin for manual review or re-scanning.
-- **Dev/deploy parity.** The HTTP interface between compute layers is identical in both
-  modes. Code developed on the Mac deploys to iPhone without architectural changes.
+- **Capture/inference decoupling.** The capture layer (ESP32-CAM nodes) and the
+  inference layer (Mac) talk over HTTP only, so either side can be swapped
+  independently — e.g. moving inference to an edge accelerator (Coral / Jetson)
+  later for standalone operation without changing the cameras.
 - **Open source, reproducible.** All 3D-printed parts designed for common FDM printers
   (≥200mm build plate). Electronics use widely available off-the-shelf components.
 
@@ -95,8 +97,8 @@ scanning station and ML pipeline.
 
 | Base Design                      | sorted-studs Replacement                                                                   |
 | -------------------------------- | ------------------------------------------------------------------------------------------ |
-| TCS34725 colour sensor           | Multi-view camera scanning station ([Module 3](docs/m03-multi-view-scanner.md))            |
-| Arduino Nano + HSL classifier    | Arduino Mega + ESP32 + iPhone/Mac pipeline ([Module 4](docs/m04-classification-engine.md)) |
+| TCS34725 colour sensor           | 4-camera tetrahedral scanning station ([Module 3](docs/m03-multi-view-scanner.md))         |
+| Arduino Nano + HSL classifier    | Arduino Mega + ESP32 + 4× ESP32-CAM + Mac pipeline ([Module 4](docs/m04-classification-engine.md)) |
 | Small rotary diverter (few bins) | Larger diverter — design TBD ([Module 5](docs/m05-diverter.md))                            |
 
 ---
@@ -137,11 +139,12 @@ scanning station and ML pipeline.
 **Phase 1 — Mechanical Foundation.** Print and build the base design (Modules 1, 2,
 5-small). Verify bricks feed, singulate, and route reliably.
 
-**Phase 2 — Multi-View Scanner.** Design and build the multi-mirror light box
-(Module 3). Integrate camera + Pi. Validate multi-angle capture.
+**Phase 2 — Multi-View Scanner.** Design and build the 4-vertex tetrahedral camera
+station (Module 3). Integrate the four ESP32-CAM nodes with the Mac capture host.
+Validate multi-angle capture.
 
 **Phase 3 — Classification Pipeline.** Synthetic data rendering, initial model training,
-Brickognize API benchmarking (Module 4). Development on Mac with iPhone as camera.
+Brickognize API benchmarking (Module 4). Mac is the capture + inference host.
 
 **Phase 4 — Inventory & Planning.** Rebrickable integration, coverage analysis, web
 dashboard (Modules 6, 7, 10).
@@ -150,7 +153,8 @@ dashboard (Modules 6, 7, 10).
 
 **Phase 6 — Packet Generation.** Step-level mapping, pick lists, bag-filling (Module 8).
 
-**Phase 7 — Polish & Scale.** 2,000+ parts recognition. CoreML deployment to iPhone.
+**Phase 7 — Polish & Scale.** 2,000+ parts recognition. Optional edge-accelerator
+(Coral / Jetson) deployment for standalone operation without a Mac.
 Community documentation.
 
 ---

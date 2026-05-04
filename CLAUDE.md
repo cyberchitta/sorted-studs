@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**sorted-studs** is an AI-powered LEGO brick sorting system. It mechanically singulates bricks, scans each one with a multi-view camera station (using mirrors for simultaneous angles), classifies part ID + color via ML, catalogs the inventory synced to Rebrickable, and generates "build packets" — bagged brick groups for instruction steps.
+**sorted-studs** is an AI-powered LEGO brick sorting system. It mechanically singulates bricks, scans each one with a multi-view camera station (four cameras at the vertices of a regular tetrahedron around the brick), classifies part ID + color via ML, catalogs the inventory synced to Rebrickable, and generates "build packets" — bagged brick groups for instruction steps.
 
 The repository is currently in the **specification/design phase** — it contains only documentation (`docs/`) and no source code yet.
 
@@ -15,17 +15,22 @@ The repository is currently in the **specification/design phase** — it contain
 
 ## Architecture
 
-The system has two physical compute layers:
+The system has three physical compute layers:
 
 - **Arduino/ESP32** — real-time motor control, sensor reading, beam-break detection,
-  diverter positioning (deterministic timing)
-- **iPhone** — camera capture, image preprocessing, ML inference via CoreML Neural
-  Engine. Communicates with Arduino over local WiFi using a simple HTTP protocol.
-- **Mac** — model training, dataset pipeline, iterative development. Also serves as
-  the inference host early in development before the iOS app is complete.
+  diverter positioning (deterministic timing).
+- **ESP32-CAM nodes (×4)** — one per camera; each runs stock CameraWebServer
+  firmware exposing an HTTP `/capture` endpoint over WiFi. Pure capture devices,
+  no inference on-board.
+- **Mac** — capture host (fans 4 parallel HTTP GETs to `cameraN.local/capture`
+  during each IMAGE-station dwell), image preprocessing, ML inference, model
+  training, and dataset pipeline. Communicates with the Arduino over local WiFi
+  using a simple HTTP protocol.
 
-Communication between Arduino and iPhone: WiFi HTTP. Arduino POSTs sensor events
-("brick in position"), iPhone responds with actions ("route to bin 7").
+Communication between Arduino and Mac: WiFi HTTP. Arduino POSTs sensor events
+("brick in position"), Mac responds with actions ("route to bin 7"). An iPhone
+inference path was considered earlier and is deferred indefinitely; the Mac is
+the live capture + inference host.
 
 ### Module Map
 
@@ -48,10 +53,11 @@ Communication between Arduino and iPhone: WiFi HTTP. Arduino POSTs sensor events
 from color (~60 classes) to avoid a combinatorial explosion. Multi-view fusion
 preferred over per-view ensemble. Brickognize API (`api.brickognize.com`) used as
 reference oracle during bootstrapping. Synthetic training data rendered from LDraw
-models via Blender/BlenderProc. Models trained on Mac, exported to CoreML, deployed
-on iPhone.
+models via Blender/BlenderProc. Models trained and run on Mac (CoreML or
+PyTorch); an edge accelerator (Coral / Jetson) is the future path if standalone
+operation without a Mac is wanted.
 
-**Scanner (Module 3):** Single camera + multiple first-surface mirrors captures top, left profile, right profile (and optionally bottom) in one exposure. This is the core innovation over existing sorters that use single-view top-down only.
+**Scanner (Module 3):** Four ESP32-CAM nodes at the vertices of a regular tetrahedron centred on the brick capture top, two profiles, and one underside view simultaneously. Multi-view fusion is the core innovation over existing sorters that rely on single-view top-down only. An earlier mirrors-and-one-camera topology at the same four vertex positions was abandoned in 2026-05-04 for cost, optical-tolerancing, and host-agnosticism reasons; see `cad/m03_scanner/cameras_design_notes.md`.
 
 **Orchestration (Module 9):** Decoupled Python services communicating via TCP sockets (modeled after BrickSortingMachine project). Pi relays messages between services; allows independent restart/update of modules.
 
