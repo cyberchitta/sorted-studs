@@ -38,6 +38,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
 
+from design_systems import DESIGN_SYSTEM
 from drive import assembly as _drive
 from params import ROTOR_STATOR_GAP
 from rotor import assembly as _rotor
@@ -45,6 +46,27 @@ from stator import assembly as _stator
 
 
 GAP_CLEARANCE_TOLERANCE = 0.5   # mm — catches a shrunk V-gap early
+
+
+# --- Design-system coverage --------------------------------------------
+#
+# Every named m02 part must appear in the active design system's
+# tagging dict (``None`` allowed for hardware — kept at material's
+# intrinsic color). A part added without a tag fails here instead of
+# silently rendering off-palette. Swapping ``DESIGN_SYSTEM_NAME``
+# (in ``cad/design_systems.py``) to a palette with missing tags also
+# fails here, so the swap surface is loud.
+
+M02_PART_NAMES = (
+    list(_rotor.ROTOR_PART_NAMES)
+    + list(_stator.STATOR_PART_NAMES)
+    + list(_drive.DRIVE_PART_NAMES)
+)
+_untagged = [n for n in M02_PART_NAMES if n not in DESIGN_SYSTEM.tag_of]
+assert not _untagged, (
+    f"{len(_untagged)} m02 part(s) missing a tag for design system "
+    f"'{DESIGN_SYSTEM.name}' in design_systems.py: {_untagged}"
+)
 
 
 assembly = (

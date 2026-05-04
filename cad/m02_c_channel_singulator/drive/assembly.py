@@ -45,6 +45,7 @@ from build123d import Box, Cylinder, Part, Pos
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
 
+from design_systems import color_of
 from params import (
     MOTOR_BASE_Z,
     MOUNT_Z,
@@ -120,14 +121,25 @@ def motor() -> Part:
 
 # --- Assembly ----------------------------------------------------------
 
+DRIVE_PART_NAMES = ("stem", "motor")
+
 # Sanity: the motor's front face sits on the stem flange's top face.
 # These two faces are coincident (tangent contact), not overlapping;
 # assert_no_interference is the right check — tangent contact reads
 # as zero clearance but zero overlap volume.
 assembly = (
     Assembly()
-    .add("stem", stem())
-    .add("motor", motor())
+    .add(
+        "stem", stem(),
+        material="pla_matte", color=color_of("stem"),
+    )
+    .add(
+        "motor", motor(),
+        # `motor` is tagged None in the design system (NEMA-17 cast
+        # body — outside palette); falls through to the material's
+        # intrinsic color.
+        material="cast_aluminium_dark",
+    )
     .assert_no_interference("stem", "motor")
 )
 
