@@ -33,7 +33,7 @@ scene = Scene.from_assembly(detailed)
 if __name__ == "__main__":
     render(
         scene,
-        out="renders",
+        out="outputs/renders",
         resolution=(1920, 1080),
         world_up=(0.0, 0.0, 1.0),
         camera_direction=(1.0, -1.0, 0.7),
