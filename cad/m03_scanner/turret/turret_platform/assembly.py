@@ -97,6 +97,7 @@ from turret.params import (  # noqa: E402
     WALL_MIN,
 )
 from design_systems import color_of  # noqa: E402
+from materials import material_of  # noqa: E402
 
 
 # --- Cartridge-local IMAGE-pose references -----------------------------
@@ -521,12 +522,6 @@ _PART_BUILDERS = {
     "frame": frame,
 }
 
-_PART_MATERIALS = {
-    "acrylic": "acrylic_clear",
-    "frame": "pla_matte",
-}
-
-
 def add_turret_platform(
     a: Assembly, station: str, base=Pos(0, 0, 0)
 ) -> Assembly:
@@ -547,7 +542,7 @@ def add_turret_platform(
             full_name,
             _PART_BUILDERS[sub_name](),
             location=base * centroid * rotation * image_loc,
-            material=_PART_MATERIALS.get(sub_name),
+            material=material_of(full_name),
             color=color_of(full_name),
         )
     return a

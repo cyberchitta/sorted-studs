@@ -93,6 +93,7 @@ from turret.params import (  # noqa: E402
     WALL_MIN,
 )
 from design_systems import color_of  # noqa: E402
+from materials import material_of  # noqa: E402
 
 
 # --- Spider Z geometry (private to this sub-assembly) -------------------
@@ -336,11 +337,12 @@ def add_turret_arm(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
     spider_pose = base * Pos(TURRET_HUB_X, TURRET_HUB_Y, TURRET_HINGE_PIN_Z)
     a = a.add(
         "spider", spider(), location=spider_pose,
-        material="pla_matte", color=color_of("spider"),
+        material=material_of("spider"), color=color_of("spider"),
     )
     for name, local_pos, rot in _PIN_PLACEMENTS:
         a = a.add(
-            name, pin(), location=base * Pos(*local_pos) * rot, material="steel"
+            name, pin(), location=base * Pos(*local_pos) * rot,
+            material=material_of(name),
         )
     return a
 

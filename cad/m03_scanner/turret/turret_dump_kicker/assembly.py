@@ -104,6 +104,7 @@ from turret.params import (  # noqa: E402
     WALL_MIN,
 )
 from design_systems import color_of  # noqa: E402
+from materials import material_of  # noqa: E402
 
 
 # --- Cross-rail interface (private mirrors of slice (a)) ---------------
@@ -594,11 +595,11 @@ def add_turret_dump_kicker(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
     parent frame (e.g. world)."""
     a = a.add(
         "kicker_mount", kicker_mount(), location=base,
-        material="pla_matte", color=color_of("kicker_mount"),
+        material=material_of("kicker_mount"), color=color_of("kicker_mount"),
     )
     a = a.add(
         "kicker_lever", kicker_lever(), location=base,
-        material="pla_matte", color=color_of("kicker_lever"),
+        material=material_of("kicker_lever"), color=color_of("kicker_lever"),
     )
     # Pin axis = pivot bore axis = ±Y. Rotate default Cylinder (+Z) to
     # ±Y, then place centered along the bore axis.
@@ -610,7 +611,7 @@ def add_turret_dump_kicker(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
             _PIN_Y_CENTER,
             TURRET_DUMP_KICKER_PIVOT_Z,
         ) * Rot(90, 0, 0),
-        material="steel",
+        material=material_of("kicker_pin"),
     )
     return a
 

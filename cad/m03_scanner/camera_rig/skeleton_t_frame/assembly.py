@@ -118,6 +118,7 @@ from camera_rig.params import (  # noqa: E402
     MIRROR_MOUNT_BACK_OFFSET,
 )
 from design_systems import color_of  # noqa: E402
+from materials import material_of  # noqa: E402
 
 
 # --- Member cross-section -----------------------------------------------
@@ -450,7 +451,7 @@ def add_skeleton_t_frame(a: Assembly) -> Assembly:
     into module-private state.
     """
     for name, part in _MEMBERS.items():
-        a = a.add(name, part, material="aluminium_anodized", color=color_of(name))
+        a = a.add(name, part, material=material_of(name), color=color_of(name))
     return a
 
 

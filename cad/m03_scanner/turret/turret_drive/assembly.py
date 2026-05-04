@@ -118,6 +118,7 @@ from turret.params import (  # noqa: E402
     WALL_MIN,
 )
 from design_systems import color_of  # noqa: E402
+from materials import material_of  # noqa: E402
 
 
 # --- Cross-rail interface (private mirror of slice a) ------------------
@@ -508,25 +509,25 @@ def add_turret_drive(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
         "drive_pulley_shaft",
         driven_pulley(),
         location=base * Pos(TURRET_HUB_X, TURRET_HUB_Y, PULLEY_Z_CENTER),
-        material="aluminium_anodized",
+        material=material_of("drive_pulley_shaft"),
     )
     a = a.add(
         "drive_pulley_motor",
         driver_pulley(),
         location=base * Pos(MOTOR_X, MOTOR_Y, PULLEY_Z_CENTER),
-        material="aluminium_anodized",
+        material=material_of("drive_pulley_motor"),
     )
     a = a.add(
         "drive_motor",
         motor(),
         location=base * Pos(MOTOR_X, MOTOR_Y, _MOTOR_BODY_CENTER_Z),
-        material="cast_aluminium_dark",
+        material=material_of("drive_motor"),
     )
     a = a.add(
         "drive_bracket",
         bracket(),
         location=base,
-        material="pla_matte",
+        material=material_of("drive_bracket"),
         color=color_of("drive_bracket"),
     )
     return a

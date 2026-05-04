@@ -96,6 +96,7 @@ from turret.params import (  # noqa: E402
     WALL_MIN,
 )
 from design_systems import color_of  # noqa: E402
+from materials import material_of  # noqa: E402
 
 
 # --- Cross-rail interface (private mirror of slice a) ------------------
@@ -424,7 +425,7 @@ def add_turret_homing(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
         "homing_flag",
         flag(),
         location=base * Pos(TURRET_HUB_X, TURRET_HUB_Y, FLAG_Z_CENTER),
-        material="pla_matte",
+        material=material_of("homing_flag"),
         color=color_of("homing_flag"),
     )
     # homing_sensor material left unset — opto-interrupter housing,
@@ -438,7 +439,7 @@ def add_turret_homing(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
         "homing_bracket",
         bracket(),
         location=base,
-        material="pla_matte",
+        material=material_of("homing_bracket"),
         color=color_of("homing_bracket"),
     )
     return a
