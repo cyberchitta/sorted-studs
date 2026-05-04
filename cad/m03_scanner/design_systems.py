@@ -92,18 +92,15 @@ ROLE_OF: dict[str, Role | None] = {
     "pin_load": None,
     "pin_dump": None,
     "pin_return": None,
-    # --- turret.turret_platform × 4 stations × 5 sub-parts ------------
-    # Acrylic stays None (clear); printed sub-parts tilt with the
-    # platform during dump → MECHANISM.
+    # --- turret.turret_platform × 4 stations × 2 sub-parts ------------
+    # Acrylic insert stays None (clear); the integrated printed frame
+    # tilts with the platform during dump → MECHANISM.
     **{
         f"platform_{station}_{sub}": role
         for station in ("image", "load", "dump", "return")
         for sub, role in (
             ("acrylic", None),
-            ("bracket_pos", Role.MECHANISM),
-            ("bracket_neg", Role.MECHANISM),
-            ("ring", Role.MECHANISM),
-            ("kicker_tab", Role.MECHANISM),
+            ("frame", Role.MECHANISM),
         )
     },
     # --- turret.turret_dump_cam ---------------------------------------

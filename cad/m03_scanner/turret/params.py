@@ -194,41 +194,39 @@ TURRET_DUMP_CAM_BOTTOM_Z = TURRET_DUMP_CAM_CENTER_Z - TURRET_DUMP_CAM_HEIGHT / 2
 # PIVOT_X, y = 0). The lever's hub-end (in the y = 0 plane, in line
 # with the cam disc) picks off the slice (f1) shaft cam's OD at heading
 # 180° (the -X side, between hub and DUMP); a Y-cantilever then carries
-# the lifter pad out to y = +85 so the pad lands under the DUMP-station
-# platform's inner-corner tab. At rest (cam valley between dwells) the
-# follower sits at radial BASE_R = 25 from the cam axis and the lifter
-# pad is retracted; at every dwell a cam lobe rotates into heading 180°
-# and pushes the follower outward to PEAK_R = 30 (5 mm radial stroke),
-# tilting the lever and raising the lifter pad against the platform
-# tab at DUMP.
+# the lifter pad out to y = +80 so the pad lands under the tip of the
+# slice (d) platform frame's inward extension (cantilevered past the
+# hinge). At rest (cam valley between dwells) the follower sits at
+# radial BASE_R = 25 from the cam axis and the lifter pad is retracted;
+# at every dwell a cam lobe rotates into heading 180° and pushes the
+# follower outward to PEAK_R = 30 (5 mm radial stroke), tilting the
+# lever and raising the lifter pad against the extension tip at DUMP.
 #
-# Lifter / tab corner position. The lifter pad sits at the inner +X
-# corner of the DUMP platform (cart-frame X = +85, Y = -78), well
-# outside the Ø172 below-mirror sightline cone (radial ≈ 115 from the
-# brick centroid vs. cone half-radius 86 at the platform plane). The
-# matching tab on the platform underside sits in the same corner. The
-# Rz(+90) rotation that maps cartridge-local → turret-local at DUMP
-# sends cart (X=+85, Y=-78) to turret (X=-107, Y=+85), which is where
-# the lifter lives in turret-local.
+# Lifter / extension-tip position. The slice (d) platform frame
+# extends one corner inward (in cart -Y direction) past the hinge to
+# a lift point at cart-frame (X=+80, Y=-130) — 40 mm hub-side of the
+# hinge axis (cart Y=-90), giving a clean single-direction torque
+# about the hinge with no competing bonded brick-side push. Cart X=+80
+# keeps the extension at the +X corner of the platform (well clear of
+# the Ø172 below-mirror sightline cone and the slice (c) DUMP spider
+# arm at cart X ∈ [-7, +7] / turret Y ∈ [-7, +7]). The Rz(+90)
+# rotation that maps cartridge-local → turret-local at DUMP sends
+# cart (X=+80, Y=-130) to turret (X=-55, Y=+80), which is where the
+# lifter lives in turret-local.
 #
 # This slice ships REST geometry only — static placement of mount,
 # lever, pin. Cam-follower kinematics under shaft rotation (lever
 # rotation angle vs cam profile, follower roller geometry, peak-stroke
-# clearance to platform tab) are deferred until slices f3/f4 add the
-# per-arm hinge stop and the platform tab; slice f5 integrate ties the
-# kinematics together.
+# clearance to extension tip) are deferred until slices f3/f4 add the
+# per-arm hinge stop and the platform extension; slice f5 integrate
+# ties the kinematics together.
 #
 # Pivot location: x outboard of the homing bracket region
 # (X∈[-62.5,-31.5]) so the kicker foot can sit at the same X∈[-140,-80]
 # the homing slice's KICKER_FOOT_X_INNER mirror assumes; z above cross-
 # rail top (-200) and below cam Z-band ([-81, -69]). Axis along ±Y so
 # the hub-arm rotates in the X-Z plane; bridge-Y cantilevers in +Y to
-# reach the lifter at y=+85. PIVOT_X stays at -110 (unchanged from
-# pre-corner-move geometry) — the corner move shifts the LIFTER from
-# (X=-185, Y=0) to (X=-107, Y=+85), which is reached by re-shaping the
-# lever (3D L), not by moving the pivot. The handoff's -50 was wrong:
-# it crashes both the slice (b) hub housing and the slice (g) homing
-# bracket.
+# reach the lifter at y=+80. PIVOT_X stays at -110.
 TURRET_DUMP_KICKER_PIVOT_X = -110.0
 TURRET_DUMP_KICKER_PIVOT_Y = 0.0
 TURRET_DUMP_KICKER_PIVOT_Z = -130.0
@@ -236,22 +234,17 @@ TURRET_DUMP_KICKER_PIVOT_Z = -130.0
 # Lifter pad TOP-FACE Z at rest. 17.7 mm below the slice (d) platform
 # bracket bottom (z = -27.3) — clear of the swept platform footprint at
 # any station so the lever-at-rest doesn't crash an indexing platform
-# that's not yet at DUMP. Slice f4 will hang a tab from the platform
-# underside down to this Z so peak-stroke contact lifts the platform.
+# that's not yet at DUMP. Slice (d)'s integrated extension drops down
+# to z = -43 at the lift point; the 2 mm REST clearance lets the cam
+# stroke close the gap and then push the platform.
 TURRET_DUMP_KICKER_LIFTER_TOP_Z = -45.0
 
-# Lifter pad XY in turret-local. Resolves the cart-frame tab position
-# (X=+80, Y=-92) under the DUMP rotation Rz(+90). The pad is centered
-# under the tab geometry; the kicker beam is sized to cover both
-# the bridge-Y endpoint (at X=-110) and the tab footprint, yielding
-# a net outer-DOWN torque about the hinge (the inboard half of the
-# tab — past the hinge, ≈ 12 × 18 mm — has more area-weighted
-# leverage than the outboard half ≈ 8 × 18 mm; net moment is
-# (12·18·6 − 8·18·4) ∝ +720 outer-down, ~56% of inboard-only).
-#     turret_x = -ARM_R - cart_y = -185 - (-92) = -93 (tab geometric center)
+# Lifter pad XY in turret-local. Resolves the cart-frame extension-tip
+# position (X=+80, Y=-130) under the DUMP rotation Rz(+90):
+#     turret_x = -ARM_R - cart_y = -185 - (-130) = -55
 #     turret_y = cart_x          =          +80
-# Lifter pad CENTER (the contact zone the kicker beam wraps around)
-# sits 4 mm in +X from the tab geometric center, biased onto the
-# inboard half of the tab.
-TURRET_DUMP_KICKER_LIFTER_TURRET_X = -89.0
+# Lever arm = |cart_y - hinge_cart_y| = |-130 - (-90)| = 40 mm hub-side
+# of the hinge — single-direction torque (no competing bonded brick-side
+# push as in the prior straddle-the-hinge tab design).
+TURRET_DUMP_KICKER_LIFTER_TURRET_X = -55.0
 TURRET_DUMP_KICKER_LIFTER_TURRET_Y = +80.0

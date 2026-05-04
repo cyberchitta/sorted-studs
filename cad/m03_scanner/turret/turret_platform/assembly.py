@@ -1,57 +1,50 @@
 """
-M03 scanner — rev-3 turret platform cartridge (slice d of the 4-station
+M03 scanner — rev-4 turret platform cartridge (slice d of the 4-station
 turret).
 
-Single platform "cartridge": PMMA acrylic plate + 2 bonded hinge
-brackets near the inner (hub-side) edge + 1 bonded perimeter ring on
-the top face + 1 bonded kicker tab on the underside (slice f4). Four
-identical instances ride the slice (c) spider in operation; this slice
-ships ONE cartridge in its IMAGE-station pose (world centroid at
-origin, top face at z = 0). Slice (f) integrate replicates it at the
-other three stations via 90° rotations around the hub axis.
+Two-piece "cartridge": a PMMA acrylic insert (172 × 172 × 4 mm) dropped
+into a single printed frame body that integrates the perimeter ring,
+acrylic pocket, hinge brackets, and kicker extension. Replaces the
+prior 5-piece bonded design (acrylic + 2 brackets + ring + tab) — the
+single printed frame is more dimensionally precise (hinge-to-extension
+geometry fixed by the printer rather than the glue jig) and removes the
+PLA-PMMA bond joints. The acrylic just provides the transparent
+brick-resting surface.
 
-Members (5 total — 1 acrylic + 4 printed bonded pieces):
-  * acrylic — 180 × 180 × 4 mm PMMA, top face at z = 0, centred on
-    origin in X / Y. Same stock + thickness as the rev-3
-    platform_acrylic; reuses PLATFORM_ACRYLIC_SIZE / PLATFORM_ACRYLIC_T
-    so a revision in one place propagates everywhere.
-  * bracket_pos_x, bracket_neg_x — two printed hinge brackets bonded
-    to the acrylic underside, straddling the slice (c) IMAGE pin's
-    bushing block in X. The IMAGE pin axis runs along world ±X at
-    (z = -22.5, y = +95). Slice (c)'s bushing block occupies world
-    X ∈ [-10, +10] (block_w = 20 along the pin axis); the pin
-    protrudes 5 mm past each face to world X = ±15. The two brackets
-    sit at world X = ±13 (centerline), each engaging one pin-tip
-    protrusion zone. A single printed body fits both via X-mirror
-    symmetry.
-  * ring — printed square frame bonded to the acrylic top. Outer
-    perimeter matches the acrylic (180 × 180); inner opening 172 ×
-    172 to keep the Ø172 below-mirror sightline cone (per design
-    brief 4.2) clear. Frame width 4 mm, height 5 mm above the
-    acrylic top. Edge containment only — the brick can wander within
-    the 172 × 172 zone; centring is deferred to either banking via
-    slice (e)'s cam profile, a transparent silicone insert, or both.
-  * kicker_tab — printed block bonded to the acrylic underside,
-    positioned to sit above the slice (f2) bench-mounted lifter pad
-    when the cartridge is at the DUMP station. The tab STRADDLES
-    the hinge axis: the outboard half (cart-frame Y ∈ [-90, -82])
-    bonds to the acrylic underside; the inboard half (Y ∈ [-102,
-    -90]) cantilevers PAST the acrylic inner edge into hub-side
-    air. The lifter pad lands ONLY under the inboard cantilever
-    (cart-frame Y centered ≈ -96), so push-up creates an
-    outer-DOWN torque about the hinge — brick slides outboard off
-    the platform's outer edge into the diverter inlet. Footprint
-    20 × 20 mm (X × Y), centered at cart-frame (X=+85, Y=-92);
-    the closest tab corner to the brick centroid sits at radial
-    ≈ 111 mm, well outside the Ø172 below-mirror sightline cone
-    (half-radius 86 at platform plane, ≈ 94 at the tab's lower Z).
-    Tab bottom face at cartridge Z = -43 (TAB_LIFTER_CLEARANCE_Z
-    = 2 mm above the lifter top at REST z = -45); at the cam peak
-    the lifter rises and pushes the inboard half of the tab up,
-    tilting the platform outer-down. The tab is visible in the
-    IMAGE platform's camera frame as a small block adjacent to
-    the hub-side hinge bracket — the classifier learns to ignore
-    it (identical on every cartridge).
+Members (2 total — 1 PMMA insert + 1 printed frame):
+  * acrylic_insert — 172 × 172 × 4 mm PMMA, top face at z = 0, centred
+    on origin in X / Y. Dropped into the frame's pocket; rests on 4
+    corner support lips at z = -4. Slip-fit; on assembly the user
+    secures the four corners with dabs of structural adhesive (not
+    modelled — the bond zone is small and offset to the corners which
+    are clear of the Ø172 sightline cone).
+  * frame — single printed body integrating:
+      - top ring (z ∈ [0, +5], 180 × 180 outer, 172 × 172 inner) —
+        4 mm wide brick-containment lip above the acrylic
+      - pocket walls (z ∈ [-4, 0], same cross-section) — capture the
+        acrylic edges
+      - corner lips (z ∈ [-7, -4], 4 × 10 × 10 mm at pocket corners) —
+        support the acrylic from below; clear of the Ø172 sightline
+        cone (lip inner-most corner at radial 107.5 ≫ cone half-radius
+        87.2 at z = -7) where a continuous bottom lip would clip
+      - hub-side skirt (z ∈ [-27.3, -4] at cart Y ∈ [-90, -86]) —
+        4 mm-thick wall extending the perimeter down for bracket
+        attachment; full X span minus a 21 mm-wide notch at cart
+        X ∈ [-10.5, +10.5] so the slice (c) bushing block passes
+        through unobstructed
+      - hinge brackets (cart X = ±13, Y ∈ [-98, -82], z ∈ [-27.3, -4])
+        — integrated into the skirt at the bracket positions; horizontal
+        Ø5.4 pin bore along ±X at cart Y = -90, z = -22.5
+      - kicker extension (cart X ∈ [+71, +89]) — L-shape cantilevered
+        hub-ward from the skirt's +X corner: stem at z ∈ [-15, -4]
+        running from cart Y = -86 to -141, plus a drop block at z ∈
+        [-43, -15] over cart Y ∈ [-141, -119]. Contact face (drop
+        block bottom) at z = -43 sits 2 mm above the slice (f2) lifter
+        pad's REST top; cam stroke closes the gap and lifts the
+        platform. Lift point at cart-frame (X=+80, Y=-130) is 40 mm
+        hub-side of the hinge — clean single-direction outer-DOWN
+        torque about the hinge, with no competing bonded brick-side
+        push as in the prior straddle-the-hinge tab design.
 
 Coordinate frame = cartridge-local IMAGE pose:
     origin = brick centroid on platform top face
@@ -63,42 +56,22 @@ Coordinate frame = cartridge-local IMAGE pose:
 cartridge to each station in turret-local: IMAGE at (0, +R, 0) with
 no rotation, LOAD at (+R, 0, 0) with Rz(-90), DUMP at (-R, 0, 0)
 with Rz(+90), RETURN at (0, -R, 0) with Rz(180). Same shape, four
-poses.
+poses. `PLATFORM_ACRYLIC_SIZE` (= 180) in `../params.py` now refers
+to the FRAME outer footprint, not the acrylic — the acrylic insert
+is 172. The constant name is kept for stability; the turret arm-radius
+clearance math (`TURRET_HINGE_PIN_RADIAL = TURRET_ARM_R - 90`) still
+uses the platform outer half-width and is unchanged.
 
-Bond joint: each printed piece sits BOND_GAP (0.3 mm) away from the
-acrylic face it bonds to — same idiom as platform_acrylic. The gap is
-filled by structural-acrylic epoxy in reality and keeps the modelled
-cross-boundary interference check at clean zero.
-
-Bracket-local frame (one bracket; cartridge placement applies
-translation + X-mirror for the neg_x instance):
-    origin = bottom-face centre of the bracket block
-    +X     = along pin axis            (= cartridge +X)
-    +Y     = perpendicular to pin in horizontal plane
-             (= cartridge ±Y, hub-side / outward-side)
-    +Z     = up toward acrylic underside
-
-Cantilever note: each bracket extends in Y slightly past the acrylic
-inner edge (acrylic spans cartridge y ∈ [+0, +180]; bracket centerline
-at y = +95 with y-extent 16 mm → bracket spans y ∈ [+87, +103]).
-The half from y = +103 to y = +95 sits in open air past the acrylic
-inner edge — wait, the acrylic spans y ∈ [-90, +90] centred on the
-brick centroid; the hinge bracket is at y = +95 (HINGE_PIN_RADIAL
-relative to hub, which sits at cartridge y = -ARM_R = -185 from
-centroid). Need to recompute the cantilever description carefully
-once the geometry's settled, but the idea is unchanged: hinge edge
-sits past the acrylic inner edge, with a small bond zone overlap.
-
-Print orientation per piece:
-  * brackets — bottom face on build plate, +Z up (build123d default).
-    Horizontal pin bore (Ø5.4) bridges fine in FDM; threshold raised
-    to 90° (same rationale as platform_hinge_bearing).
-  * ring — bottom face on build plate, +Z up. Square frame, no
-    bores or overhangs; default 45° threshold suffices.
-  * kicker_tab — bottom face on build plate, +Z up. Solid box, no
-    bores or overhangs; default 45° threshold suffices.
+Print orientation: bottom face on build plate, +Z up (build123d
+default). Horizontal Ø5.4 pin bore bridges fine in FDM at this
+diameter (90° overhang threshold, same as the prior platform brackets
+and `platform_hinge_bearing`). The extension stem bridges 33 mm of
+mid-air at z = -15 between the drop block and the skirt — within
+PLA's bridge capability for the 18 mm beam width; supports recommended
+for clean underside finish.
 """
 
+import math
 import sys
 from pathlib import Path
 
@@ -116,6 +89,8 @@ from turret.params import (  # noqa: E402
     PLATFORM_ACRYLIC_T,
     TURRET_ARM_R,
     TURRET_DUMP_KICKER_LIFTER_TOP_Z,
+    TURRET_DUMP_KICKER_LIFTER_TURRET_X,
+    TURRET_DUMP_KICKER_LIFTER_TURRET_Y,
     TURRET_HINGE_PIN_D,
     TURRET_HINGE_PIN_RADIAL,
     TURRET_HINGE_PIN_Z,
@@ -128,108 +103,127 @@ from design_systems import color_of  # noqa: E402
 
 # In cartridge-local, the IMAGE pin axis runs along ±X. Z matches
 # turret-local Z (vertical). Y is "radial outward from hub" at IMAGE
-# pose, so the hub-side of the acrylic sits at -Y.
+# pose, so the hub-side of the platform sits at -Y.
 PIN_AXIS_Z_LOCAL = TURRET_HINGE_PIN_Z                          # = -22.5
 # Cartridge centroid at the brick centroid (origin); the pin sits at
-# the hub-side edge of the acrylic, RADIAL short of the hub.
+# the hub-side edge of the frame, RADIAL short of the hub.
 # Cartridge-local hub Y = -ARM_R when placed at IMAGE (centroid at
 # turret +R), so cartridge-local pin Y = -ARM_R + RADIAL.
 PIN_AXIS_Y_LOCAL = TURRET_HINGE_PIN_RADIAL - TURRET_ARM_R      # = -90
 
-# Modelled gap between any printed piece and the acrylic face it
-# bonds to. Filled by structural-acrylic epoxy in real assembly.
-BOND_GAP = 0.3
+
+# --- Acrylic insert (PMMA) ---------------------------------------------
+
+# Smaller than the prior 180 × 180 plate — fits inside the frame's
+# 172 × 172 pocket. Same 4 mm thickness so existing PMMA stock applies;
+# user cuts the 172 square from larger sheet.
+ACRYLIC_INSERT_SIZE = 172.0
+ACRYLIC_INSERT_T = PLATFORM_ACRYLIC_T                          # = 4
 
 
-# --- Hinge bracket dimensions ------------------------------------------
+# --- Frame outer geometry ----------------------------------------------
 
-# Bracket-local axes:
-#   +X = along pin axis        (= cartridge +X)
-#   +Y = perpendicular to pin  (= cartridge ±Y)
-#   +Z = up                    (= cartridge / world +Z)
-BRACKET_BLOCK_X = 5.0          # spans one pin-tip protrusion zone
-BRACKET_BLOCK_Y = 16.0         # spans across the pin axis
-BRACKET_BLOCK_Z = 23.0         # bottom up to bond-side top face
+FRAME_OUTER_SIZE = PLATFORM_ACRYLIC_SIZE                        # = 180
+FRAME_TOP_RING_HEIGHT = 5.0     # brick-containment lip above acrylic
+FRAME_WALL_T = (FRAME_OUTER_SIZE - ACRYLIC_INSERT_SIZE) / 2     # = 4
 
-# Pin bore diameter — Ø5.4 = 0.4 mm diametric clearance over the M5
-# stock pin from slice (c).
-PIN_BORE_D = TURRET_HINGE_PIN_D + 0.4
+# Frame Z anchors. Acrylic top at z = 0 (matches the cartridge centroid
+# Z plane and the prior bonded-pieces design).
+ACRYLIC_TOP_Z = 0.0
+ACRYLIC_BOTTOM_Z = -ACRYLIC_INSERT_T                            # = -4
+TOP_RING_TOP_Z = ACRYLIC_TOP_Z + FRAME_TOP_RING_HEIGHT          # = +5
 
-# Bracket bottom Z in cartridge-local. Acrylic underside at
-# z = -PLATFORM_ACRYLIC_T, minus BOND_GAP for the bond layer, minus
-# block height to land the bottom face.
-BRACKET_BOTTOM_Z_LOCAL = -PLATFORM_ACRYLIC_T - BOND_GAP - BRACKET_BLOCK_Z
+# --- Corner lips (acrylic support at 4 pocket corners) -----------------
 
-# Pin axis Z in bracket-local frame. Cartridge pin Z minus bracket
-# bottom Z.
-_PIN_Z_BRACKET_LOCAL = PIN_AXIS_Z_LOCAL - BRACKET_BOTTOM_Z_LOCAL
+# A continuous bottom lip would clip the Ø172 sightline cone at the
+# pocket side midpoints (cone tangent to the 172 inner opening at z=0,
+# diverging at ~10° below). Square pocket + round cone leaves the
+# corners (at radial 122) clear; 10 × 10 corner lips provide the
+# acrylic support without intruding into the cone.
+CORNER_LIP_SIZE = 10.0
+CORNER_LIP_T = 3.0
+CORNER_LIP_TOP_Z = ACRYLIC_BOTTOM_Z                             # = -4
+CORNER_LIP_BOTTOM_Z = CORNER_LIP_TOP_Z - CORNER_LIP_T           # = -7
 
-# Slice (c) bushing block half-width along the pin axis (mirrors
-# slice (c)'s BUSHING_BLOCK_W = 20).
+
+# --- Hinge bracket dimensions (integrated into hub-side skirt) ---------
+
+# Bracket-local axes match cartridge-local. Mirrors the prior bonded-
+# bracket footprint so slice (c) bushing-block placement stays valid.
+BRACKET_BLOCK_X = 5.0            # spans one pin-tip protrusion zone
+BRACKET_BLOCK_Y = 16.0           # spans across the pin axis
+BRACKET_BOTTOM_Z_LOCAL = -27.3   # matches prior design; sets lifter clearance
+BRACKET_TOP_Z_LOCAL = ACRYLIC_BOTTOM_Z                          # = -4
+BRACKET_BLOCK_Z = BRACKET_TOP_Z_LOCAL - BRACKET_BOTTOM_Z_LOCAL  # = 23.3
+
+# Pin bore — Ø5.4 = 0.4 mm diametric clearance over the M5 stock pin.
+PIN_BORE_D = TURRET_HINGE_PIN_D + 0.4                           # = 5.4
+_PIN_Z_BRACKET_LOCAL = PIN_AXIS_Z_LOCAL - BRACKET_BOTTOM_Z_LOCAL  # = 4.8
+
+# Slice (c) bushing block half-width along the pin axis (mirrors slice
+# (c)'s BUSHING_BLOCK_W = 20).
 _BUSHING_HALF_X = 10.0
-_PIN_AIR_GAP = 0.5             # bracket-to-bushing-block side clearance
+_PIN_AIR_GAP = 0.5               # bracket-to-bushing-block clearance
 
-# Each bracket centred at cartridge X = ±(bushing half + air gap +
-# bracket half) — its inboard face sits AIR_GAP outboard of the
-# bushing block, and the bracket spans the rest of the pin tip
-# (pin tip at cartridge X = ±15 = bushing 10 + protrusion 5).
-BRACKET_X_CENTRE_OFFSET = (
+BRACKET_X_CENTER_OFFSET = (
     _BUSHING_HALF_X + _PIN_AIR_GAP + BRACKET_BLOCK_X / 2          # = 13
 )
-BRACKET_POS_X_LOCAL = +BRACKET_X_CENTRE_OFFSET
-BRACKET_NEG_X_LOCAL = -BRACKET_X_CENTRE_OFFSET
-
-# Bracket centerline Y in cartridge-local = pin axis Y (so the
-# horizontal bore along ±X passes through the bracket centerline).
+BRACKET_POS_X_LOCAL = +BRACKET_X_CENTER_OFFSET
+BRACKET_NEG_X_LOCAL = -BRACKET_X_CENTER_OFFSET
 BRACKET_Y_LOCAL = PIN_AXIS_Y_LOCAL                                # = -90
 
 
-# --- Perimeter ring dimensions -----------------------------------------
+# --- Hub-side skirt (perimeter wall extended down for bracket attach) --
 
-RING_OUTER = PLATFORM_ACRYLIC_SIZE              # = 180 (matches acrylic)
-RING_INNER = 172.0                              # ≥ Ø172 transparent zone
-RING_HEIGHT = 5.0                               # above acrylic top face
-_RING_FRAME_T = (RING_OUTER - RING_INNER) / 2   # = 4
+# Skirt is the hub-side perimeter wall continued from z = -4 down to
+# the bracket bottom. Same Y range as the perimeter wall there (4 mm
+# thick). Notched at cart X ∈ [-10.5, +10.5] for the slice (c)
+# bushing block (X ∈ [-10, +10], Z ∈ [-35, -10]) to pass through
+# unobstructed.
+HUB_SKIRT_Y_OUTER = -FRAME_OUTER_SIZE / 2                          # = -90
+HUB_SKIRT_Y_INNER = HUB_SKIRT_Y_OUTER + FRAME_WALL_T               # = -86
+HUB_SKIRT_Z_BOTTOM = BRACKET_BOTTOM_Z_LOCAL                        # = -27.3
+HUB_SKIRT_Z_TOP = ACRYLIC_BOTTOM_Z                                 # = -4
 
-# Ring bottom face Z in cartridge-local: BOND_GAP above acrylic top (z = 0).
-RING_BOTTOM_Z_LOCAL = BOND_GAP
+# Bushing-block notch: clears the slice (c) block X ∈ [-10, +10] with
+# the same 0.5 mm air gap used for bracket-to-block clearance.
+_BUSHING_NOTCH_HALF_X = _BUSHING_HALF_X + _PIN_AIR_GAP             # = 10.5
+_BUSHING_NOTCH_X_LEN = 2 * _BUSHING_NOTCH_HALF_X                   # = 21
+# Notch only needs to cover the bushing-block Z range; above z = -10
+# the skirt is intact across the full X span.
+_BUSHING_BLOCK_TOP_Z = -10.0    # mirrors slice (c) BUSHING_BLOCK_W Z
 
 
-# --- Kicker tab dimensions (slice f4) ----------------------------------
+# --- Kicker extension (cantilevered from skirt past hinge) -------------
 
-# Tab cartridge XY offset. Tab STRADDLES the hinge axis (cart-frame
-# Y = PIN_AXIS_Y_LOCAL = -90): outboard half bonds to acrylic
-# underside; inboard half cantilevers past the acrylic edge into
-# hub-side air. The lifter pad lands under the inboard half only,
-# so push-up gives outer-DOWN torque about the hinge.
-#
-# X centered at +80 with 18 mm span → tab X ∈ [+71, +89], 1 mm
-# margin to the acrylic +X edge at +90, and 55+ mm clear of the +X
-# bracket outboard X face at +15.5. Y centered at -92 — slightly
-# inboard of the hinge — so the 20 mm Y span splits 8 mm bonded
-# outboard (Y ∈ [-90, -82]) + 12 mm cantilevered inboard
-# (Y ∈ [-102, -90]). Closest tab corner to brick centroid:
-# (X=+71, Y=-82), radial = √(71² + 82²) ≈ 108.5 mm — clears the
-# Ø172 below-mirror sightline cone with margin even at the tab's
-# lower Z (cone half-radius ≈ 94 mm at z = -43).
-#
-# Cart (X=+80, Y=-92) under DUMP's Rz(+90) → turret (X=-93, Y=+80).
-# The lifter pad (slice f2) sits under the INBOARD half only —
-# turret X ∈ [-103, -95] (cart Y ∈ [-102, -90]) — to bias the contact
-# to the inboard side of the hinge.
-TAB_X_CENTER = 80.0
-TAB_Y_CENTER = -92.0
-TAB_X_LEN = 18.0
-TAB_Y_LEN = 20.0
+# Extension reaches the lift point at cart-frame (X=+80, Y=-130) — a
+# 40 mm lever arm hub-side of the hinge axis at cart Y=-90. Cart X
+# centered at +80 keeps the extension at the +X corner of the platform,
+# clear of the Ø172 sightline cone (closest corner at radial 111.5
+# ≫ cone half-radius 93.6 at z=-43) and tangentially clear of the
+# slice (c) DUMP spider arm (cart X ∈ [-7, +7] at the IMAGE-pose
+# equivalent heading).
+EXTENSION_X_CENTER = +80.0
+EXTENSION_X_LEN = 18.0
+EXTENSION_X_INNER = EXTENSION_X_CENTER - EXTENSION_X_LEN / 2       # = +71
+EXTENSION_X_OUTER = EXTENSION_X_CENTER + EXTENSION_X_LEN / 2       # = +89
 
-# Tab Z span: top BOND_GAP below acrylic underside; bottom
-# TAB_LIFTER_CLEARANCE_Z above the slice (f2) lifter pad's REST top.
-# The lifter rises by the cam stroke and contacts the tab to tilt the
-# platform; at REST the tab clears the lifter by this gap.
-TAB_LIFTER_CLEARANCE_Z = 2.0
-TAB_BOTTOM_Z_LOCAL = TURRET_DUMP_KICKER_LIFTER_TOP_Z + TAB_LIFTER_CLEARANCE_Z
-TAB_TOP_Z_LOCAL = -PLATFORM_ACRYLIC_T - BOND_GAP
-TAB_HEIGHT = TAB_TOP_Z_LOCAL - TAB_BOTTOM_Z_LOCAL
+# Y span: from skirt inner face (-86) to the tip past the lift point.
+EXTENSION_Y_OUTBOARD = HUB_SKIRT_Y_INNER                           # = -86
+EXTENSION_Y_TIP = -141.0
+LIFT_POINT_Y_LOCAL = -130.0     # = cart Y where lifter pad center contacts
+
+# L-shape: stem at the acrylic-bottom band (thin), drop block at the
+# tip hangs down to the lifter contact face.
+EXTENSION_LIFTER_CLEARANCE_Z = 2.0
+EXTENSION_BOTTOM_Z = (
+    TURRET_DUMP_KICKER_LIFTER_TOP_Z + EXTENSION_LIFTER_CLEARANCE_Z  # = -43
+)
+EXTENSION_STEM_BOTTOM_Z = -15.0
+EXTENSION_STEM_TOP_Z = ACRYLIC_BOTTOM_Z                            # = -4
+# Drop block Y span centered on lift point with margin for pad coverage.
+EXTENSION_DROP_Y_OUTBOARD = -119.0
+EXTENSION_DROP_Y_TIP = EXTENSION_Y_TIP                             # = -141
 
 
 # --- Sanity asserts ----------------------------------------------------
@@ -254,7 +248,7 @@ assert _pin_y_wall >= WALL_MIN, (
     f"({WALL_MIN}); raise BRACKET_BLOCK_Y"
 )
 
-# Bracket inboard face (toward bushing block) clears the bushing block.
+# Bracket inboard X face (toward bushing block) clears the bushing block.
 _inboard_face_x = abs(BRACKET_POS_X_LOCAL) - BRACKET_BLOCK_X / 2
 assert _inboard_face_x - _BUSHING_HALF_X >= _PIN_AIR_GAP - 1e-9, (
     f"bracket inboard X face {_inboard_face_x:.2f} mm closer than "
@@ -262,189 +256,229 @@ assert _inboard_face_x - _BUSHING_HALF_X >= _PIN_AIR_GAP - 1e-9, (
     f"({_BUSHING_HALF_X}); shift the bracket outboard"
 )
 
-# Bracket outboard face inside acrylic X footprint.
+# Bracket outboard face inside frame X footprint.
 assert (
     abs(BRACKET_POS_X_LOCAL) + BRACKET_BLOCK_X / 2
-    <= PLATFORM_ACRYLIC_SIZE / 2
-), "bracket outboard X face overhangs acrylic edge"
+    <= FRAME_OUTER_SIZE / 2
+), "bracket outboard X face overhangs frame edge"
 
-# Bracket inboard Y face (the face facing the acrylic interior, +Y
-# direction in cartridge-local) sits inside the acrylic footprint so
-# a real bond zone exists.
-_bracket_inboard_y = BRACKET_Y_LOCAL + BRACKET_BLOCK_Y / 2
-_acrylic_inner_edge_y = -PLATFORM_ACRYLIC_SIZE / 2                # = -90
-_bond_zone_y_overlap = _bracket_inboard_y - _acrylic_inner_edge_y
-assert _bond_zone_y_overlap > 0, (
-    f"bracket bond-zone overlap with acrylic in Y is "
-    f"{_bond_zone_y_overlap:.2f} mm ≤ 0; bracket sits entirely "
-    f"past the acrylic edge — no bond surface"
+# Frame perimeter wall thickness ≥ WALL_MIN.
+assert FRAME_WALL_T >= WALL_MIN, (
+    f"frame perimeter wall thickness {FRAME_WALL_T:.2f} mm < WALL_MIN "
+    f"({WALL_MIN}); shrink ACRYLIC_INSERT_SIZE or grow FRAME_OUTER_SIZE"
 )
 
-# Ring frame width ≥ WALL_MIN.
-assert _RING_FRAME_T >= WALL_MIN, (
-    f"ring frame width {_RING_FRAME_T:.2f} mm < WALL_MIN ({WALL_MIN}); "
-    f"shrink RING_INNER or grow RING_OUTER"
-)
-
-# Ring inner opening ≥ Ø172 transparent zone.
-assert RING_INNER >= 172.0, (
-    f"ring inner opening {RING_INNER} < 172 mm; would clip the "
+# Acrylic insert sized to clear the Ø172 transparent zone.
+assert ACRYLIC_INSERT_SIZE >= 172.0, (
+    f"acrylic insert {ACRYLIC_INSERT_SIZE} < 172 mm; would clip the "
     f"below-mirror sightline cone at the platform plane"
 )
 
-# --- Kicker tab asserts ------------------------------------------------
-
-# Tab walls ≥ WALL_MIN.
-assert TAB_X_LEN >= WALL_MIN, (
-    f"tab X len {TAB_X_LEN} < WALL_MIN ({WALL_MIN})"
+# Corner lip inner-most corner clear of the Ø172 sightline cone at the
+# lip's bottom Z (where the cone half-radius is largest within the lip
+# Z range). Cone diverges at ~10° below the platform plane.
+_CONE_DIVERGE_TAN = 0.176                                          # tan(10°)
+_LIP_INNER_OFFSET = ACRYLIC_INSERT_SIZE / 2 - CORNER_LIP_SIZE      # = 76
+_LIP_INNER_CORNER_R = math.hypot(_LIP_INNER_OFFSET, _LIP_INNER_OFFSET)
+_CONE_HALF_R_AT_LIP_BOTTOM = (
+    ACRYLIC_INSERT_SIZE / 2 + (-CORNER_LIP_BOTTOM_Z) * _CONE_DIVERGE_TAN
 )
-assert TAB_Y_LEN >= WALL_MIN, (
-    f"tab Y len {TAB_Y_LEN} < WALL_MIN ({WALL_MIN})"
-)
-
-# Tab X stays inside acrylic X edges (no X overhang).
-_TAB_X_OUTER = TAB_X_CENTER + TAB_X_LEN / 2
-_TAB_X_INNER = TAB_X_CENTER - TAB_X_LEN / 2
-_ACRYLIC_HALF = PLATFORM_ACRYLIC_SIZE / 2            # = 90
-assert _TAB_X_OUTER <= _ACRYLIC_HALF, (
-    f"tab outer X face {_TAB_X_OUTER} overhangs acrylic X edge "
-    f"{_ACRYLIC_HALF}"
-)
-assert _TAB_X_INNER >= -_ACRYLIC_HALF, (
-    f"tab inner X face {_TAB_X_INNER} overhangs acrylic X edge "
-    f"{-_ACRYLIC_HALF}"
+assert _LIP_INNER_CORNER_R > _CONE_HALF_R_AT_LIP_BOTTOM, (
+    f"corner lip inner corner radial {_LIP_INNER_CORNER_R:.2f} mm ≤ "
+    f"cone half-radius {_CONE_HALF_R_AT_LIP_BOTTOM:.2f} mm at lip "
+    f"bottom Z; lip clips the Ø172 sightline cone — shrink "
+    f"CORNER_LIP_SIZE or move CORNER_LIP_BOTTOM_Z up"
 )
 
-# Tab Y straddles the hinge: outboard half bonds to acrylic, inboard
-# half cantilevers past the acrylic edge. Naming: "Y_PAST_HINGE" is
-# the hub-side end (more negative Y), "Y_INTO_ACRYLIC" is the
-# brick-side end (less negative Y).
-_TAB_Y_PAST_HINGE = TAB_Y_CENTER - TAB_Y_LEN / 2     # most negative Y
-_TAB_Y_INTO_ACRYLIC = TAB_Y_CENTER + TAB_Y_LEN / 2   # least negative Y
-_HINGE_Y = PIN_AXIS_Y_LOCAL                          # = -90 (acrylic inner edge)
-_TAB_BOND_OVERLAP_Y = _TAB_Y_INTO_ACRYLIC - _HINGE_Y
-_TAB_INBOARD_OVERHANG_Y = _HINGE_Y - _TAB_Y_PAST_HINGE
-assert _TAB_BOND_OVERLAP_Y >= WALL_MIN, (
-    f"tab acrylic-bond overlap in Y is {_TAB_BOND_OVERLAP_Y:.2f} "
-    f"mm < WALL_MIN ({WALL_MIN}); tab top doesn't have enough "
-    f"bonded surface — shift TAB_Y_CENTER toward 0 or grow TAB_Y_LEN"
+# Corner lip width ≥ WALL_MIN.
+assert CORNER_LIP_SIZE >= WALL_MIN, (
+    f"corner lip size {CORNER_LIP_SIZE} < WALL_MIN ({WALL_MIN})"
 )
-assert _TAB_INBOARD_OVERHANG_Y >= WALL_MIN, (
-    f"tab inboard overhang in Y is {_TAB_INBOARD_OVERHANG_Y:.2f} "
-    f"mm < WALL_MIN ({WALL_MIN}); push-up here would tilt the "
-    f"wrong way (outer-up) — push TAB_Y_CENTER more negative"
-)
-assert _TAB_Y_INTO_ACRYLIC <= _ACRYLIC_HALF, (
-    f"tab acrylic-bond end {_TAB_Y_INTO_ACRYLIC} overhangs acrylic "
-    f"+Y edge {_ACRYLIC_HALF}"
+assert CORNER_LIP_T >= WALL_MIN, (
+    f"corner lip thickness {CORNER_LIP_T} < WALL_MIN ({WALL_MIN})"
 )
 
-# Tab clears the +X hinge bracket. The bracket spans cart X ∈
-# [+10.5, +15.5], Y ∈ [-98, -82]. The tab now spans a much wider
-# X range (centered at +85) and crosses the hinge in Y, so it must
-# clear the bracket on the +X side via an X-direction gap.
+# Bushing-block notch clears the slice (c) block X face with AIR_GAP.
+assert _BUSHING_NOTCH_HALF_X >= _BUSHING_HALF_X + _PIN_AIR_GAP - 1e-9, (
+    f"bushing-block notch half-width {_BUSHING_NOTCH_HALF_X} mm "
+    f"insufficient over block half-width {_BUSHING_HALF_X} + AIR_GAP "
+    f"({_PIN_AIR_GAP})"
+)
+
+# Bushing-block notch leaves wall material between notch outer face and
+# bracket inner face.
+_notch_to_bracket_x = (
+    abs(BRACKET_POS_X_LOCAL) - BRACKET_BLOCK_X / 2 - _BUSHING_NOTCH_HALF_X
+)
+assert _notch_to_bracket_x >= -1e-9, (
+    f"bushing notch ({_BUSHING_NOTCH_HALF_X}) overlaps bracket inner "
+    f"face ({abs(BRACKET_POS_X_LOCAL) - BRACKET_BLOCK_X/2}); brackets "
+    f"would lose their hub-side skirt connection"
+)
+
+# Extension X within frame footprint.
+assert EXTENSION_X_OUTER <= FRAME_OUTER_SIZE / 2, (
+    f"extension outer X face {EXTENSION_X_OUTER} overhangs frame edge "
+    f"{FRAME_OUTER_SIZE / 2}"
+)
+
+# Extension Y reaches the lift point.
+assert EXTENSION_Y_TIP <= LIFT_POINT_Y_LOCAL, (
+    f"extension Y tip {EXTENSION_Y_TIP} doesn't reach lift point Y "
+    f"{LIFT_POINT_Y_LOCAL}"
+)
+
+# Extension joins the skirt at the hub-side wall.
+assert EXTENSION_Y_OUTBOARD == HUB_SKIRT_Y_INNER, (
+    f"extension outboard end {EXTENSION_Y_OUTBOARD} doesn't meet skirt "
+    f"inner face {HUB_SKIRT_Y_INNER}"
+)
+
+# Extension clear of the +X bracket in cart X.
 _BRACKET_POS_OUTER_X = BRACKET_POS_X_LOCAL + BRACKET_BLOCK_X / 2  # = +15.5
-_TAB_BRACKET_X_GAP = _TAB_X_INNER - _BRACKET_POS_OUTER_X
-assert _TAB_BRACKET_X_GAP >= _PIN_AIR_GAP - 1e-9, (
-    f"tab inner X face {_TAB_X_INNER} too close to +X bracket outer "
-    f"X face {_BRACKET_POS_OUTER_X} (gap {_TAB_BRACKET_X_GAP} < "
-    f"AIR_GAP {_PIN_AIR_GAP})"
+_EXT_TO_BRACKET_X_GAP = EXTENSION_X_INNER - _BRACKET_POS_OUTER_X
+assert _EXT_TO_BRACKET_X_GAP >= _PIN_AIR_GAP - 1e-9, (
+    f"extension inner X face {EXTENSION_X_INNER} too close to +X "
+    f"bracket outer X face {_BRACKET_POS_OUTER_X} (gap "
+    f"{_EXT_TO_BRACKET_X_GAP} < AIR_GAP {_PIN_AIR_GAP})"
 )
 
-# Tab outside the Ø172 below-mirror sightline cone at the platform
-# plane AND at the tab's bottom Z (cone diverges below the platform
-# at ~10° half-angle). Closest tab corner to brick centroid:
-# X_INNER (least +X), Y_INTO_ACRYLIC (least -Y, closest to centroid
-# in Y).
-import math as _math
-_NEAR_CORNER_R = _math.hypot(_TAB_X_INNER, _TAB_Y_INTO_ACRYLIC)
-_CONE_HALF_R_AT_PLATFORM = 172.0 / 2                              # = 86
-# Cone diverges at ~10° below the platform; at the tab's lower Z
-# (TAB_BOTTOM_Z_LOCAL = -43, so 43 mm below platform top z = 0)
-# the half-radius is ~94 mm.
-_CONE_DIVERGE_TAN = 0.176                                         # tan(10°)
-_TAB_LOWER_Z_BELOW_PLATFORM = -TAB_BOTTOM_Z_LOCAL                 # = +43
-_CONE_HALF_R_AT_TAB_BOTTOM = (
-    _CONE_HALF_R_AT_PLATFORM
-    + _TAB_LOWER_Z_BELOW_PLATFORM * _CONE_DIVERGE_TAN
-)
-assert _NEAR_CORNER_R > _CONE_HALF_R_AT_TAB_BOTTOM, (
-    f"tab nearest-to-centroid corner radial {_NEAR_CORNER_R:.2f} "
-    f"≤ Ø172 cone half-radius {_CONE_HALF_R_AT_TAB_BOTTOM:.2f} at "
-    f"tab bottom Z; tab clips the below-mirror sightline cone — "
-    f"shift TAB_X_CENTER outboard or TAB_Y_CENTER more negative"
+# Lever arm to lift point ≥ minimum for reliable dump.
+_LEVER_ARM = abs(LIFT_POINT_Y_LOCAL - PIN_AXIS_Y_LOCAL)            # = 40
+assert _LEVER_ARM >= 30.0, (
+    f"lever arm hinge→lift {_LEVER_ARM:.2f} mm < 30 mm; dump may "
+    f"be unreliable — push EXTENSION_Y_TIP further hub-ward"
 )
 
-# Tab has positive height.
-assert TAB_HEIGHT > 0, (
-    f"tab height {TAB_HEIGHT} ≤ 0; check TAB_BOTTOM_Z vs acrylic "
-    f"underside"
+# Extension lift-point face clear of the Ø172 sightline cone at the
+# extension's bottom Z (where the cone has expanded most).
+_EXT_NEAR_CORNER_R = math.hypot(EXTENSION_X_INNER, EXTENSION_Y_OUTBOARD)
+_CONE_HALF_R_AT_EXT_BOTTOM = (
+    ACRYLIC_INSERT_SIZE / 2 + (-EXTENSION_BOTTOM_Z) * _CONE_DIVERGE_TAN
+)
+assert _EXT_NEAR_CORNER_R > _CONE_HALF_R_AT_EXT_BOTTOM, (
+    f"extension near-centroid corner radial {_EXT_NEAR_CORNER_R:.2f} mm "
+    f"≤ cone half-radius {_CONE_HALF_R_AT_EXT_BOTTOM:.2f} mm at "
+    f"extension bottom Z; clips the Ø172 sightline cone"
 )
 
-# Tab bottom Z strictly above lifter pad top at REST (no rest contact).
-assert TAB_BOTTOM_Z_LOCAL > TURRET_DUMP_KICKER_LIFTER_TOP_Z, (
-    f"tab bottom {TAB_BOTTOM_Z_LOCAL} ≤ lifter top at REST "
+# Extension bottom strictly above lifter pad top at REST.
+assert EXTENSION_BOTTOM_Z > TURRET_DUMP_KICKER_LIFTER_TOP_Z, (
+    f"extension bottom {EXTENSION_BOTTOM_Z} ≤ lifter top at REST "
     f"{TURRET_DUMP_KICKER_LIFTER_TOP_Z}; would contact at rest"
+)
+
+# Lifter pad cart-frame position derived from turret-local matches the
+# extension's lift point. At DUMP: cart X = turret_y, cart Y = -ARM_R - turret_x.
+_LIFTER_CART_X = TURRET_DUMP_KICKER_LIFTER_TURRET_Y                # = +80
+_LIFTER_CART_Y = -TURRET_ARM_R - TURRET_DUMP_KICKER_LIFTER_TURRET_X  # = -130
+assert _LIFTER_CART_X == EXTENSION_X_CENTER, (
+    f"lifter cart X {_LIFTER_CART_X} ≠ extension X center "
+    f"{EXTENSION_X_CENTER}"
+)
+assert _LIFTER_CART_Y == LIFT_POINT_Y_LOCAL, (
+    f"lifter cart Y {_LIFTER_CART_Y} ≠ extension lift point Y "
+    f"{LIFT_POINT_Y_LOCAL}"
 )
 
 
 # --- Part functions ----------------------------------------------------
 
-def acrylic_plate(
-    size: float = PLATFORM_ACRYLIC_SIZE,
-    thickness: float = PLATFORM_ACRYLIC_T,
+def acrylic_insert(
+    size: float = ACRYLIC_INSERT_SIZE,
+    thickness: float = ACRYLIC_INSERT_T,
 ):
-    """180 × 180 × 4 mm PMMA plate centred on origin in X / Y, top
-    face at z = 0."""
+    """172 × 172 × 4 mm PMMA insert centred on origin in X / Y, top
+    face at z = 0. Drops into the frame's pocket; rests on the 4
+    corner support lips at z = -4."""
     return Pos(0, 0, -thickness / 2) * Box(size, size, thickness)
 
 
-def bracket(
-    block_x: float = BRACKET_BLOCK_X,
-    block_y: float = BRACKET_BLOCK_Y,
-    block_z: float = BRACKET_BLOCK_Z,
-    pin_z_local: float = _PIN_Z_BRACKET_LOCAL,
-    pin_bore_d: float = PIN_BORE_D,
-):
-    """One printed hinge bracket: rectangular block with a horizontal
-    pin bore along bracket-local +X. Body symmetric across YZ plane
-    (X → -X), so the same printed body fits both world instances."""
-    body = Pos(0, 0, block_z / 2) * Box(block_x, block_y, block_z)
-
-    # Horizontal pin bore (axis along ±X). Cylinder default axis +Z;
-    # rotate 90° about Y so axis lies along ±X.
+def frame():
+    """Single printed frame body: top ring + pocket walls + 4 corner
+    lips + hub-side skirt (with bushing notch) + integrated hinge
+    brackets (with horizontal pin bore) + L-shaped kicker extension."""
+    # Top ring + pocket walls — one perimeter tube spanning z ∈ [-4, +5].
+    perim_z_center = (TOP_RING_TOP_Z + ACRYLIC_BOTTOM_Z) / 2       # = +0.5
+    perim_z_len = TOP_RING_TOP_Z - ACRYLIC_BOTTOM_Z                # = 9
+    body = (
+        Pos(0, 0, perim_z_center)
+        * Box(FRAME_OUTER_SIZE, FRAME_OUTER_SIZE, perim_z_len)
+    )
     body -= (
-        Pos(0, 0, pin_z_local)
-        * Rot(0, 90, 0)
-        * Cylinder(pin_bore_d / 2, block_x * 3)
+        Pos(0, 0, perim_z_center)
+        * Box(ACRYLIC_INSERT_SIZE, ACRYLIC_INSERT_SIZE, perim_z_len * 3)
+    )
+
+    # Corner lips — 4 rectangular tabs at the pocket corners.
+    lip_z_center = (CORNER_LIP_TOP_Z + CORNER_LIP_BOTTOM_Z) / 2
+    for sx in (-1, +1):
+        for sy in (-1, +1):
+            corner_x = sx * (ACRYLIC_INSERT_SIZE / 2 - CORNER_LIP_SIZE / 2)
+            corner_y = sy * (ACRYLIC_INSERT_SIZE / 2 - CORNER_LIP_SIZE / 2)
+            body += (
+                Pos(corner_x, corner_y, lip_z_center)
+                * Box(CORNER_LIP_SIZE, CORNER_LIP_SIZE, CORNER_LIP_T)
+            )
+
+    # Hub-side skirt — full X span at cart Y ∈ [-90, -86].
+    skirt_y_center = (HUB_SKIRT_Y_OUTER + HUB_SKIRT_Y_INNER) / 2   # = -88
+    skirt_z_center = (HUB_SKIRT_Z_BOTTOM + HUB_SKIRT_Z_TOP) / 2    # = -15.65
+    skirt_z_len = HUB_SKIRT_Z_TOP - HUB_SKIRT_Z_BOTTOM             # = 23.3
+    body += (
+        Pos(0, skirt_y_center, skirt_z_center)
+        * Box(FRAME_OUTER_SIZE, FRAME_WALL_T, skirt_z_len)
+    )
+
+    # Notch the skirt for the slice (c) bushing block to pass through.
+    notch_z_center = (HUB_SKIRT_Z_BOTTOM + _BUSHING_BLOCK_TOP_Z) / 2
+    notch_z_len = _BUSHING_BLOCK_TOP_Z - HUB_SKIRT_Z_BOTTOM        # = 17.3
+    body -= (
+        Pos(0, skirt_y_center, notch_z_center)
+        * Box(_BUSHING_NOTCH_X_LEN, FRAME_WALL_T * 3, notch_z_len)
+    )
+
+    # Hinge brackets — at cart X = ±13, hanging from the skirt.
+    bracket_z_center = (BRACKET_BOTTOM_Z_LOCAL + BRACKET_TOP_Z_LOCAL) / 2
+    for bracket_x in (BRACKET_POS_X_LOCAL, BRACKET_NEG_X_LOCAL):
+        body += (
+            Pos(bracket_x, BRACKET_Y_LOCAL, bracket_z_center)
+            * Box(BRACKET_BLOCK_X, BRACKET_BLOCK_Y, BRACKET_BLOCK_Z)
+        )
+
+    # Horizontal pin bore (axis ±X) — limited to the bracket X-span
+    # so the bore doesn't graze the skirt outboard of the brackets and
+    # leave a thin (1.3 mm) wall sliver. The notch already removes the
+    # skirt across the bore Z between brackets, so a per-bracket bore
+    # is sufficient.
+    for bracket_x in (BRACKET_POS_X_LOCAL, BRACKET_NEG_X_LOCAL):
+        body -= (
+            Pos(bracket_x, PIN_AXIS_Y_LOCAL, PIN_AXIS_Z_LOCAL)
+            * Rot(0, 90, 0)
+            * Cylinder(PIN_BORE_D / 2, BRACKET_BLOCK_X)
+        )
+
+    # Kicker extension — L-shape: stem at acrylic-bottom band, drop
+    # block hanging down to the lifter contact face at the tip.
+    stem_y_center = (EXTENSION_Y_OUTBOARD + EXTENSION_Y_TIP) / 2
+    stem_y_len = EXTENSION_Y_OUTBOARD - EXTENSION_Y_TIP            # = 55
+    stem_z_center = (EXTENSION_STEM_TOP_Z + EXTENSION_STEM_BOTTOM_Z) / 2
+    stem_z_len = EXTENSION_STEM_TOP_Z - EXTENSION_STEM_BOTTOM_Z    # = 11
+    body += (
+        Pos(EXTENSION_X_CENTER, stem_y_center, stem_z_center)
+        * Box(EXTENSION_X_LEN, stem_y_len, stem_z_len)
+    )
+
+    drop_y_center = (EXTENSION_DROP_Y_OUTBOARD + EXTENSION_DROP_Y_TIP) / 2
+    drop_y_len = EXTENSION_DROP_Y_OUTBOARD - EXTENSION_DROP_Y_TIP  # = 22
+    drop_z_center = (EXTENSION_STEM_BOTTOM_Z + EXTENSION_BOTTOM_Z) / 2
+    drop_z_len = EXTENSION_STEM_BOTTOM_Z - EXTENSION_BOTTOM_Z      # = 28
+    body += (
+        Pos(EXTENSION_X_CENTER, drop_y_center, drop_z_center)
+        * Box(EXTENSION_X_LEN, drop_y_len, drop_z_len)
     )
 
     return body
-
-
-def ring(
-    outer: float = RING_OUTER,
-    inner: float = RING_INNER,
-    height: float = RING_HEIGHT,
-):
-    """Square perimeter frame bonded to acrylic top. Outer perimeter
-    `outer`, inner opening `inner`, vertical height `height`. Bottom
-    face at the placement Z; centred on origin in X / Y."""
-    outer_block = Pos(0, 0, height / 2) * Box(outer, outer, height)
-    inner_cut = Pos(0, 0, height / 2) * Box(inner, inner, height * 3)
-    return outer_block - inner_cut
-
-
-def kicker_tab(
-    x_len: float = TAB_X_LEN,
-    y_len: float = TAB_Y_LEN,
-    height: float = TAB_HEIGHT,
-):
-    """Printed kicker tab bonded to the acrylic underside. Solid box
-    centred at part-local origin in X / Y; bottom face at part-local
-    Z = 0, top face at Z = `height`. Caller positions the part-local
-    origin at (TAB_X_CENTER, 0, TAB_BOTTOM_Z_LOCAL) in cartridge-local."""
-    return Pos(0, 0, height / 2) * Box(x_len, y_len, height)
 
 
 # --- Per-station placement helper --------------------------------------
@@ -454,9 +488,7 @@ def kicker_tab(
 # pin axis along ±X and "outward" along +Y. Each station has its own
 # (radial-outward, tangential) directions in turret-local; the rotation
 # below picks the proper-rotation root that aligns cartridge axes onto
-# them. Sign of LOAD/DUMP angles flipped vs Y-up frame because rotation
-# about world +Z has the opposite sense to rotation about world +Y for
-# the (X, Z, Y) → (X, Y, Z) axis swap.
+# them.
 #
 #   IMAGE  : Rz(  0°)  cartridge +X → turret +X, +Y → +Y
 #   LOAD   : Rz(-90°)  cartridge +X → turret -Y, +Y → +X
@@ -469,8 +501,6 @@ STATION_ANGLES = {
     "dump":   90,
 }
 
-# Station centroid in turret-local. The cartridge centroid (acrylic
-# top-face centre) lands here for each station after rotation.
 _STATION_CENTROIDS = {
     "image":  Pos(0, +TURRET_ARM_R, 0),
     "load":   Pos(+TURRET_ARM_R, 0, 0),
@@ -483,26 +513,17 @@ _STATION_CENTROIDS = {
 # (translated + rotated to its turret-local pose).
 _IMAGE_LOCS = (
     ("acrylic", Pos(0, 0, 0)),
-    ("bracket_pos", Pos(BRACKET_POS_X_LOCAL, BRACKET_Y_LOCAL, BRACKET_BOTTOM_Z_LOCAL)),
-    ("bracket_neg", Pos(BRACKET_NEG_X_LOCAL, BRACKET_Y_LOCAL, BRACKET_BOTTOM_Z_LOCAL)),
-    ("ring", Pos(0, 0, RING_BOTTOM_Z_LOCAL)),
-    ("kicker_tab", Pos(TAB_X_CENTER, TAB_Y_CENTER, TAB_BOTTOM_Z_LOCAL)),
+    ("frame", Pos(0, 0, 0)),
 )
 
 _PART_BUILDERS = {
-    "acrylic": acrylic_plate,
-    "bracket_pos": bracket,
-    "bracket_neg": bracket,
-    "ring": ring,
-    "kicker_tab": kicker_tab,
+    "acrylic": acrylic_insert,
+    "frame": frame,
 }
 
 _PART_MATERIALS = {
     "acrylic": "acrylic_clear",
-    "bracket_pos": "pla_matte",
-    "bracket_neg": "pla_matte",
-    "ring": "pla_matte",
-    "kicker_tab": "pla_matte",
+    "frame": "pla_matte",
 }
 
 
@@ -550,20 +571,8 @@ for _i, _a in enumerate(_STANDALONE_NAMES):
 if __name__ == "__main__":
     check(assembly, out="outputs")
     inspect(
-        bracket(),
+        frame(),
         method=FDM(wall_min_mm=WALL_MIN, overhang_max_deg=90.0),
         out="outputs",
-        name="bracket",
-    )
-    inspect(
-        ring(),
-        method=FDM(wall_min_mm=WALL_MIN, overhang_max_deg=45.0),
-        out="outputs",
-        name="ring",
-    )
-    inspect(
-        kicker_tab(),
-        method=FDM(wall_min_mm=WALL_MIN, overhang_max_deg=45.0),
-        out="outputs",
-        name="kicker_tab",
+        name="frame",
     )
