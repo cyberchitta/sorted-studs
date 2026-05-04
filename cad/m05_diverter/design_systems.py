@@ -3,9 +3,14 @@
 Schema (``Role``, ``Module``, ``DesignSystem``, palettes,
 ``DESIGN_SYSTEM_NAME`` switch, ``compose`` helper) lives in
 ``cad/design_systems.py``; this file holds only m05's tag dicts and
-binds the module-local ``DESIGN_SYSTEM`` + ``color_of`` /
-``material_of`` shims that ``assembly.py`` and ``single_floor.py``
-use at every ``.add(...)`` site.
+binds the module-local ``DESIGN_SYSTEM`` + ``color_of`` shim that
+``assembly.py`` and ``single_floor.py`` use at every ``.add(...)``
+site. Material is a physical property, not a render axis — see
+``materials.py``.
+
+``basename_of`` lives here because both ``color_of`` and
+``materials.material_of`` need it to invert the floor-prefix naming
+convention; ``materials.py`` imports it from this file.
 
 Two complications relative to m02 / m03:
 
@@ -103,37 +108,6 @@ MODULE_OF: dict[str, Module | None] = {
 }
 
 
-# --- Material lookup --------------------------------------------------
-#
-# Material is independent of the WORKSHOP/BAUHAUS swap — it's a
-# physical property of the part, not a render-axis tag. Kept in this
-# file for one-stop lookup at every ``.add(...)`` site.
-
-MATERIAL_OF: dict[str, str | None] = {
-    # 2020 extrusions — anodized aluminium
-    **{f"outer_vert_{k}": "aluminium_anodized" for k in range(6)},
-    **{f"outer_horiz_{k}": "aluminium_anodized" for k in range(6)},
-    **{f"inner_horiz_{k}": "aluminium_anodized" for k in range(6)},
-    **{f"radial_{k}": "aluminium_anodized" for k in range(6)},
-    # Printed brackets / mechanism / mount — PLA matte
-    **{f"outer_vertex_bracket_{k}": "pla_matte" for k in range(6)},
-    **{f"inner_vertex_bracket_{k}": "pla_matte" for k in range(6)},
-    "bearing_spider": "pla_matte",
-    "ring_bearing": "pla_matte",
-    "column": "pla_matte",
-    "ramp": "pla_matte",
-    "trap_closed": "pla_matte",
-    "trap_open": "pla_matte",
-    "lower_trap_open": "pla_matte",
-    "motor_mount": "pla_matte",
-    **{name: "pla_matte" for name in _basket_basenames()},
-    # Hardware
-    "hinge_pin": "steel",
-    "motor": "cast_aluminium_dark",
-    "drive_shaft": "steel",
-}
-
-
 # --- Bound DesignSystems ----------------------------------------------
 
 WORKSHOP = DesignSystem(name="workshop", tag_of=ROLE_OF, palette=WORKSHOP_COLORS)
@@ -166,17 +140,3 @@ def color_of(part_name: str) -> Color | None:
     renders.
     """
     return DESIGN_SYSTEM.color_of(basename_of(part_name))
-
-
-def material_of(part_name: str) -> str | None:
-    """Material for a m05 part instance. Same instance-or-basename
-    contract as ``color_of``. Raises ``KeyError`` for an unknown
-    basename so a missing entry surfaces loudly.
-    """
-    bn = basename_of(part_name)
-    if bn not in MATERIAL_OF:
-        raise KeyError(
-            f"part '{part_name}' (basename '{bn}') has no entry in "
-            f"MATERIAL_OF — add one in cad/m05_diverter/design_systems.py"
-        )
-    return MATERIAL_OF[bn]

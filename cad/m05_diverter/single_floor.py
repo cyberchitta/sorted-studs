@@ -47,7 +47,8 @@ from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
 
 from basket import assembly as _bkt
-from design_systems import DESIGN_SYSTEM, basename_of, color_of, material_of
+from design_systems import DESIGN_SYSTEM, basename_of, color_of
+from materials import material_of
 from frame import assembly as _frame
 from params import FLOOR_H, FLOOR_LAYOUT
 from ramp_mechanism import assembly as _ramp
