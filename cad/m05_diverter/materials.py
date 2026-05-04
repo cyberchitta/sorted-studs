@@ -54,6 +54,8 @@ MATERIAL_OF: dict[str, str | None] = {
     "hinge_pin": "steel",
     "motor": "cast_aluminium_dark",
     "drive_shaft": "steel",
+    # Top deck
+    "top_acrylic": "acrylic_clear",
 }
 
 

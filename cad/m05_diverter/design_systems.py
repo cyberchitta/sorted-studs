@@ -97,6 +97,8 @@ ROLE_OF: dict[str, Role | None] = {
     # it's removed from the assembly.
     "drive_shaft": None,
     "motor_mount": Role.SECONDARY_STRUCTURE,
+    # Top deck — clear acrylic, outside the palette (renders via material).
+    "top_acrylic": None,
 }
 
 

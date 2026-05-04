@@ -49,7 +49,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from build123d import Pos, Rot
+from build123d import Cylinder, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
@@ -61,6 +61,16 @@ from materials import material_of
 from frame import assembly as _frame
 from params import FLOOR_H, FLOOR_LAYOUT
 from ramp_mechanism import assembly as _ramp
+
+
+# --- Top deck ----------------------------------------------------------
+#
+# Clear-acrylic disc capping the tower. Hopper / rotary-feed and
+# ceiling-sleeve mounting are deferred — see NEXT_STEPS "Top deck —
+# open detail".
+TOP_DECK_OD = 660.0       # circumscribes column outer corners (~322 mm) + ~8 mm clearance
+TOP_DECK_T = 10.0
+TOP_DECK_APERTURE_D = 150.0  # clears top column's rotating collar (OD 138 at z 880..885)
 
 
 # --- Floor plan --------------------------------------------------------
@@ -185,6 +195,19 @@ for idx, role in FLOOR_PLAN:
         )
 
 
+# Top deck — added once, after the per-floor loop. Bottom face at
+# z = TOP_VERT_Z (top of through-columns); annular aperture passes the
+# top floor's column body + rotating collar.
+_top_deck = (
+    Cylinder(TOP_DECK_OD / 2, TOP_DECK_T)
+    - Cylinder(TOP_DECK_APERTURE_D / 2, TOP_DECK_T * 2)
+)
+assembly = _add(
+    assembly, "top_acrylic", _top_deck,
+    location=Pos(0, 0, TOP_VERT_Z + TOP_DECK_T / 2),
+)
+
+
 # --- Design-system coverage --------------------------------------------
 #
 # Every named part this 4-floor tower adds must appear in the active
@@ -221,6 +244,17 @@ for lower_idx in range(3):
             .assert_no_interference(f"{lower_pre}trap_open", u)
             .assert_no_interference(f"{lower_pre}column", u)
         )
+
+
+# --- Top-deck cross-checks ---------------------------------------------
+
+# Disc rests on the through-column tops (tangent contact at z = TOP_VERT_Z)
+# and clears the top floor's central column body + rotating collar through
+# its central aperture.
+top_pre = prefixes[3]
+for k in range(6):
+    assembly = assembly.assert_no_interference("top_acrylic", f"outer_vert_{k}")
+assembly = assembly.assert_no_interference("top_acrylic", f"{top_pre}column")
 
 
 # --- Base-floor drive train cross-checks -------------------------------
