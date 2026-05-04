@@ -5,7 +5,7 @@ WORKSHOP/BAUHAUS render-axis swap in ``design_systems.py``.
 Centralised here so a material change is one edit; every
 ``.add(...)`` site reads ``material_of(name)``.
 
-Three parts are deliberately omitted (``camera_pcb``, ``camera_lens``,
+Several parts are deliberately omitted (``cam_*_pcb``, ``cam_*_lens``,
 ``homing_sensor``): their settled material is unset at the ``.add(...)``
 site and ``material_variations.py`` applies a render-time override.
 Calling ``material_of(...)`` on them raises, by design.
@@ -27,17 +27,14 @@ MATERIAL_OF: dict[str, str | None] = {
     "rail_d": "aluminium_anodized",
     "brace_bc": "aluminium_anodized",
     "strut_d": "aluminium_anodized",
-    # camera_rig: gussets + camera bracket + mirrors
+    # camera_rig: gussets + four ESP32-CAM mounts
     "gusset_t_ab": "pla_matte",
     "gusset_l_cd": "pla_matte",
-    "camera_clamp_bracket": "pla_matte",
-    # camera_pcb / camera_lens — see docstring; not in this dict.
-    "mirror_below_left_clamp_mount": "pla_matte",
-    "mirror_below_right_clamp_mount": "pla_matte",
-    "mirror_back_upper_clamp_mount": "pla_matte",
-    "mirror_below_left_glass": "mirror_first_surface",
-    "mirror_below_right_glass": "mirror_first_surface",
-    "mirror_back_upper_glass": "mirror_first_surface",
+    "cam_front_low_clamp_mount": "pla_matte",
+    "cam_back_upper_clamp_mount": "pla_matte",
+    "cam_below_left_clamp_mount": "pla_matte",
+    "cam_below_right_clamp_mount": "pla_matte",
+    # cam_*_pcb / cam_*_lens — see docstring; not in this dict.
     # turret.turret_frame — 2020 floor
     "floor_back_x": "aluminium_anodized",
     "floor_front_x": "aluminium_anodized",

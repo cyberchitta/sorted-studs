@@ -110,12 +110,10 @@ from cad_khana.mechanism.check import check
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from camera_rig.params import (  # noqa: E402
-    CAMERA_POS,
-    MIRROR_BACK_UPPER_NORMAL,
-    MIRROR_BACK_UPPER_POS,
-    MIRROR_BELOW_LEFT_NORMAL,
-    MIRROR_BELOW_LEFT_POS,
-    MIRROR_MOUNT_BACK_OFFSET,
+    T_FRAME_RAIL_A_Y,
+    VERTEX_BACK_UPPER_POS,
+    VERTEX_BELOW_LEFT_POS,
+    VERTEX_FRONT_LOW_POS,
 )
 from design_systems import color_of  # noqa: E402
 from materials import material_of  # noqa: E402
@@ -127,36 +125,19 @@ MEMBER = 20.0                   # 2020 extrusion cross-section
 CORNER_GAP = 0.3                # butt-joint gap at each rail endpoint
 
 
-# --- World-frame references --------------------------------------------
-#
-# Rails A/B sit just below the below-mirror mount plates; rail C sits
-# behind the back-upper plate. Each rail is offset from its mount's
-# back-face centre along the back-face outward normal by enough that
-# the clamp base clears the mount plate's solid volume — see
-# `MOUNT_CLEARANCE` derivation below.
-
-def _back_face_centre(pos, normal):
-    return tuple(
-        pos[i] - MIRROR_MOUNT_BACK_OFFSET * normal[i] for i in range(3)
-    )
-
-
-_BL_BACK = _back_face_centre(MIRROR_BELOW_LEFT_POS, MIRROR_BELOW_LEFT_NORMAL)
-_BU_BACK = _back_face_centre(MIRROR_BACK_UPPER_POS, MIRROR_BACK_UPPER_NORMAL)
-
-
 # --- Rail offsets from mount back-face centres -------------------------
 #
-# The clamp base is BASE_H ≈ 15 mm tall and sits on the rail face that
-# faces the mount. The mount plate (110 × 110 × 5 mm, tilted) bulges
-# from its back-face centre by ~48 mm toward world -Z for the below-
-# mirrors (and ~26 mm toward world +Y for the back-upper). To keep
-# the clamp base clear of that plate volume with a few mm margin, the
-# rail face must sit (HALF_PLATE_PROJ + BASE_H + MARGIN) further along
-# the back-face outward normal than the back-face centre.
+# Rev-4 sizing rationale (held stable through the rev-5 mirror→camera
+# pivot — see `cameras_design_notes.md`): the clamp base is
+# BASE_H ≈ 15 mm tall and sits on the rail face that faces the mount.
+# The rev-4 mirror mount plate (110 × 110 × 5 mm, tilted) bulged from
+# its back-face centre by ~48 mm toward world -Z for the below-mirrors
+# (and ~26 mm toward world +Y for the back-upper). Rails were placed
+# (HALF_PLATE_PROJ + BASE_H + MARGIN) further along the back-face
+# outward normal than the back-face centre.
 #
-# Concretely for below-left:
-#   plate min world-Z ≈ -188.4 (= mirror_pos.z - 55·|m_local_Y.z| - 8·|m_normal.z|)
+# Concretely for below-left (rev-4 mirror geometry):
+#   plate min world-Z ≈ -188.4
 #   rail +Z face must be ≤ -188.4 - margin_5 = -193.4
 #   rail centerline ≤ -193.4 - 10 (rail half) = -203.4
 #   include BASE_H so base top ≤ -193.4: rail centerline ≤ -218.4
@@ -164,10 +145,14 @@ _BU_BACK = _back_face_centre(MIRROR_BACK_UPPER_POS, MIRROR_BACK_UPPER_NORMAL)
 #
 # For back-upper the same calculation lands rail centerline at
 # y ≥ 235.4; round to 240 → 9.6 mm gap.
+#
+# The rev-5 ESP32-CAM mount is much smaller (50 × 50 × 5 plate),
+# which makes the clearance generous; a later size-optimization sweep
+# will tighten these against the new mount footprint.
 
-RAIL_A_Z = -220.0                                # base top z = -195, plate min z ≈ -188.4 → 6.6 mm gap
-RAIL_A_Y = _BL_BACK[1]                           # ≈ 28.44; under mount-back centre Y so beam straight up
-RAIL_A_X_HALF = 270.0                            # outrigger past mirror x=±207
+RAIL_A_Z = -220.0                                # base top z = -195
+RAIL_A_Y = T_FRAME_RAIL_A_Y                      # = 28.44 (rev-4-derived literal)
+RAIL_A_X_HALF = 270.0                            # outrigger past below-vertex x=±201
 
 
 # --- Rail B — Y-span at the same Z as rail A, butted behind rail A -----
@@ -251,9 +236,9 @@ BRACE_BC_ON_C_Z = RAIL_B_Z + MEMBER / 2 + _BRACE_LEG     # = -150.0 (60 mm above
 
 # --- Parametric sanity -------------------------------------------------
 
-assert RAIL_A_X_HALF > abs(MIRROR_BELOW_LEFT_POS[0]), (
+assert RAIL_A_X_HALF > abs(VERTEX_BELOW_LEFT_POS[0]), (
     f"rail A outrigger half-span (x=±{RAIL_A_X_HALF}) does not extend "
-    f"past the below-mirror X position (x=±{abs(MIRROR_BELOW_LEFT_POS[0])})"
+    f"past the below-vertex X position (x=±{abs(VERTEX_BELOW_LEFT_POS[0])})"
 )
 
 assert RAIL_B_Y_FRONT == RAIL_A_Y + MEMBER / 2 + CORNER_GAP and RAIL_B_Y_BACK > RAIL_C_Y, (
@@ -263,15 +248,16 @@ assert RAIL_B_Y_FRONT == RAIL_A_Y + MEMBER / 2 + CORNER_GAP and RAIL_B_Y_BACK > 
     f"got y ∈ [{RAIL_B_Y_FRONT}, {RAIL_B_Y_BACK}]"
 )
 
-assert RAIL_C_Z_TOP > MIRROR_BACK_UPPER_POS[2], (
-    f"rail C top (z={RAIL_C_Z_TOP}) must clear the back-upper mirror "
-    f"centre (z={MIRROR_BACK_UPPER_POS[2]}); mount plate upper corner "
-    f"is a further ~52 mm above the centre"
+assert RAIL_C_Z_TOP > VERTEX_BACK_UPPER_POS[2], (
+    f"rail C top (z={RAIL_C_Z_TOP}) must clear the back-upper vertex "
+    f"(z={VERTEX_BACK_UPPER_POS[2]}); mount plate upper corner is a "
+    f"further ~25 mm above the vertex"
 )
 
-assert RAIL_D_Y_FRONT < CAMERA_POS[1], (
+assert RAIL_D_Y_FRONT < VERTEX_FRONT_LOW_POS[1], (
     f"rail D front end (y={RAIL_D_Y_FRONT}) must reach past the "
-    f"camera (y={CAMERA_POS[1]}) so the camera clamp can hang below"
+    f"front-low vertex (y={VERTEX_FRONT_LOW_POS[1]}) so the camera "
+    f"clamp can hang below"
 )
 
 

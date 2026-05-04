@@ -20,10 +20,16 @@ when sweeping for comparison renders or future FEA.
 from __future__ import annotations
 
 DEFAULT_OVERRIDES: dict[str, str] = {
-    # Camera bracket: PCB (FR4) and lens (glass) — chitra-cad has
-    # neither material yet.
-    "camera_pcb": "pla_matte",
-    "camera_lens": "pla_matte",
+    # Camera mounts: PCB (FR4) and lens (glass) for each of the four
+    # tetrahedral cameras — chitra-cad has neither material yet.
+    "cam_front_low_pcb": "pla_matte",
+    "cam_back_upper_pcb": "pla_matte",
+    "cam_below_left_pcb": "pla_matte",
+    "cam_below_right_pcb": "pla_matte",
+    "cam_front_low_lens": "pla_matte",
+    "cam_back_upper_lens": "pla_matte",
+    "cam_below_left_lens": "pla_matte",
+    "cam_below_right_lens": "pla_matte",
     # Slotted opto-interrupter housing — black plastic vs generic
     # pla_matte not committed.
     "homing_sensor": "pla_matte",

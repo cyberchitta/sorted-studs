@@ -1,30 +1,35 @@
-"""M03 scanner — camera-POV render via chitra-cad.
+"""M03 scanner — 4-camera POV render via chitra-cad.
 
-Sister script to ``render.py``. Where ``render.py`` shoots the rig from
-the default 3/4 hero pose, this one pins the camera to the actual Pi HQ
-sensor pose (``CAMERA_POS`` in ``camera_rig/params.py``) with the lens's
-real field of view, so we can verify all four viewpoints — the direct
-top-front view plus the three first-surface-mirror reflections — fall
-in-frame and unoccluded at the rig's current geometry.
+Sister to ``render.py``. Where ``render.py`` shoots the rig from the
+default 3/4 hero pose, this script pins the camera to each of the four
+tetrahedral vertices in turn (``VERTEX_*_POS`` in
+``camera_rig/params.py``) and renders one PNG per viewpoint. Each
+camera looks at the world origin (the brick stand-in).
 
-A solid red 2×4-footprint ``Box`` (no studs) sits at the world origin as
-the focal target; geometric occlusion + framing is the question, not
-stud detail.
+A solid red 2×4-footprint ``Box`` (no studs) sits at the world origin
+as the focal target; geometric occlusion + framing is the question,
+not stud detail.
 
-Coordinate frame: world Z-up, matching the rest of the m03 module. The
-camera pose and field of view come from the rig parameters and the lens
-spec in ``docs/m03-multi-view-scanner.md`` (Pi HQ sensor 7.4 × 5.6 mm,
-2.8 mm C-mount → VFOV ≈ 90°, aspect 4:3).
+Outputs land in ``outputs/renders_pov/`` as
+``cam_front_low.png``, ``cam_back_upper.png``,
+``cam_below_left.png``, ``cam_below_right.png``.
+
+Coordinate frame: world Z-up. Vertex positions come from
+``camera_rig/params.py``.
 """
 
-import math
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from assembly import assembly  # noqa: E402
-from camera_rig.params import CAMERA_POS, CAMERA_ROT_DEG  # noqa: E402
+from camera_rig.params import (  # noqa: E402
+    VERTEX_BACK_UPPER_POS,
+    VERTEX_BELOW_LEFT_POS,
+    VERTEX_BELOW_RIGHT_POS,
+    VERTEX_FRONT_LOW_POS,
+)
 from detail_variations import apply_default_detail  # noqa: E402
 from material_variations import DEFAULT_OVERRIDES  # noqa: E402
 
@@ -35,17 +40,32 @@ from chitra_cad.scene import Scene  # noqa: E402
 
 
 BRICK_2X4 = (31.8, 15.8, 9.6)
-CAMERA_VFOV_DEG = 90.0
 
-# CAMERA_POS is the PCB *rear* face (mounting reference). The lens body
-# extends forward of that along the lens axis by PCB_T + LENS_L = 1.6 + 55
-# = 56.6 mm (values mirror the private constants in
-# camera_clamp_bracket/assembly.py). Synth camera sits at the lens nose so
-# we don't render from inside the camera body.
-_LENS_STACK_L = 56.6
-_TILT_RAD = math.radians(CAMERA_ROT_DEG[0])
-_LENS_AXIS = (0.0, -math.sin(_TILT_RAD), math.cos(_TILT_RAD))
-LENS_NOSE_POS = tuple(c + _LENS_STACK_L * a for c, a in zip(CAMERA_POS, _LENS_AXIS))
+# Four cameras at the tetrahedral vertices. Each renders from the PCB
+# rear plane (the optical reference point on the mount); the M12 lens
+# stack extends ~25 mm forward but for this sanity-render we shoot
+# from the PCB plane directly — the mount-front is excluded from the
+# scene below so we don't render from inside opaque geometry.
+CAMERA_POSES = [
+    ("cam_front_low", VERTEX_FRONT_LOW_POS),
+    ("cam_back_upper", VERTEX_BACK_UPPER_POS),
+    ("cam_below_left", VERTEX_BELOW_LEFT_POS),
+    ("cam_below_right", VERTEX_BELOW_RIGHT_POS),
+]
+
+# Single uniform VFOV. All 4 cameras sit ≈ 250 mm from origin, so the
+# same M12 board lens fills each frame consistently:
+#   HFOV = 2·atan((90 + 5) / 250) ≈ 41.6°
+#   VFOV at 4:3 ≈ 2·atan(0.75 · tan(HFOV/2)) ≈ 32.0°
+# This is a ~5–6 mm M12 lens equivalent — the design target for the
+# AI-Thinker ESP32-CAM M12 variant.
+CAMERA_VFOV_DEG = 32.0
+
+# Each camera shoots through its own mount; exclude the rendering
+# camera's own PCB + lens + clamp body from the scene before
+# rendering, so we don't see the inside of the housing in front of
+# the lens. Per-camera in the loop below.
+
 
 detailed = apply_default_detail(assembly).add(
     "brick_2x4_stand_in",
@@ -53,18 +73,38 @@ detailed = apply_default_detail(assembly).add(
     material="pla_matte",
     color=Color("red"),
 )
-scene = Scene.from_assembly(detailed).with_materials(DEFAULT_OVERRIDES)
+base_scene = Scene.from_assembly(detailed).with_materials(DEFAULT_OVERRIDES)
+
+
+def _scene_excluding(prefix: str) -> Scene:
+    """Scene with the named camera's own clamp_mount + pcb + lens
+    parts stripped, so the camera doesn't render from inside its own
+    housing."""
+    from dataclasses import replace
+    excluded = frozenset(
+        {f"{prefix}_clamp_mount", f"{prefix}_pcb", f"{prefix}_lens"}
+    )
+    return replace(
+        base_scene,
+        parts=tuple(p for p in base_scene.parts if p.name not in excluded),
+    )
 
 
 if __name__ == "__main__":
-    render(
-        scene,
-        out="outputs/renders_pov",
-        resolution=(2048, 1536),
-        world_up=(0.0, 0.0, 1.0),
-        framing=FixedPose(
-            location=LENS_NOSE_POS,
-            target=(0.0, 0.0, 0.0),
-            vertical_fov_deg=CAMERA_VFOV_DEG,
-        ),
-    )
+    out_dir = Path("outputs/renders_pov")
+    for prefix, location in CAMERA_POSES:
+        scene = _scene_excluding(prefix)
+        [written] = render(
+            scene,
+            out=str(out_dir),
+            resolution=(1600, 1200),
+            world_up=(0.0, 0.0, 1.0),
+            framing=FixedPose(
+                location=location,
+                target=(0.0, 0.0, 0.0),
+                vertical_fov_deg=CAMERA_VFOV_DEG,
+            ),
+        )
+        target = written.parent / f"{prefix}.png"
+        written.replace(target)
+        print(f"wrote {target}")

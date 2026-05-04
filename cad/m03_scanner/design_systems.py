@@ -41,18 +41,21 @@ ROLE_OF: dict[str, Role | None] = {
     "rail_d": Role.PRIMARY_STRUCTURE,
     "brace_bc": Role.PRIMARY_STRUCTURE,
     "strut_d": Role.PRIMARY_STRUCTURE,
-    # --- camera_rig: gussets, camera bracket, mirrors -----------------
+    # --- camera_rig: gussets + four ESP32-CAM mounts ------------------
     "gusset_t_ab": Role.SECONDARY_STRUCTURE,
     "gusset_l_cd": Role.SECONDARY_STRUCTURE,
-    "camera_clamp_bracket": Role.OPTICAL_ENVELOPE,
-    "camera_pcb": None,                                 # FR4 — outside palette
-    "camera_lens": None,                                # glass — outside palette
-    "mirror_below_left_clamp_mount": Role.OPTICAL_ENVELOPE,
-    "mirror_below_right_clamp_mount": Role.OPTICAL_ENVELOPE,
-    "mirror_back_upper_clamp_mount": Role.OPTICAL_ENVELOPE,
-    "mirror_below_left_glass": None,                    # first-surface mirror
-    "mirror_below_right_glass": None,
-    "mirror_back_upper_glass": None,
+    "cam_front_low_clamp_mount": Role.OPTICAL_ENVELOPE,
+    "cam_back_upper_clamp_mount": Role.OPTICAL_ENVELOPE,
+    "cam_below_left_clamp_mount": Role.OPTICAL_ENVELOPE,
+    "cam_below_right_clamp_mount": Role.OPTICAL_ENVELOPE,
+    "cam_front_low_pcb": None,                          # FR4 — outside palette
+    "cam_back_upper_pcb": None,
+    "cam_below_left_pcb": None,
+    "cam_below_right_pcb": None,
+    "cam_front_low_lens": None,                         # glass — outside palette
+    "cam_back_upper_lens": None,
+    "cam_below_left_lens": None,
+    "cam_below_right_lens": None,
     # --- turret.turret_frame (5-member 2020 floor) --------------------
     "floor_back_x": Role.PRIMARY_STRUCTURE,
     "floor_front_x": Role.PRIMARY_STRUCTURE,
