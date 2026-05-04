@@ -47,6 +47,7 @@ from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
 
 from basket import assembly as _bkt
+from design_systems import DESIGN_SYSTEM, basename_of, color_of, material_of
 from frame import assembly as _frame
 from params import FLOOR_H, FLOOR_LAYOUT
 from ramp_mechanism import assembly as _ramp
@@ -56,31 +57,39 @@ from ramp_mechanism import assembly as _ramp
 
 # Frame (extrusions + corner brackets) first so the frame parts exist
 # by name when the cross-boundary assertions run below.
-assembly = _frame.add_frame(Assembly())
+assembly = _frame.add_frame(
+    Assembly(), color_fn=color_of, material_fn=material_of,
+)
+
+
+def _add(a: Assembly, name: str, part, **kwargs) -> Assembly:
+    """Wrap `.add(...)` so every column-side / basket call site picks up
+    the active design system's color + material without repeating the
+    boilerplate."""
+    return a.add(
+        name, part, color=color_of(name), material=material_of(name), **kwargs,
+    )
+
 
 # Column-side: bearing spider, ring bearing, rotating column,
 # hinge pin + trap (closed) + fixed ramp.
-assembly = (
-    assembly
-    .add("bearing_spider", _ramp.bearing_spider())
-    .add("ring_bearing", _ramp.ring_bearing())
-    .add("column", _ramp.column())
-    .add("hinge_pin", _ramp.hinge_pin(), location=_ramp.hinge_loc)
-    .add("ramp", _ramp.ramp(), location=_ramp.ramp_loc)
-    .add(
-        "trap_closed", _ramp.trap(),
-        location=_ramp.hinge_loc * Rot(0, _ramp.TRAP_CLOSED_DEG, 0),
-    )
-    # Stand-in for the floor-below's trap at max-open (60°), mapped
-    # into this floor's frame via -FLOOR_H. Lets the single-floor
-    # model show the full steady-state stack-up before the multi-floor
-    # assembly is built.
-    .add(
-        "lower_trap_open", _ramp.trap(),
-        location=Location(
-            (_ramp.TRAP_HINGE_X, 0, _ramp.TRAP_HINGE_Z - FLOOR_H)
-        ) * Rot(0, _ramp.TRAP_OPEN_DEG, 0),
-    )
+assembly = _add(assembly, "bearing_spider", _ramp.bearing_spider())
+assembly = _add(assembly, "ring_bearing", _ramp.ring_bearing())
+assembly = _add(assembly, "column", _ramp.column())
+assembly = _add(assembly, "hinge_pin", _ramp.hinge_pin(), location=_ramp.hinge_loc)
+assembly = _add(assembly, "ramp", _ramp.ramp(), location=_ramp.ramp_loc)
+assembly = _add(
+    assembly, "trap_closed", _ramp.trap(),
+    location=_ramp.hinge_loc * Rot(0, _ramp.TRAP_CLOSED_DEG, 0),
+)
+# Stand-in for the floor-below's trap at max-open (60°), mapped into
+# this floor's frame via -FLOOR_H. Lets the single-floor model show the
+# full steady-state stack-up before the multi-floor assembly is built.
+assembly = _add(
+    assembly, "lower_trap_open", _ramp.trap(),
+    location=Location(
+        (_ramp.TRAP_HINGE_X, 0, _ramp.TRAP_HINGE_Z - FLOOR_H)
+    ) * Rot(0, _ramp.TRAP_OPEN_DEG, 0),
 )
 
 # Mixed-layout baskets (see params.FLOOR_LAYOUT).
@@ -88,8 +97,8 @@ basket_names = []
 for center_deg, n_size, notches in FLOOR_LAYOUT:
     name = f"basket_{int(round(center_deg)):03d}_{n_size:02d}"
     basket_names.append(name)
-    assembly = assembly.add(
-        name,
+    assembly = _add(
+        assembly, name,
         _bkt.basket(
             half_angle_deg=180.0 / n_size,
             notch_left="left" in notches,
@@ -98,6 +107,24 @@ for center_deg, n_size, notches in FLOOR_LAYOUT:
         ),
         location=Rot(0, 0, center_deg),
     )
+
+
+# --- Design-system coverage --------------------------------------------
+#
+# Every named part this single-floor view adds must appear in the
+# active design system's tag dict (``None`` allowed for hardware —
+# kept at material's intrinsic color). A part added without a tag
+# fails here instead of silently rendering off-palette. Swapping
+# ``DESIGN_SYSTEM_NAME`` (in ``cad/design_systems.py``) to a palette
+# missing a tag also fails here, so the swap surface is loud.
+_untagged = sorted(
+    {p.name for p in assembly.parts if basename_of(p.name) not in DESIGN_SYSTEM.tag_of}
+)
+assert not _untagged, (
+    f"{len(_untagged)} m05 single-floor part(s) missing a tag for "
+    f"design system '{DESIGN_SYSTEM.name}' in design_systems.py: "
+    f"{_untagged}"
+)
 
 
 # --- Cross-boundary checks ---------------------------------------------

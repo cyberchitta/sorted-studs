@@ -56,6 +56,7 @@ from cad_khana.mechanism.check import check
 
 from base_floor import assembly as _base
 from basket import assembly as _bkt
+from design_systems import DESIGN_SYSTEM, basename_of, color_of, material_of
 from frame import assembly as _frame
 from params import FLOOR_H, FLOOR_LAYOUT
 from ramp_mechanism import assembly as _ramp
@@ -84,6 +85,16 @@ def _floor_prefix(idx: int, role: str) -> str:
 
 # --- Build -------------------------------------------------------------
 
+def _add(a: Assembly, name: str, part, **kwargs) -> Assembly:
+    """Wrap ``.add(...)`` so every column-side / basket / base-floor
+    call site picks up the active design system's color + material
+    without repeating the boilerplate. ``color_of`` / ``material_of``
+    strip the floor prefix internally before lookup."""
+    return a.add(
+        name, part, color=color_of(name), material=material_of(name), **kwargs,
+    )
+
+
 assembly = Assembly()
 
 # Six through-columns: one set, full-tower span. Replaces the per-
@@ -92,6 +103,8 @@ assembly = _frame.add_through_columns(
     assembly,
     z_bot=-_frame.VERT_EXT_BELOW,
     z_top=TOP_VERT_Z,
+    color_fn=color_of,
+    material_fn=material_of,
 )
 
 # Per-floor parts.
@@ -103,41 +116,50 @@ for idx, role in FLOOR_PLAN:
     fz_loc = Pos(0, 0, fz)
 
     # Frame horizontals at this floor's rail datum.
-    assembly = _frame.add_floor_horizontals(assembly, z=fz, prefix=pre)
+    assembly = _frame.add_floor_horizontals(
+        assembly, z=fz, prefix=pre,
+        color_fn=color_of, material_fn=material_of,
+    )
 
     # Column-side: spider / ring / column / hinge pin / ramp / trap-closed.
-    assembly = (
-        assembly
-        .add(f"{pre}bearing_spider", _ramp.bearing_spider(role),
-             location=fz_loc)
-        .add(f"{pre}ring_bearing", _ramp.ring_bearing(role),
-             location=fz_loc)
-        .add(f"{pre}column", _ramp.column(role),
-             location=fz_loc)
-        .add(f"{pre}hinge_pin", _ramp.hinge_pin(),
-             location=fz_loc * _ramp.hinge_loc)
-        .add(f"{pre}ramp", _ramp.ramp(),
-             location=fz_loc * _ramp.ramp_loc)
-        .add(
-            f"{pre}trap_closed", _ramp.trap(),
-            location=fz_loc * _ramp.hinge_loc * Rot(0, _ramp.TRAP_CLOSED_DEG, 0),
-        )
+    assembly = _add(
+        assembly, f"{pre}bearing_spider", _ramp.bearing_spider(role),
+        location=fz_loc,
+    )
+    assembly = _add(
+        assembly, f"{pre}ring_bearing", _ramp.ring_bearing(role),
+        location=fz_loc,
+    )
+    assembly = _add(
+        assembly, f"{pre}column", _ramp.column(role), location=fz_loc,
+    )
+    assembly = _add(
+        assembly, f"{pre}hinge_pin", _ramp.hinge_pin(),
+        location=fz_loc * _ramp.hinge_loc,
+    )
+    assembly = _add(
+        assembly, f"{pre}ramp", _ramp.ramp(),
+        location=fz_loc * _ramp.ramp_loc,
+    )
+    assembly = _add(
+        assembly, f"{pre}trap_closed", _ramp.trap(),
+        location=fz_loc * _ramp.hinge_loc * Rot(0, _ramp.TRAP_CLOSED_DEG, 0),
     )
     # Trap at max-open: only needed on floors that have an upper
     # neighbour (its envelope reaches up into that next floor's
     # column-bottom zone). Top floor's trap-open has nothing above it
     # to test against — skip to keep the check matrix focused.
     if idx < 3:
-        assembly = assembly.add(
-            f"{pre}trap_open", _ramp.trap(),
+        assembly = _add(
+            assembly, f"{pre}trap_open", _ramp.trap(),
             location=fz_loc * _ramp.hinge_loc * Rot(0, _ramp.TRAP_OPEN_DEG, 0),
         )
 
     # Baskets per the mixed FLOOR_LAYOUT.
     for center_deg, n_size, notches in FLOOR_LAYOUT:
         bname = f"{pre}basket_{int(round(center_deg)):03d}_{n_size:02d}"
-        assembly = assembly.add(
-            bname,
+        assembly = _add(
+            assembly, bname,
             _bkt.basket(
                 half_angle_deg=180.0 / n_size,
                 notch_left="left" in notches,
@@ -151,12 +173,32 @@ for idx, role in FLOOR_PLAN:
     # the rail datum. Its parts live at z ∈ [-105, +5] in the floor
     # frame — placed at fz_loc which is (0, 0, 0) for the base floor.
     if role == "base":
-        assembly = (
-            assembly
-            .add(f"{pre}motor", _base.motor(), location=fz_loc)
-            .add(f"{pre}drive_shaft", _base.drive_shaft(), location=fz_loc)
-            .add(f"{pre}motor_mount", _base.motor_mount(), location=fz_loc)
+        assembly = _add(
+            assembly, f"{pre}motor", _base.motor(), location=fz_loc,
         )
+        assembly = _add(
+            assembly, f"{pre}drive_shaft", _base.drive_shaft(), location=fz_loc,
+        )
+        assembly = _add(
+            assembly, f"{pre}motor_mount", _base.motor_mount(), location=fz_loc,
+        )
+
+
+# --- Design-system coverage --------------------------------------------
+#
+# Every named part this 4-floor tower adds must appear in the active
+# design system's tag dict (``None`` allowed for hardware — kept at
+# material's intrinsic color). A part added without a tag fails here
+# instead of silently rendering off-palette. Swapping
+# ``DESIGN_SYSTEM_NAME`` (in ``cad/design_systems.py``) to a palette
+# missing a tag also fails here, so the swap surface is loud.
+_untagged = sorted(
+    {p.name for p in assembly.parts if basename_of(p.name) not in DESIGN_SYSTEM.tag_of}
+)
+assert not _untagged, (
+    f"{len(_untagged)} m05 part(s) missing a tag for design system "
+    f"'{DESIGN_SYSTEM.name}' in design_systems.py: {_untagged}"
+)
 
 
 # --- Cross-floor checks ------------------------------------------------

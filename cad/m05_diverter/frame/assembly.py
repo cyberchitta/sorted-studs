@@ -62,10 +62,11 @@ the inner vertex outward (along local -X) toward the outer hex.
 import math
 import sys
 from pathlib import Path
+from typing import Callable
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from build123d import Box, Part, Pos, Rot
+from build123d import Box, Color, Part, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
@@ -152,6 +153,8 @@ def add_floor_horizontals(
     a: Assembly,
     z: float = 0.0,
     prefix: str = "",
+    color_fn: Callable[[str], Color | None] | None = None,
+    material_fn: Callable[[str], str | None] | None = None,
 ) -> Assembly:
     """Add one floor's worth of horizontal frame members + brackets at
     the given world z (= rail-top datum for that floor).
@@ -163,7 +166,19 @@ def add_floor_horizontals(
 
     Through-columns are NOT added here — they span all floors and live
     in `add_through_columns`.
+
+    `color_fn` / `material_fn` are optional callables mapping each full
+    instance name (with prefix) to a `Color` / material string. Default
+    `None` keeps the standalone behavior (no color/material set);
+    multi-floor consumers thread `color_of` / `material_of` from the
+    module-level `design_systems.py`.
     """
+    def _co(name: str) -> Color | None:
+        return color_fn(name) if color_fn is not None else None
+
+    def _mt(name: str) -> str | None:
+        return material_fn(name) if material_fn is not None else None
+
     z_loc = Pos(0, 0, z)
     for k in range(6):
         # Shared vertex azimuth for outer and inner hex.
@@ -174,17 +189,23 @@ def add_floor_horizontals(
         vy_in = R_VERT_INNER * math.sin(math.radians(v_angle))
 
         # Outer-vertex bracket: local +X points INWARD toward hex center.
+        n_ovb = f"{prefix}outer_vertex_bracket_{k}"
         a = a.add(
-            f"{prefix}outer_vertex_bracket_{k}",
+            n_ovb,
             outer_bracket(),
             location=z_loc * Pos(vx_out, vy_out, 0.0) * Rot(0, 0, v_angle + 180.0),
+            color=_co(n_ovb),
+            material=_mt(n_ovb),
         )
 
         # Inner-vertex bracket: same orientation convention as outer.
+        n_ivb = f"{prefix}inner_vertex_bracket_{k}"
         a = a.add(
-            f"{prefix}inner_vertex_bracket_{k}",
+            n_ivb,
             inner_bracket(),
             location=z_loc * Pos(vx_in, vy_in, 0.0) * Rot(0, 0, v_angle + 180.0),
+            color=_co(n_ivb),
+            material=_mt(n_ivb),
         )
 
         # Outer horizontal on edge k (between V_k and V_{k+1}).
@@ -192,10 +213,13 @@ def add_floor_horizontals(
         oe_angle = (k + 1) * 60.0
         oex = R_HEX_OUTER * math.cos(math.radians(oe_angle))
         oey = R_HEX_OUTER * math.sin(math.radians(oe_angle))
+        n_oh = f"{prefix}outer_horiz_{k}"
         a = a.add(
-            f"{prefix}outer_horiz_{k}",
+            n_oh,
             _horiz_ext(OUTER_HORIZ_LEN),
             location=z_loc * Pos(oex, oey, 0.0) * Rot(0, 0, oe_angle + 90.0),
+            color=_co(n_oh),
+            material=_mt(n_oh),
         )
 
         # Inner horizontal on inner-hex edge k — same indexing + edge
@@ -203,10 +227,13 @@ def add_floor_horizontals(
         ie_angle = (k + 1) * 60.0
         iex = R_HEX_INNER * math.cos(math.radians(ie_angle))
         iey = R_HEX_INNER * math.sin(math.radians(ie_angle))
+        n_ih = f"{prefix}inner_horiz_{k}"
         a = a.add(
-            f"{prefix}inner_horiz_{k}",
+            n_ih,
             _horiz_ext(INNER_HORIZ_LEN),
             location=z_loc * Pos(iex, iey, 0.0) * Rot(0, 0, ie_angle + 90.0),
+            color=_co(n_ih),
+            material=_mt(n_ih),
         )
 
         # Radial rail on basket boundary k (between baskets k and k+1).
@@ -216,10 +243,13 @@ def add_floor_horizontals(
         r_mid = (RAIL_INNER_R + RAIL_OUTER_R) / 2.0
         rx = r_mid * math.cos(math.radians(r_angle))
         ry = r_mid * math.sin(math.radians(r_angle))
+        n_r = f"{prefix}radial_{k}"
         a = a.add(
-            f"{prefix}radial_{k}",
+            n_r,
             _horiz_ext(RADIAL_LEN),
             location=z_loc * Pos(rx, ry, 0.0) * Rot(0, 0, r_angle),
+            color=_co(n_r),
+            material=_mt(n_r),
         )
 
     return a
@@ -229,6 +259,8 @@ def add_through_columns(
     a: Assembly,
     z_bot: float = -VERT_EXT_BELOW,
     z_top: float = FLOOR_H,
+    color_fn: Callable[[str], Color | None] | None = None,
+    material_fn: Callable[[str], str | None] | None = None,
 ) -> Assembly:
     """Add the six outer-hex vertical 2020 corner columns spanning
     [z_bot, z_top]. Single-floor default matches the historical
@@ -249,22 +281,34 @@ def add_through_columns(
         # the outer bracket's vert-arm plate (bracket local -X = world
         # +X rotated by v_angle at V_k). The 2020's 4-fold cross-
         # section makes v_angle mod 90° the only thing that matters.
+        n = f"outer_vert_{k}"
         a = a.add(
-            f"outer_vert_{k}",
+            n,
             column,
             location=Pos(vx_out, vy_out, 0.0) * Rot(0, 0, v_angle),
+            color=color_fn(n) if color_fn is not None else None,
+            material=material_fn(n) if material_fn is not None else None,
         )
     return a
 
 
-def add_frame(a: Assembly) -> Assembly:
+def add_frame(
+    a: Assembly,
+    color_fn: Callable[[str], Color | None] | None = None,
+    material_fn: Callable[[str], str | None] | None = None,
+) -> Assembly:
     """Single-floor convenience wrapper: one floor's horizontals at
     z=0 plus through-columns spanning [-VERT_EXT_BELOW, FLOOR_H].
     Multi-floor consumers should call `add_floor_horizontals` per
     floor and `add_through_columns` once for the full tower span.
     """
-    a = add_floor_horizontals(a, z=0.0, prefix="")
-    a = add_through_columns(a, z_bot=-VERT_EXT_BELOW, z_top=FLOOR_H)
+    a = add_floor_horizontals(
+        a, z=0.0, prefix="", color_fn=color_fn, material_fn=material_fn,
+    )
+    a = add_through_columns(
+        a, z_bot=-VERT_EXT_BELOW, z_top=FLOOR_H,
+        color_fn=color_fn, material_fn=material_fn,
+    )
     return a
 
 
