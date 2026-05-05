@@ -48,11 +48,10 @@ PLATFORM_ACRYLIC_T = 4.0
 
 # --- Inter-unit interface (camera rig ↔ turret) ------------------------
 
-# Shared bench Z. Both the camera rig's rail A/B and the turret_frame
-# floor sit on this single bench at z = -220.
+# Shared bench Z. The turret_frame floor sits on this single bench at
+# z = -220. Slice c2 (2026-05-05) raised the camera rig's rail A from
+# z = -220 to z = -131 (rig shrink, r=160), so the rig now floats
+# ~80 mm above the bench until a future floor-feet slice bridges the
+# gap; SHARED_BENCH_Z stays as the project-wide reference for the
+# eventual workbench surface.
 SHARED_BENCH_Z = -220.0
-
-# Butt clearance between the camera rig's rail A front face and the
-# turret_frame's back rail back face when the turret is placed in
-# world. The boundary assertion in `assembly.py` enforces this.
-RIG_TURRET_BUTT_GAP = 0.3

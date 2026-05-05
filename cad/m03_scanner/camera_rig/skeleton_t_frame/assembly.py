@@ -127,32 +127,19 @@ CORNER_GAP = 0.3                # butt-joint gap at each rail endpoint
 
 # --- Rail offsets from mount back-face centres -------------------------
 #
-# Rev-4 sizing rationale (held stable through the rev-5 mirror→camera
-# pivot — see `cameras_design_notes.md`): the clamp base is
-# BASE_H ≈ 15 mm tall and sits on the rail face that faces the mount.
-# The rev-4 mirror mount plate (110 × 110 × 5 mm, tilted) bulged from
-# its back-face centre by ~48 mm toward world -Z for the below-mirrors
-# (and ~26 mm toward world +Y for the back-upper). Rails were placed
-# (HALF_PLATE_PROJ + BASE_H + MARGIN) further along the back-face
-# outward normal than the back-face centre.
-#
-# Concretely for below-left (rev-4 mirror geometry):
-#   plate min world-Z ≈ -188.4
-#   rail +Z face must be ≤ -188.4 - margin_5 = -193.4
-#   rail centerline ≤ -193.4 - 10 (rail half) = -203.4
-#   include BASE_H so base top ≤ -193.4: rail centerline ≤ -218.4
-# Round to -220 → 6.6 mm gap from base top to plate volume.
-#
-# For back-upper the same calculation lands rail centerline at
-# y ≥ 235.4; round to 240 → 9.6 mm gap.
-#
-# The rev-5 ESP32-CAM mount is much smaller (50 × 50 × 5 plate),
-# which makes the clearance generous; a later size-optimization sweep
-# will tighten these against the new mount footprint.
+# Slice c2 (2026-05-05): rail centerlines derived by
+# `sizing.compute_geometry()` at lens=3.6 / tilt=65 / r=160 using the
+# conservative envelope (rail centerline = vertex coord ± rail_clear,
+# where rail_clear = mount_offset (30) + RAIL/2 (10) + CORNER_GAP
+# (0.3) = 40.3; mount_offset = plate_t + plate_half_side captures the
+# worst-case 50 × 50 × 5 plate corner extent in any direction). The
+# mirror-era literals (-220 / 240 / 250.3 / 270 / -280) are gone; see
+# the manual-sync header in `../params.py` for the inputs that
+# generated the new values.
 
-RAIL_A_Z = -220.0                                # base top z = -195
-RAIL_A_Y = T_FRAME_RAIL_A_Y                      # = 28.44 (rev-4-derived literal)
-RAIL_A_X_HALF = 270.0                            # outrigger past below-vertex x=±201
+RAIL_A_Z = -131.2                                # base top z = -121.2
+RAIL_A_Y = T_FRAME_RAIL_A_Y                      # = 17.0 (clamp-Y-centered rail)
+RAIL_A_X_HALF = 165.0                            # outrigger past below-vertex x=±130.6
 
 
 # --- Rail B — Y-span at the same Z as rail A, butted behind rail A -----
@@ -172,12 +159,12 @@ RAIL_B_Y_FRONT = RAIL_A_Y + MEMBER / 2 + CORNER_GAP   # ≈ 38.74
 # below, after rail D, since the column extension above rail D is
 # the design driver for the column's height.
 
-RAIL_C_Y = 240.0                                 # base top y = 215, plate max y ≈ 205.4 → 9.6 mm gap
+RAIL_C_Y = 152.4                                 # rail front face y = 142.4, plate-back y ≈ 115.6
 # Sits on rail B's +Z face with CORNER_GAP separator.
-RAIL_C_Z_BOTTOM = RAIL_B_Z + MEMBER / 2 + CORNER_GAP    # ≈ -209.7
+RAIL_C_Z_BOTTOM = RAIL_B_Z + MEMBER / 2 + CORNER_GAP    # ≈ -120.9
 
 # Rail B back outrigger sits 40 mm past rail C's back face.
-RAIL_B_Y_BACK = RAIL_C_Y + 40.0                  # = 280.0
+RAIL_B_Y_BACK = RAIL_C_Y + 40.0                  # = 192.4
 
 
 # --- Rail D — Y-cantilever over the camera ------------------------------
@@ -186,9 +173,9 @@ RAIL_B_Y_BACK = RAIL_C_Y + 40.0                  # = 280.0
 # by clearance over the back-upper mount plate corner (z ≤ 228.4)
 # plus a few mm margin, not by sitting on rail C's top.
 
-RAIL_D_Z = 250.3                                 # bottom face z = 240.3 → 11.9 mm gap above mount corner
-RAIL_D_Y_BACK = RAIL_C_Y - MEMBER / 2 - CORNER_GAP   # = 229.7 (butted to rail C -Y face)
-RAIL_D_Y_FRONT = -280.0                          # ~53 mm past camera (y ≈ -226.6)
+RAIL_D_Z = 158.1                                 # bottom face z = 148.1; clears back-upper rail-pad clamp base top at z = 147.77
+RAIL_D_Y_BACK = RAIL_C_Y - MEMBER / 2 - CORNER_GAP   # = 142.1 (butted to rail C -Y face)
+RAIL_D_Y_FRONT = -150.0                          # 5 mm past front-low vertex y = -145.0
 
 
 # --- Rail C top — strut anchor elevation -------------------------------

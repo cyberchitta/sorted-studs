@@ -94,13 +94,14 @@ TURRET_FRAME_FLOOR_Z = -220.0                                # shared bench
 # bearing + neighbour-module anchors on a single line.
 TURRET_FRAME_CROSS_Y = TURRET_HUB_Y                          # = 0
 
-# Back X-rail centerline Y in turret-local. The +Y face must butt the
-# camera rig's rail A front face when placed at world Y = -ARM_R.
-# Numerical: world rail A front Y = +18.44; world placement adds
-# -ARM_R to turret-local Y, so turret-local rail A front Y = ARM_R +
-# 18.44; back rail back face = ARM_R + 18.44 - CORNER_GAP = ARM_R +
-# 18.14; back rail centerline = back face - MEMBER/2 = ARM_R + 8.14.
-# The top-level `../assembly.py` asserts this matches the rig's rail A.
+# Back X-rail centerline Y in turret-local. Originally sized so the
+# +Y face butted the camera rig's rail A front face (rev-3/rev-4 era,
+# both subsystems on the SHARED_BENCH_Z=-220 plane). Slice c2 shrunk
+# the rig and rail A rose to z=-131, so rig and turret are now
+# Z-decoupled; the butt-joint constraint is moot. Held at ARM_R+8.14
+# so the turret geometry is unchanged this slice — the turret arm
+# shrink (rev-4 ARM_R=185 → rev-5 ARM_R=125 per sizing.py) is its
+# own follow-up slice and will revisit this anchor.
 TURRET_FRAME_BACK_Y = TURRET_ARM_R + 8.14
 
 # Front X-rail centerline Y — under the RETURN station centroid

@@ -5,8 +5,8 @@
 #     TILT_DEG         = 65.0
 #     BRICK_MAX_MM     = 80.0
 #     SCATTER_HALF_MM  = 15.0
-#     TETRA_R          = 250.0  (kept at rev-5 size; not yet shrunk)
-# Last reconciled: 2026-05-04.
+#     TETRA_R          = 160.0  (slice c2 shrink, 2026-05-05)
+# Last reconciled: 2026-05-05.
 #
 # To re-derive: edit sizing.py, run it, copy the tetrahedral block
 # below verbatim, update LENS_FOCAL_MM/TETRA_R/etc above, update the
@@ -30,14 +30,16 @@ Each rig sub-assembly (`skeleton_t_frame/`, `camera_mount_esp32cam/`,
 `frame_gusset_t/`, `frame_gusset_l/`) carries its own local frame and
 imports the constants below via `from camera_rig.params import …`.
 
-Tetrahedral verification (2026-05-04): all four vertices sit at
-exactly r = 250 mm from origin, and every pairwise dot product of
+Tetrahedral verification (2026-05-05): all four vertices sit at
+exactly r = 160 mm from origin, and every pairwise dot product of
 unit-vectors-from-origin is −1/3 — the regular-tetrahedron signature
-(109.47° between every pair). The vertex set was regularised from
-rev-5 (which was within ±2 mm of a regular tetrahedron but not exact)
-to the canonical generator output from `sizing.tetra_vertices_unit(65)`
-scaled by r=250.
-See `cameras_design_notes.md` for the pivot rationale.
+(109.47° between every pair). Slice c2 shrunk r 250 → 160 (the
+3.6 mm M12 lens choice from `rig_shrink_handoff.md`); rail anchors
+follow from `sizing.compute_geometry()`'s conservative envelope
+(mount_offset = plate_t + half_side = 30, rail_clear =
+mount_offset + RAIL/2 + GAP = 40.3). See `cameras_design_notes.md`
+for the rev-5 pivot rationale and `rig_shrink_handoff.md` for the
+shrink rationale.
 """
 
 import math
@@ -56,12 +58,12 @@ WALL_MIN = 1.5
 # are pose-descriptive (independent of any prior mirror/camera role) so
 # a future role swap doesn't churn the names.
 #
-# Values from sizing.tetra_vertices_unit(tilt_deg=65) scaled by r=250.
+# Values from sizing.tetra_vertices_unit(tilt_deg=65) scaled by r=160.
 
-VERTEX_FRONT_LOW_POS = (0.0, -226.6, 105.7)
-VERTEX_BACK_UPPER_POS = (0.0, 175.1, 178.4)
-VERTEX_BELOW_LEFT_POS = (-204.1, 25.7, -142.0)
-VERTEX_BELOW_RIGHT_POS = (204.1, 25.7, -142.0)
+VERTEX_FRONT_LOW_POS = (0.0, -145.0, 67.6)
+VERTEX_BACK_UPPER_POS = (0.0, 112.1, 114.2)
+VERTEX_BELOW_LEFT_POS = (-130.6, 16.5, -90.9)
+VERTEX_BELOW_RIGHT_POS = (130.6, 16.5, -90.9)
 
 
 def lens_axis_unit(
@@ -181,28 +183,43 @@ def horizontal_x_roll_deg(normal: tuple[float, float, float]) -> float:
 
 # --- T-frame rail positions ---------------------------------------------
 #
-# Held stable from rev-4 (the mirrored design): vertex coordinates are
-# unchanged in the rev-5 pivot, and the rail offsets that were sized
-# to clear 110 × 110 mm mirror plates now have generous extra margin
-# against the smaller ESP32-CAM mounts. A later size-optimization
-# sweep will tighten these against the new mount footprint.
+# Slice c2 shrink (2026-05-05): rail anchors derived from
+# sizing.compute_geometry() at lens=3.6 / tilt=65 / r=160 using the
+# conservative mount-footprint envelope (rail centerline = vertex
+# coordinate ± rail_clear, where rail_clear = 40.3 = mount_offset (30)
+# + RAIL/2 (10) + CORNER_GAP (0.3); mount_offset = plate_t (5) +
+# plate_half_side (25) is the worst-case extent of the 50 × 50 × 5
+# mount plate behind its vertex along any direction).
+#
+# T_FRAME_RAIL_A_Y is not in sizing.py's output — the Y position is
+# free along rail A's long axis. Set to the below-left/right plate-
+# back-centre Y so the rail-pad clamp's Y-footprint sits centered on
+# rail A's top face.
 
 # Stock 2020 T-slot extrusion cross-section.
 SKELETON_RAIL_MEMBER = 20.0
 
-T_FRAME_RAIL_A_Z = -220.0                                # rail A centerline Z (height)
-T_FRAME_RAIL_A_TOP_Z = T_FRAME_RAIL_A_Z + SKELETON_RAIL_MEMBER / 2   # = -210
-# Rev-4 derivation: back-face Y of the below-left mirror plate (8 mm
-# offset from the mirror centre along the mirror normal). Held as a
-# literal here so the rail position is independent of the new
-# ESP32-CAM mount's plate offset (5 mm) — the size-optimization sweep
-# will re-derive this against the new mount.
-T_FRAME_RAIL_A_Y = 28.44
-T_FRAME_RAIL_A_FRONT_Y = T_FRAME_RAIL_A_Y - SKELETON_RAIL_MEMBER / 2 # ≈ 18.44
-T_FRAME_RAIL_C_Y = 240.0                                 # rail C centerline Y (depth)
-T_FRAME_RAIL_C_FRONT_Y = T_FRAME_RAIL_C_Y - SKELETON_RAIL_MEMBER / 2 # = 230
-T_FRAME_RAIL_D_Z = 250.3                                 # rail D centerline Z (height)
-T_FRAME_RAIL_D_BOTTOM_Z = T_FRAME_RAIL_D_Z - SKELETON_RAIL_MEMBER / 2   # = 240.3
+T_FRAME_RAIL_A_Z = -131.2                                # rail A centerline Z (height)
+T_FRAME_RAIL_A_TOP_Z = T_FRAME_RAIL_A_Z + SKELETON_RAIL_MEMBER / 2   # = -121.2
+# Below-left/right plate-back centre Y at r=160 (= vertex_y * (1 +
+# plate_t/r) = 16.5 * 1.03125 ≈ 17.0). Centering rail A on this Y
+# puts each below-camera clamp's footprint inside rail A's ±10 mm
+# Y span.
+T_FRAME_RAIL_A_Y = 17.0
+T_FRAME_RAIL_A_FRONT_Y = T_FRAME_RAIL_A_Y - SKELETON_RAIL_MEMBER / 2 # = 7.0
+T_FRAME_RAIL_C_Y = 152.4                                 # rail C centerline Y (depth)
+T_FRAME_RAIL_C_FRONT_Y = T_FRAME_RAIL_C_Y - SKELETON_RAIL_MEMBER / 2 # = 142.4
+#
+# Rail D bumped 3.6 mm above sizing.py's conservative envelope (154.5)
+# to clear the back-upper rail-pad clamp's BASE_L=60 mm along-rail
+# footprint: clamp base extends ±30 along rail C (= world Z), so the
+# clamp body's max Z = mount-back Z (117.77) + 30 = 147.77, and rail
+# D's bottom face must sit ≥ 148.07 (CORNER_GAP from clamp top). Real
+# constraint here is clamp BASE_L/2, not the plate corner extent —
+# sizing.py's `mount_offset = plate_t + plate_half_side = 30` happens
+# to coincide numerically but governs a different geometry.
+T_FRAME_RAIL_D_Z = 158.1                                 # rail D centerline Z (height)
+T_FRAME_RAIL_D_BOTTOM_Z = T_FRAME_RAIL_D_Z - SKELETON_RAIL_MEMBER / 2   # = 148.1
 
 
 # --- Per-vertex camera-mount placement ---------------------------------

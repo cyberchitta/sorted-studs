@@ -61,21 +61,32 @@ RAIL_A_Z = T_FRAME_RAIL_A_TOP_Z - MEMBER / 2
 PLATE_T = 6.0
 ARM_W = MEMBER
 ARM_X_L = 150.0
-ARM_Y_L = 130.0
+# Slice c2 (2026-05-05): rig shrink brought rail C from y=240 to
+# y=152.4, which dragged BRACE_BC_ON_B_Y forward (170 → 82.4). The
+# rev-4 ARM_Y_L=130 collided with the brace's near edge in the
+# rail-A/B-junction footprint; arm shortened to clear by ~10 mm. Bolt
+# offsets switched to explicit asymmetric values — symmetric bolt
+# spacing about the arm centroid no longer fits inside both the arm
+# bounds and rail B's Y span (rail B front face at world y = 27.3 =
+# gusset-local y = 10.3).
+ARM_Y_L = 60.0
 
 # Y-arm front edge sits at the rail A/B front face. With no rail B
 # front outrigger, the arm extends back-only; in local coordinates
 # the arm spans y ∈ [_ARM_Y_FRONT, _ARM_Y_FRONT + ARM_Y_L].
 _ARM_Y_FRONT = -MEMBER / 2                          # = -10
-_ARM_Y_CENTER = _ARM_Y_FRONT + ARM_Y_L / 2          # = 55
+_ARM_Y_CENTER = _ARM_Y_FRONT + ARM_Y_L / 2          # = 20
 
 BOLT_HOLE_D = 5.5
 BOLT_X_HALF = 42.0
-# Rail-B bolts symmetric about the (back-shifted) y-arm centerline.
-_BOLT_Y_HALF = 38.0
+# Rail-B bolts inside the (forward-shifted) arm bounds AND inside
+# rail B's world Y span (front face at world y = 27.3 = gusset-local
+# y = 10.3 with RAIL_A_Y = 17.0). Asymmetric: front bolt close to the
+# rail-B front face, back bolt close to the arm's back edge with a
+# WALL_MIN clearance.
 BOLT_Y_OFFSETS = (
-    _ARM_Y_CENTER - _BOLT_Y_HALF,                   # ≈ 17 (world y ≈ 45.4)
-    _ARM_Y_CENTER + _BOLT_Y_HALF,                   # ≈ 93 (world y ≈ 121.4)
+    15.0,                                            # gusset-local y; world y = 32
+    40.0,                                            # gusset-local y; world y = 57
 )
 
 _PLATE_Z = T_FRAME_RAIL_A_TOP_Z + PLATE_T / 2
