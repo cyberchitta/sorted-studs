@@ -127,7 +127,11 @@ MEMBER = 20.0                                              # 2020 extrusion
 RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2             # = -170
 
 # Slice (b) housing top (private mirror; bound assertions reference it).
-HOUSING_TOP_Z = -110.0
+# Slice c5 (2026-05-05) raised this 30 mm (-110 → -80) along with the
+# floor; housing height itself unchanged (60 mm). Pulley raised
+# 11 mm in lockstep (-86 → -75 center) so housing-top → pulley-bottom
+# closes from 20 mm to 1 mm and pulley-top → cam-bottom stays at 1 mm.
+HOUSING_TOP_Z = -80.0
 
 
 # --- GT2 pulley sizing (60T driven, 20T driver) ------------------------
@@ -153,10 +157,11 @@ DRIVER_PULLEY_OD = DRIVER_PITCH_D                          # ≈ 12.73
 # with 1 mm of flange margin per side, 8 mm pulleys are common stock.
 PULLEY_HEIGHT = 8.0
 
-# Z center: midway through the 29 mm gap between housing top (-110)
-# and cam bottom (-81). 1 mm clear of cam at the top, 19 mm clear of
-# housing at the bottom.
-PULLEY_Z_CENTER = -86.0
+# Z center: 1 mm above the c5 housing top (-80) and 1 mm below the
+# c5 cam bottom (-70). Slice c5 (2026-05-05) raised this 11 mm
+# (-86 → -75) so the housing-top → pulley-bottom gap closes to 1 mm
+# while the pulley-top → cam-bottom gap stays at 1 mm.
+PULLEY_Z_CENTER = -75.0
 _PULLEY_TOP_Z = PULLEY_Z_CENTER + PULLEY_HEIGHT / 2        # = -82
 _PULLEY_BOTTOM_Z = PULLEY_Z_CENTER - PULLEY_HEIGHT / 2     # = -90
 

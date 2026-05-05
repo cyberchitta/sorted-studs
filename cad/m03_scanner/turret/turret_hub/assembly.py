@@ -80,16 +80,18 @@ TURRET_BEARING_T = 7.0
 # Housing height above the cross-rail top face. 60 mm gives a 46 mm
 # clear span between the top and bottom bearings (each flush with its
 # adjacent housing face) — comfortable for the static load (4 light
-# platforms, slow indexing) and lets the rail rise 40 mm so the
-# housing top stays at z = -110 (the cam/pulley/motor stack above is
-# unchanged in absolute Z).
+# platforms, slow indexing). Slice c4 (2026-05-05) shrank this from
+# 100 → 60 to drop the floor 40 mm; slice c5 (2026-05-05) left this
+# unchanged but raised the floor a further 30 mm so the housing top
+# rose with it (-110 → -80) to absorb the housing-top → pulley-bottom
+# gap.
 TURRET_HUB_HOUSING_HEIGHT = 60.0
 
-# Housing top face Z in world. Cross-rail top face at z = -170
-# (= floor + MEMBER/2) plus housing height = -110.
+# Housing top face Z in world. Cross-rail top face at z = -140
+# (= floor + MEMBER/2) plus housing height = -80 after slice c5.
 TURRET_HUB_HOUSING_TOP_Z = (
     TURRET_FRAME_FLOOR_Z + 20.0 / 2 + TURRET_HUB_HOUSING_HEIGHT
-)                                                                # = -110
+)                                                                # = -80
 
 
 # --- Cross-rail interface ----------------------------------------------

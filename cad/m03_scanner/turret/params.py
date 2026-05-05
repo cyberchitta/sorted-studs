@@ -89,16 +89,30 @@ TURRET_STATION_RETURN_XY = (0.0, -TURRET_ARM_R)
 # -TURRET_ARM_R) — putting all three M2/M3/M5 anchors on one rail
 # keeps their mounting holes coplanar with the cross-rail's T-slot.
 
-TURRET_FRAME_FLOOR_Z = -180.0                                # turret floor
+TURRET_FRAME_FLOOR_Z = -150.0                                # turret floor
 
 # Slice c4 (2026-05-05) raised the floor 40 mm (-220 → -180) in
 # lockstep with the hub housing shrink 100 → 60 mm (TURRET_HUB_
 # HOUSING_HEIGHT in turret_hub/assembly.py). Net effect: housing top
-# stays at z = -110, the cam/pulley/motor stack above is unchanged in
-# absolute Z, and the turret is 40 mm shorter overall. The project
-# workbench reference (SHARED_BENCH_Z = -220 in ../params.py) didn't
-# move; the turret floor now floats 40 mm above it, mirroring how the
-# camera rig has floated since c2.
+# stayed at z = -110, the cam/pulley/motor stack above unchanged in
+# absolute Z, and the turret 40 mm shorter overall.
+#
+# Slice c5 (2026-05-05) raised the floor a further 30 mm (-180 → -150)
+# without shrinking the housing. The housing top therefore rose
+# 30 mm to z = -80, closing the housing-top → pulley-bottom gap from
+# 20 to 1 mm; the pulley and cam disc rose 11 mm in lockstep
+# (PULLEY_Z_CENTER -86 → -75 in turret_drive, TURRET_DUMP_CAM_CENTER_Z
+# -75 → -64 below) so the cam-bottom → pulley-top gap stays at 1 mm
+# and the cam-top → spider-bottom gap closes from 34 to 23 mm. The
+# motor body rises 11 mm with the bracket plate (whose Z is set by
+# pulley Z); brick-silhouette occlusion from the motor was checked by
+# inspection (motor at +X, off-axis from below-vertex sightlines, line-
+# of-sight passes outboard of the motor body in X). A formal
+# silhouette-cone assertion is deferred to a c5b retrofit.
+#
+# The project workbench reference (SHARED_BENCH_Z = -220 in
+# ../params.py) didn't move; the turret floor now floats 70 mm above
+# it, mirroring how the camera rig has floated since c2.
 
 # Center X-rail Y (= hub axis Y = 0 in turret-local). Hosts hub
 # bearing + neighbour-module anchors on a single line.
@@ -184,16 +198,18 @@ TURRET_HINGE_PIN_D = 5.0
 #     slice (f2) kicker linkage maps that radial motion to the
 #     vertical lifter stroke needed for the platform tilt.
 #
-# Disc Z span: [-81, -69] (centered on TURRET_DUMP_CAM_CENTER_Z).
-# Sits between the housing top (z = -110) and the slice (c) spider
-# bottom (z = -35), leaving 29 mm below for a future drive coupling
-# and 34 mm above before the spider. Lobe-peak / lobe-ramp angular
-# split + the polygon discretisation are private to the sub-assembly
-# (`turret_dump_cam/assembly.py`).
+# Disc Z span: [-70, -58] (centered on TURRET_DUMP_CAM_CENTER_Z).
+# Sits between the housing top (z = -80) and the slice (c) spider
+# bottom (z = -35), leaving 9 mm below before the pulley top (z=-71)
+# and 23 mm above before the spider. Slice c5 (2026-05-05) raised the
+# cam 11 mm (-75 → -64 center) along with the pulley to absorb the
+# housing rise; cam-bottom → pulley-top stays at 1 mm. Lobe-peak /
+# lobe-ramp angular split + the polygon discretisation are private to
+# the sub-assembly (`turret_dump_cam/assembly.py`).
 TURRET_DUMP_CAM_BASE_R = 25.0
 TURRET_DUMP_CAM_PEAK_R = 30.0
 TURRET_DUMP_CAM_HEIGHT = 12.0
-TURRET_DUMP_CAM_CENTER_Z = -75.0
+TURRET_DUMP_CAM_CENTER_Z = -64.0
 TURRET_DUMP_CAM_TOP_Z = TURRET_DUMP_CAM_CENTER_Z + TURRET_DUMP_CAM_HEIGHT / 2
 TURRET_DUMP_CAM_BOTTOM_Z = TURRET_DUMP_CAM_CENTER_Z - TURRET_DUMP_CAM_HEIGHT / 2
 
