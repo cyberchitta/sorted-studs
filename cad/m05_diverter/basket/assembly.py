@@ -1,14 +1,21 @@
 """
 M05 hex-tower — basket sub-assembly.
 
-Trapezoidal-prism **buckets** sitting on a rotating-column floor.
-The floor is a **mixed layout** — baskets of four sizes (N=6 / 9 /
-12 / 18, each with half-angle 180°/N) placed around the hex per
-`params.FLOOR_LAYOUT`, with the ramp-facing N=6 basket straddling
-+X and the remaining sections filled by N=9 triples, N=12 pairs,
-and an N=18 triple + (N=9, N=18) pair around the back.
+Wedge **buckets** with a flat inner chord, two radial side walls,
+and a cylindrical-arc outer wall at R_BASKET_OUTER, sitting on a
+rotating-column floor. The floor is a **mixed layout** — baskets
+of four sizes (N=6 / 9 / 12 / 18, each with half-angle 180°/N)
+placed around the hex per `params.FLOOR_LAYOUT`, with the ramp-
+facing N=6 basket straddling +X and the remaining sections filled
+by N=9 triples, N=12 pairs, and an N=18 triple + (N=9, N=18) pair
+around the back.
 
-Each basket's outer corners (and in one case, its center) are
+Outer arc radius matches the top-deck acrylic disc OD/2 (330 mm),
+so all baskets share the same outer cylindrical surface regardless
+of N — the floor of buckets reads as one continuous cylindrical
+skirt below the disc edge.
+
+Each basket's radial side walls (and in one case, its center) are
 notched around the six outer-hex through-columns at vertices
 V_k = (k+0.5)·60°. The notch set per basket is declared in
 `FLOOR_LAYOUT`: `left`/`right` for boundary columns, `middle`
@@ -16,11 +23,12 @@ for the V_1 column that sits inside the N=9 MIDDLE basket's
 interior.
 
 Floor sits on the shared stage datum (z=0); rim at z=+BASKET_DEPTH_Z.
-Outer chord sits past R_HEX_OUTER so the basket floor rests on the
-outer-hex top face from above (mirroring the inner-chord-over-inner-
-hex support already landed in Phase 2 step 1). Open top for drop-in
-delivery, closed bottom; lifts out for emptying. Rack that physically
-carries the bucket load is the hex ring itself — no separate shelf.
+Basket floor cantilevers past the outer-hex edge but still rests on
+the hex outer extrusion top-face strip plus the radial rails, so
+brick load drops through the supported zone. Open top for drop-in
+delivery, closed bottom; lifts out for emptying. Rack that
+physically carries the bucket load is the hex ring itself — no
+separate shelf.
 
 Standalone validation: the full mixed layout + a minimal column-
 footprint stub at the axis, with interference checks against the
@@ -41,7 +49,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from build123d import Box, Part, Polygon, Pos, Rot, extrude
+from build123d import Box, Cylinder, Part, Polygon, Pos, Rot, extrude
 
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
@@ -59,21 +67,25 @@ from params import (
 
 # --- Parameters ---------------------------------------------------------
 
-# Basket outer chord sits `BASKET_HEX_OVERHANG` mm outside R_HEX_OUTER
-# (ΔR convention, matching the inner side). At N=6 the chord midpoint
-# x-coordinate is R_BASKET_OUTER·cos(30°); with the current value the
-# chord overhangs the outer-hex edge midpoint by ~7.1 mm while
-# staying inside the hex's outer face (at r=280), so the basket
-# floor rests on a ~17 mm strip of outer-hex top face and does not
-# stick out past the tower footprint.
+# Basket outer wall is a cylindrical arc at r = R_BASKET_OUTER,
+# aligned with the clear-acrylic top deck OD/2 (660/2 = 330) so the
+# floor of buckets reads as a continuous cylindrical skirt below the
+# disc edge. Sits BASKET_HEX_OVERHANG mm outside R_HEX_OUTER along
+# the apothem direction, so the basket floor cantilevers past the
+# hex outer face by up to BASKET_HEX_OVERHANG. The floor still rests
+# on the hex outer extrusion top-face strip (r ∈ [260, 280] along
+# apothem azimuths) plus the radial rails along boundary azimuths,
+# so brick load drops through the supported zone — only the
+# outermost ~50 mm of floor hangs free.
 #
 # The basket's radial side walls lie on the outer-hex vertex
 # azimuths and would otherwise pass straight through the through-
 # columns (20×20 rotated, body at r ∈ [~301.77, ~321.77] along
-# vertex azimuth). `basket()` subtracts a column-footprint cutout
-# at each outer corner to absorb the column body.
-BASKET_HEX_OVERHANG = 50.0
-R_BASKET_OUTER = R_HEX_OUTER + BASKET_HEX_OVERHANG   # 320
+# vertex azimuth — fully inside the basket envelope at r=330).
+# `basket()` subtracts a column-footprint cutout at each boundary-
+# azimuth column position to absorb the column body.
+BASKET_HEX_OVERHANG = 60.0
+R_BASKET_OUTER = R_HEX_OUTER + BASKET_HEX_OVERHANG   # 330 = top-deck OD/2
 BASKET_WALL_T = 3.0
 
 # Each basket takes its full 360°/N sector. An earlier design shrunk
@@ -104,9 +116,12 @@ WALL_MIN = 1.5
 def _column_cutout_at(azimuth_deg: float) -> Part:
     """Rotated 20×20 through-cutout centered on the outer-hex vertex
     at `azimuth_deg`, spanning the full basket Z range with margin.
-    Removes the column body (and a thin clearance margin) from a
-    basket's outer corner so the radial side wall wraps around the
-    column instead of passing through it.
+    Removes the column body (and a thin clearance margin) from the
+    basket so the radial side wall wraps around the column instead
+    of passing through it. With the outer arc at r=R_BASKET_OUTER
+    > column-corner radius (~321.77), the cutout sits mid-wall
+    along the boundary radial rather than at the basket's outer
+    corner.
 
     Rotation matches frame's `Rot(0, 0, v_angle)` on `outer_vert_k`,
     so the cutout's faces align with the real column's faces.
@@ -120,7 +135,7 @@ def _column_cutout_at(azimuth_deg: float) -> Part:
     return Pos(vx, vy, z_center) * Rot(0, 0, azimuth_deg) * Box(side, side, height)
 
 
-def _trap_prism(
+def _arc_prism(
     r_in: float,
     r_out: float,
     half_angle_deg: float,
@@ -128,25 +143,39 @@ def _trap_prism(
     z_top: float,
     inset: float = 0.0,
 ) -> Part:
-    """Angular-sector trapezoidal prism centered on +X.
+    """Angular-sector wedge with flat inner chord, two radial side
+    walls, and a cylindrical-arc outer wall at radius `r_out`.
+    Centered on +X.
 
-    `inset` offsets each of the four bounding lines perpendicular-inward
-    by that amount — used to carve the hollow interior from an outer
-    shell with a uniform wall thickness.
+    `inset` offsets each bounding feature perpendicular-inward by
+    that amount — used to carve the hollow interior from an outer
+    shell with a uniform wall thickness. Inner chord moves outward
+    by `inset`, radial walls move inward perpendicularly, outer arc
+    radius shrinks by `inset`.
+
+    Implementation: build a sector trapezoid extending well past
+    `r_out` and intersect it with a coaxial cylinder of radius
+    `r_out - inset`; the cylinder clips the outer edge into a
+    circular arc.
     """
     ha = math.radians(half_angle_deg)
+    r_far = r_out * 2.0
     x_in = r_in * math.cos(ha) + inset
-    x_out = r_out * math.cos(ha) - inset
+    x_far = r_far * math.cos(ha) - inset
     tan_ha = math.tan(ha)
     dy = inset / math.cos(ha)
     pts = [
         (x_in, -(x_in * tan_ha - dy)),
-        (x_out, -(x_out * tan_ha - dy)),
-        (x_out, +(x_out * tan_ha - dy)),
+        (x_far, -(x_far * tan_ha - dy)),
+        (x_far, +(x_far * tan_ha - dy)),
         (x_in, +(x_in * tan_ha - dy)),
     ]
     sketch = Polygon(*pts, align=None)
-    return Pos(0, 0, z_bot) * extrude(sketch, amount=z_top - z_bot)
+    wedge = Pos(0, 0, z_bot) * extrude(sketch, amount=z_top - z_bot)
+    cyl_h = (z_top - z_bot) + 2.0
+    cyl_z_center = (z_bot + z_top) / 2.0
+    cyl = Pos(0, 0, cyl_z_center) * Cylinder(r_out - inset, cyl_h)
+    return wedge & cyl
 
 
 # --- Part functions -----------------------------------------------------
@@ -158,8 +187,9 @@ def basket(
     notch_right: bool = False,
     notch_middle: bool = False,
 ) -> Part:
-    """Trapezoidal-prism bucket for one basket slot, centered on +X.
-    Closed floor at z=BASKET_FLOOR_Z, open top at z=BASKET_RIM_Z.
+    """Wedge bucket with cylindrical-arc outer wall for one basket
+    slot, centered on +X. Closed floor at z=BASKET_FLOOR_Z, open top
+    at z=BASKET_RIM_Z.
 
     `half_angle_deg` = 180/N for the basket's size class (30° at N=6,
     20° at N=9, 15° at N=12, 10° at N=18).
@@ -171,14 +201,14 @@ def basket(
       - notch_middle → 0° (basket center — used only where V_k lands
                        inside a basket, i.e. N=9 MIDDLE baskets)
     Each flagged notch subtracts a rotated column-footprint box (see
-    `_column_cutout_at`) from the trapezoidal shell.
+    `_column_cutout_at`) from the wedge shell.
     """
     z_bot = BASKET_FLOOR_Z
     z_top = BASKET_RIM_Z
-    outer = _trap_prism(
+    outer = _arc_prism(
         R_BASKET_INNER, R_BASKET_OUTER, half_angle_deg, z_bot, z_top,
     )
-    cavity = _trap_prism(
+    cavity = _arc_prism(
         R_BASKET_INNER, R_BASKET_OUTER, half_angle_deg,
         z_bot + BASKET_WALL_T, z_top + 1.0,
         inset=BASKET_WALL_T,
