@@ -12,7 +12,7 @@ with `+Z` vertical:
 
 The unit is placed in world by `Pos(0, -TURRET_ARM_R, 0)` in
 `../assembly.py` — pure translation, no rotation. That places hub at
-world `(0, -TURRET_ARM_R, *) = (0, -185, *)`, IMAGE platform at world
+world `(0, -TURRET_ARM_R, *) = (0, -125, *)`, IMAGE platform at world
 origin, and the four station centroids at world
 `(±R, -R, 0)` / `(0, -R±R, 0)`.
 
@@ -28,12 +28,14 @@ WALL_MIN = 1.5
 
 # --- Acrylic platform stock (matches ../params.py) ---------------------
 #
-# 180 × 180 × 4 mm PMMA. Used by all 4 turret platform cartridges
-# (slice d) and by the rev-3 single-platform stack. The duplicate of
-# the top-level value is intentional — it lets `turret/` stand alone
+# 120 × 120 × 4 mm PMMA (slice c3 shrink, 2026-05-05). Sized to the
+# rev-5 4-cam imaged region (110 × 110) + 5 mm PMMA edge grip per side
+# per `sizing.py`. Used by all 4 turret platform cartridges (slice d)
+# and by the rev-3 single-platform stack. The duplicate of the
+# top-level value is intentional — it lets `turret/` stand alone
 # without reaching upward; the top-level assembly asserts agreement.
 
-PLATFORM_ACRYLIC_SIZE = 180.0
+PLATFORM_ACRYLIC_SIZE = 120.0
 PLATFORM_ACRYLIC_T = 4.0
 
 
@@ -55,15 +57,14 @@ PLATFORM_ACRYLIC_T = 4.0
 TURRET_HUB_X = 0.0
 TURRET_HUB_Y = 0.0
 
-# Arm radius (hub axis to platform centroid). The design brief's
-# original 100–150 mm range was wrong: at radius R the inner corners
-# of two 180 × 180 mm platforms 90° apart only clear when R ≥ 180 mm
-# (geometric minimum: corner at (S/2, S/2) coincides with adjacent
-# platform's corner at (S/2, S/2) when R = S = 180). 185 mm gives
-# 5 mm corner-to-corner clearance — same idiom as CORNER_GAP elsewhere.
+# Arm radius (hub axis to platform centroid). Geometric minimum: at
+# radius R the inner corners of two square platforms 90° apart coincide
+# when R = PLATFORM_ACRYLIC_SIZE. Slice c3 (2026-05-05) dropped this
+# 185 → 125 alongside the platform shrink 180 → 120; 5 mm corner-to-
+# corner clearance is the same CORNER_GAP idiom as the prior 185.
 # Hub-to-hinge-edge arm reach = TURRET_ARM_R - PLATFORM_ACRYLIC_SIZE/2
-# = 95 mm.
-TURRET_ARM_R = 185.0
+# = 65 mm.
+TURRET_ARM_R = 125.0
 
 # Station centroid XY positions in turret-local (Z = 0 for all four).
 TURRET_STATION_IMAGE_XY = (0.0, +TURRET_ARM_R)
@@ -98,27 +99,28 @@ TURRET_FRAME_CROSS_Y = TURRET_HUB_Y                          # = 0
 # +Y face butted the camera rig's rail A front face (rev-3/rev-4 era,
 # both subsystems on the SHARED_BENCH_Z=-220 plane). Slice c2 shrunk
 # the rig and rail A rose to z=-131, so rig and turret are now
-# Z-decoupled; the butt-joint constraint is moot. Held at ARM_R+8.14
-# so the turret geometry is unchanged this slice — the turret arm
-# shrink (rev-4 ARM_R=185 → rev-5 ARM_R=125 per sizing.py) is its
-# own follow-up slice and will revisit this anchor.
-TURRET_FRAME_BACK_Y = TURRET_ARM_R + 8.14
+# Z-decoupled; the butt-joint constraint is moot. Slice c3 dropped
+# the rev-3/4 +8.14 anchor (a leftover from the butt-joint clearance
+# math) for a clean +10 mm CORNER_GAP-class margin past the IMAGE
+# platform centroid. The IMAGE platform's outer +Y edge sits at
+# y = ARM_R + PLATFORM/2 = 185, cantilevering 50 mm past this rail.
+TURRET_FRAME_BACK_Y = TURRET_ARM_R + 10.0                    # = 135
 
 # Front X-rail centerline Y — under the RETURN station centroid
 # (turret-local (0, -R, 0)). The RETURN platform's outer edge
 # cantilevers PLATFORM_ACRYLIC_SIZE/2 forward of this rail (to
-# y = -R - 90 = -275 at R = 185); accepted because the platform is
+# y = -R - 60 = -185 at R = 125); accepted because the platform is
 # light, hangs off the spider arm rather than the floor, and stopping
 # the floor here keeps the bench footprint bounded.
-TURRET_FRAME_FRONT_Y = -TURRET_ARM_R                          # = -185
+TURRET_FRAME_FRONT_Y = -TURRET_ARM_R                          # = -125
 
 # Side Y-rails X. Sits 20 mm outboard of the LOAD/DUMP centroid lines
 # at x = ±TURRET_ARM_R — gives the singulator and diverter mounting
 # room on the cross-rail's outboard end without the side rail's outer
 # face crashing the swept platform footprint at LOAD/DUMP (LOAD
-# platform's outboard X face at +R+90 is at z = 0, well above the
+# platform's outboard X face at +R+60 is at z = 0, well above the
 # z = -220 side rail).
-TURRET_FRAME_SIDE_X = TURRET_ARM_R + 20.0                     # = 205
+TURRET_FRAME_SIDE_X = TURRET_ARM_R + 20.0                     # = 145
 
 
 # --- Turret hub (slice b) ----------------------------------------------
@@ -148,9 +150,9 @@ TURRET_HINGE_PIN_Z = -22.5
 
 # Hinge pin radial offset from hub axis. The platform centroid sits
 # at TURRET_ARM_R from the hub; its hub-side edge is
-# PLATFORM_ACRYLIC_SIZE/2 = 90 closer in. So the hinge pin axis at
-# the inner edge sits at radial TURRET_ARM_R - 90 from hub axis.
-TURRET_HINGE_PIN_RADIAL = TURRET_ARM_R - PLATFORM_ACRYLIC_SIZE / 2  # = 95
+# PLATFORM_ACRYLIC_SIZE/2 = 60 closer in. So the hinge pin axis at
+# the inner edge sits at radial TURRET_ARM_R - 60 from hub axis.
+TURRET_HINGE_PIN_RADIAL = TURRET_ARM_R - PLATFORM_ACRYLIC_SIZE / 2  # = 65
 
 # Hinge pin diameter — M5 stock round (matches the rev-3
 # PLATFORM_HINGE_PIN_D so existing M5 round stock applies).
@@ -241,11 +243,15 @@ TURRET_DUMP_KICKER_PIVOT_Z = -130.0
 TURRET_DUMP_KICKER_LIFTER_TOP_Z = -45.0
 
 # Lifter pad XY in turret-local. Resolves the cart-frame extension-tip
-# position (X=+80, Y=-130) under the DUMP rotation Rz(+90):
-#     turret_x = -ARM_R - cart_y = -185 - (-130) = -55
-#     turret_y = cart_x          =          +80
-# Lever arm = |cart_y - hinge_cart_y| = |-130 - (-90)| = 40 mm hub-side
+# position (X=+30, Y=-100) under the DUMP rotation Rz(+90):
+#     turret_x = -ARM_R - cart_y = -125 - (-100) = -25
+#     turret_y = cart_x          =          +30
+# Lever arm = |cart_y - hinge_cart_y| = |-100 - (-60)| = 40 mm hub-side
 # of the hinge — single-direction torque (no competing bonded brick-side
-# push as in the prior straddle-the-hinge tab design).
-TURRET_DUMP_KICKER_LIFTER_TURRET_X = -55.0
-TURRET_DUMP_KICKER_LIFTER_TURRET_Y = +80.0
+# push as in the prior straddle-the-hinge tab design). Slice c3
+# (2026-05-05) shrunk the cart-frame coords with the platform: cart X
+# from +80 → +30 (well inside the new 120 acrylic; spider arm at ±7
+# unchanged), cart Y from -130 → -100 (preserving the 40 mm lever
+# arm against the new hinge at cart Y=-60).
+TURRET_DUMP_KICKER_LIFTER_TURRET_X = -25.0
+TURRET_DUMP_KICKER_LIFTER_TURRET_Y = +30.0

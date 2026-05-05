@@ -1,8 +1,8 @@
 """
 M03 scanner — rev-4 turret platform cartridge (slice d of the 4-station
-turret).
+turret), shrunk for rev-5 4-cam topology in slice c3 (2026-05-05).
 
-Two-piece "cartridge": a PMMA acrylic insert (172 × 172 × 4 mm) dropped
+Two-piece "cartridge": a PMMA acrylic insert (110 × 110 × 4 mm) dropped
 into a single printed frame body that integrates the perimeter ring,
 acrylic pocket, hinge brackets, and kicker extension. Replaces the
 prior 5-piece bonded design (acrylic + 2 brackets + ring + tab) — the
@@ -12,36 +12,37 @@ PLA-PMMA bond joints. The acrylic just provides the transparent
 brick-resting surface.
 
 Members (2 total — 1 PMMA insert + 1 printed frame):
-  * acrylic_insert — 172 × 172 × 4 mm PMMA, top face at z = 0, centred
-    on origin in X / Y. Dropped into the frame's pocket; rests on 4
-    corner support lips at z = -4. Slip-fit; on assembly the user
-    secures the four corners with dabs of structural adhesive (not
-    modelled — the bond zone is small and offset to the corners which
-    are clear of the Ø172 sightline cone).
+  * acrylic_insert — 110 × 110 × 4 mm PMMA, top face at z = 0, centred
+    on origin in X / Y. Sized to the rev-5 imaged region (per
+    `sizing.py`). Dropped into the frame's pocket; rests on 4 corner
+    support lips at z = -4. Slip-fit; on assembly the user secures
+    the four corners with dabs of structural adhesive (not modelled).
   * frame — single printed body integrating:
-      - top ring (z ∈ [0, +5], 180 × 180 outer, 172 × 172 inner) —
-        4 mm wide brick-containment lip above the acrylic
+      - top ring (z ∈ [0, +5], 120 × 120 outer, 110 × 110 inner) —
+        5 mm wide brick-containment lip above the acrylic
       - pocket walls (z ∈ [-4, 0], same cross-section) — capture the
         acrylic edges
-      - corner lips (z ∈ [-7, -4], 4 × 10 × 10 mm at pocket corners) —
-        support the acrylic from below; clear of the Ø172 sightline
-        cone (lip inner-most corner at radial 107.5 ≫ cone half-radius
-        87.2 at z = -7) where a continuous bottom lip would clip
-      - hub-side skirt (z ∈ [-27.3, -4] at cart Y ∈ [-90, -86]) —
-        4 mm-thick wall extending the perimeter down for bracket
+      - corner lips (z ∈ [-7, -4], 5 × 10 × 10 mm at pocket corners) —
+        support the acrylic from below; only at corners (not a
+        continuous bottom lip) so the central viewing area through the
+        transparent acrylic stays clear from the below-camera vertices.
+        Per-camera below-view occlusion analysis is rig-level
+        (visibility.py) and not enforced here.
+      - hub-side skirt (z ∈ [-27.3, -4] at cart Y ∈ [-60, -55]) —
+        5 mm-thick wall extending the perimeter down for bracket
         attachment; full X span minus a 21 mm-wide notch at cart
         X ∈ [-10.5, +10.5] so the slice (c) bushing block passes
         through unobstructed
-      - hinge brackets (cart X = ±13, Y ∈ [-98, -82], z ∈ [-27.3, -4])
+      - hinge brackets (cart X = ±13, Y ∈ [-68, -52], z ∈ [-27.3, -4])
         — integrated into the skirt at the bracket positions; horizontal
-        Ø5.4 pin bore along ±X at cart Y = -90, z = -22.5
-      - kicker extension (cart X ∈ [+71, +89]) — L-shape cantilevered
-        hub-ward from the skirt's +X corner: stem at z ∈ [-15, -4]
-        running from cart Y = -86 to -141, plus a drop block at z ∈
-        [-43, -15] over cart Y ∈ [-141, -119]. Contact face (drop
+        Ø5.4 pin bore along ±X at cart Y = -60, z = -22.5
+      - kicker extension (cart X ∈ [+21, +39]) — L-shape cantilevered
+        hub-ward from the skirt at cart X = +30: stem at z ∈ [-15, -4]
+        running from cart Y = -55 to -111, plus a drop block at z ∈
+        [-43, -15] over cart Y ∈ [-111, -89]. Contact face (drop
         block bottom) at z = -43 sits 2 mm above the slice (f2) lifter
         pad's REST top; cam stroke closes the gap and lifts the
-        platform. Lift point at cart-frame (X=+80, Y=-130) is 40 mm
+        platform. Lift point at cart-frame (X=+30, Y=-100) is 40 mm
         hub-side of the hinge — clean single-direction outer-DOWN
         torque about the hinge, with no competing bonded brick-side
         push as in the prior straddle-the-hinge tab design.
@@ -56,11 +57,10 @@ Coordinate frame = cartridge-local IMAGE pose:
 cartridge to each station in turret-local: IMAGE at (0, +R, 0) with
 no rotation, LOAD at (+R, 0, 0) with Rz(-90), DUMP at (-R, 0, 0)
 with Rz(+90), RETURN at (0, -R, 0) with Rz(180). Same shape, four
-poses. `PLATFORM_ACRYLIC_SIZE` (= 180) in `../params.py` now refers
-to the FRAME outer footprint, not the acrylic — the acrylic insert
-is 172. The constant name is kept for stability; the turret arm-radius
-clearance math (`TURRET_HINGE_PIN_RADIAL = TURRET_ARM_R - 90`) still
-uses the platform outer half-width and is unchanged.
+poses. `PLATFORM_ACRYLIC_SIZE` (= 120) in `../params.py` refers to
+the FRAME outer footprint; the acrylic insert is 110. The turret
+arm-radius clearance math (`TURRET_HINGE_PIN_RADIAL = TURRET_ARM_R
+- 60`) uses the platform outer half-width.
 
 Print orientation: bottom face on build plate, +Z up (build123d
 default). Horizontal Ø5.4 pin bore bridges fine in FDM at this
@@ -110,23 +110,31 @@ PIN_AXIS_Z_LOCAL = TURRET_HINGE_PIN_Z                          # = -22.5
 # the hub-side edge of the frame, RADIAL short of the hub.
 # Cartridge-local hub Y = -ARM_R when placed at IMAGE (centroid at
 # turret +R), so cartridge-local pin Y = -ARM_R + RADIAL.
-PIN_AXIS_Y_LOCAL = TURRET_HINGE_PIN_RADIAL - TURRET_ARM_R      # = -90
+PIN_AXIS_Y_LOCAL = TURRET_HINGE_PIN_RADIAL - TURRET_ARM_R      # = -60
+
+
+# --- Imaged region (rev-5 sizing.py) -----------------------------------
+
+# Side of the square brick-landing region every camera must see fully
+# (= BRICK_MAX + 2*SCATTER_HALF in sizing.py at default brick=80,
+# scatter=±15). The acrylic insert must cover at least this region.
+IMAGED_REGION_SIDE_MM = 110.0
 
 
 # --- Acrylic insert (PMMA) ---------------------------------------------
 
-# Smaller than the prior 180 × 180 plate — fits inside the frame's
-# 172 × 172 pocket. Same 4 mm thickness so existing PMMA stock applies;
-# user cuts the 172 square from larger sheet.
-ACRYLIC_INSERT_SIZE = 172.0
+# Sized to the imaged region — covers the 110 × 110 area cameras must
+# see fully. Same 4 mm thickness so existing PMMA stock applies; user
+# cuts the 110 square from larger sheet.
+ACRYLIC_INSERT_SIZE = IMAGED_REGION_SIDE_MM
 ACRYLIC_INSERT_T = PLATFORM_ACRYLIC_T                          # = 4
 
 
 # --- Frame outer geometry ----------------------------------------------
 
-FRAME_OUTER_SIZE = PLATFORM_ACRYLIC_SIZE                        # = 180
+FRAME_OUTER_SIZE = PLATFORM_ACRYLIC_SIZE                        # = 120
 FRAME_TOP_RING_HEIGHT = 5.0     # brick-containment lip above acrylic
-FRAME_WALL_T = (FRAME_OUTER_SIZE - ACRYLIC_INSERT_SIZE) / 2     # = 4
+FRAME_WALL_T = (FRAME_OUTER_SIZE - ACRYLIC_INSERT_SIZE) / 2     # = 5
 
 # Frame Z anchors. Acrylic top at z = 0 (matches the cartridge centroid
 # Z plane and the prior bonded-pieces design).
@@ -136,11 +144,13 @@ TOP_RING_TOP_Z = ACRYLIC_TOP_Z + FRAME_TOP_RING_HEIGHT          # = +5
 
 # --- Corner lips (acrylic support at 4 pocket corners) -----------------
 
-# A continuous bottom lip would clip the Ø172 sightline cone at the
-# pocket side midpoints (cone tangent to the 172 inner opening at z=0,
-# diverging at ~10° below). Square pocket + round cone leaves the
-# corners (at radial 122) clear; 10 × 10 corner lips provide the
-# acrylic support without intruding into the cone.
+# Corner lips (rather than a continuous bottom lip) preserve the
+# transparent central viewing path through the acrylic from the below
+# cameras (rev-5 4-cam topology). A continuous bottom lip would project
+# an opaque rectangle into every below-camera frame; corner-only lips
+# limit any below-view obstruction to the imaged region's corners.
+# Detailed below-view occlusion is checked at the rig level
+# (visibility.py), not asserted here.
 CORNER_LIP_SIZE = 10.0
 CORNER_LIP_T = 3.0
 CORNER_LIP_TOP_Z = ACRYLIC_BOTTOM_Z                             # = -4
@@ -171,18 +181,18 @@ BRACKET_X_CENTER_OFFSET = (
 )
 BRACKET_POS_X_LOCAL = +BRACKET_X_CENTER_OFFSET
 BRACKET_NEG_X_LOCAL = -BRACKET_X_CENTER_OFFSET
-BRACKET_Y_LOCAL = PIN_AXIS_Y_LOCAL                                # = -90
+BRACKET_Y_LOCAL = PIN_AXIS_Y_LOCAL                                # = -60
 
 
 # --- Hub-side skirt (perimeter wall extended down for bracket attach) --
 
 # Skirt is the hub-side perimeter wall continued from z = -4 down to
-# the bracket bottom. Same Y range as the perimeter wall there (4 mm
+# the bracket bottom. Same Y range as the perimeter wall there (5 mm
 # thick). Notched at cart X ∈ [-10.5, +10.5] for the slice (c)
 # bushing block (X ∈ [-10, +10], Z ∈ [-35, -10]) to pass through
 # unobstructed.
-HUB_SKIRT_Y_OUTER = -FRAME_OUTER_SIZE / 2                          # = -90
-HUB_SKIRT_Y_INNER = HUB_SKIRT_Y_OUTER + FRAME_WALL_T               # = -86
+HUB_SKIRT_Y_OUTER = -FRAME_OUTER_SIZE / 2                          # = -60
+HUB_SKIRT_Y_INNER = HUB_SKIRT_Y_OUTER + FRAME_WALL_T               # = -55
 HUB_SKIRT_Z_BOTTOM = BRACKET_BOTTOM_Z_LOCAL                        # = -27.3
 HUB_SKIRT_Z_TOP = ACRYLIC_BOTTOM_Z                                 # = -4
 
@@ -197,22 +207,21 @@ _BUSHING_BLOCK_TOP_Z = -10.0    # mirrors slice (c) BUSHING_BLOCK_W Z
 
 # --- Kicker extension (cantilevered from skirt past hinge) -------------
 
-# Extension reaches the lift point at cart-frame (X=+80, Y=-130) — a
-# 40 mm lever arm hub-side of the hinge axis at cart Y=-90. Cart X
-# centered at +80 keeps the extension at the +X corner of the platform,
-# clear of the Ø172 sightline cone (closest corner at radial 111.5
-# ≫ cone half-radius 93.6 at z=-43) and tangentially clear of the
-# slice (c) DUMP spider arm (cart X ∈ [-7, +7] at the IMAGE-pose
-# equivalent heading).
-EXTENSION_X_CENTER = +80.0
+# Extension reaches the lift point at cart-frame (X=+30, Y=-100) — a
+# 40 mm lever arm hub-side of the hinge axis at cart Y=-60. Cart X=+30
+# is well clear of the slice (c) DUMP spider arm (cart X ∈ [-7, +7]
+# at the IMAGE-pose equivalent heading) and well inside the frame's
+# +X edge (+60). Per-camera below-view occlusion is rig-level
+# (visibility.py), not asserted here.
+EXTENSION_X_CENTER = +30.0
 EXTENSION_X_LEN = 18.0
-EXTENSION_X_INNER = EXTENSION_X_CENTER - EXTENSION_X_LEN / 2       # = +71
-EXTENSION_X_OUTER = EXTENSION_X_CENTER + EXTENSION_X_LEN / 2       # = +89
+EXTENSION_X_INNER = EXTENSION_X_CENTER - EXTENSION_X_LEN / 2       # = +21
+EXTENSION_X_OUTER = EXTENSION_X_CENTER + EXTENSION_X_LEN / 2       # = +39
 
-# Y span: from skirt inner face (-86) to the tip past the lift point.
-EXTENSION_Y_OUTBOARD = HUB_SKIRT_Y_INNER                           # = -86
-EXTENSION_Y_TIP = -141.0
-LIFT_POINT_Y_LOCAL = -130.0     # = cart Y where lifter pad center contacts
+# Y span: from skirt inner face (-55) to the tip past the lift point.
+EXTENSION_Y_OUTBOARD = HUB_SKIRT_Y_INNER                           # = -55
+EXTENSION_Y_TIP = -111.0
+LIFT_POINT_Y_LOCAL = -100.0     # = cart Y where lifter pad center contacts
 
 # L-shape: stem at the acrylic-bottom band (thin), drop block at the
 # tip hangs down to the lifter contact face.
@@ -223,8 +232,8 @@ EXTENSION_BOTTOM_Z = (
 EXTENSION_STEM_BOTTOM_Z = -15.0
 EXTENSION_STEM_TOP_Z = ACRYLIC_BOTTOM_Z                            # = -4
 # Drop block Y span centered on lift point with margin for pad coverage.
-EXTENSION_DROP_Y_OUTBOARD = -119.0
-EXTENSION_DROP_Y_TIP = EXTENSION_Y_TIP                             # = -141
+EXTENSION_DROP_Y_OUTBOARD = -89.0
+EXTENSION_DROP_Y_TIP = EXTENSION_Y_TIP                             # = -111
 
 
 # --- Sanity asserts ----------------------------------------------------
@@ -269,27 +278,14 @@ assert FRAME_WALL_T >= WALL_MIN, (
     f"({WALL_MIN}); shrink ACRYLIC_INSERT_SIZE or grow FRAME_OUTER_SIZE"
 )
 
-# Acrylic insert sized to clear the Ø172 transparent zone.
-assert ACRYLIC_INSERT_SIZE >= 172.0, (
-    f"acrylic insert {ACRYLIC_INSERT_SIZE} < 172 mm; would clip the "
-    f"below-mirror sightline cone at the platform plane"
+# Acrylic insert covers the imaged region.
+assert ACRYLIC_INSERT_SIZE >= IMAGED_REGION_SIDE_MM, (
+    f"acrylic insert {ACRYLIC_INSERT_SIZE} < imaged region "
+    f"{IMAGED_REGION_SIDE_MM} mm; cameras would see frame instead of "
+    f"acrylic at the imaged region edge"
 )
-
-# Corner lip inner-most corner clear of the Ø172 sightline cone at the
-# lip's bottom Z (where the cone half-radius is largest within the lip
-# Z range). Cone diverges at ~10° below the platform plane.
-_CONE_DIVERGE_TAN = 0.176                                          # tan(10°)
-_LIP_INNER_OFFSET = ACRYLIC_INSERT_SIZE / 2 - CORNER_LIP_SIZE      # = 76
-_LIP_INNER_CORNER_R = math.hypot(_LIP_INNER_OFFSET, _LIP_INNER_OFFSET)
-_CONE_HALF_R_AT_LIP_BOTTOM = (
-    ACRYLIC_INSERT_SIZE / 2 + (-CORNER_LIP_BOTTOM_Z) * _CONE_DIVERGE_TAN
-)
-assert _LIP_INNER_CORNER_R > _CONE_HALF_R_AT_LIP_BOTTOM, (
-    f"corner lip inner corner radial {_LIP_INNER_CORNER_R:.2f} mm ≤ "
-    f"cone half-radius {_CONE_HALF_R_AT_LIP_BOTTOM:.2f} mm at lip "
-    f"bottom Z; lip clips the Ø172 sightline cone — shrink "
-    f"CORNER_LIP_SIZE or move CORNER_LIP_BOTTOM_Z up"
-)
+# (Per-camera below-view occlusion of corner lips and kicker extension
+# is rig-level, checked by visibility.py — not asserted here.)
 
 # Corner lip width ≥ WALL_MIN.
 assert CORNER_LIP_SIZE >= WALL_MIN, (
@@ -351,17 +347,7 @@ assert _LEVER_ARM >= 30.0, (
     f"be unreliable — push EXTENSION_Y_TIP further hub-ward"
 )
 
-# Extension lift-point face clear of the Ø172 sightline cone at the
-# extension's bottom Z (where the cone has expanded most).
-_EXT_NEAR_CORNER_R = math.hypot(EXTENSION_X_INNER, EXTENSION_Y_OUTBOARD)
-_CONE_HALF_R_AT_EXT_BOTTOM = (
-    ACRYLIC_INSERT_SIZE / 2 + (-EXTENSION_BOTTOM_Z) * _CONE_DIVERGE_TAN
-)
-assert _EXT_NEAR_CORNER_R > _CONE_HALF_R_AT_EXT_BOTTOM, (
-    f"extension near-centroid corner radial {_EXT_NEAR_CORNER_R:.2f} mm "
-    f"≤ cone half-radius {_CONE_HALF_R_AT_EXT_BOTTOM:.2f} mm at "
-    f"extension bottom Z; clips the Ø172 sightline cone"
-)
+# (Extension below-view occlusion is rig-level — visibility.py.)
 
 # Extension bottom strictly above lifter pad top at REST.
 assert EXTENSION_BOTTOM_Z > TURRET_DUMP_KICKER_LIFTER_TOP_Z, (
@@ -371,8 +357,8 @@ assert EXTENSION_BOTTOM_Z > TURRET_DUMP_KICKER_LIFTER_TOP_Z, (
 
 # Lifter pad cart-frame position derived from turret-local matches the
 # extension's lift point. At DUMP: cart X = turret_y, cart Y = -ARM_R - turret_x.
-_LIFTER_CART_X = TURRET_DUMP_KICKER_LIFTER_TURRET_Y                # = +80
-_LIFTER_CART_Y = -TURRET_ARM_R - TURRET_DUMP_KICKER_LIFTER_TURRET_X  # = -130
+_LIFTER_CART_X = TURRET_DUMP_KICKER_LIFTER_TURRET_Y                # = +30
+_LIFTER_CART_Y = -TURRET_ARM_R - TURRET_DUMP_KICKER_LIFTER_TURRET_X  # = -100
 assert _LIFTER_CART_X == EXTENSION_X_CENTER, (
     f"lifter cart X {_LIFTER_CART_X} ≠ extension X center "
     f"{EXTENSION_X_CENTER}"
@@ -389,7 +375,7 @@ def acrylic_insert(
     size: float = ACRYLIC_INSERT_SIZE,
     thickness: float = ACRYLIC_INSERT_T,
 ):
-    """172 × 172 × 4 mm PMMA insert centred on origin in X / Y, top
+    """110 × 110 × 4 mm PMMA insert centred on origin in X / Y, top
     face at z = 0. Drops into the frame's pocket; rests on the 4
     corner support lips at z = -4."""
     return Pos(0, 0, -thickness / 2) * Box(size, size, thickness)

@@ -30,19 +30,22 @@ BRICK_SPHERE_DIA = 80.0
 
 # --- Acrylic platform stock spec ---------------------------------------
 #
-# Smallest rectangle that simultaneously clears the below-mirror
-# sightline cones (≤ Ø172 at the platform plane per rev-1) and
-# accommodates the largest brick footprint (`BRICK_SPHERE_DIA = 80`).
-# 180 mm gives ~4 mm of clear acrylic margin outside the Ø172 sightline
-# circle for edge clamping. 4 mm thickness gives enough stiffness to
-# span 180 mm under a brick load without flex, and enough edge thickness
-# to host bonded brackets without the bond joint dominating geometry.
+# Sized to the per-camera imaged region from the rev-5 4-cam direct
+# topology (sizing.py at lens=3.6 / brick_max=80 / scatter=±15):
+# imaged region = 110 × 110 mm + 5 mm PMMA edge grip per side =
+# 120 × 120 mm. The prior 180 mm was sized against a Ø172 mirror-era
+# sightline cone (rev-1) that no longer exists. Slice c3 (2026-05-05)
+# shrunk this 180 → 120 alongside the turret arm shrink.
+#
+# 4 mm thickness gives enough stiffness to span 120 mm under a brick
+# load without flex, and enough edge thickness to host bonded brackets
+# without the bond joint dominating geometry.
 #
 # Used by the rev-3 single-platform stack and the rev-4 turret platform
 # cartridges. Each unit duplicates these in its own params.py for
 # standalone use; assembly.py asserts the values match.
 
-PLATFORM_ACRYLIC_SIZE = 180.0
+PLATFORM_ACRYLIC_SIZE = 120.0
 PLATFORM_ACRYLIC_T = 4.0
 
 

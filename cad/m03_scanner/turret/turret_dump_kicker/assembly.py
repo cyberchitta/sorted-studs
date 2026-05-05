@@ -224,19 +224,18 @@ _BRIDGE_Y_Y_CENTER = (BRIDGE_Y_Y_START + BRIDGE_Y_Y_END) / 2
 # Lifter beam: rectangular pad block sized to cover both the bridge-Y
 # endpoint (at X = LEVER_RISER_X_CENTER = -110, where the Y-cantilever
 # meets the pad zone) AND the platform extension drop block footprint
-# at the new past-hinge position. Extension drop in turret at DUMP:
-# X ∈ [-66, -44], Y ∈ [+71, +89] (= cart X ∈ [+71, +89], cart Y ∈
-# [-141, -119]). Beam X ∈ [-117, -42] spans from the bridge-Y
-# outboard X face (-117) all the way past the extension's hub-most
-# tip with a 2 mm overhang. Beam Y ∈ [+69, +91] gives 2 mm overhang
-# past extension Y on each side. Beam fully wraps the bridge-Y
-# endpoint AND the extension drop block.
-_LIFTER_BEAM_X_INNER = -42.0                                       # +X end (toward hub)
+# at the new past-hinge position. Slice c3 (2026-05-05): extension
+# drop in turret at DUMP shrunk to X ∈ [-36, -14], Y ∈ [+21, +39]
+# (= cart X ∈ [+21, +39], cart Y ∈ [-111, -89]). Beam X ∈ [-117, -12]
+# spans from the bridge-Y outboard X face (-117) all the way past
+# the extension's hub-most tip with a 2 mm overhang. Beam Y ∈
+# [+19, +41] gives 2 mm overhang past extension Y on each side.
+_LIFTER_BEAM_X_INNER = -12.0                                       # +X end (toward hub)
 _LIFTER_BEAM_X_OUTER = -117.0                                      # -X end (toward bench)
-LIFTER_BEAM_X_LEN = _LIFTER_BEAM_X_INNER - _LIFTER_BEAM_X_OUTER     # = 75
-_LIFTER_BEAM_X_CENTER = (_LIFTER_BEAM_X_INNER + _LIFTER_BEAM_X_OUTER) / 2  # = -79.5
+LIFTER_BEAM_X_LEN = _LIFTER_BEAM_X_INNER - _LIFTER_BEAM_X_OUTER     # = 105
+_LIFTER_BEAM_X_CENTER = (_LIFTER_BEAM_X_INNER + _LIFTER_BEAM_X_OUTER) / 2  # = -64.5
 LIFTER_BEAM_Y_LEN = 22.0
-_LIFTER_BEAM_Y_CENTER = LEVER_Y_LIFTER                              # = +80
+_LIFTER_BEAM_Y_CENTER = LEVER_Y_LIFTER                              # = +30
 
 
 # --- Pivot pin dimensions ----------------------------------------------
@@ -351,19 +350,19 @@ for _y in (-_LEVER_HALF_Y, +_LEVER_HALF_Y):
 
 
 # Lifter beam covers the platform extension drop-block footprint. Drop
-# block in turret-local at DUMP: cart (X=+80, Y=-130) ± (9, 11) under
-# Rz(+90) maps to turret X ∈ [-66, -44] (= -cart_y - 185), Y ∈
-# [+71, +89] (= cart_x). Lifter beam X ∈ [-117, -42], Y ∈ [+69, +91].
-# Drop X fully inside beam X (-117 < -66 and -42 > -44 + 2 = -42 with
-# epsilon); drop Y fully inside beam Y (+69 < +71 - 2 = +69 and +91 >
-# +89 + 2 = +91 with epsilon). Beam wraps the bridge-Y endpoint at X
-# ∈ [-117, -103]. Lever arm = 40 mm hub-side of the hinge — clean
-# single-direction outer-DOWN torque (no competing brick-side push;
-# see TURRET_DUMP_KICKER_LIFTER_TURRET_X comment in `../params.py`).
-_EXT_DROP_TURRET_X_INNER_AT_DUMP = -44.0   # drop hub-most (least negative X)
-_EXT_DROP_TURRET_X_OUTER_AT_DUMP = -66.0   # drop bench-most (most negative X)
-_EXT_DROP_TURRET_Y_NEG_AT_DUMP = +71.0
-_EXT_DROP_TURRET_Y_POS_AT_DUMP = +89.0
+# block in turret-local at DUMP: cart (X=+30, Y=-100) ± (9, 11) under
+# Rz(+90) maps to turret X ∈ [-36, -14] (= -cart_y - 125), Y ∈
+# [+21, +39] (= cart_x). Lifter beam X ∈ [-117, -12], Y ∈ [+19, +41].
+# Drop X fully inside beam X (-117 < -36 and -12 > -14 + 2); drop Y
+# fully inside beam Y (+19 < +21 - 2 and +41 > +39 + 2). Beam wraps
+# the bridge-Y endpoint at X ∈ [-117, -103]. Lever arm = 40 mm
+# hub-side of the hinge — clean single-direction outer-DOWN torque
+# (no competing brick-side push; see TURRET_DUMP_KICKER_LIFTER_TURRET_X
+# comment in `../params.py`).
+_EXT_DROP_TURRET_X_INNER_AT_DUMP = -14.0   # drop hub-most (least negative X)
+_EXT_DROP_TURRET_X_OUTER_AT_DUMP = -36.0   # drop bench-most (most negative X)
+_EXT_DROP_TURRET_Y_NEG_AT_DUMP = +21.0
+_EXT_DROP_TURRET_Y_POS_AT_DUMP = +39.0
 assert _LIFTER_BEAM_X_INNER >= _EXT_DROP_TURRET_X_INNER_AT_DUMP + 2.0 - 1e-9, (
     f"lifter beam X-inner {_LIFTER_BEAM_X_INNER} too close to extension "
     f"drop X-inner {_EXT_DROP_TURRET_X_INNER_AT_DUMP} (overhang < 2 mm)"
