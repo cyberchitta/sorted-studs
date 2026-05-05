@@ -34,16 +34,16 @@ from cad.design_systems import (  # noqa: E402
 # system (hardware, optical glass, clear acrylic) and keeps its
 # material's intrinsic color.
 ROLE_OF: dict[str, Role | None] = {
-    # --- camera_rig.skeleton_t_frame (4 rails + 2 mitered braces) -----
+    # --- camera_rig.skeleton_t_frame (4 rails + 1 mitered brace) ------
     "rail_a": Role.PRIMARY_STRUCTURE,
     "rail_b": Role.PRIMARY_STRUCTURE,
     "rail_c": Role.PRIMARY_STRUCTURE,
     "rail_d": Role.PRIMARY_STRUCTURE,
     "brace_bc": Role.PRIMARY_STRUCTURE,
-    "strut_d": Role.PRIMARY_STRUCTURE,
     # --- camera_rig: gussets + four ESP32-CAM mounts ------------------
     "gusset_t_ab": Role.SECONDARY_STRUCTURE,
-    "gusset_l_cd": Role.SECONDARY_STRUCTURE,
+    "gusset_l_cd_pos_x": Role.SECONDARY_STRUCTURE,
+    "gusset_l_cd_neg_x": Role.SECONDARY_STRUCTURE,
     "cam_front_low_clamp_mount": Role.OPTICAL_ENVELOPE,
     "cam_back_upper_clamp_mount": Role.OPTICAL_ENVELOPE,
     "cam_below_left_clamp_mount": Role.OPTICAL_ENVELOPE,

@@ -11,9 +11,9 @@ Run:  .venv/bin/python cad/m03_scanner/visibility.py
 
 Strategy
   1. `build_rig(g)` returns 3D line segments + 20 mm cross-section
-     for rails A/B/C/D, brace_bc, strut_d. Anchors come from
-     `Geometry` (sizing.py); the only T-frame literal not exposed
-     by Geometry — rail-A's Y position — is imported from
+     for rails A/B/C/D and brace_bc. Anchors come from `Geometry`
+     (sizing.py); the only T-frame literal not exposed by Geometry —
+     rail-A's Y position — is imported from
      `camera_rig.params.T_FRAME_RAIL_A_Y`. Other derived endpoints
      mirror the formulas in `skeleton_t_frame/assembly.py`.
   2. For each (camera, member): project both endpoints via
@@ -59,7 +59,6 @@ MEMBER_MM = 20.0       # 2020 extrusion cross-section
 CORNER_GAP_MM = 0.3
 _BRACE_LEG_MM = 60.0
 _RAIL_B_BACK_PAST_C_MM = 40.0
-_COLUMN_EXT_ABOVE_D_MM = 150.0
 
 
 @dataclass
@@ -83,15 +82,12 @@ def build_rig(g: Geometry) -> list[RigMember]:
     b_y_front = a_y + MEMBER_MM / 2 + CORNER_GAP_MM
     b_y_back = c_y + _RAIL_B_BACK_PAST_C_MM
     c_z_bottom = a_z + MEMBER_MM / 2 + CORNER_GAP_MM
-    c_z_top = d_z + MEMBER_MM / 2 + _COLUMN_EXT_ABOVE_D_MM
+    c_z_top = d_z + MEMBER_MM / 2          # rail C top end-face flush with rail D top side face
     d_y_back = c_y - MEMBER_MM / 2 - CORNER_GAP_MM
 
     # brace_bc: rail B +Z face → rail C -Y face (60 mm legs).
     brace_p1 = (0.0, c_y - MEMBER_MM / 2 - _BRACE_LEG_MM, a_z + MEMBER_MM / 2)
     brace_p2 = (0.0, c_y - MEMBER_MM / 2, a_z + MEMBER_MM / 2 + _BRACE_LEG_MM)
-    # strut_d: column-top corner → rail-D-tip corner.
-    strut_p1 = (0.0, c_y - MEMBER_MM / 2, c_z_top)
-    strut_p2 = (0.0, d_y_front, d_z + MEMBER_MM / 2)
 
     return [
         RigMember("rail_a",
@@ -101,7 +97,6 @@ def build_rig(g: Geometry) -> list[RigMember]:
         RigMember("rail_c", (0.0, c_y, c_z_bottom), (0.0, c_y, c_z_top)),
         RigMember("rail_d", (0.0, d_y_front, d_z), (0.0, d_y_back, d_z)),
         RigMember("brace_bc", brace_p1, brace_p2),
-        RigMember("strut_d", strut_p1, strut_p2),
     ]
 
 

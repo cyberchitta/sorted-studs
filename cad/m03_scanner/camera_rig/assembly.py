@@ -95,7 +95,7 @@ _CAMERA_INSTANCES = {
 # Names of every rig part this builder adds, exposed so the top-level
 # can iterate them for cross-unit assertions.
 SKELETON_NAMES = _skel.SKELETON_T_FRAME_PART_NAMES
-GUSSET_NAMES = ("gusset_t_ab", "gusset_l_cd")
+GUSSET_NAMES = ("gusset_t_ab", "gusset_l_cd_pos_x", "gusset_l_cd_neg_x")
 CAMERA_PART_NAMES = tuple(
     name
     for prefix in _CAMERA_INSTANCES
@@ -115,7 +115,8 @@ def add_camera_rig(a: Assembly) -> Assembly:
     a = _skel.add_skeleton_t_frame(a)
     # Gussets.
     a = _gusset_t.add_frame_gusset_t(a, name=GUSSET_NAMES[0])
-    a = _gusset_l.add_frame_gusset_l(a, name=GUSSET_NAMES[1])
+    a = _gusset_l.add_frame_gusset_l(a, name=GUSSET_NAMES[1], side=+1)
+    a = _gusset_l.add_frame_gusset_l(a, name=GUSSET_NAMES[2], side=-1)
     # Four merged camera clamp+mount bodies. Each is one printed body
     # at the clamp pose; the PCB and M12 lens stubs sit at the vertex
     # pose for diagnostics + render material override.
@@ -164,7 +165,11 @@ def add_camera_rig_internal_checks(a: Assembly) -> Assembly:
     for gusset in GUSSET_NAMES:
         for other in non_gusset:
             a = a.assert_no_interference(gusset, other)
-    a = a.assert_no_interference(GUSSET_NAMES[0], GUSSET_NAMES[1])
+    # Every gusset-vs-gusset pair (the C/D pair lives on opposite X
+    # sides; the T at A/B lives well clear of them).
+    for _i, _g1 in enumerate(GUSSET_NAMES):
+        for _g2 in GUSSET_NAMES[_i + 1:]:
+            a = a.assert_no_interference(_g1, _g2)
 
     return a
 

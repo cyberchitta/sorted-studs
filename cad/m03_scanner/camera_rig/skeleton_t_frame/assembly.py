@@ -4,8 +4,8 @@ M03 scanner — rev-3 sparse T-frame skeleton.
 Successor to the rev-2 12-edge cube (`../skeleton/`). The cube's redundant
 edges pulled no structural load once each mirror and camera clamped to a
 single rail; rev 3 drops them and keeps only the members that carry load.
-The remaining 4-rail T-frame plus a diagonal truss meets the same
-stiffness target at roughly one third the member count, and leaves the
+Rails A/B/C/D plus a single corner brace at the B/C joint meet the
+stiffness target with the rig shrink's shorter rail D, and leave the
 scan volume and eject path open by construction.
 
 Rails (see `../NEXT_STEPS.md` for the full design rationale):
@@ -31,11 +31,14 @@ Rails (see `../NEXT_STEPS.md` for the full design rationale):
     rev-3 platform's Y-tongue (coplanar with rail A/B at z = -220,
     single shared bench) butts against that same front face.
   * rail C — vertical column behind the back-upper mount plate
-    (x = 0, y = +240). Same logic as rail A — pushed out of the
-    mount plate's volume so a short stub clamp can host the back-
-    upper mirror without a long beam. Single continuous extrusion
-    from rail B's back end up past rail D to the strut anchor at
-    the column top.
+    (x = 0, y = +152.4). Pushed out of the mount plate's volume
+    so a short stub clamp can host the back-upper camera without a
+    long beam. Runs from rail B's back end up to rail D's top face
+    (true L-junction at the top of the column — earlier revs ran
+    rail C past rail D to anchor a propped-beam strut, dropped in
+    the rig-shrink slice when rail D's cantilever fell from ~510 mm
+    to ~292 mm and the strut's tip-deflection payoff stopped
+    earning its keep).
   * rail D — Y-cantilever over the camera, bolted to rail C's -Y
     face (T-junction). Camera pad-on-cantilever-underside clamp
     hangs below.
@@ -45,29 +48,17 @@ inside the L (mitered at both ends, CORNER_GAP from each adjacent
 rail face). The interior stays clear for the platform frame to slide
 in — the central point of the rev-3 decoupled-platform architecture.
 
-The rail C ↔ rail D corner can't carry the same kind of corner
-brace: the back-upper mirror mount sits in that corner, and any
-diagonal from rail C's -Y face to rail D's -Z face crashes through
-the mount + pad-clamp volume. Instead, rail C extends straight up
-past rail D as a single column, and a strut runs from near the
-column top down-and-forward to rail D's free end. The strut +
-extended-rail-C + rail-D triangle converts rail D from a bare
-~510 mm cantilever to a propped beam — nominally ~10× tip-
-deflection reduction, vs ~2× for the corner brace that would have
-lived in the closed L. Same structural payoff as a long
-rail-B-to-D diagonal would give, but routed entirely above the
-rig interior.
+Rail D's cantilever runs un-trussed at this rev: the rig-shrink
+slice cut its length nearly in half, so a bare 2020 cantilever
+loaded by an ESP32-CAM (~50 g) deflects sub-0.02 mm and rings well
+above singulation excitation. The C/D joint moment is taken by two
+mirrored printed L-gussets (one on each X-side face) plus the back-
+upper camera mount's wedge body, all bolted into the same T-slot
+faces. See `../NEXT_STEPS.md` for the structural argument.
 
-Rail D bolts to rail C's -Y face (T-junction, bracketed by the
-rail C ↔ D printed gusset) rather than sitting on top of rail C —
-rail C runs continuously, removing one bolted joint from the load
-path between the strut anchor and rail B and replacing a stack of
-three extrusions (rail D on rail C, king post on rail D) with a
-single column.
-
-The strut sits on the +Z side of rail D's plane and on the -Y side
-of rail C's plane, so the back-upper mount + pad clamp + back-
-upper mirror can occupy the lower L volume undisturbed.
+Rail D bolts to rail C's -Y face (T-junction, bracketed by the C/D
+printed gussets) rather than sitting on top — keeps the C/D bolted
+interface on rail C's side face where the gusset bolts also land.
 
 Coordinate frame = world frame (matches `../params.py`):
     origin = brick centroid on the platform top face
@@ -82,9 +73,9 @@ interference check reads a clean zero volume at every joint. Printed
 gussets at the rail A ↔ B T-junction and the rail C ↔ D T-junction
 land in a later slice (see `../NEXT_STEPS.md`); each gusset spans the
 gap via heat-set inserts + T-nuts and carries the joint's bending
-load. The diagonal truss attaches via the same gussets at its two
-ends, with its body offset from the adjacent rails by ~10-20 mm so
-the extrusion volumes don't intersect at this rev.
+load. The corner brace at rail B/C attaches via the same gussets at
+its two ends, with its body offset from the adjacent rails by ~10-20
+mm so the extrusion volumes don't intersect at this rev.
 
 Rev-3 vs rev-2 differences:
   * No floor rails — rails A and B sit just below the below-mirror
@@ -154,10 +145,11 @@ RAIL_B_Y_FRONT = RAIL_A_Y + MEMBER / 2 + CORNER_GAP   # ≈ 38.74
 
 # --- Rail C — vertical column behind the back-upper mirror -------------
 #
-# Single continuous extrusion from rail B's +Z face up past rail D
-# to the strut anchor at the column top. RAIL_C_Z_TOP is derived
-# below, after rail D, since the column extension above rail D is
-# the design driver for the column's height.
+# Runs from rail B's +Z face up to rail D's top face (true L-junction
+# at the top of the column). Earlier revs extended rail C past rail D
+# to anchor a propped-beam strut; the rig-shrink slice cut rail D's
+# cantilever from ~510 mm to ~292 mm, so the strut + column extension
+# came out and rail C now terminates at rail D's top.
 
 RAIL_C_Y = 152.4                                 # rail front face y = 142.4, plate-back y ≈ 115.6
 # Sits on rail B's +Z face with CORNER_GAP separator.
@@ -178,16 +170,14 @@ RAIL_D_Y_BACK = RAIL_C_Y - MEMBER / 2 - CORNER_GAP   # = 142.1 (butted to rail C
 RAIL_D_Y_FRONT = -150.0                          # 5 mm past front-low vertex y = -145.0
 
 
-# --- Rail C top — strut anchor elevation -------------------------------
+# --- Rail C top — flush with rail D's top face -------------------------
 #
-# Column rises COLUMN_EXT_ABOVE_D mm above rail D's top face for the
-# propped-beam triangle (extended rail C / strut / rail D). The 150
-# mm pick gives a strut tilt of atan(150 / ~510) ≈ 16° below
-# horizontal — reasonable mechanical advantage against vertical load
-# on rail D's tip without driving the column unreasonably tall.
+# True L-junction: rail C's top face = rail D's top face. The C/D
+# joint moment is taken by mirrored printed L-gussets (one per
+# X-side face) plus the back-upper camera mount's wedge body, all
+# bolted into the same T-slot faces.
 
-COLUMN_EXT_ABOVE_D = 150.0
-RAIL_C_Z_TOP = RAIL_D_Z + MEMBER / 2 + COLUMN_EXT_ABOVE_D   # = 410.3
+RAIL_C_Z_TOP = RAIL_D_Z + MEMBER / 2                 # = 168.1; rail C's top end-face flush with rail D's +Z side face
 
 
 # --- Rail B ↔ rail C corner brace --------------------------------------
@@ -201,24 +191,6 @@ _BRACE_LEG = 60.0                 # leg length along each adjacent rail face
 
 BRACE_BC_ON_B_Y = RAIL_C_Y - MEMBER / 2 - _BRACE_LEG     # = 170.0 (60 mm forward of rail C -Y face)
 BRACE_BC_ON_C_Z = RAIL_B_Z + MEMBER / 2 + _BRACE_LEG     # = -150.0 (60 mm above rail B +Z face)
-
-
-# --- Strut — props rail D's cantilever from the column top ------------
-#
-# Single mitered diagonal from rail C's column top corner (-Y face
-# meets +Z face) down-and-forward to rail D's free-end corner (+Z
-# face meets -Y face). The centerline reaches both rail-tip corners,
-# and four half-space cutters trim the surrounding box so the strut
-# body sits flush within both corners — no overhang past either
-# rail tip and no gap inboard of either tip.
-#
-# Cuts (four half-spaces, all CORNER_GAP from a rail face):
-#   * y=RAIL_C_Y - MEMBER/2 - GAP      — strut sits against rail C -Y face
-#   * z=RAIL_C_Z_TOP - GAP             — strut top flush with column top
-#   * z=RAIL_D_Z + MEMBER/2 + GAP      — strut sits on rail D +Z face
-#   * y=RAIL_D_Y_FRONT + GAP           — strut tip flush with rail D's free end
-# The first two miter the column-side corner; the second two miter
-# the rail-D-side corner.
 
 
 # --- Parametric sanity -------------------------------------------------
@@ -237,8 +209,8 @@ assert RAIL_B_Y_FRONT == RAIL_A_Y + MEMBER / 2 + CORNER_GAP and RAIL_B_Y_BACK > 
 
 assert RAIL_C_Z_TOP > VERTEX_BACK_UPPER_POS[2], (
     f"rail C top (z={RAIL_C_Z_TOP}) must clear the back-upper vertex "
-    f"(z={VERTEX_BACK_UPPER_POS[2]}); mount plate upper corner is a "
-    f"further ~25 mm above the vertex"
+    f"(z={VERTEX_BACK_UPPER_POS[2]}); the wedge-mount body extends from "
+    f"the clamp position up to rail D and bolts both rail faces"
 )
 
 assert RAIL_D_Y_FRONT < VERTEX_FRONT_LOW_POS[1], (
@@ -369,20 +341,6 @@ _BRACE_RECIPES: dict[str, dict] = {
             _half_space("z_min", RAIL_B_Z + MEMBER / 2 + CORNER_GAP),
             # Miter against rail C -Y face.
             _half_space("y_max", RAIL_C_Y - MEMBER / 2 - CORNER_GAP),
-        ],
-    ),
-    "strut_d": dict(
-        # Centerline reaches both rail-tip corners; four half-space
-        # cutters trim the body to fit flush within both corners.
-        p1=(0.0, RAIL_C_Y - MEMBER / 2, RAIL_C_Z_TOP),
-        p2=(0.0, RAIL_D_Y_FRONT, RAIL_D_Z + MEMBER / 2),
-        cutters=[
-            # Column-side corner (rail C -Y face × rail C +Z face).
-            _half_space("y_max", RAIL_C_Y - MEMBER / 2 - CORNER_GAP),
-            _half_space("z_max", RAIL_C_Z_TOP - CORNER_GAP),
-            # Rail-D-side corner (rail D +Z face × rail D -Y face).
-            _half_space("z_min", RAIL_D_Z + MEMBER / 2 + CORNER_GAP),
-            _half_space("y_min", RAIL_D_Y_FRONT + CORNER_GAP),
         ],
     ),
 }

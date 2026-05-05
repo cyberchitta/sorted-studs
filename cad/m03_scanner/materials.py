@@ -26,10 +26,10 @@ MATERIAL_OF: dict[str, str | None] = {
     "rail_c": "aluminium_anodized",
     "rail_d": "aluminium_anodized",
     "brace_bc": "aluminium_anodized",
-    "strut_d": "aluminium_anodized",
     # camera_rig: gussets + four ESP32-CAM mounts
     "gusset_t_ab": "pla_matte",
-    "gusset_l_cd": "pla_matte",
+    "gusset_l_cd_pos_x": "pla_matte",
+    "gusset_l_cd_neg_x": "pla_matte",
     "cam_front_low_clamp_mount": "pla_matte",
     "cam_back_upper_clamp_mount": "pla_matte",
     "cam_below_left_clamp_mount": "pla_matte",

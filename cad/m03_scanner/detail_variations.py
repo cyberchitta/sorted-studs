@@ -3,15 +3,14 @@
 Two layers compose at the call site:
 
   * **Extrusions.** Each named 2020 stub is currently a solid
-    ``Box(20, 20, L)`` (or a mitered-end Box for the angled braces) —
+    ``Box(20, 20, L)`` (or a mitered-end Box for the angled brace) —
     the right primitive for the geometric-iteration loop
     (interference / clearance) but visually indistinguishable from
     MDF. ``default_detail`` swaps each for a real V-slot profile
     from ``bd_warehouse`` at the same pose. Straight rails are
-    detected from their axis-aligned bbox; mitered braces
-    (``brace_bc``, ``strut_d``) re-use the source assembly's
-    ``build_braces(body_factory=…)`` hook so the same cutters trim a
-    V-slot body identically.
+    detected from their axis-aligned bbox; the mitered ``brace_bc``
+    re-uses the source assembly's ``build_braces(body_factory=…)``
+    hook so the same cutters trim a V-slot body identically.
   * **Fasteners.** Visible bolts at high-value joints. Currently the
     two M5 SHCS that bolt the drive bracket foot to the cross-rail's
     top T-slot. Added as new placed parts (no cheap-model counterpart).
