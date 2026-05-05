@@ -50,12 +50,12 @@ MATERIAL_OF: dict[str, str | None] = {
     "spider": "pla_matte",
     "pin_image": "steel",
     "pin_load": "steel",
+    "pin_idle": "steel",
     "pin_dump": "steel",
-    "pin_return": "steel",
     # turret.turret_platform — 4 stations × {acrylic, frame}
     **{
         f"platform_{station}_{sub}": mat
-        for station in ("image", "load", "dump", "return")
+        for station in ("image", "load", "idle", "dump")
         for sub, mat in (
             ("acrylic", "acrylic_clear"),
             ("frame", "pla_matte"),

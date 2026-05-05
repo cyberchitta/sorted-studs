@@ -10,11 +10,12 @@ with `+Z` vertical:
     +Y     = away from operator          (parallel to world +Y)
     +Z     = up                          (parallel to world +Z)
 
-The unit is placed in world by `Pos(0, -TURRET_ARM_R, 0)` in
-`../assembly.py` — pure translation, no rotation. That places hub at
-world `(0, -TURRET_ARM_R, *) = (0, -125, *)`, IMAGE platform at world
-origin, and the four station centroids at world
-`(±R, -R, 0)` / `(0, -R±R, 0)`.
+The unit is placed in world by `Pos(0, +TURRET_ARM_R, 0)` in
+`../assembly.py` (option a', 2026-05-05) — pure translation, no
+rotation. That places hub at world `(0, +TURRET_ARM_R, *) = (0,
++125, *)`, DUMP platform at world origin (firing heading 270° in
+turret-local), and the four station centroids at world `(0, +R±R,
+0)` / `(±R, +R, 0)`.
 
 Each turret sub-assembly (`turret_frame/`, `turret_hub/`,
 `turret_arm/`, `turret_platform/`) carries its own local frame and
@@ -43,11 +44,17 @@ PLATFORM_ACRYLIC_T = 4.0
 #
 # 4-station rotary indexed turret described in
 # `../turret_design_brief.md`. Hub axis at the unit-local origin.
-# Stations sit at distance TURRET_ARM_R from the hub on cardinal axes:
-#     IMAGE  = (0,    +R, 0)   — toward world +Y (back) when placed
-#     LOAD   = (+R,   0,  0)   — toward world +X (operator-right)
-#     DUMP   = (-R,   0,  0)   — toward world -X (operator-left)
-#     RETURN = (0,    -R, 0)   — toward world -Y (operator-forward)
+# Stations sit at distance TURRET_ARM_R from the hub on cardinal axes
+# (option a' renaming, 2026-05-05 — firing heading shifted +90° to land
+# DUMP over the diverter hub at world (0,0,*)):
+#     IMAGE  = (0,    +R, 0)   — heading 90°
+#     LOAD   = (+R,   0,  0)   — heading 0°
+#     IDLE   = (-R,   0,  0)   — heading 180° (no firing)
+#     DUMP   = (0,    -R, 0)   — heading 270° (kicker fires here)
+# Brick flow (anti-clockwise spider indexing): LOAD → IMAGE → IDLE →
+# DUMP → LOAD. The IDLE dwell is the empty-cycle slot inserted by the
+# +90° firing-heading shift; functionally equivalent to the prior
+# 3-active layout, slightly longer cycle.
 #
 # All 4 platforms ride at z = 0. The camera rig's rails sit at
 # z = -220 (A/B) and z = +250 (D), so Z-separation alone keeps the
@@ -69,8 +76,8 @@ TURRET_ARM_R = 125.0
 # Station centroid XY positions in turret-local (Z = 0 for all four).
 TURRET_STATION_IMAGE_XY = (0.0, +TURRET_ARM_R)
 TURRET_STATION_LOAD_XY = (+TURRET_ARM_R, 0.0)
-TURRET_STATION_DUMP_XY = (-TURRET_ARM_R, 0.0)
-TURRET_STATION_RETURN_XY = (0.0, -TURRET_ARM_R)
+TURRET_STATION_IDLE_XY = (-TURRET_ARM_R, 0.0)
+TURRET_STATION_DUMP_XY = (0.0, -TURRET_ARM_R)
 
 
 # --- Turret frame (slice a) --------------------------------------------
@@ -169,13 +176,17 @@ TURRET_FRAME_CROSS_Y = TURRET_HUB_Y                          # = 0
 # mounting line for nothing back-of-hub.
 TURRET_FRAME_BACK_Y = 122.0                                  # rail-A boundary mirror
 
-# Front X-rail centerline Y — under the RETURN station centroid
-# (turret-local (0, -R, 0)). The RETURN platform's outer edge
-# cantilevers PLATFORM_ACRYLIC_SIZE/2 forward of this rail (to
-# y = -R - 60 = -185 at R = 125); accepted because the platform is
-# light, hangs off the spider arm rather than the floor, and stopping
-# the floor here keeps the bench footprint bounded.
-TURRET_FRAME_FRONT_Y = -TURRET_ARM_R                          # = -125
+# Front X-rail centerline Y — DROPPED in option a' (2026-05-05).
+# The new DUMP station lives at turret-local (0, -R, 0); a rail at
+# y = -R would sit world-y = 0 over the diverter top column body and
+# block the brick drop path. The frame is now a U-shape (back rail +
+# 2 side rails + cross rail) closed at the back; side rails cantilever
+# ~115 mm forward of the cross-rail. Acceptable because all 4 turret
+# platforms hang off the spider arm at the hub (not the floor frame),
+# the cross-rail still carries the hub housing, and the back perimeter
+# remains rigid. The constant is retained as a -R reference in case
+# downstream code reads it; nothing builds a member at this Y any more.
+TURRET_FRAME_FRONT_Y = -TURRET_ARM_R                          # = -125 (no member; reference only)
 
 # Side Y-rails X. Sits 20 mm outboard of the LOAD/DUMP centroid lines
 # at x = ±TURRET_ARM_R — gives the singulator and diverter mounting
@@ -268,26 +279,36 @@ TURRET_DUMP_CAM_BOTTOM_Z = TURRET_DUMP_CAM_CENTER_Z - TURRET_DUMP_CAM_HEIGHT / 2
 # slice (a) cross-rail's top T-slot at turret (x = TURRET_DUMP_KICKER_
 # PIVOT_X, y = 0). The lever's hub-end (in the y = 0 plane, in line
 # with the cam disc) picks off the slice (f1) shaft cam's OD at heading
-# 180° (the -X side, between hub and DUMP); a Y-cantilever then carries
-# the lifter pad out to y = +80 so the pad lands under the tip of the
-# slice (d) platform frame's inward extension (cantilevered past the
-# hinge). At rest (cam valley between dwells) the follower sits at
-# radial BASE_R = 25 from the cam axis and the lifter pad is retracted;
-# at every dwell a cam lobe rotates into heading 180° and pushes the
-# follower outward to PEAK_R = 30 (5 mm radial stroke), tilting the
-# lever and raising the lifter pad against the extension tip at DUMP.
+# 180° (the -X side, between hub and IDLE); a -Y cantilever (option a',
+# 2026-05-05) then carries the lifter pad to turret (x = -30, y = -25)
+# so the pad lands under the tip of the slice (d) platform frame's
+# inward extension at the new DUMP station (heading 270°, turret-local
+# centroid (0, -R, 0)). At rest (cam valley between dwells) the
+# follower sits at radial BASE_R = 25 from the cam axis and the lifter
+# pad is retracted; at every dwell a cam lobe rotates into heading 180°
+# and pushes the follower outward to PEAK_R = 30 (5 mm radial stroke),
+# tilting the lever and raising the lifter pad against the extension
+# tip at DUMP.
+#
+# The cam follower heading is independent of the firing-station
+# heading: the shaft cam is 4-fold symmetric, so a peak rotates into
+# every heading at every dwell. Picking the follower at heading 180°
+# (where the existing mount sits) is a free choice; it leaves the
+# clevis bracket bolted to the cross-rail at turret (-110, 0)
+# regardless of which station fires.
 #
 # Lifter / extension-tip position. The slice (d) platform frame
 # extends one corner inward (in cart -Y direction) past the hinge to
-# a lift point at cart-frame (X=+80, Y=-130) — 40 mm hub-side of the
-# hinge axis (cart Y=-90), giving a clean single-direction torque
-# about the hinge with no competing bonded brick-side push. Cart X=+80
-# keeps the extension at the +X corner of the platform (well clear of
-# the Ø172 below-mirror sightline cone and the slice (c) DUMP spider
-# arm at cart X ∈ [-7, +7] / turret Y ∈ [-7, +7]). The Rz(+90)
-# rotation that maps cartridge-local → turret-local at DUMP sends
-# cart (X=+80, Y=-130) to turret (X=-55, Y=+80), which is where the
-# lifter lives in turret-local.
+# a lift point at cart-frame (X=+30, Y=-100) — 40 mm hub-side of the
+# hinge axis (cart Y=-60), giving a clean single-direction torque
+# about the hinge with no competing bonded brick-side push. Cart X=+30
+# keeps the extension well inside the rev-5 acrylic and clear of the
+# slice (c) DUMP spider arm at cart X ∈ [-7, +7]. Under option a',
+# the firing station (DUMP at heading 270°) carries the cart-local
+# IMAGE pose to turret-local via Rz(+180) (= the prior RETURN
+# station's rotation): cart (X=+30, Y=-100) maps to (-30, +100),
+# then translates by the DUMP centroid (0, -125) to turret
+# (-30, -25), which is where the lifter lives in turret-local.
 #
 # This slice ships REST geometry only — static placement of mount,
 # lever, pin. Cam-follower kinematics under shaft rotation (lever
@@ -302,8 +323,8 @@ TURRET_DUMP_CAM_BOTTOM_Z = TURRET_DUMP_CAM_CENTER_Z - TURRET_DUMP_CAM_HEIGHT / 2
 # rail top (after c7: -120) plus a clearance for the lever's hub disc
 # (R = LEVER_HUB_DISC_OD/2 = 12 in turret_dump_kicker/assembly.py).
 # Axis along ±Y so the hub-arm rotates in the X-Z plane; bridge-Y
-# cantilevers in +Y to reach the lifter at y=+80. PIVOT_X stays at
-# -110.
+# cantilevers in -Y (option a', 2026-05-05) to reach the lifter at
+# y=-25. PIVOT_X stays at -110.
 #
 # Slice c7 (2026-05-05) raised this 31 mm (-130 → -99), more than the
 # 20 mm floor rise that motivated the slice. Geometry: the lever's
@@ -332,15 +353,19 @@ TURRET_DUMP_KICKER_PIVOT_Z = -99.0
 TURRET_DUMP_KICKER_LIFTER_TOP_Z = -45.0
 
 # Lifter pad XY in turret-local. Resolves the cart-frame extension-tip
-# position (X=+30, Y=-100) under the DUMP rotation Rz(+90):
-#     turret_x = -ARM_R - cart_y = -125 - (-100) = -25
-#     turret_y = cart_x          =          +30
+# position (X=+30, Y=-100) under the DUMP rotation Rz(+180) (option a',
+# 2026-05-05 — same rotation the prior RETURN station used):
+#     turret_x = -cart_x         =         -30
+#     turret_y = -ARM_R - cart_y = -125 - (-100) = -25
 # Lever arm = |cart_y - hinge_cart_y| = |-100 - (-60)| = 40 mm hub-side
 # of the hinge — single-direction torque (no competing bonded brick-side
 # push as in the prior straddle-the-hinge tab design). Slice c3
 # (2026-05-05) shrunk the cart-frame coords with the platform: cart X
 # from +80 → +30 (well inside the new 120 acrylic; spider arm at ±7
 # unchanged), cart Y from -130 → -100 (preserving the 40 mm lever
-# arm against the new hinge at cart Y=-60).
-TURRET_DUMP_KICKER_LIFTER_TURRET_X = -25.0
-TURRET_DUMP_KICKER_LIFTER_TURRET_Y = +30.0
+# arm against the new hinge at cart Y=-60). Option a' (2026-05-05)
+# kept the cart-frame coords and switched the firing station from
+# heading 180° (Rz(+90), turret (-25, +30)) to heading 270° (Rz(+180),
+# turret (-30, -25)).
+TURRET_DUMP_KICKER_LIFTER_TURRET_X = -30.0
+TURRET_DUMP_KICKER_LIFTER_TURRET_Y = -25.0

@@ -7,11 +7,21 @@ the back of the machine when placed in world). Plus pairwise
 `assert_no_interference` for every turret-internal part pair.
 
 Sub-assemblies:
-  * turret_frame                  — 5-member 2020 floor frame
+  * turret_frame                  — 4-member 2020 floor frame (U-shape:
+                                    back rail + 2 side rails + cross
+                                    rail; front X-rail dropped in
+                                    option a' since the new DUMP at
+                                    heading 270° lives over y=0 in
+                                    world and a member at y=-R would
+                                    block the brick drop into the
+                                    diverter column)
   * turret_hub                    — pillow-block + Ø8 shaft + 2 bearings
   * turret_arm                    — single 4-arm spider + 4 stock pins
   * turret_platform (×4 stations) — 4 cartridges, one per station
-                                    (IMAGE / LOAD / DUMP / RETURN)
+                                    (IMAGE / LOAD / IDLE / DUMP — option
+                                    a' rename, 2026-05-05; firing
+                                    heading shifted +90°, IDLE is the
+                                    empty-cycle dwell at heading 180°)
   * turret_dump_cam               — printed 4-lobe cam keyed to the shaft
   * turret_dump_kicker            — bench-mounted L-lever (mount + lever
                                     + pivot pin) at DUMP
@@ -27,11 +37,14 @@ Sub-assemblies:
                                     housing and kicker mount)
 
 The cam + kicker make up the active-push tilt mechanism: a cam lobe
-arrives at heading 180° at every dwell, pushes the lever's hub-end
-follower outward, and the lever's lifter pad rises against the
-DUMP-station platform's tab to tilt it outer-down. At rest (cam
-valley) the lifter retracts and per-arm hinge stops on the spider hold
-each platform level.
+arrives at heading 180° at every dwell (the cam-follower contact
+heading — independent of the firing-station heading because the cam
+is 4-fold symmetric), pushes the lever's hub-end follower outward,
+and the lever's lifter pad — cantilevered in -Y past the pivot at
+turret (-110, 0) — rises against the DUMP-station platform's tab at
+turret (-30, -25) to tilt it outer-down. At rest (cam valley) the
+lifter retracts and per-arm hinge stops on the spider hold each
+platform level.
 
 This integrate ships REST geometry only (cam in valley orientation,
 lever at rest, lifter retracted). Cam-follower kinematics under shaft
@@ -65,7 +78,7 @@ from turret.turret_platform import assembly as _turret_platform  # noqa: E402
 TURRET_FRAME_NAMES = _turret_frame.TURRET_FRAME_PART_NAMES
 TURRET_HUB_NAMES = _turret_hub.HUB_PART_NAMES
 TURRET_ARM_NAMES = _turret_arm.ARM_PART_NAMES
-TURRET_STATIONS = ("image", "load", "dump", "return")
+TURRET_STATIONS = ("image", "load", "idle", "dump")
 TURRET_PLATFORM_NAMES = tuple(
     f"platform_{station}_{sub_name}"
     for station in TURRET_STATIONS
@@ -137,9 +150,11 @@ _KNOWN_OVERLAPS = (
         "kicker_lever",
         "dump_cam",
         "c7 cam rise (-64 → -44 center) lifted cam Z into the lifter-"
-        "beam slab; lifter-beam inner corner (X=-12, Y=+19) clips cam "
-        "BASE_R=25 at heading ~122°. Redesign queued (notched beam or "
-        "smaller cam BASE_R).",
+        "beam slab; option a' (2026-05-05) swung the beam from Y=+30 "
+        "to Y=-25, moving the clipping corner from (X=-12, Y=+19) at "
+        "heading ~122° to (X=-19, Y=-14) at heading ~216°. The BASE_R "
+        "clip persists at the new heading. Redesign queued (notched "
+        "beam or smaller cam BASE_R).",
     ),
 )
 

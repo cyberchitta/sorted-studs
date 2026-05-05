@@ -54,13 +54,16 @@ Coordinate frame = cartridge-local IMAGE pose:
     +Z     = up
 
 `add_turret_platform(a, station)` translates and rotates this
-cartridge to each station in turret-local: IMAGE at (0, +R, 0) with
-no rotation, LOAD at (+R, 0, 0) with Rz(-90), DUMP at (-R, 0, 0)
-with Rz(+90), RETURN at (0, -R, 0) with Rz(180). Same shape, four
-poses. `PLATFORM_ACRYLIC_SIZE` (= 120) in `../params.py` refers to
-the FRAME outer footprint; the acrylic insert is 110. The turret
-arm-radius clearance math (`TURRET_HINGE_PIN_RADIAL = TURRET_ARM_R
-- 60`) uses the platform outer half-width.
+cartridge to each station in turret-local (option a' rename,
+2026-05-05): IMAGE at (0, +R, 0) with no rotation, LOAD at (+R, 0,
+0) with Rz(-90), IDLE at (-R, 0, 0) with Rz(+90), DUMP at (0, -R,
+0) with Rz(+180). Same shape, four poses. The new DUMP rotation
+(Rz(+180)) is the prior RETURN-station rotation; the IDLE rotation
+(Rz(+90)) is the prior DUMP-station rotation. `PLATFORM_ACRYLIC_SIZE`
+(= 120) in `../params.py` refers to the FRAME outer footprint; the
+acrylic insert is 110. The turret arm-radius clearance math
+(`TURRET_HINGE_PIN_RADIAL = TURRET_ARM_R - 60`) uses the platform
+outer half-width.
 
 Print orientation: bottom face on build plate, +Z up (build123d
 default). Horizontal Ø5.4 pin bore bridges fine in FDM at this
@@ -356,9 +359,13 @@ assert EXTENSION_BOTTOM_Z > TURRET_DUMP_KICKER_LIFTER_TOP_Z, (
 )
 
 # Lifter pad cart-frame position derived from turret-local matches the
-# extension's lift point. At DUMP: cart X = turret_y, cart Y = -ARM_R - turret_x.
-_LIFTER_CART_X = TURRET_DUMP_KICKER_LIFTER_TURRET_Y                # = +30
-_LIFTER_CART_Y = -TURRET_ARM_R - TURRET_DUMP_KICKER_LIFTER_TURRET_X  # = -100
+# extension's lift point. Option a' (2026-05-05) DUMP at heading 270°
+# uses Rz(+180) + centroid translate (0, -ARM_R), so the inversion
+# from turret-local back to cart-frame is:
+#   cart_x = -turret_x
+#   cart_y = -(turret_y + ARM_R) = -turret_y - ARM_R
+_LIFTER_CART_X = -TURRET_DUMP_KICKER_LIFTER_TURRET_X                # = +30
+_LIFTER_CART_Y = -TURRET_DUMP_KICKER_LIFTER_TURRET_Y - TURRET_ARM_R  # = -100
 assert _LIFTER_CART_X == EXTENSION_X_CENTER, (
     f"lifter cart X {_LIFTER_CART_X} ≠ extension X center "
     f"{EXTENSION_X_CENTER}"
@@ -475,24 +482,26 @@ def frame():
 # pin axis along ±X and "outward" along +Y. Each station has its own
 # (radial-outward, tangential) directions in turret-local; the rotation
 # below picks the proper-rotation root that aligns cartridge axes onto
-# them.
+# them. (Option a' rename, 2026-05-05: DUMP moved to heading 270° with
+# Rz(+180) — the prior RETURN rotation. The prior DUMP heading 180°
+# slot is now IDLE, with the prior DUMP rotation Rz(+90).)
 #
-#   IMAGE  : Rz(  0°)  cartridge +X → turret +X, +Y → +Y
-#   LOAD   : Rz(-90°)  cartridge +X → turret -Y, +Y → +X
-#   DUMP   : Rz(+90°)  cartridge +X → turret +Y, +Y → -X
-#   RETURN : Rz(180°)  cartridge +X → turret -X, +Y → -Y
+#   IMAGE  : Rz(  0°)  cartridge +X → turret +X, +Y → +Y   heading 90°
+#   LOAD   : Rz(-90°)  cartridge +X → turret -Y, +Y → +X   heading 0°
+#   IDLE   : Rz(+90°)  cartridge +X → turret +Y, +Y → -X   heading 180°
+#   DUMP   : Rz(180°)  cartridge +X → turret -X, +Y → -Y   heading 270°
 STATION_ANGLES = {
-    "image":  0,
+    "image": 0,
     "load":  -90,
-    "return": 180,
-    "dump":   90,
+    "idle":  90,
+    "dump":  180,
 }
 
 _STATION_CENTROIDS = {
-    "image":  Pos(0, +TURRET_ARM_R, 0),
-    "load":   Pos(+TURRET_ARM_R, 0, 0),
-    "return": Pos(0, -TURRET_ARM_R, 0),
-    "dump":   Pos(-TURRET_ARM_R, 0, 0),
+    "image": Pos(0, +TURRET_ARM_R, 0),
+    "load":  Pos(+TURRET_ARM_R, 0, 0),
+    "idle":  Pos(-TURRET_ARM_R, 0, 0),
+    "dump":  Pos(0, -TURRET_ARM_R, 0),
 }
 
 # Cartridge-local part placements. Used by both the standalone
@@ -512,7 +521,7 @@ def add_turret_platform(
     a: Assembly, station: str, base=Pos(0, 0, 0)
 ) -> Assembly:
     """Place one cartridge at the named station ('image', 'load',
-    'dump', 'return'). Cartridge geometry is built in cartridge-local
+    'idle', 'dump'). Cartridge geometry is built in cartridge-local
     IMAGE pose; this helper applies a per-station rotation around the
     hub axis (turret-local origin) and translates to the station's
     centroid. `base` (default: identity) is pre-multiplied to lift the

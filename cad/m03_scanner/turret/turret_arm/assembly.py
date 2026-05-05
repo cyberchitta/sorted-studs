@@ -20,7 +20,7 @@ Members (5 total — 1 printed body + 4 stock pins):
         insert that locks the spider to the shaft
       - four Ø5.4 horizontal pin bores (one per arm tip), each
         aligned tangentially to its arm's radial direction
-  * pin_image, pin_load, pin_dump, pin_return — 4 stock M5 round
+  * pin_image, pin_load, pin_idle, pin_dump — 4 stock M5 round
     pins (Ø5 × 30 mm), one per arm tip. Each pin is captured in its
     bushing block bore and protrudes 5 mm tangentially past each
     bushing-block face to host the slice (d) platform's bonded
@@ -310,14 +310,14 @@ _PIN_PLACEMENTS = (
         Rot(90, 0, 0),                # +Z → ±Y (tangential at +X heading)
     ),
     (
-        "pin_return",
+        "pin_dump",
         (TURRET_HUB_X,
          TURRET_HUB_Y - TURRET_HINGE_PIN_RADIAL,
          TURRET_HINGE_PIN_Z),
         Rot(0, 90, 0),                # +Z → +X
     ),
     (
-        "pin_dump",
+        "pin_idle",
         (TURRET_HUB_X - TURRET_HINGE_PIN_RADIAL,
          TURRET_HUB_Y,
          TURRET_HINGE_PIN_Z),

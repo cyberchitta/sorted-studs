@@ -58,7 +58,6 @@ ROLE_OF: dict[str, Role | None] = {
     "cam_below_right_lens": None,
     # --- turret.turret_frame (5-member 2020 floor) --------------------
     "floor_back_x": Role.PRIMARY_STRUCTURE,
-    "floor_front_x": Role.PRIMARY_STRUCTURE,
     "floor_left_y": Role.PRIMARY_STRUCTURE,
     "floor_right_y": Role.PRIMARY_STRUCTURE,
     "floor_cross_x": Role.PRIMARY_STRUCTURE,
@@ -71,14 +70,14 @@ ROLE_OF: dict[str, Role | None] = {
     "spider": Role.MECHANISM,
     "pin_image": None,                                  # steel
     "pin_load": None,
+    "pin_idle": None,
     "pin_dump": None,
-    "pin_return": None,
     # --- turret.turret_platform × 4 stations × 2 sub-parts ------------
     # Acrylic insert stays None (clear); the integrated printed frame
     # tilts with the platform during dump → MECHANISM.
     **{
         f"platform_{station}_{sub}": role
-        for station in ("image", "load", "dump", "return")
+        for station in ("image", "load", "idle", "dump")
         for sub, role in (
             ("acrylic", None),
             ("frame", Role.MECHANISM),

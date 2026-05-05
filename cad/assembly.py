@@ -12,8 +12,10 @@ Constraints landed in this slice:
     position" — at every dwell the cam-kicker tilts that platform so
     the brick falls. For the brick to drop into the diverter's
     central column, DUMP must sit on the column's hub axis at world
-    `(0, 0, *)`. DUMP lives at turret-local `(-TURRET_ARM_R, 0, 0)`,
-    so the turret-local origin maps to world `(+TURRET_ARM_R, 0, *)`.
+    `(0, 0, *)`. Option (a') lands the firing heading at 270° (-Y in
+    turret-local), so DUMP lives at turret-local `(0, -TURRET_ARM_R,
+    0)` and the turret-local origin maps to world
+    `(0, +TURRET_ARM_R, *)`.
   * **Turret rests on the deck.** The turret floor frame's bottom
     face sits on the diverter top deck's top face at world z =
     `TOP_VERT_Z + TOP_DECK_T = 890`.
@@ -150,12 +152,12 @@ _TURRET_FLOOR_BOTTOM_Z: float = _TURRET_FLOOR_CL_Z - _TURRET_FLOOR_MEMBER / 2.0 
 # m05 at world identity.
 _M05_POSE = Location()
 
-# Turret placement:
-#   X/Y: turret-local DUMP at (-TURRET_ARM_R, 0, 0) → world (0, 0, *),
-#        so turret-local origin → world (+TURRET_ARM_R, 0, *).
+# Turret placement (option a', 2026-05-05):
+#   X/Y: turret-local DUMP at (0, -TURRET_ARM_R, 0) → world (0, 0, *),
+#        so turret-local origin → world (0, +TURRET_ARM_R, *).
 #   Z:   turret floor's bottom face on the deck top face.
 _TURRET_WORLD_Z = M05_DECK_TOP_Z - _TURRET_FLOOR_BOTTOM_Z   # 890 - (-140) = 1030
-_TURRET_POSE = Pos(TURRET_ARM_R, 0, _TURRET_WORLD_Z)
+_TURRET_POSE = Pos(0, TURRET_ARM_R, _TURRET_WORLD_Z)
 
 
 # --- Compose ----------------------------------------------------------

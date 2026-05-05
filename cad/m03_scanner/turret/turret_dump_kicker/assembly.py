@@ -4,19 +4,22 @@ M03 scanner — rev-4 turret dump kicker (slice f2 of the 4-station turret).
 Standalone bench-mounted 3D L-lever pivoted on a printed clevis bracket
 bolted to the slice (a) cross-rail's top T-slot. The lever's hub-end
 (in the cam plane Y=0) picks off the slice (f1) shaft cam at heading
-180° (the -X side, between hub and DUMP); a Y-cantilever then carries
-the lifter pad out to Y=+80 so the pad lands under the DUMP-station
-platform frame's hub-ward extension tip (slice d). At every indexed
-dwell a cam lobe rotates into heading 180° and pushes the follower
-outward by 5 mm (BASE_R 25 → PEAK_R 30); the lever rotates around the
-pivot pin and the lifter pad rises against the extension tip at DUMP.
-The lift force acts at cart-frame Y=-130, 40 mm hub-side of the hinge
-at cart Y=-90, giving a clean single-direction outer-DOWN torque
-about the hinge — the platform tilts so the brick slides off the OUTER
-edge into the diverter inlet below. Active-push: at rest (cam at
-valley) the lifter is retracted, so a stalled mechanism leaves all
-platforms level (no spurious dumps); the per-hinge torsion spring
-holds them at level when the kicker isn't engaged.
+180° (the -X side, between hub and IDLE); a -Y cantilever (option a',
+2026-05-05) then carries the lifter pad to turret (-30, -25) so the
+pad lands under the DUMP-station platform frame's hub-ward extension
+tip (slice d) at the new firing heading 270°. At every indexed dwell
+a cam lobe rotates into heading 180° (cam follower heading is
+independent of firing-station heading; the cam is 4-fold symmetric)
+and pushes the follower outward by 5 mm (BASE_R 25 → PEAK_R 30); the
+lever rotates around the pivot pin and the lifter pad rises against
+the extension tip at DUMP. The lift force acts at cart-frame Y=-100,
+40 mm hub-side of the hinge at cart Y=-60, giving a clean single-
+direction outer-DOWN torque about the hinge — the platform tilts so
+the brick slides off the OUTER edge into the diverter inlet below.
+Active-push: at rest (cam at valley) the lifter is retracted, so a
+stalled mechanism leaves all platforms level (no spurious dumps); the
+per-hinge torsion spring holds them at level when the kicker isn't
+engaged.
 
 This slice ships REST geometry only (cam at valley, follower at radial
 BASE_R, lifter retracted). Cam-follower kinematics under shaft rotation
@@ -41,11 +44,12 @@ Members (3 total — 2 printed + 1 stock):
                     same Y∈[-6,+6] plane (so the cam follower roller
                     contacts the cam OD directly, no Y-bridge), riser
                     rising from the hub disc to a "shoulder" Z above
-                    the pillar tops, bridge-Y cantilevering in +Y to
-                    Y=+80, and a lifter beam extending in +X from the
-                    bridge-Y end to the lifter pad zone at X=-55.
-                    Top face of bridge-Y / lifter beam at Z = -45 =
-                    TURRET_DUMP_KICKER_LIFTER_TOP_Z.
+                    the pillar tops, bridge-Y cantilevering in -Y to
+                    Y=-25 (option a', 2026-05-05), and a lifter beam
+                    spanning the bridge-Y end through the platform
+                    extension drop footprint at the new DUMP heading
+                    270°. Top face of bridge-Y / lifter beam at Z = -45
+                    = TURRET_DUMP_KICKER_LIFTER_TOP_Z.
   * kicker_pin    — stock M5 round pin (Ø5), axis along ±Y, captures
                     the lever between the two mount pillars. Pin spans
                     pillar A outboard face to pillar B outboard face
@@ -166,11 +170,11 @@ _MOUNT_PILLAR_CENTER_Z = (_MOUNT_PILLAR_BOTTOM_Z + _MOUNT_PILLAR_TOP_Z) / 2
 # --- Lever geometry (printed 3D L-lever) -------------------------------
 
 # Lever Y range — single contiguous body in the cam plane (Y∈[-6,+6])
-# from hub disc through the riser, then cantilevering in +Y past the
-# clevis to the lifter pad at Y=+80.
+# from hub disc through the riser, then cantilevering in -Y (option a',
+# 2026-05-05) past the clevis to the lifter pad at Y=-25.
 LEVER_Y_INNER = -_LEVER_HALF_Y                                     # = -6
 LEVER_Y_OUTER_AT_HUB = +_LEVER_HALF_Y                              # = +6 (at cam-plane segments)
-LEVER_Y_LIFTER = TURRET_DUMP_KICKER_LIFTER_TURRET_Y                # = +80
+LEVER_Y_LIFTER = TURRET_DUMP_KICKER_LIFTER_TURRET_Y                # = -25
 
 # Hub disc (at pivot bore). OD chosen to leave WALL_MIN around bore.
 LEVER_HUB_DISC_OD = 24.0
@@ -212,30 +216,34 @@ LEVER_RISER_Z_LEN = LEVER_RISER_TOP_Z - LEVER_RISER_BOTTOM_Z       # = 54 after 
 _LEVER_RISER_CENTER_Z = (LEVER_RISER_BOTTOM_Z + LEVER_RISER_TOP_Z) / 2
 
 # Bridge-Y: horizontal beam at the lifter Z band, extending from the
-# riser top (Y=0) in +Y to the lifter pad zone (Y=+80). Cross-section
-# in X-Z = 14 × 8 (matches riser X-extent and lifter beam Z-extent).
+# riser top (Y=0) in -Y (option a', 2026-05-05) to the lifter pad zone
+# (Y=-25). Cross-section in X-Z = 14 × 8 (matches riser X-extent and
+# lifter beam Z-extent).
 BRIDGE_Y_X_LEN = LEVER_RISER_X_LEN                                 # = 14
 BRIDGE_Y_X_CENTER = LEVER_RISER_X_CENTER                           # = -110
 BRIDGE_Y_Y_START = 0.0
-BRIDGE_Y_Y_END = LEVER_Y_LIFTER                                    # = +80
-BRIDGE_Y_Y_LEN = BRIDGE_Y_Y_END - BRIDGE_Y_Y_START
+BRIDGE_Y_Y_END = LEVER_Y_LIFTER                                    # = -25
+BRIDGE_Y_Y_LEN = abs(BRIDGE_Y_Y_END - BRIDGE_Y_Y_START)
 _BRIDGE_Y_Y_CENTER = (BRIDGE_Y_Y_START + BRIDGE_Y_Y_END) / 2
 
 # Lifter beam: rectangular pad block sized to cover both the bridge-Y
 # endpoint (at X = LEVER_RISER_X_CENTER = -110, where the Y-cantilever
 # meets the pad zone) AND the platform extension drop block footprint
-# at the new past-hinge position. Slice c3 (2026-05-05): extension
-# drop in turret at DUMP shrunk to X ∈ [-36, -14], Y ∈ [+21, +39]
-# (= cart X ∈ [+21, +39], cart Y ∈ [-111, -89]). Beam X ∈ [-117, -12]
-# spans from the bridge-Y outboard X face (-117) all the way past
-# the extension's hub-most tip with a 2 mm overhang. Beam Y ∈
-# [+19, +41] gives 2 mm overhang past extension Y on each side.
-_LIFTER_BEAM_X_INNER = -12.0                                       # +X end (toward hub)
+# at the new past-hinge position. Option a' (2026-05-05): extension
+# drop at the new DUMP (heading 270°, Rz(+180)) lands in turret at
+# X ∈ [-39, -21], Y ∈ [-36, -14] (= cart X ∈ [+21, +39], cart Y ∈
+# [-111, -89] under Rz(+180) + centroid translate (0, -125)). Beam
+# X ∈ [-117, -19] spans from the bridge-Y outboard X face (-117) past
+# the extension's hub-most tip with a 2 mm overhang at X-inner. Beam
+# Y ∈ [-36, -14] is exactly flush with the extension Y span — 0 mm
+# overhang each side, tight; LIFTER_BEAM_Y_LEN = 22 = extension Y
+# span. The bridge-Y endpoint at (X=-110, Y=-25) lies inside the beam.
+_LIFTER_BEAM_X_INNER = -19.0                                       # +X end (toward hub)
 _LIFTER_BEAM_X_OUTER = -117.0                                      # -X end (toward bench)
-LIFTER_BEAM_X_LEN = _LIFTER_BEAM_X_INNER - _LIFTER_BEAM_X_OUTER     # = 105
-_LIFTER_BEAM_X_CENTER = (_LIFTER_BEAM_X_INNER + _LIFTER_BEAM_X_OUTER) / 2  # = -64.5
+LIFTER_BEAM_X_LEN = _LIFTER_BEAM_X_INNER - _LIFTER_BEAM_X_OUTER     # = 98
+_LIFTER_BEAM_X_CENTER = (_LIFTER_BEAM_X_INNER + _LIFTER_BEAM_X_OUTER) / 2  # = -68
 LIFTER_BEAM_Y_LEN = 22.0
-_LIFTER_BEAM_Y_CENTER = LEVER_Y_LIFTER                              # = +30
+_LIFTER_BEAM_Y_CENTER = LEVER_Y_LIFTER                              # = -25
 
 
 # --- Pivot pin dimensions ----------------------------------------------
@@ -350,19 +358,20 @@ for _y in (-_LEVER_HALF_Y, +_LEVER_HALF_Y):
 
 
 # Lifter beam covers the platform extension drop-block footprint. Drop
-# block in turret-local at DUMP: cart (X=+30, Y=-100) ± (9, 11) under
-# Rz(+90) maps to turret X ∈ [-36, -14] (= -cart_y - 125), Y ∈
-# [+21, +39] (= cart_x). Lifter beam X ∈ [-117, -12], Y ∈ [+19, +41].
-# Drop X fully inside beam X (-117 < -36 and -12 > -14 + 2); drop Y
-# fully inside beam Y (+19 < +21 - 2 and +41 > +39 + 2). Beam wraps
-# the bridge-Y endpoint at X ∈ [-117, -103]. Lever arm = 40 mm
-# hub-side of the hinge — clean single-direction outer-DOWN torque
-# (no competing brick-side push; see TURRET_DUMP_KICKER_LIFTER_TURRET_X
-# comment in `../params.py`).
-_EXT_DROP_TURRET_X_INNER_AT_DUMP = -14.0   # drop hub-most (least negative X)
-_EXT_DROP_TURRET_X_OUTER_AT_DUMP = -36.0   # drop bench-most (most negative X)
-_EXT_DROP_TURRET_Y_NEG_AT_DUMP = +21.0
-_EXT_DROP_TURRET_Y_POS_AT_DUMP = +39.0
+# block in turret-local at DUMP (option a', 2026-05-05): cart (X=+30,
+# Y=-100) ± (9, 11) under Rz(+180) + centroid translate (0, -125) maps
+# to turret X ∈ [-39, -21] (= -cart_x), Y ∈ [-36, -14] (= -cart_y -
+# 125). Lifter beam X ∈ [-117, -19], Y ∈ [-36, -14]. Drop X inside
+# beam X with 2 mm overhang at X-inner (-19 vs -21) and 78 mm overhang
+# at X-outer (-117 vs -39). Drop Y exactly flush with beam Y (0 mm
+# overhang each side — tight). Beam wraps the bridge-Y endpoint at
+# X ∈ [-117, -103]. Lever arm = 40 mm hub-side of the hinge — clean
+# single-direction outer-DOWN torque (no competing brick-side push;
+# see TURRET_DUMP_KICKER_LIFTER_TURRET_X comment in `../params.py`).
+_EXT_DROP_TURRET_X_INNER_AT_DUMP = -21.0   # drop hub-most (least negative X)
+_EXT_DROP_TURRET_X_OUTER_AT_DUMP = -39.0   # drop bench-most (most negative X)
+_EXT_DROP_TURRET_Y_NEG_AT_DUMP = -36.0
+_EXT_DROP_TURRET_Y_POS_AT_DUMP = -14.0
 assert _LIFTER_BEAM_X_INNER >= _EXT_DROP_TURRET_X_INNER_AT_DUMP + 2.0 - 1e-9, (
     f"lifter beam X-inner {_LIFTER_BEAM_X_INNER} too close to extension "
     f"drop X-inner {_EXT_DROP_TURRET_X_INNER_AT_DUMP} (overhang < 2 mm)"
@@ -374,13 +383,15 @@ assert _LIFTER_BEAM_X_OUTER <= _EXT_DROP_TURRET_X_OUTER_AT_DUMP, (
 )
 _LIFTER_BEAM_Y_INNER = _LIFTER_BEAM_Y_CENTER - LIFTER_BEAM_Y_LEN / 2
 _LIFTER_BEAM_Y_OUTER = _LIFTER_BEAM_Y_CENTER + LIFTER_BEAM_Y_LEN / 2
-assert _LIFTER_BEAM_Y_INNER <= _EXT_DROP_TURRET_Y_NEG_AT_DUMP - 2.0 + 1e-9, (
+assert _LIFTER_BEAM_Y_INNER <= _EXT_DROP_TURRET_Y_NEG_AT_DUMP + 1e-9, (
     f"lifter beam Y-inner {_LIFTER_BEAM_Y_INNER} > extension drop Y-neg "
-    f"{_EXT_DROP_TURRET_Y_NEG_AT_DUMP} - 2 mm overhang"
+    f"{_EXT_DROP_TURRET_Y_NEG_AT_DUMP} (beam must reach ≤ extension's "
+    f"more-negative Y face)"
 )
-assert _LIFTER_BEAM_Y_OUTER >= _EXT_DROP_TURRET_Y_POS_AT_DUMP + 2.0 - 1e-9, (
+assert _LIFTER_BEAM_Y_OUTER >= _EXT_DROP_TURRET_Y_POS_AT_DUMP - 1e-9, (
     f"lifter beam Y-outer {_LIFTER_BEAM_Y_OUTER} < extension drop Y-pos "
-    f"{_EXT_DROP_TURRET_Y_POS_AT_DUMP} + 2 mm overhang"
+    f"{_EXT_DROP_TURRET_Y_POS_AT_DUMP} (beam must reach ≥ extension's "
+    f"less-negative Y face)"
 )
 
 
@@ -442,8 +453,10 @@ def kicker_mount():
 def kicker_lever():
     """Printed 3D L-lever: hub disc + hub-arm + hub-end block (in cam
     plane Y∈[-6,+6]) + riser (vertical from disc to lifter Z) +
-    bridge-Y (horizontal beam in +Y to Y=+80) + lifter beam
-    (horizontal beam in -X, top face at LIFTER_TOP_Z)."""
+    bridge-Y (horizontal beam in -Y to Y=-25, option a' 2026-05-05)
+    + lifter beam (horizontal beam wrapping the bridge endpoint and
+    spanning the platform extension drop footprint at the new DUMP
+    heading 270°, top face at LIFTER_TOP_Z)."""
     # Hub disc at pivot. Axis along ±Y.
     hub_disc = (
         Pos(
@@ -477,16 +490,16 @@ def kicker_lever():
     )
 
     # Bridge-Y: horizontal beam at lifter Z, X-thickness 14, Y from 0
-    # to +80, Z-thickness LIFTER_BEAM_Z_LEN. Cross-section in X-Z = 14
-    # × 8; runs in Y.
+    # to -25 (option a', 2026-05-05), Z-thickness LIFTER_BEAM_Z_LEN.
+    # Cross-section in X-Z = 14 × 8; runs in Y.
     bridge_y = (
         Pos(BRIDGE_Y_X_CENTER, _BRIDGE_Y_Y_CENTER, LIFTER_BEAM_CENTER_Z)
         * Box(BRIDGE_Y_X_LEN, BRIDGE_Y_Y_LEN, LIFTER_BEAM_Z_LEN)
     )
 
-    # Lifter beam: horizontal beam at Y=+80 (centered), Y-thickness 22,
-    # X from -42 (past extension hub-most tip) to -117 (wraps the
-    # bridge-Y endpoint). Top face at LIFTER_TOP_Z.
+    # Lifter beam: horizontal beam at Y=-25 (centered), Y-thickness 22,
+    # X from -19 (past extension hub-most tip with 2 mm overhang) to
+    # -117 (wraps the bridge-Y endpoint). Top face at LIFTER_TOP_Z.
     lifter_beam = (
         Pos(_LIFTER_BEAM_X_CENTER, _LIFTER_BEAM_Y_CENTER, LIFTER_BEAM_CENTER_Z)
         * Box(LIFTER_BEAM_X_LEN, LIFTER_BEAM_Y_LEN, LIFTER_BEAM_Z_LEN)
@@ -631,18 +644,17 @@ assembly = assembly.add("cam_stub", _cam_stub(), material="pla_matte")
 #
 # Slice c7 (2026-05-05) note: the cam rise from -64 → -44 lifted the
 # cam Z range [-50, -38] into the lifter beam's Z slab [-53, -45],
-# exposing a small overlap (~32 mm³) where the lifter beam's hub-ward
-# inner corner (X=-12, Y=+19) clips the cam BASE_R=25 footprint at
-# heading ~122° (in the valley between lobes-at-90° and lobes-at-180°).
-# The lifter beam's X_inner is fixed by the platform-extension drop
-# coverage (drop X_inner=-14 + 2 mm overhang → -12), and the beam top
-# is fixed by the rest position 2 mm below the drop block at z=-43.
-# Resolving the clip requires a kicker redesign (notched beam, smaller
-# cam BASE_R, or reworked rest-position kinematics) — queued as a c7
-# follow-up. Until then, the overlap is documented via
-# `assert_interference` so it stays visible without crashing the
-# build, and disappears (failing this assertion) the moment the
-# redesign lands.
+# exposing a small overlap where the lifter beam's hub-ward inner
+# corner clips the cam BASE_R=25 footprint. Option a' (2026-05-05)
+# swung the lifter beam from Y=+30 to Y=-25; the clipping corner moved
+# from (X=-12, Y=+19) at heading ~122° to (X=-19, Y=-14) at heading
+# ~216° (still in the BASE_R band — distance √(19²+14²) ≈ 23.6 mm
+# < BASE_R=25). The clip persists at the new heading; resolving it
+# still requires a kicker redesign (notched beam, smaller cam BASE_R,
+# or reworked rest-position kinematics). Until then, the overlap is
+# documented via `assert_interference` so it stays visible without
+# crashing the build, and disappears (failing this assertion) the
+# moment the redesign lands.
 _ALL = list(KICKER_PART_NAMES) + ["cross_rail_stub", "cam_stub"]
 _KNOWN_OVERLAPS = {("kicker_lever", "cam_stub")}
 for _i, _a in enumerate(_ALL):
@@ -653,8 +665,10 @@ for _i, _a in enumerate(_ALL):
                 _b,
                 reason=(
                     "c7 cam rise (-64 → -44 center) lifted cam Z into the "
-                    "lifter-beam slab; redesign queued (notched beam or "
-                    "smaller cam BASE_R)"
+                    "lifter-beam slab; option a' moved the clipping corner "
+                    "from heading ~122° to ~216° but the BASE_R clip "
+                    "persists. Redesign queued (notched beam or smaller "
+                    "cam BASE_R)."
                 ),
             )
         else:

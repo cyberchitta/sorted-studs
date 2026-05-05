@@ -7,21 +7,31 @@ turret described in `../turret_design_brief.md`. This slice delivers
 just the floor frame; the hub + drive, arms, platform cartridges and
 cam ring land in later slices.
 
-Members (5 total, all stock 2020 aluminum extrusion at z = -220):
+Members (4 total — option a' dropped the front X-rail in 2026-05-05;
+all stock 2020 aluminum extrusion at z = -220):
   * floor_back_x   — back X-rail at y = TURRET_FRAME_BACK_Y. When the
-                     turret is placed in world via Pos(0, -ARM_R, 0),
+                     turret is placed in world via Pos(0, +ARM_R, 0),
                      this rail's +Y face lands CORNER_GAP forward of
                      the camera rig's rail A front face — that
                      boundary is asserted in `../../assembly.py`.
-  * floor_front_x  — front X-rail at y = TURRET_FRAME_FRONT_Y (under
-                     the RETURN station centroid).
   * floor_left_y   — left Y-rail at x = -TURRET_FRAME_SIDE_X.
   * floor_right_y  — right Y-rail at x = +TURRET_FRAME_SIDE_X.
   * floor_cross_x  — center X-rail at y = TURRET_FRAME_CROSS_Y (= hub
                      axis Y = 0 in turret-local). Mounting line shared
-                     by the slice (b) hub bearing (x = 0), the M2
-                     singulator (LOAD, x = +130) and the M5 diverter
-                     (DUMP, x = -130).
+                     by the slice (b) hub bearing (x = 0) and the
+                     IDLE/LOAD neighbour-module anchors at x = ±R.
+
+Topology change in option a' (2026-05-05): the front X-rail at
+y = -R (under the new DUMP station at heading 270°) was dropped
+because, with the turret placed at world Pos(0, +ARM_R, 0), that
+rail would sit at world y = 0 over the diverter top column body and
+intercept the brick drop path from DUMP into the diverter column.
+Frame is now a U-shape closed at the back; side rails cantilever
+~115 mm forward of the cross-rail to where the front rail used to
+terminate. Acceptable because all 4 platforms hang off the spider
+arm at the hub (not the floor frame), the cross-rail still carries
+the hub housing, and the back perimeter (back X-rail + 2 side stubs
+back of cross) remains rigid.
 
 Coordinate frame = turret-local frame (matches `../params.py`):
     origin = hub axis at the cross-rail's top face Z plane
@@ -74,13 +84,15 @@ CORNER_GAP = 0.3                # butt-joint gap
 
 # --- Derived dimensions ------------------------------------------------
 
-# Perimeter X-rails (back, front) overhang each side rail's centerline
-# by half a member so the rail end face is flush with the side rail's
-# outer face.
+# Back perimeter X-rail overhangs each side rail's centerline by half
+# a member so the rail end face is flush with the side rail's outer
+# face. (Front X-rail dropped in option a', 2026-05-05.)
 _PERIMETER_X_LEN = 2 * TURRET_FRAME_SIDE_X + MEMBER
 
-# Side Y-rails fit between the back and front X-rails with a
-# CORNER_GAP separator at each end.
+# Side Y-rails: back end abuts the back X-rail with a CORNER_GAP
+# separator; front end is a free cantilever (no front X-rail to abut)
+# at the Y where the front rail used to terminate, so the side rails'
+# forward reach is unchanged from the rev-4 closed-rectangle frame.
 _SIDE_Y_FRONT = TURRET_FRAME_FRONT_Y + MEMBER / 2 + CORNER_GAP
 _SIDE_Y_BACK = TURRET_FRAME_BACK_Y - MEMBER / 2 - CORNER_GAP
 _SIDE_Y_LEN = _SIDE_Y_BACK - _SIDE_Y_FRONT
@@ -133,9 +145,6 @@ def rail_y(x: float, y_centre: float, y_len: float, z: float) -> Part:
 _MEMBERS = {
     "floor_back_x": rail_x(
         0.0, _PERIMETER_X_LEN, TURRET_FRAME_BACK_Y, TURRET_FRAME_FLOOR_Z
-    ),
-    "floor_front_x": rail_x(
-        0.0, _PERIMETER_X_LEN, TURRET_FRAME_FRONT_Y, TURRET_FRAME_FLOOR_Z
     ),
     "floor_left_y": rail_y(
         -TURRET_FRAME_SIDE_X, _SIDE_Y_CENTER, _SIDE_Y_LEN, TURRET_FRAME_FLOOR_Z
