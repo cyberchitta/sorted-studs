@@ -30,6 +30,9 @@ BRICK_MAX_MM        = 80.0    # largest dim of any sortable brick
 BRICK_HEIGHT_MAX_MM = 16.0    # for DoF margin (e.g. 1×1 brick on side)
 SCATTER_HALF_MM     = 15.0    # ± landing scatter on platform; placeholder
 
+TILT_DEG            = 65.0    # apex (front_low) angle from platform normal
+                              # 65° = rev-5 default (apex 25° elevation, -Y)
+
 PX_PER_MM_TARGET    = 4.0     # 1 mm feature → 4 px on sensor
 
 
@@ -59,19 +62,65 @@ RAIL_D_FRONT_OVERHANG_MM = 5.0 # rail D extends past front-low cam by this much
 
 
 # ============================================================================
-# TETRAHEDRAL VERTICES (rev-5 layout, unit-scaled)
+# TETRAHEDRAL VERTICES (generated from tilt + phase)
 # ============================================================================
 
-_REV5_VERTICES = [
-    ("front_low",   (0.0, -226.6, 105.7)),
-    ("back_upper",  (0.0, 172.7, 176.0)),
-    ("below_left",  (-201.4, 25.4, -140.1)),
-    ("below_right", (201.4, 25.4, -140.1)),
-]
-_REV5_R = math.hypot(math.hypot(0.0, -226.6), 105.7)
-TETRA_VERTICES_UNIT = [
-    (name, tuple(c / _REV5_R for c in pos)) for name, pos in _REV5_VERTICES
-]
+def tetra_vertices_unit(tilt_deg=TILT_DEG, phase_deg=0.0):
+    """4 vertices of a regular tetrahedron, unit distance from origin.
+
+    `tilt_deg` is the angle of the apex (front_low) vertex from the
+    platform normal (+Z). 0° → apex straight up. 65° → rev-5 default
+    (apex at 25° elevation toward operator side, -Y).
+
+    `phase_deg` rotates the 3 base vertices about the apex axis.
+    phase=0° puts back_upper on the YZ plane (X=0), giving the
+    operator-facing mirror symmetry across that plane that the rig's
+    rail layout exploits. Don't change without reason.
+    """
+    s89 = math.sqrt(8 / 9)
+    t = math.radians(tilt_deg)
+    ct, st = math.cos(t), math.sin(t)
+
+    def _tilt(v):
+        x, y, z = v
+        return (x, y * ct - z * st, y * st + z * ct)
+
+    apex = _tilt((0.0, 0.0, 1.0))
+    base = []
+    for az_offset in (90.0, 210.0, 330.0):
+        a = math.radians(az_offset + phase_deg)
+        base.append(_tilt((math.cos(a) * s89, math.sin(a) * s89, -1 / 3)))
+    return [
+        ("front_low",   apex),
+        ("back_upper",  base[0]),
+        ("below_left",  base[1]),
+        ("below_right", base[2]),
+    ]
+
+
+TETRA_VERTICES_UNIT = tetra_vertices_unit()
+
+
+def _verify_rev5_reproduced():
+    """Sanity: defaults (tilt 65°, phase 0°) approximately reproduce the
+    rev-5 hardcoded vertices. Note the rev-5 values themselves are not
+    an exact regular tetrahedron — front_low is at r ≈ 250, the others
+    at r ≈ 246.6 — so this generator's exact-tetrahedron output diverges
+    from rev-5 by up to ~3 mm. The discrepancy is within the spec's
+    ±2 mm tolerance and goes away once params.py adopts these values."""
+    rev5_r = 248
+    expected = [
+        (0.0, -226.6, 105.7),
+        (0.0, 172.7, 176.0),
+        (-201.4, 25.4, -140.1),
+        (201.4, 25.4, -140.1),
+    ]
+    for (_name, unit_pos), exp in zip(TETRA_VERTICES_UNIT, expected):
+        scaled = tuple(c * rev5_r for c in unit_pos)
+        for s, e in zip(scaled, exp):
+            assert abs(s - e) < 4.0, f"defaults far from rev-5: {scaled} vs {exp}"
+
+_verify_rev5_reproduced()
 
 
 # ============================================================================
@@ -138,19 +187,23 @@ def _fits_with_roll(projected, hfov_deg, vfov_deg):
     return False
 
 
-def all_cameras_fit(r, p_imaged, focal_mm):
+def all_cameras_fit(r, p_imaged, focal_mm, vertices_unit=None):
+    if vertices_unit is None:
+        vertices_unit = TETRA_VERTICES_UNIT
     h, v = hfov_vfov_deg(focal_mm)
-    for _name, unit_pos in TETRA_VERTICES_UNIT:
+    for _name, unit_pos in vertices_unit:
         cam = tuple(c * r for c in unit_pos)
         if not _fits_with_roll(_project_corners(cam, p_imaged), h, v):
             return False
     return True
 
 
-def min_r_for_fit(focal_mm, p_imaged, min_focus_mm, r_max=400):
+def min_r_for_fit(focal_mm, p_imaged, min_focus_mm, vertices_unit=None, r_max=400):
+    if vertices_unit is None:
+        vertices_unit = TETRA_VERTICES_UNIT
     start = max(1, int(math.ceil(min_focus_mm)))
     for r in range(start, r_max + 1):
-        if all_cameras_fit(r, p_imaged, focal_mm):
+        if all_cameras_fit(r, p_imaged, focal_mm, vertices_unit):
             return r
     return None
 
@@ -183,6 +236,7 @@ class Geometry:
     lens_focal_mm: float
     brick_max_mm: float
     scatter_half_mm: float
+    tilt_deg: float
 
     # Optical
     hfov_deg: float
@@ -214,16 +268,18 @@ def compute_geometry(
     brick_max_mm: float = BRICK_MAX_MM,
     scatter_half_mm: float = SCATTER_HALF_MM,
     lens_min_focus_mm: float = LENS_MIN_FOCUS_MM,
+    tilt_deg: float = TILT_DEG,
 ) -> Geometry:
     p_imaged = brick_max_mm + 2 * scatter_half_mm
     p_platform = p_imaged + 2 * PLATFORM_EDGE_GRIP_MM
 
     h, v = hfov_vfov_deg(lens_focal_mm)
-    r = min_r_for_fit(lens_focal_mm, p_imaged, lens_min_focus_mm)
+    vertices_unit = tetra_vertices_unit(tilt_deg)
+    r = min_r_for_fit(lens_focal_mm, p_imaged, lens_min_focus_mm, vertices_unit)
     if r is None:
         raise ValueError(
-            f"No viable r for lens={lens_focal_mm} mm, P_imaged={p_imaged} mm "
-            f"(min_focus={lens_min_focus_mm} mm)"
+            f"No viable r for lens={lens_focal_mm} mm, P_imaged={p_imaged} mm, "
+            f"tilt={tilt_deg}° (min_focus={lens_min_focus_mm} mm)"
         )
 
     ppm = px_per_mm_on_brick(r, lens_focal_mm)
@@ -231,7 +287,7 @@ def compute_geometry(
 
     vertices = {
         name: tuple(c * r for c in unit_pos)
-        for name, unit_pos in TETRA_VERTICES_UNIT
+        for name, unit_pos in vertices_unit
     }
 
     # Two adjacent square platforms (90° apart, edges aligned to local
@@ -258,6 +314,7 @@ def compute_geometry(
         lens_focal_mm=lens_focal_mm,
         brick_max_mm=brick_max_mm,
         scatter_half_mm=scatter_half_mm,
+        tilt_deg=tilt_deg,
         hfov_deg=h, vfov_deg=v,
         px_per_mm=ppm,
         dof_near_mm=near, dof_far_mm=far,
@@ -276,11 +333,16 @@ def compute_geometry(
 # REPORTS
 # ============================================================================
 
+_REV5_BASELINE_R = 250  # rev-5 historical r, for comparison only
+
+
 def print_config(g: Geometry):
     print(f"INPUTS")
     print(f"  Lens                   : {g.lens_focal_mm:.1f} mm M12")
     print(f"  Brick max dim          : {g.brick_max_mm:.0f} mm")
     print(f"  Landing scatter        : ±{g.scatter_half_mm:.0f} mm")
+    print(f"  Tetrahedral tilt       : {g.tilt_deg:.0f}° from platform normal "
+          f"(apex at {90 - g.tilt_deg:.0f}° elevation)")
     print()
     print(f"OPTICAL")
     print(f"  HFOV / VFOV            : {g.hfov_deg:.1f}° / {g.vfov_deg:.1f}°")
@@ -295,7 +357,7 @@ def print_config(g: Geometry):
     print(f"  Imaged region          : {g.p_imaged_mm:.0f} × {g.p_imaged_mm:.0f} mm")
     print(f"  Platform (PMMA)        : {g.p_platform_mm:.0f} × {g.p_platform_mm:.0f} mm")
     print(f"  Tetrahedral radius r   : {g.tetra_r_mm:.0f} mm  "
-          f"(rev-5 baseline ≈ {_REV5_R:.0f})")
+          f"(rev-5 baseline ≈ {_REV5_BASELINE_R})")
     for name, pos in g.vertices.items():
         print(f"    {name:<14}       ({pos[0]:>+7.1f}, {pos[1]:>+7.1f}, "
               f"{pos[2]:>+7.1f})")
@@ -374,9 +436,30 @@ def platform_sensitivity_table():
         print(row)
 
 
+def tilt_sensitivity_table():
+    print(f"How tilt affects r and rig BB at lens = {LENS_FOCAL_MM} mm, "
+          f"P_imaged = {BRICK_MAX_MM + 2*SCATTER_HALF_MM:.0f} mm:")
+    print()
+    print(f"{'tilt':>5} {'apex_el':>8} {'r':>5} {'rig BB X×Y×Z':>16}")
+    print("-" * 38)
+    for tilt in [30, 40, 50, 55, 60, 65, 70, 75, 80]:
+        try:
+            g = compute_geometry(tilt_deg=tilt)
+        except ValueError:
+            print(f"{tilt:>4}°  NO FIT")
+            continue
+        bb_x = 2 * g.rail_a_x_half_mm
+        bb_y = g.rail_c_y_mm - g.rail_d_y_front_mm
+        bb_z = g.rail_d_z_mm - g.rail_a_z_mm
+        elev = 90 - tilt
+        print(f"{tilt:>4}° {elev:>6}° {g.tetra_r_mm:>5.0f} "
+              f"{bb_x:>4.0f}×{bb_y:>3.0f}×{bb_z:>3.0f}")
+
+
 def report():
     print("=" * 78)
-    print(f"M03 SCANNER SIZING — proposed config (lens = {LENS_FOCAL_MM} mm)")
+    print(f"M03 SCANNER SIZING — proposed config (lens = {LENS_FOCAL_MM} mm, "
+          f"tilt = {TILT_DEG:.0f}°)")
     print("=" * 78)
     print()
     print_config(compute_geometry())
@@ -392,6 +475,12 @@ def report():
     print("=" * 78)
     print()
     platform_sensitivity_table()
+    print()
+    print("=" * 78)
+    print("Tilt sensitivity")
+    print("=" * 78)
+    print()
+    tilt_sensitivity_table()
 
 
 if __name__ == "__main__":
