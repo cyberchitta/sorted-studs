@@ -118,15 +118,29 @@ TURRET_FRAME_FLOOR_Z = -150.0                                # turret floor
 # bearing + neighbour-module anchors on a single line.
 TURRET_FRAME_CROSS_Y = TURRET_HUB_Y                          # = 0
 
-# Back X-rail centerline Y in turret-local. Originally sized so the
-# +Y face butted the camera rig's rail A front face (rev-3/rev-4 era).
-# Slice c2 shrunk the rig and rail A rose to z=-131, decoupling the
-# two in Z; the butt-joint constraint is moot. Slice c3 dropped the
-# rev-3/4 +8.14 anchor (a leftover from the butt-joint clearance math)
-# for a clean +10 mm CORNER_GAP-class margin past the IMAGE platform
-# centroid. The IMAGE platform's outer +Y edge sits at
-# y = ARM_R + PLATFORM/2 = 185, cantilevering 50 mm past this rail.
-TURRET_FRAME_BACK_Y = TURRET_ARM_R + 10.0                    # = 135
+# Back X-rail centerline Y in turret-local. Sized so the rail's +Y
+# face is flush with the camera rig's rail A -Y face at world Y = +7
+# (= T_FRAME_RAIL_A_Y - MEMBER/2 = 17 - 10). With the turret placed
+# at world Pos(0, -ARM_R, 0), turret-local +Y face = world face +
+# ARM_R = 7 + 125 = 132, and centerline = 132 - MEMBER/2 = 122.
+#
+# Slices c4–c5 raised the turret floor -220 → -180 → -150, narrowing
+# the vertical gap between the turret back rail's top face (z = -140
+# after c5) and the camera rig's rail A bottom face (z = -141.2) to
+# only 1.2 mm. The rev-3/4-era butt-joint constraint that c2 marked
+# "moot" (after the rig shrink lifted rail A to z=-131) is therefore
+# back in force as a Y-axis face-flush constraint: any further floor
+# rise would crash the two rails unless they no longer overlap in Y.
+# Slice c3's interim "+10 mm CORNER_GAP-class margin past the IMAGE
+# platform centroid" (= ARM_R + 10 = 135) put the rail directly under
+# rail A in plan view; c6 (2026-05-05) restores the boundary.
+#
+# The IMAGE platform's outer +Y edge sits at y = ARM_R + PLATFORM/2 =
+# 185, cantilevering 63 mm past this rail (was 50 mm). Acceptable
+# because the platform hangs off the spider arm at the hub, not off
+# the floor frame; the back rail is a perimeter rigidifier and a
+# mounting line for nothing back-of-hub.
+TURRET_FRAME_BACK_Y = 122.0                                  # rail-A boundary mirror
 
 # Front X-rail centerline Y — under the RETURN station centroid
 # (turret-local (0, -R, 0)). The RETURN platform's outer edge

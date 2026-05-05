@@ -24,9 +24,18 @@ Slice c2 (2026-05-05) retired the rev-3/rev-4 turret-back-rail-butts-
 rig-rail-A-front-face boundary assertion: with the rig shrunk to
 r=160, rail A's centerline rose from z=-220 to z=-131. Slice c4
 (2026-05-05) then raised the turret floor from -220 to -180 in
-lockstep with the hub housing shrink (100 → 60 mm). Both units now
-float above SHARED_BENCH_Z=-220 (rig 80 mm, turret 40 mm) until a
-future floor-feet slice bridges the gap.
+lockstep with the hub housing shrink (100 → 60 mm); slice c5
+(2026-05-05) raised it further to -150. Both units now float above
+SHARED_BENCH_Z=-220 (rig 80 mm, turret 70 mm) until a future floor-
+feet slice bridges the gap.
+
+Slice c6 (2026-05-05) reinstated the boundary as a Y-axis face-flush
+constraint: the c4+c5 floor rise narrowed the vertical gap between
+the turret back rail's top face and rail A's bottom face to 1.2 mm,
+and any further compression would crash them while the two rails
+overlap in plan view. The turret back rail moved from turret-local
+y=135 to y=122 so its +Y face (world y=+7) is flush with rail A's
+-Y face (world y=+7); the asserted boundary below catches drift.
 
 The rev-3 single-platform stack (`platform_frame/`,
 `platform_hinge_bearing/`, `platform_acrylic/`) was deleted in the
@@ -51,6 +60,10 @@ from params import (  # noqa: E402
     WALL_MIN,
 )
 from camera_rig import assembly as _camera_rig  # noqa: E402
+from camera_rig.params import (  # noqa: E402
+    SKELETON_RAIL_MEMBER as _RIG_RAIL_MEMBER,
+    T_FRAME_RAIL_A_FRONT_Y as _RIG_RAIL_A_FRONT_Y,
+)
 from camera_rig.params import WALL_MIN as _RIG_WALL_MIN  # noqa: E402
 from design_systems import DESIGN_SYSTEM  # noqa: E402
 from turret import assembly as _turret  # noqa: E402
@@ -58,6 +71,7 @@ from turret.params import (  # noqa: E402
     PLATFORM_ACRYLIC_SIZE as _TURRET_ACRYLIC_SIZE,
     PLATFORM_ACRYLIC_T as _TURRET_ACRYLIC_T,
     TURRET_ARM_R,
+    TURRET_FRAME_BACK_Y as _TURRET_BACK_Y,
     TURRET_FRAME_FLOOR_Z as _TURRET_FLOOR_Z,
 )
 from turret.params import WALL_MIN as _TURRET_WALL_MIN  # noqa: E402
@@ -84,6 +98,24 @@ assert PLATFORM_ACRYLIC_T == _TURRET_ACRYLIC_T, (
 assert _TURRET_FLOOR_Z >= SHARED_BENCH_Z, (
     f"turret floor Z ({_TURRET_FLOOR_Z}) sinks below SHARED_BENCH_Z "
     f"({SHARED_BENCH_Z}); the workbench surface is the absolute floor"
+)
+
+# Turret back rail's +Y face is flush with camera rig rail A's -Y
+# face (world y = T_FRAME_RAIL_A_FRONT_Y = +7). Reinstated in slice
+# c6 after c4+c5 narrowed the vertical gap between the two rails
+# (turret rail top z=-140 vs rail A bottom z=-141.2) to 1.2 mm; any
+# further floor rise would crash them while they overlap in plan
+# view. The turret is placed at world y = -TURRET_ARM_R, so the
+# turret-local centerline that maps to a given world face is
+# face_y_world + TURRET_ARM_R - MEMBER/2.
+_EXPECTED_TURRET_BACK_Y = (
+    _RIG_RAIL_A_FRONT_Y + TURRET_ARM_R - _RIG_RAIL_MEMBER / 2
+)
+assert abs(_TURRET_BACK_Y - _EXPECTED_TURRET_BACK_Y) < 1e-6, (
+    f"TURRET_FRAME_BACK_Y ({_TURRET_BACK_Y}) should equal "
+    f"{_EXPECTED_TURRET_BACK_Y} so the turret back rail's +Y face "
+    f"butts rail A's -Y face at world y = {_RIG_RAIL_A_FRONT_Y}; "
+    f"either the turret rail Y or T_FRAME_RAIL_A_Y has drifted"
 )
 
 
