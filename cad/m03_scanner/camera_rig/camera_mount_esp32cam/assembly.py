@@ -75,6 +75,7 @@ from camera_rig.params import (  # noqa: E402
     RAIL_PAD_CLAMP_BELOW_LEFT_CLAMP_ROT,
     RAIL_PAD_CLAMP_BELOW_LEFT_POS,
     SKELETON_RAIL_MEMBER,
+    T_FRAME_RAIL_D_BOTTOM_Z,
     VERTEX_BACK_UPPER_POS,
     VERTEX_BELOW_LEFT_POS,
     WALL_MIN,
@@ -348,6 +349,130 @@ def clamp_mount(
     return body
 
 
+# --- Wedge variant (back-upper only) ------------------------------------
+#
+# The back-upper instance lives at the rail C/D L-junction. Its
+# 50 × 50 mount plate sits in the lower-corner L volume between the two
+# side gussets, so the printed body grows into a wedge that grips both
+# rail C's -Y face (existing clamp base) and rail D's -Z face (new
+# horizontal flange). Together with the mirrored side-gusset pair, the
+# joint becomes a 4-print cluster (2 gussets + 1 wedge mount + camera)
+# with bolts on all four T-slot faces.
+#
+# Geometry sits in the same clamp-local frame as `clamp_mount(...)`
+# (Rot(180, 90, 0) carries clamp axes onto world for back-upper):
+#     clamp +X = world +Z (along rail C)
+#     clamp +Y = world -Y (away from rail C, into mount)
+#     clamp +Z = world +X (across rail)
+# so the flange sits at clamp +X just below rail D's -Z face and runs
+# along clamp +Y away from rail C.
+
+WEDGE_FLANGE_L = 60.0           # along rail D (clamp +Y), from rail C -Y face
+WEDGE_FLANGE_T = 6.0             # below rail D's -Z face (clamp -X thickness)
+WEDGE_CORNER_GAP = 0.3           # CAD butt-joint gap (matches skeleton_t_frame)
+WEDGE_FLANGE_BOLT_Y_OFFSETS = (15.0, 50.0)  # along clamp +Y from rail C -Y face
+
+# Rail D's -Z face position in clamp-local +X (back-upper clamp pose).
+# The clamp origin's world-Z = mount-back-Z (= RAIL_PAD_CLAMP_BACK_UPPER_POS[2])
+# and clamp +X is world +Z, so the offset is the difference.
+_RAIL_D_BOTTOM_IN_CLAMP_X = (
+    T_FRAME_RAIL_D_BOTTOM_Z - RAIL_PAD_CLAMP_BACK_UPPER_POS[2]
+)
+
+
+# --- Wedge parametric sanity --------------------------------------------
+
+assert _RAIL_D_BOTTOM_IN_CLAMP_X > BASE_L / 2, (
+    f"rail D's -Z face in clamp-local +X "
+    f"({_RAIL_D_BOTTOM_IN_CLAMP_X:.2f} mm) must sit above the clamp "
+    f"base's +X edge (BASE_L/2 = {BASE_L / 2}); check "
+    f"RAIL_PAD_CLAMP_BACK_UPPER_POS / T_FRAME_RAIL_D_BOTTOM_Z"
+)
+assert _RAIL_D_BOTTOM_IN_CLAMP_X - WEDGE_CORNER_GAP - WEDGE_FLANGE_T > 0, (
+    f"flange thickness {WEDGE_FLANGE_T} mm too large for clamp-local "
+    f"X-budget below rail D bottom face at {_RAIL_D_BOTTOM_IN_CLAMP_X:.2f} mm"
+)
+for _dy in WEDGE_FLANGE_BOLT_Y_OFFSETS:
+    assert (
+        WALL_MIN + CLAMP_BOLT_HOLE_D / 2
+        <= _dy
+        <= WEDGE_FLANGE_L - WALL_MIN - CLAMP_BOLT_HOLE_D / 2
+    ), (
+        f"flange bolt at clamp Y={_dy} needs WALL_MIN edge wall inside "
+        f"flange length [0, {WEDGE_FLANGE_L}]"
+    )
+assert (BASE_W - CLAMP_BOLT_HOLE_D) / 2 >= WALL_MIN, (
+    f"flange bolt-to-side wall {(BASE_W - CLAMP_BOLT_HOLE_D) / 2:.2f} mm "
+    f"< {WALL_MIN} mm"
+)
+
+
+# --- Part functions (continued) -----------------------------------------
+
+def wedge_clamp_mount(
+    base_l: float = BASE_L,
+    base_w: float = BASE_W,
+    base_h: float = BASE_H,
+    bolt_half: float = _CLAMP_BOLT_HALF,
+    clamp_hole_d: float = CLAMP_BOLT_HOLE_D,
+    beam_w: float = BEAM_W,
+    beam_t: float = BEAM_T,
+    plate_size: float = PLATE_SIZE,
+    plate_t: float = CAMERA_MOUNT_PLATE_T,
+    pcb_hole_pitch_x: float = PCB_HOLE_PITCH_X,
+    pcb_hole_pitch_y: float = PCB_HOLE_PITCH_Y,
+    pcb_hole_d: float = PCB_HOLE_D,
+    mount_in_clamp: Location = _MOUNT_IN_CLAMP_BACK_UPPER,
+    flange_l: float = WEDGE_FLANGE_L,
+    flange_t: float = WEDGE_FLANGE_T,
+    rail_d_bottom_x: float = _RAIL_D_BOTTOM_IN_CLAMP_X,
+    flange_bolt_y_offsets: tuple[float, ...] = WEDGE_FLANGE_BOLT_Y_OFFSETS,
+    corner_gap: float = WEDGE_CORNER_GAP,
+) -> Part:
+    """Back-upper variant of `clamp_mount`. Adds a horizontal flange on
+    rail D's -Z face that turns the clamp into an L-bracket spanning
+    the C/D joint.
+
+    The clamp base, beam, mount plate, M2 PCB holes, and rail-C clamp
+    bolts are inherited verbatim from `clamp_mount(...)`. The wedge
+    adds (a) a flange of size `flange_t × flange_l × base_w` pressed
+    against rail D's -Z face with `corner_gap` clearance and (b) two
+    M4 clearance holes through the flange in clamp-local ±X for T-nuts
+    in rail D's bottom T-slot. The rail-D contact face sits at clamp
+    +X = `rail_d_bottom_x - corner_gap`."""
+    body = clamp_mount(
+        base_l=base_l, base_w=base_w, base_h=base_h,
+        bolt_half=bolt_half, clamp_hole_d=clamp_hole_d,
+        beam_w=beam_w, beam_t=beam_t,
+        plate_size=plate_size, plate_t=plate_t,
+        pcb_hole_pitch_x=pcb_hole_pitch_x,
+        pcb_hole_pitch_y=pcb_hole_pitch_y,
+        pcb_hole_d=pcb_hole_d,
+        mount_in_clamp=mount_in_clamp,
+    )
+
+    # Flange: occupies clamp-local
+    #   X ∈ [flange_top_x - flange_t, flange_top_x]
+    #   Y ∈ [0, flange_l]   (clamp +Y = world -Y, forward along rail D)
+    #   Z ∈ [-base_w/2, base_w/2]   (matching rail D's 20 mm width)
+    flange_top_x = rail_d_bottom_x - corner_gap
+    flange_cx = flange_top_x - flange_t / 2
+    flange_cy = flange_l / 2
+    body = body + (
+        Pos(flange_cx, flange_cy, 0) * Box(flange_t, flange_l, base_w)
+    )
+
+    # M4 T-nut clearance holes through the flange (axis = clamp +X).
+    for dy in flange_bolt_y_offsets:
+        body -= (
+            Pos(flange_cx, dy, 0)
+            * Rot(0, 90, 0)
+            * Cylinder(clamp_hole_d / 2, flange_t * 3)
+        )
+
+    return body
+
+
 def camera_pcb_stub(
     w: float = PCB_W, h: float = PCB_H, t: float = PCB_T
 ) -> Part:
@@ -398,6 +523,18 @@ if __name__ == "__main__":
     # front face leaves a degenerate facet whose mesh tangent reports
     # near-90°. The genuine overhangs all sit comfortably under 90°,
     # so this still catches anything pathological.
+    #
+    # Wedge variant (back-upper) runs first so its diagnostic gets
+    # written even though the default below-left body has a known
+    # pre-existing wall_min failure that ends the standalone run.
+    inspect(
+        wedge_clamp_mount(),
+        method=FDM(
+            up_axis=(0, 1, 0), wall_min_mm=WALL_MIN, overhang_max_deg=90.0
+        ),
+        out="outputs",
+        name="wedge_clamp_mount_back_upper",
+    )
     inspect(
         clamp_mount(),
         method=FDM(
@@ -405,15 +542,4 @@ if __name__ == "__main__":
         ),
         out="outputs",
         name="clamp_mount",
-    )
-    # Back-upper variant: same body shape, different mount-rotation
-    # tilts the plate face differently. Inspected separately to
-    # exercise the printability ray sampler on the rotated plate.
-    inspect(
-        clamp_mount(mount_in_clamp=_MOUNT_IN_CLAMP_BACK_UPPER),
-        method=FDM(
-            up_axis=(0, 1, 0), wall_min_mm=WALL_MIN, overhang_max_deg=90.0
-        ),
-        out="outputs",
-        name="clamp_mount_back_upper",
     )

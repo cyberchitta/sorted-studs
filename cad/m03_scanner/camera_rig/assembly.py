@@ -127,11 +127,19 @@ def add_camera_rig(a: Assembly) -> Assembly:
             axis, roll_deg=horizontal_x_roll_deg(axis)
         )
         mount_in_clamp = _camera_mount.mount_in_clamp_for(**spec)
+        # Back-upper sits in the rail C/D corner; its body grows into
+        # a wedge that grips both rail faces. The other three are pure
+        # beam-to-plate clamp_mount() instances.
+        builder = (
+            _camera_mount.wedge_clamp_mount
+            if prefix == "cam_back_upper"
+            else _camera_mount.clamp_mount
+        )
         a = (
             a
             .add(
                 f"{prefix}_clamp_mount",
-                _camera_mount.clamp_mount(mount_in_clamp=mount_in_clamp),
+                builder(mount_in_clamp=mount_in_clamp),
                 location=clamp_loc,
                 material=material_of(f"{prefix}_clamp_mount"),
                 color=color_of(f"{prefix}_clamp_mount"),
