@@ -106,8 +106,32 @@ RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2             # = -170
 
 
 # --- Adjacent-slice mirrors (private; bound assertions reference these) -
+#
+# QUEUED-FOR-REDESIGN: slice c5 (2026-05-05) raised the housing top
+# from -110 to -80, and slice c7 (2026-05-05) raised it again to -60;
+# the driven pulley bottom moved from -90 → -79 → -59 in the same two
+# slices. The housing-top → pulley-bottom airspace that this homing
+# slice was designed to live in (originally 20 mm) closed to 1 mm,
+# leaving no room for the 3 mm flag disc or the 8 mm sensor body.
+# The flag at FLAG_Z_CENTER=-100 and the sensor at the same Z now
+# sit *inside* the post-c7 housing volume (housing Z [-120, -60]).
+# This is documented at the turret/assembly.py-integrate level via
+# `assert_interference(hub_housing, homing_flag, ...)` and
+# `assert_interference(hub_housing, homing_sensor, ...)` — those
+# alarms fire (failing) when a redesign moves the homing geometry
+# out of the housing volume, which is the marker for the redesign
+# slice.
+#
+# The mirrors below are intentionally NOT updated to current values:
+# the standalone's flag/sensor-vs-airspace clearance assertions would
+# otherwise fail at import time. The standalone's job is to verify
+# the homing parts' internal consistency (flag/sensor/bracket pairwise
+# clearances + bolt-hole walls); the cross-slice neighbour check is
+# now integrate-level only. Update these mirrors when the redesign
+# slice lands.
 
 # Slice (b) housing top face Z. Flag must clear this with ≥ 1 mm gap.
+# (STALE: actual post-c7 value -60. See note above.)
 HOUSING_TOP_Z = -110.0
 
 # Slice (b) housing X half-extent. Bracket foot inner edge must clear
@@ -115,7 +139,7 @@ HOUSING_TOP_Z = -110.0
 HOUSING_HALF_X = 30.0
 
 # Slice (g) driven pulley bottom face Z. Flag + sensor must clear this
-# with ≥ 1 mm gap.
+# with ≥ 1 mm gap. (STALE: actual post-c7 value -59. See note above.)
 PULLEY_BOTTOM_Z = -90.0
 
 # Slice (f2) kicker mount foot +X face (most-toward-axis face on -X

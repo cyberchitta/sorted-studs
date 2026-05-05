@@ -124,14 +124,17 @@ from materials import material_of  # noqa: E402
 # --- Cross-rail interface (private mirror of slice a) ------------------
 
 MEMBER = 20.0                                              # 2020 extrusion
-RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2             # = -170
+RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2             # = -120 after c7
 
 # Slice (b) housing top (private mirror; bound assertions reference it).
 # Slice c5 (2026-05-05) raised this 30 mm (-110 → -80) along with the
 # floor; housing height itself unchanged (60 mm). Pulley raised
 # 11 mm in lockstep (-86 → -75 center) so housing-top → pulley-bottom
 # closes from 20 mm to 1 mm and pulley-top → cam-bottom stays at 1 mm.
-HOUSING_TOP_Z = -80.0
+# Slice c7 (2026-05-05) raised this another 20 mm (-80 → -60) with a
+# matching 20 mm pulley + cam climb; the housing-pulley and
+# pulley-cam gaps both stay at 1 mm.
+HOUSING_TOP_Z = -60.0
 
 
 # --- GT2 pulley sizing (60T driven, 20T driver) ------------------------
@@ -157,13 +160,15 @@ DRIVER_PULLEY_OD = DRIVER_PITCH_D                          # ≈ 12.73
 # with 1 mm of flange margin per side, 8 mm pulleys are common stock.
 PULLEY_HEIGHT = 8.0
 
-# Z center: 1 mm above the c5 housing top (-80) and 1 mm below the
-# c5 cam bottom (-70). Slice c5 (2026-05-05) raised this 11 mm
+# Z center: 1 mm above the c7 housing top (-60) and 1 mm below the
+# c7 cam bottom (-50). Slice c5 (2026-05-05) raised this 11 mm
 # (-86 → -75) so the housing-top → pulley-bottom gap closes to 1 mm
-# while the pulley-top → cam-bottom gap stays at 1 mm.
-PULLEY_Z_CENTER = -75.0
-_PULLEY_TOP_Z = PULLEY_Z_CENTER + PULLEY_HEIGHT / 2        # = -82
-_PULLEY_BOTTOM_Z = PULLEY_Z_CENTER - PULLEY_HEIGHT / 2     # = -90
+# while the pulley-top → cam-bottom gap stays at 1 mm. Slice c7
+# (2026-05-05) raised it another 20 mm (-75 → -55) in lockstep with
+# the housing rise; both gaps stay at 1 mm.
+PULLEY_Z_CENTER = -55.0
+_PULLEY_TOP_Z = PULLEY_Z_CENTER + PULLEY_HEIGHT / 2        # = -51
+_PULLEY_BOTTOM_Z = PULLEY_Z_CENTER - PULLEY_HEIGHT / 2     # = -59
 
 
 # --- Center-to-center distance (200 mm GT2 closed-loop belt) -----------
@@ -231,15 +236,15 @@ BRACKET_PLATE_T = 8.0
 BRACKET_PLATE_AIRGAP_BELOW_PULLEY = 1.0
 _BRACKET_PLATE_TOP_Z = (
     _PULLEY_BOTTOM_Z - BRACKET_PLATE_AIRGAP_BELOW_PULLEY
-)                                                          # = -91
-_BRACKET_PLATE_BOTTOM_Z = _BRACKET_PLATE_TOP_Z - BRACKET_PLATE_T  # = -99
+)                                                          # = -60
+_BRACKET_PLATE_BOTTOM_Z = _BRACKET_PLATE_TOP_Z - BRACKET_PLATE_T  # = -68
 _BRACKET_PLATE_CENTER_Z = (_BRACKET_PLATE_TOP_Z + _BRACKET_PLATE_BOTTOM_Z) / 2
 
 # Motor flange Z = bracket plate bottom face (motor bolted up against
 # plate). Body extends MOTOR_BODY_Z further in -Z.
-_MOTOR_FLANGE_Z = _BRACKET_PLATE_BOTTOM_Z                  # = -99
-_MOTOR_BODY_BOTTOM_Z = _MOTOR_FLANGE_Z - MOTOR_BODY_Z      # = -139
-_MOTOR_BODY_CENTER_Z = (_MOTOR_FLANGE_Z + _MOTOR_BODY_BOTTOM_Z) / 2  # = -119
+_MOTOR_FLANGE_Z = _BRACKET_PLATE_BOTTOM_Z                  # = -68
+_MOTOR_BODY_BOTTOM_Z = _MOTOR_FLANGE_Z - MOTOR_BODY_Z      # = -108
+_MOTOR_BODY_CENTER_Z = (_MOTOR_FLANGE_Z + _MOTOR_BODY_BOTTOM_Z) / 2  # = -88
 
 # Wall (vertical, outboard of the motor body in +X). Inner face clears
 # the motor body by BRACKET_WALL_AIRGAP_X.
@@ -250,9 +255,9 @@ BRACKET_WALL_X_MIN = _MOTOR_BODY_OUTBOARD_X + BRACKET_WALL_AIRGAP_X
 BRACKET_WALL_X_MAX = BRACKET_WALL_X_MIN + BRACKET_WALL_T
 _BRACKET_WALL_CENTER_X = (BRACKET_WALL_X_MIN + BRACKET_WALL_X_MAX) / 2
 BRACKET_WALL_Y = 50.0                                      # depth
-_BRACKET_WALL_BOTTOM_Z = RAIL_TOP_Z + 8.0                  # foot top, = -162
-_BRACKET_WALL_TOP_Z = _BRACKET_PLATE_BOTTOM_Z              # = -99
-_BRACKET_WALL_HEIGHT = _BRACKET_WALL_TOP_Z - _BRACKET_WALL_BOTTOM_Z  # = 63
+_BRACKET_WALL_BOTTOM_Z = RAIL_TOP_Z + 8.0                  # foot top, = -112
+_BRACKET_WALL_TOP_Z = _BRACKET_PLATE_BOTTOM_Z              # = -68
+_BRACKET_WALL_HEIGHT = _BRACKET_WALL_TOP_Z - _BRACKET_WALL_BOTTOM_Z  # = 44
 _BRACKET_WALL_CENTER_Z = (_BRACKET_WALL_BOTTOM_Z + _BRACKET_WALL_TOP_Z) / 2
 
 # Plate spans from inboard edge (clears M3 holes at MOTOR_X - 15.5)
@@ -274,8 +279,8 @@ BRACKET_FOOT_Z = 8.0                                       # vertical
 _BRACKET_FOOT_CENTER_X = _BRACKET_WALL_CENTER_X
 _BRACKET_FOOT_X_MIN = _BRACKET_FOOT_CENTER_X - BRACKET_FOOT_X / 2
 _BRACKET_FOOT_X_MAX = _BRACKET_FOOT_CENTER_X + BRACKET_FOOT_X / 2
-_BRACKET_FOOT_BOTTOM_Z = RAIL_TOP_Z                        # = -170
-_BRACKET_FOOT_TOP_Z = _BRACKET_FOOT_BOTTOM_Z + BRACKET_FOOT_Z  # = -162
+_BRACKET_FOOT_BOTTOM_Z = RAIL_TOP_Z                        # = -120
+_BRACKET_FOOT_TOP_Z = _BRACKET_FOOT_BOTTOM_Z + BRACKET_FOOT_Z  # = -112
 _BRACKET_FOOT_CENTER_Z = (_BRACKET_FOOT_BOTTOM_Z + _BRACKET_FOOT_TOP_Z) / 2
 
 BRACKET_BOLT_HOLE_D = 5.5                                  # M5 clearance

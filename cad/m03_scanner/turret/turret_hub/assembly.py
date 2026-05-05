@@ -84,20 +84,21 @@ TURRET_BEARING_T = 7.0
 # 100 → 60 to drop the floor 40 mm; slice c5 (2026-05-05) left this
 # unchanged but raised the floor a further 30 mm so the housing top
 # rose with it (-110 → -80) to absorb the housing-top → pulley-bottom
-# gap.
+# gap. Slice c7 (2026-05-05) raised the floor another 20 mm; housing
+# top moved -80 → -60 in lockstep.
 TURRET_HUB_HOUSING_HEIGHT = 60.0
 
-# Housing top face Z in world. Cross-rail top face at z = -140
-# (= floor + MEMBER/2) plus housing height = -80 after slice c5.
+# Housing top face Z in world. Cross-rail top face at z = -120
+# (= floor + MEMBER/2 after c7) plus housing height = -60.
 TURRET_HUB_HOUSING_TOP_Z = (
     TURRET_FRAME_FLOOR_Z + 20.0 / 2 + TURRET_HUB_HOUSING_HEIGHT
-)                                                                # = -80
+)                                                                # = -60
 
 
 # --- Cross-rail interface ----------------------------------------------
 
 MEMBER = 20.0                              # 2020 cross-rail cross-section
-RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2   # = -170
+RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2   # = -120 after c7
 
 
 # --- Housing dimensions ------------------------------------------------
@@ -107,7 +108,7 @@ RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2   # = -170
 # the central Ø22 bore and around each Ø5.5 bolt clearance hole.
 HOUSING_X = 60.0
 HOUSING_Y = 50.0
-HOUSING_Z = TURRET_HUB_HOUSING_HEIGHT       # = 100 (vertical)
+HOUSING_Z = TURRET_HUB_HOUSING_HEIGHT       # = 60 (vertical, after c4)
 
 # Central bore diameter — bearing OD press fit. Modeled tangent
 # (zero radial gap); real assembly relies on FDM tolerance + light
@@ -132,7 +133,7 @@ _BOLT_HALF_X = BOLT_SPACING_X / 2
 # --- Shaft + bearing dimensions ----------------------------------------
 
 SHAFT_D = TURRET_SHAFT_D
-_SHAFT_LEN = TURRET_SHAFT_TOP_Z - RAIL_TOP_Z      # = 200
+_SHAFT_LEN = TURRET_SHAFT_TOP_Z - RAIL_TOP_Z      # = 110 after c7
 
 BEARING_OD = TURRET_BEARING_OD
 BEARING_ID = SHAFT_D

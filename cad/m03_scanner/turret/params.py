@@ -89,7 +89,7 @@ TURRET_STATION_RETURN_XY = (0.0, -TURRET_ARM_R)
 # -TURRET_ARM_R) — putting all three M2/M3/M5 anchors on one rail
 # keeps their mounting holes coplanar with the cross-rail's T-slot.
 
-TURRET_FRAME_FLOOR_Z = -150.0                                # turret floor
+TURRET_FRAME_FLOOR_Z = -130.0                                # turret floor
 
 # Slice c4 (2026-05-05) raised the floor 40 mm (-220 → -180) in
 # lockstep with the hub housing shrink 100 → 60 mm (TURRET_HUB_
@@ -103,15 +103,33 @@ TURRET_FRAME_FLOOR_Z = -150.0                                # turret floor
 # 20 to 1 mm; the pulley and cam disc rose 11 mm in lockstep
 # (PULLEY_Z_CENTER -86 → -75 in turret_drive, TURRET_DUMP_CAM_CENTER_Z
 # -75 → -64 below) so the cam-bottom → pulley-top gap stays at 1 mm
-# and the cam-top → spider-bottom gap closes from 34 to 23 mm. The
-# motor body rises 11 mm with the bracket plate (whose Z is set by
-# pulley Z); brick-silhouette occlusion from the motor was checked by
-# inspection (motor at +X, off-axis from below-vertex sightlines, line-
-# of-sight passes outboard of the motor body in X). A formal
-# silhouette-cone assertion is deferred to a c5b retrofit.
+# and the cam-top → spider-bottom gap closes from 34 to 23 mm.
+#
+# Slice c7 (2026-05-05) raised the floor a further 20 mm (-150 → -130)
+# so the turret floor rails sit at the same Z band as the camera rig's
+# rail A — turret rails span Z[-140, -120] vs rail A's [-141.2, -121.2]
+# (1.2 mm offset because rail A was bumped a sliver to the
+# conservative-envelope value). Housing top rose 20 mm to z = -60
+# (housing height unchanged at 60); pulley center -75 → -55 and cam
+# center -64 → -44 in lockstep, preserving the 1 mm pulley-top →
+# cam-bottom airspace; motor body rose 20 mm (flange -88 → -68, body
+# bottom -128 → -108); shaft shortened 130 → 110. Cam-top →
+# spider-bottom gap closes from 23 to 3 mm (cam top -38 vs spider
+# bottom -35) — most of the available compression along this axis,
+# stopping 2 mm shy of the 1 mm floor that further floor-rise budgets
+# would imply. The kicker pivot rose 31 mm (TURRET_DUMP_KICKER_PIVOT_Z
+# below) — more than the 20 mm floor rise — to lift the lever's hub
+# disc clear of the cross-rail and the kicker_mount foot. Brick-
+# silhouette occlusion from the motor was rechecked by inspection
+# (motor at world x=+59, outboard of below-vertex sightlines: line
+# from below_right at world (130.6, 16.5, -90.9) to brick at origin
+# passes through x≈95 at the new motor-top Z=-68, well outboard of
+# motor body's x=+80 face). The formal silhouette-cone assertion
+# (per the spec's c5b retrofit) is deferred to a follow-up slice
+# that adds sightline-rod stub parts.
 #
 # The project workbench reference (SHARED_BENCH_Z = -220 in
-# ../params.py) didn't move; the turret floor now floats 70 mm above
+# ../params.py) didn't move; the turret floor now floats 90 mm above
 # it, mirroring how the camera rig has floated since c2.
 
 # Center X-rail Y (= hub axis Y = 0 in turret-local). Hosts hub
@@ -133,7 +151,16 @@ TURRET_FRAME_CROSS_Y = TURRET_HUB_Y                          # = 0
 # rise would crash the two rails unless they no longer overlap in Y.
 # Slice c3's interim "+10 mm CORNER_GAP-class margin past the IMAGE
 # platform centroid" (= ARM_R + 10 = 135) put the rail directly under
-# rail A in plan view; c6 (2026-05-05) restores the boundary.
+# rail A in plan view; c6 (2026-05-05) restored the boundary.
+#
+# Slice c7 (2026-05-05) raised the floor a further 20 mm to z = -130.
+# The back-rail top face is now at z = -110, *above* rail A's bottom
+# face at z = -141.2 — the two rails now overlap in Z fully (turret
+# rail Z [-140, -120] ≈ rail A Z [-141.2, -121.2], 1.2 mm offset) in
+# addition to their existing plan-view overlap. The Y butt-flush
+# constraint (turret back-rail's +Y face at world y=+7 tangent to
+# rail A's -Y face at world y=+7) is what keeps them out of
+# interference; they share a face but no volume.
 #
 # The IMAGE platform's outer +Y edge sits at y = ARM_R + PLATFORM/2 =
 # 185, cantilevering 63 mm past this rail (was 50 mm). Acceptable
@@ -212,18 +239,25 @@ TURRET_HINGE_PIN_D = 5.0
 #     slice (f2) kicker linkage maps that radial motion to the
 #     vertical lifter stroke needed for the platform tilt.
 #
-# Disc Z span: [-70, -58] (centered on TURRET_DUMP_CAM_CENTER_Z).
-# Sits between the housing top (z = -80) and the slice (c) spider
-# bottom (z = -35), leaving 9 mm below before the pulley top (z=-71)
-# and 23 mm above before the spider. Slice c5 (2026-05-05) raised the
+# Disc Z span: [-50, -38] (centered on TURRET_DUMP_CAM_CENTER_Z).
+# Sits between the housing top (z = -60) and the slice (c) spider
+# bottom (z = -35), leaving 1 mm below before the pulley top (z=-51)
+# and 3 mm above before the spider. Slice c5 (2026-05-05) raised the
 # cam 11 mm (-75 → -64 center) along with the pulley to absorb the
-# housing rise; cam-bottom → pulley-top stays at 1 mm. Lobe-peak /
-# lobe-ramp angular split + the polygon discretisation are private to
-# the sub-assembly (`turret_dump_cam/assembly.py`).
+# housing rise; slice c7 (2026-05-05) raised it a further 20 mm
+# (-64 → -44 center), closing the cam-top → spider-bottom gap from
+# 23 mm to 3 mm. The remaining 2 mm of along-shaft compression budget
+# is held back: the lifter beam already clips the cam BASE_R footprint
+# at heading ~120° (documented at integrate level) and tightening the
+# spider-cam gap further compounds that without addressing the
+# underlying redesign. Cam-bottom → pulley-top still 1 mm (pulley
+# climbed in lockstep). Lobe-peak / lobe-ramp angular split + the
+# polygon discretisation are private to the sub-assembly
+# (`turret_dump_cam/assembly.py`).
 TURRET_DUMP_CAM_BASE_R = 25.0
 TURRET_DUMP_CAM_PEAK_R = 30.0
 TURRET_DUMP_CAM_HEIGHT = 12.0
-TURRET_DUMP_CAM_CENTER_Z = -64.0
+TURRET_DUMP_CAM_CENTER_Z = -44.0
 TURRET_DUMP_CAM_TOP_Z = TURRET_DUMP_CAM_CENTER_Z + TURRET_DUMP_CAM_HEIGHT / 2
 TURRET_DUMP_CAM_BOTTOM_Z = TURRET_DUMP_CAM_CENTER_Z - TURRET_DUMP_CAM_HEIGHT / 2
 
@@ -265,12 +299,29 @@ TURRET_DUMP_CAM_BOTTOM_Z = TURRET_DUMP_CAM_CENTER_Z - TURRET_DUMP_CAM_HEIGHT / 2
 # Pivot location: x outboard of the homing bracket region
 # (X∈[-62.5,-31.5]) so the kicker foot can sit at the same X∈[-140,-80]
 # the homing slice's KICKER_FOOT_X_INNER mirror assumes; z above cross-
-# rail top (-200) and below cam Z-band ([-81, -69]). Axis along ±Y so
-# the hub-arm rotates in the X-Z plane; bridge-Y cantilevers in +Y to
-# reach the lifter at y=+80. PIVOT_X stays at -110.
+# rail top (after c7: -120) plus a clearance for the lever's hub disc
+# (R = LEVER_HUB_DISC_OD/2 = 12 in turret_dump_kicker/assembly.py).
+# Axis along ±Y so the hub-arm rotates in the X-Z plane; bridge-Y
+# cantilevers in +Y to reach the lifter at y=+80. PIVOT_X stays at
+# -110.
+#
+# Slice c7 (2026-05-05) raised this 31 mm (-130 → -99), more than the
+# 20 mm floor rise that motivated the slice. Geometry: the lever's
+# hub disc is centred on the pivot in Y∈[-6,+6] (in the clevis gap)
+# but extends radially R=12 mm in the X-Z plane. With the foot top
+# climbing to z=-112 (rail_top -120 + foot_z 8) and the cross-rail
+# top at z=-120, the disc bottom (= pivot - R) must land ≥ -111 to
+# leave 1 mm clearance to the foot top: pivot ≥ -112 + R + 1 = -99.
+# A latent c5 bug (kicker_lever overlapping cross_rail by 216 mm³ and
+# kicker_mount foot by 1904 mm³, both because the c5 floor rise
+# climbed toward the static pivot) is folded into this c7 fix —
+# c5/c6's "khana check passes" claim was true only at the standalones
+# that use stale local mirrors, not at turret/assembly.py-level. The
+# 11 mm gain over the spec's nominal "rises 20 mm" is the explicit
+# fix for that bug.
 TURRET_DUMP_KICKER_PIVOT_X = -110.0
 TURRET_DUMP_KICKER_PIVOT_Y = 0.0
-TURRET_DUMP_KICKER_PIVOT_Z = -130.0
+TURRET_DUMP_KICKER_PIVOT_Z = -99.0
 
 # Lifter pad TOP-FACE Z at rest. 17.7 mm below the slice (d) platform
 # bracket bottom (z = -27.3) — clear of the swept platform footprint at

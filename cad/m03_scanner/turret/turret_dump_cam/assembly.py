@@ -153,16 +153,18 @@ assert abs(_z_thickness_derived - TURRET_DUMP_CAM_HEIGHT) < 1e-6, (
 )
 
 # Cam disc Z must lie strictly between the slice (b) housing top
-# (z = -110) and the slice (c) spider bottom (z = -35). Clearance to
-# both neighbours is asserted in the top-level integrate slice; this
-# is a coarse range check.
-assert TURRET_DUMP_CAM_BOTTOM_Z > -110.0, (
+# (z = -60 after c7; was -110 at c4 and -80 at c5) and the slice (c)
+# spider bottom (z = -35). Clearance to both neighbours is asserted
+# in the top-level integrate slice; this is a coarse range check.
+_HOUSING_TOP_Z = -60.0
+_SPIDER_BOTTOM_Z = -35.0
+assert TURRET_DUMP_CAM_BOTTOM_Z > _HOUSING_TOP_Z, (
     f"cam bottom ({TURRET_DUMP_CAM_BOTTOM_Z}) sinks into the housing "
-    f"(top at z = -110); raise TURRET_DUMP_CAM_CENTER_Z"
+    f"(top at z = {_HOUSING_TOP_Z}); raise TURRET_DUMP_CAM_CENTER_Z"
 )
-assert TURRET_DUMP_CAM_TOP_Z < -35.0, (
+assert TURRET_DUMP_CAM_TOP_Z < _SPIDER_BOTTOM_Z, (
     f"cam top ({TURRET_DUMP_CAM_TOP_Z}) collides with the spider "
-    f"(bottom at z = -35); lower TURRET_DUMP_CAM_CENTER_Z"
+    f"(bottom at z = {_SPIDER_BOTTOM_Z}); lower TURRET_DUMP_CAM_CENTER_Z"
 )
 
 
