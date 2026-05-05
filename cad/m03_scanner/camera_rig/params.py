@@ -1,3 +1,18 @@
+# ─────────────────────────────────────────────────────────────────────
+# Sizing inputs — vertices and rail anchors below were generated from
+# cad/m03_scanner/sizing.py with:
+#     LENS_FOCAL_MM    = 3.6  (M12)
+#     TILT_DEG         = 65.0
+#     BRICK_MAX_MM     = 80.0
+#     SCATTER_HALF_MM  = 15.0
+#     TETRA_R          = 250.0  (kept at rev-5 size; not yet shrunk)
+# Last reconciled: 2026-05-04.
+#
+# To re-derive: edit sizing.py, run it, copy the tetrahedral block
+# below verbatim, update LENS_FOCAL_MM/TETRA_R/etc above, update the
+# date. Then `khana check` at all three levels (mount / camera_rig /
+# m03 top-level).
+# ─────────────────────────────────────────────────────────────────────
 """
 M03 camera rig — unit-local constants and placement helpers.
 
@@ -15,20 +30,14 @@ Each rig sub-assembly (`skeleton_t_frame/`, `camera_mount_esp32cam/`,
 `frame_gusset_t/`, `frame_gusset_l/`) carries its own local frame and
 imports the constants below via `from camera_rig.params import …`.
 
-Tetrahedral verification (2026-05-04): all four vertices sit
-~248 mm from origin (within ±2 mm), and every pairwise dot product of
+Tetrahedral verification (2026-05-04): all four vertices sit at
+exactly r = 250 mm from origin, and every pairwise dot product of
 unit-vectors-from-origin is −1/3 — the regular-tetrahedron signature
-(109.47° between every pair). The vertex set is unchanged from rev-4
-(mirrors-and-direct-camera): the previous direct camera position
-became one vertex and the three mirror centres became the other three.
+(109.47° between every pair). The vertex set was regularised from
+rev-5 (which was within ±2 mm of a regular tetrahedron but not exact)
+to the canonical generator output from `sizing.tetra_vertices_unit(65)`
+scaled by r=250.
 See `cameras_design_notes.md` for the pivot rationale.
-
-Vertex coordinates were originally derived in
-`klods-syn/nbs/200_viewpoints.md` at tilt 65°, phase 90°,
-camera_dist 250 mm. The upstream source is Y-up; values here are
-converted to Z-up at the boundary (X invariant, Y/Z swapped). Update
-this file and `docs/m03-multi-view-scanner.md` together whenever any
-value changes.
 """
 
 import math
@@ -46,11 +55,13 @@ WALL_MIN = 1.5
 # World-frame positions where each camera's PCB rear face lands. Names
 # are pose-descriptive (independent of any prior mirror/camera role) so
 # a future role swap doesn't churn the names.
+#
+# Values from sizing.tetra_vertices_unit(tilt_deg=65) scaled by r=250.
 
 VERTEX_FRONT_LOW_POS = (0.0, -226.6, 105.7)
-VERTEX_BACK_UPPER_POS = (0.0, 172.7, 176.0)
-VERTEX_BELOW_LEFT_POS = (-201.4, 25.4, -140.1)
-VERTEX_BELOW_RIGHT_POS = (201.4, 25.4, -140.1)
+VERTEX_BACK_UPPER_POS = (0.0, 175.1, 178.4)
+VERTEX_BELOW_LEFT_POS = (-204.1, 25.7, -142.0)
+VERTEX_BELOW_RIGHT_POS = (204.1, 25.7, -142.0)
 
 
 def lens_axis_unit(
