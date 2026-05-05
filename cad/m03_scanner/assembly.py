@@ -22,11 +22,11 @@ Cross-unit checks at this level:
 
 Slice c2 (2026-05-05) retired the rev-3/rev-4 turret-back-rail-butts-
 rig-rail-A-front-face boundary assertion: with the rig shrunk to
-r=160, rail A's centerline rose from z=-220 to z=-131. The turret's
-floor frame still sits at the SHARED_BENCH_Z=-220 bench, so the two
-rails are now ~80 mm apart in Z — no Y-coplanar crash is possible
-regardless of Y butt clearance, and the rig floats above the bench
-until a future floor-feet slice bridges the gap.
+r=160, rail A's centerline rose from z=-220 to z=-131. Slice c4
+(2026-05-05) then raised the turret floor from -220 to -180 in
+lockstep with the hub housing shrink (100 → 60 mm). Both units now
+float above SHARED_BENCH_Z=-220 (rig 80 mm, turret 40 mm) until a
+future floor-feet slice bridges the gap.
 
 The rev-3 single-platform stack (`platform_frame/`,
 `platform_hinge_bearing/`, `platform_acrylic/`) was deleted in the
@@ -81,9 +81,9 @@ assert PLATFORM_ACRYLIC_T == _TURRET_ACRYLIC_T, (
     f"PLATFORM_ACRYLIC_T mismatch: top={PLATFORM_ACRYLIC_T}, "
     f"turret={_TURRET_ACRYLIC_T}"
 )
-assert _TURRET_FLOOR_Z == SHARED_BENCH_Z, (
-    f"turret floor Z ({_TURRET_FLOOR_Z}) ≠ SHARED_BENCH_Z "
-    f"({SHARED_BENCH_Z}); both units must sit on the same bench"
+assert _TURRET_FLOOR_Z >= SHARED_BENCH_Z, (
+    f"turret floor Z ({_TURRET_FLOOR_Z}) sinks below SHARED_BENCH_Z "
+    f"({SHARED_BENCH_Z}); the workbench surface is the absolute floor"
 )
 
 

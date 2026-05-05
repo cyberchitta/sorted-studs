@@ -51,10 +51,13 @@ PLATFORM_ACRYLIC_T = 4.0
 
 # --- Inter-unit interface (camera rig ↔ turret) ------------------------
 
-# Shared bench Z. The turret_frame floor sits on this single bench at
-# z = -220. Slice c2 (2026-05-05) raised the camera rig's rail A from
-# z = -220 to z = -131 (rig shrink, r=160), so the rig now floats
-# ~80 mm above the bench until a future floor-feet slice bridges the
-# gap; SHARED_BENCH_Z stays as the project-wide reference for the
-# eventual workbench surface.
+# Workbench surface Z. The project-wide reference for the eventual
+# physical bench top. Both the camera rig and the turret floor used to
+# sit directly on this plane; both have since floated up:
+#   - Slice c2 (2026-05-05) raised the camera rig (rail A from z=-220
+#     to z=-131) when the rig shrunk to r=160.
+#   - Slice c4 (2026-05-05) raised the turret floor (-220 → -180) when
+#     the hub housing shrunk 100 → 60 mm.
+# A future floor-feet slice will bridge the rig and turret bases down
+# to this surface; SHARED_BENCH_Z stays as the workbench reference.
 SHARED_BENCH_Z = -220.0

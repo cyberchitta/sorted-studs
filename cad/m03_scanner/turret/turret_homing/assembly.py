@@ -102,7 +102,7 @@ from materials import material_of  # noqa: E402
 # --- Cross-rail interface (private mirror of slice a) ------------------
 
 MEMBER = 20.0                                              # 2020 extrusion
-RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2             # = -210
+RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2             # = -170
 
 
 # --- Adjacent-slice mirrors (private; bound assertions reference these) -
@@ -183,8 +183,8 @@ BRACKET_FOOT_Z = 8.0     # vertical
 _BRACKET_FOOT_CENTER_X = -47.0
 _BRACKET_FOOT_X_MIN = _BRACKET_FOOT_CENTER_X - BRACKET_FOOT_X / 2  # = -62.5
 _BRACKET_FOOT_X_MAX = _BRACKET_FOOT_CENTER_X + BRACKET_FOOT_X / 2  # = -31.5
-_BRACKET_FOOT_BOTTOM_Z = RAIL_TOP_Z                        # = -210
-_BRACKET_FOOT_TOP_Z = _BRACKET_FOOT_BOTTOM_Z + BRACKET_FOOT_Z  # = -202
+_BRACKET_FOOT_BOTTOM_Z = RAIL_TOP_Z                        # = -170
+_BRACKET_FOOT_TOP_Z = _BRACKET_FOOT_BOTTOM_Z + BRACKET_FOOT_Z  # = -162
 _BRACKET_FOOT_CENTER_Z = (_BRACKET_FOOT_BOTTOM_Z + _BRACKET_FOOT_TOP_Z) / 2
 
 BRACKET_BOLT_HOLE_D = 5.5                                  # M5 clearance
@@ -200,9 +200,9 @@ BRACKET_POST_Y = BRACKET_FOOT_Y                            # = 14
 _BRACKET_POST_CENTER_X = _BRACKET_FOOT_CENTER_X            # = -47
 _BRACKET_POST_X_MIN = _BRACKET_POST_CENTER_X - BRACKET_POST_X / 2  # = -54
 _BRACKET_POST_X_MAX = _BRACKET_POST_CENTER_X + BRACKET_POST_X / 2  # = -40
-_BRACKET_POST_BOTTOM_Z = _BRACKET_FOOT_TOP_Z               # = -202
+_BRACKET_POST_BOTTOM_Z = _BRACKET_FOOT_TOP_Z               # = -162
 _BRACKET_POST_TOP_Z = _SENSOR_TOP_Z                        # = -96
-BRACKET_POST_Z = _BRACKET_POST_TOP_Z - _BRACKET_POST_BOTTOM_Z  # = 106
+BRACKET_POST_Z = _BRACKET_POST_TOP_Z - _BRACKET_POST_BOTTOM_Z  # = 66
 _BRACKET_POST_CENTER_Z = (_BRACKET_POST_BOTTOM_Z + _BRACKET_POST_TOP_Z) / 2
 
 

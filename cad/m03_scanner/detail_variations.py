@@ -138,14 +138,14 @@ def default_detail(assembly: Assembly) -> dict[str, Part]:
 
 # --- Fasteners ---------------------------------------------------------
 
-# Foot-bolt geometry. The drive bracket foot top face sits at z = -202
-# (rail top z = -210 + foot thickness 8). M5×16 SHCS heads land on the
+# Foot-bolt geometry. The drive bracket foot top face sits at z = -162
+# (rail top z = -170 + foot thickness 8). M5×16 SHCS heads land on the
 # foot top face; the threaded shank descends through the foot (8 mm)
 # and into the rail's top T-slot (8 mm of engagement) where a t-nut
 # captures it. Bolt origin (head/shank interface in bd_warehouse's
-# canonical pose) lands on z = -202. Default Cylinder/SHCS axis is +Z,
+# canonical pose) lands on z = -162. Default Cylinder/SHCS axis is +Z,
 # matches the bolt's "head up" orientation here without rotation.
-_FOOT_BOLT_HEAD_Z = TURRET_FRAME_FLOOR_Z + _MEMBER / 2 + BRACKET_FOOT_Z   # = -202
+_FOOT_BOLT_HEAD_Z = TURRET_FRAME_FLOOR_Z + _MEMBER / 2 + BRACKET_FOOT_Z   # = -162
 _FOOT_BOLT_CTR_X = BRACKET_WALL_X_MIN + BRACKET_WALL_T / 2                # bracket foot centerline
 _FOOT_BOLT_DX = BRACKET_BOLT_SPACING_X / 2                                 # = 17.5
 _FOOT_BOLT_Y = TURRET_FRAME_CROSS_Y                                        # bolts on the cross-rail centerline

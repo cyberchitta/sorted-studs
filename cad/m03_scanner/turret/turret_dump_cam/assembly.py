@@ -265,11 +265,11 @@ def add_turret_dump_cam(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
 
 # --- Standalone assembly -----------------------------------------------
 
-# Rail top at z = -210 (= TURRET_FRAME_FLOOR_Z + MEMBER/2). Shaft
-# spans rail-top up to TURRET_SHAFT_TOP_Z; duplicate the constant
-# locally rather than import slice (a)'s frame helpers.
-_SHAFT_BASE_Z = -210.0
-_SHAFT_LEN = TURRET_SHAFT_TOP_Z - _SHAFT_BASE_Z      # = 200
+# Rail top at z = -170 (= TURRET_FRAME_FLOOR_Z + MEMBER/2 with floor
+# at -180). Shaft spans rail-top up to TURRET_SHAFT_TOP_Z; duplicate
+# the constant locally rather than import slice (a)'s frame helpers.
+_SHAFT_BASE_Z = -170.0
+_SHAFT_LEN = TURRET_SHAFT_TOP_Z - _SHAFT_BASE_Z      # = 160
 
 assembly = add_turret_dump_cam(Assembly())
 assembly = assembly.add(

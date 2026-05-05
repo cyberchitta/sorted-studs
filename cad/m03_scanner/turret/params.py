@@ -89,20 +89,28 @@ TURRET_STATION_RETURN_XY = (0.0, -TURRET_ARM_R)
 # -TURRET_ARM_R) — putting all three M2/M3/M5 anchors on one rail
 # keeps their mounting holes coplanar with the cross-rail's T-slot.
 
-TURRET_FRAME_FLOOR_Z = -220.0                                # shared bench
+TURRET_FRAME_FLOOR_Z = -180.0                                # turret floor
+
+# Slice c4 (2026-05-05) raised the floor 40 mm (-220 → -180) in
+# lockstep with the hub housing shrink 100 → 60 mm (TURRET_HUB_
+# HOUSING_HEIGHT in turret_hub/assembly.py). Net effect: housing top
+# stays at z = -110, the cam/pulley/motor stack above is unchanged in
+# absolute Z, and the turret is 40 mm shorter overall. The project
+# workbench reference (SHARED_BENCH_Z = -220 in ../params.py) didn't
+# move; the turret floor now floats 40 mm above it, mirroring how the
+# camera rig has floated since c2.
 
 # Center X-rail Y (= hub axis Y = 0 in turret-local). Hosts hub
 # bearing + neighbour-module anchors on a single line.
 TURRET_FRAME_CROSS_Y = TURRET_HUB_Y                          # = 0
 
 # Back X-rail centerline Y in turret-local. Originally sized so the
-# +Y face butted the camera rig's rail A front face (rev-3/rev-4 era,
-# both subsystems on the SHARED_BENCH_Z=-220 plane). Slice c2 shrunk
-# the rig and rail A rose to z=-131, so rig and turret are now
-# Z-decoupled; the butt-joint constraint is moot. Slice c3 dropped
-# the rev-3/4 +8.14 anchor (a leftover from the butt-joint clearance
-# math) for a clean +10 mm CORNER_GAP-class margin past the IMAGE
-# platform centroid. The IMAGE platform's outer +Y edge sits at
+# +Y face butted the camera rig's rail A front face (rev-3/rev-4 era).
+# Slice c2 shrunk the rig and rail A rose to z=-131, decoupling the
+# two in Z; the butt-joint constraint is moot. Slice c3 dropped the
+# rev-3/4 +8.14 anchor (a leftover from the butt-joint clearance math)
+# for a clean +10 mm CORNER_GAP-class margin past the IMAGE platform
+# centroid. The IMAGE platform's outer +Y edge sits at
 # y = ARM_R + PLATFORM/2 = 185, cantilevering 50 mm past this rail.
 TURRET_FRAME_BACK_Y = TURRET_ARM_R + 10.0                    # = 135
 

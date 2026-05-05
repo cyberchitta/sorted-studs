@@ -124,7 +124,7 @@ from materials import material_of  # noqa: E402
 # --- Cross-rail interface (private mirror of slice a) ------------------
 
 MEMBER = 20.0                                              # 2020 extrusion
-RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2             # = -210
+RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2             # = -170
 
 # Slice (b) housing top (private mirror; bound assertions reference it).
 HOUSING_TOP_Z = -110.0
@@ -245,9 +245,9 @@ BRACKET_WALL_X_MIN = _MOTOR_BODY_OUTBOARD_X + BRACKET_WALL_AIRGAP_X
 BRACKET_WALL_X_MAX = BRACKET_WALL_X_MIN + BRACKET_WALL_T
 _BRACKET_WALL_CENTER_X = (BRACKET_WALL_X_MIN + BRACKET_WALL_X_MAX) / 2
 BRACKET_WALL_Y = 50.0                                      # depth
-_BRACKET_WALL_BOTTOM_Z = RAIL_TOP_Z + 8.0                  # foot top, = -202
+_BRACKET_WALL_BOTTOM_Z = RAIL_TOP_Z + 8.0                  # foot top, = -162
 _BRACKET_WALL_TOP_Z = _BRACKET_PLATE_BOTTOM_Z              # = -99
-_BRACKET_WALL_HEIGHT = _BRACKET_WALL_TOP_Z - _BRACKET_WALL_BOTTOM_Z  # = 103
+_BRACKET_WALL_HEIGHT = _BRACKET_WALL_TOP_Z - _BRACKET_WALL_BOTTOM_Z  # = 63
 _BRACKET_WALL_CENTER_Z = (_BRACKET_WALL_BOTTOM_Z + _BRACKET_WALL_TOP_Z) / 2
 
 # Plate spans from inboard edge (clears M3 holes at MOTOR_X - 15.5)
@@ -269,8 +269,8 @@ BRACKET_FOOT_Z = 8.0                                       # vertical
 _BRACKET_FOOT_CENTER_X = _BRACKET_WALL_CENTER_X
 _BRACKET_FOOT_X_MIN = _BRACKET_FOOT_CENTER_X - BRACKET_FOOT_X / 2
 _BRACKET_FOOT_X_MAX = _BRACKET_FOOT_CENTER_X + BRACKET_FOOT_X / 2
-_BRACKET_FOOT_BOTTOM_Z = RAIL_TOP_Z                        # = -210
-_BRACKET_FOOT_TOP_Z = _BRACKET_FOOT_BOTTOM_Z + BRACKET_FOOT_Z  # = -202
+_BRACKET_FOOT_BOTTOM_Z = RAIL_TOP_Z                        # = -170
+_BRACKET_FOOT_TOP_Z = _BRACKET_FOOT_BOTTOM_Z + BRACKET_FOOT_Z  # = -162
 _BRACKET_FOOT_CENTER_Z = (_BRACKET_FOOT_BOTTOM_Z + _BRACKET_FOOT_TOP_Z) / 2
 
 BRACKET_BOLT_HOLE_D = 5.5                                  # M5 clearance
@@ -538,7 +538,7 @@ def add_turret_drive(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
 assembly = add_turret_drive(Assembly())
 
 # Stubs.
-_SHAFT_LEN = TURRET_SHAFT_TOP_Z - RAIL_TOP_Z               # = 200
+_SHAFT_LEN = TURRET_SHAFT_TOP_Z - RAIL_TOP_Z               # = 160
 assembly = assembly.add(
     "hub_shaft_stub",
     _shaft_stub(length=_SHAFT_LEN),

@@ -32,7 +32,7 @@ Coordinate frame = turret-local frame (matches `../params.py`):
     +Z     = up                          (parallel to world +Z)
 
 Housing bottom face sits on the cross-rail top face at
-z = TURRET_FRAME_FLOOR_Z + MEMBER/2 = -210; the hub axis runs vertical
+z = TURRET_FRAME_FLOOR_Z + MEMBER/2 = -170; the hub axis runs vertical
 through turret-local (0, 0, *) by construction. Bearings press into
 the Ø22 bore (tangent contact in the model, which
 `assert_no_interference` treats as zero overlap); axial retention is
@@ -77,14 +77,15 @@ from materials import material_of  # noqa: E402
 TURRET_BEARING_OD = 22.0
 TURRET_BEARING_T = 7.0
 
-# Housing height above the cross-rail top face. 100 mm gives an 86 mm
+# Housing height above the cross-rail top face. 60 mm gives a 46 mm
 # clear span between the top and bottom bearings (each flush with its
-# adjacent housing face) — enough moment support for the unbalanced-
-# load case (one platform carrying a brick, three empty) without
-# dominating the print volume.
-TURRET_HUB_HOUSING_HEIGHT = 100.0
+# adjacent housing face) — comfortable for the static load (4 light
+# platforms, slow indexing) and lets the rail rise 40 mm so the
+# housing top stays at z = -110 (the cam/pulley/motor stack above is
+# unchanged in absolute Z).
+TURRET_HUB_HOUSING_HEIGHT = 60.0
 
-# Housing top face Z in world. Cross-rail top face at z = -210
+# Housing top face Z in world. Cross-rail top face at z = -170
 # (= floor + MEMBER/2) plus housing height = -110.
 TURRET_HUB_HOUSING_TOP_Z = (
     TURRET_FRAME_FLOOR_Z + 20.0 / 2 + TURRET_HUB_HOUSING_HEIGHT
@@ -94,7 +95,7 @@ TURRET_HUB_HOUSING_TOP_Z = (
 # --- Cross-rail interface ----------------------------------------------
 
 MEMBER = 20.0                              # 2020 cross-rail cross-section
-RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2   # = -210
+RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2   # = -170
 
 
 # --- Housing dimensions ------------------------------------------------

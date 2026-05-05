@@ -110,10 +110,10 @@ from materials import material_of  # noqa: E402
 # --- Cross-rail interface (private mirrors of slice (a)) ---------------
 #
 # Cross-rail along ±X at y = TURRET_FRAME_CROSS_Y = 0, top face at
-# z = -200. Mount foot bolts into the rail's top T-slot at y = 0.
+# z = -170. Mount foot bolts into the rail's top T-slot at y = 0.
 
 MEMBER = 20.0                      # 2020 extrusion
-RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2                     # = -200
+RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2                     # = -170
 
 
 # --- Pivot pin ---------------------------------------------------------
@@ -131,8 +131,8 @@ PIVOT_BORE_D = PIVOT_PIN_D + 0.4                                    # = 5.4
 MOUNT_FOOT_X = 60.0
 MOUNT_FOOT_Y = 30.0    # depth (across rail) — full clevis width
 MOUNT_FOOT_Z = 8.0     # vertical foot height
-_MOUNT_FOOT_BOTTOM_Z = RAIL_TOP_Z                                  # = -200
-_MOUNT_FOOT_TOP_Z = _MOUNT_FOOT_BOTTOM_Z + MOUNT_FOOT_Z            # = -192
+_MOUNT_FOOT_BOTTOM_Z = RAIL_TOP_Z                                  # = -170
+_MOUNT_FOOT_TOP_Z = _MOUNT_FOOT_BOTTOM_Z + MOUNT_FOOT_Z            # = -162
 _MOUNT_FOOT_CENTER_Z = (_MOUNT_FOOT_BOTTOM_Z + _MOUNT_FOOT_TOP_Z) / 2
 
 # M5 bolt clearance, two holes along the rail T-slot (at y = 0).
@@ -154,7 +154,7 @@ _PILLAR_POS_Y_CENTER = +(_PILLAR_INNER_Y + MOUNT_PILLAR_Y_THICK / 2)
 
 # Pillar X / Z extents — sized to enclose the pivot bore with WALL_MIN.
 MOUNT_PILLAR_X = 25.0
-_MOUNT_PILLAR_BOTTOM_Z = _MOUNT_FOOT_TOP_Z                         # = -192
+_MOUNT_PILLAR_BOTTOM_Z = _MOUNT_FOOT_TOP_Z                         # = -162
 _PILLAR_CAP_ABOVE_BORE = WALL_MIN + 0.5                            # = 2 mm wall above bore
 _MOUNT_PILLAR_TOP_Z = (
     TURRET_DUMP_KICKER_PIVOT_Z + PIVOT_BORE_D / 2 + _PILLAR_CAP_ABOVE_BORE
