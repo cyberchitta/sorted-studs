@@ -1,31 +1,29 @@
 """
 M03 scanner — flat unit composition + within-unit checks.
 
-Composes the merged camera rig + turret in m03-local coordinates
+Composes the integrated camera rig + turret in m03-local coordinates
 (brick centroid on the IMAGE platform top face is the origin):
 
-  * Rig parts placed at m03 identity — rig-local frame matches m03,
-    so all rig coordinates in `params.py` are m03-local-equivalent.
+  * Rig parts (`arch/`, `camera_mount_esp32cam/`) placed at m03
+    identity — rig-local frame matches m03, so all rig coordinates
+    in `params.py` are m03-local-equivalent.
   * Turret parts placed at m03-local `Pos(0, -TURRET_ARM_R, 0)` so
     the turret hub axis lands at m03-local `(0, -ARM_R, *)` and the
     DUMP platform centroid sits at m03-local origin (option a',
     2026-05-05).
 
-Within-unit checks at this level are the union of the previous
-camera-rig and turret internal checks plus every cross-pair between
-them. The earlier rev-3 split (rig + turret as separate relocatable
-units, each with its own `params.py`) was collapsed in the
-integrated-frame Phase-1 refactor — the rig and turret share a
-single bench frame in the upcoming Phase-2 geometry change, so a
-per-unit boundary no longer earns its place. Phase 1 is a pure
-file-layout refactor: the diagnostic JSON here matches the prior
-camera-rig + turret + cross-unit unions modulo part naming (the old
-rig/turret part-name prefixes are unchanged; only the directory
-layout changed).
+Within-unit checks at this level are the union of arch-internal +
+turret-internal + arch×turret pairs. After Phase 2 (2026-05-06), the
+old rig T-frame (rails A/B/C/D + the B↔C corner brace + two L-
+gussets + one T-gusset) collapses into the new `arch/` (2 posts +
+2 inward stubs + rail D) plus the shared back rail (`frame/`'s
+`floor_back_x`, bumped +20 mm in Y). Below-* clamps now grip the
+shared back rail; back-upper hangs from rail D's underside via the
+plain `clamp_mount(...)` body (the wedge variant was demolished
+with rail C).
 
 Sub-assemblies (all in `cad/m03_scanner/<sub>/`):
-  Rig:    skeleton_t_frame, frame_gusset_t, frame_gusset_l,
-          camera_mount_esp32cam (×4 vertices)
+  Rig:    arch, camera_mount_esp32cam (×4 vertices)
   Turret: frame, hub, arm, turret_platform (×4 stations), dump_cam,
           dump_kicker, drive, homing
 
@@ -66,17 +64,15 @@ from params import (  # noqa: E402
     lens_axis_unit,
     rotation_for_normal,
 )
+from arch import assembly as _arch  # noqa: E402
 from arm import assembly as _arm  # noqa: E402
 from camera_mount_esp32cam import assembly as _camera_mount  # noqa: E402
 from drive import assembly as _drive  # noqa: E402
 from dump_cam import assembly as _dump_cam  # noqa: E402
 from dump_kicker import assembly as _dump_kicker  # noqa: E402
 from frame import assembly as _frame  # noqa: E402
-from frame_gusset_l import assembly as _gusset_l  # noqa: E402
-from frame_gusset_t import assembly as _gusset_t  # noqa: E402
 from homing import assembly as _homing  # noqa: E402
 from hub import assembly as _hub  # noqa: E402
-from skeleton_t_frame import assembly as _skel  # noqa: E402
 from turret_platform import assembly as _turret_platform  # noqa: E402
 
 from design_systems import DESIGN_SYSTEM, color_of  # noqa: E402
@@ -118,16 +114,13 @@ _CAMERA_INSTANCES = {
 # --- Naming -----------------------------------------------------------
 
 # Rig.
-SKELETON_NAMES = _skel.SKELETON_T_FRAME_PART_NAMES
-GUSSET_NAMES = ("gusset_t_ab", "gusset_l_cd_pos_x", "gusset_l_cd_neg_x")
+ARCH_NAMES = _arch.ARCH_PART_NAMES
 CAMERA_PART_NAMES = tuple(
     name
     for prefix in _CAMERA_INSTANCES
     for name in (f"{prefix}_clamp_mount", f"{prefix}_pcb", f"{prefix}_lens")
 )
-CAMERA_RIG_PART_NAMES = (
-    list(SKELETON_NAMES) + list(GUSSET_NAMES) + list(CAMERA_PART_NAMES)
-)
+CAMERA_RIG_PART_NAMES = list(ARCH_NAMES) + list(CAMERA_PART_NAMES)
 
 # Turret.
 TURRET_FRAME_NAMES = _frame.TURRET_FRAME_PART_NAMES
@@ -175,10 +168,7 @@ _TURRET_BASE = Pos(0, -TURRET_ARM_R, 0)
 
 def add_camera_rig(a: Assembly) -> Assembly:
     """Add every camera-rig part in m03-local coordinates."""
-    a = _skel.add_skeleton_t_frame(a)
-    a = _gusset_t.add_frame_gusset_t(a, name=GUSSET_NAMES[0])
-    a = _gusset_l.add_frame_gusset_l(a, name=GUSSET_NAMES[1], side=+1)
-    a = _gusset_l.add_frame_gusset_l(a, name=GUSSET_NAMES[2], side=-1)
+    a = _arch.add_arch(a)
     for prefix, spec in _CAMERA_INSTANCES.items():
         clamp_loc = Pos(*spec["clamp_pos"]) * spec["clamp_rot"]
         axis = lens_axis_unit(spec["vertex_pos"])
@@ -186,16 +176,11 @@ def add_camera_rig(a: Assembly) -> Assembly:
             axis, roll_deg=horizontal_x_roll_deg(axis)
         )
         mount_in_clamp = _camera_mount.mount_in_clamp_for(**spec)
-        builder = (
-            _camera_mount.wedge_clamp_mount
-            if prefix == "cam_back_upper"
-            else _camera_mount.clamp_mount
-        )
         a = (
             a
             .add(
                 f"{prefix}_clamp_mount",
-                builder(mount_in_clamp=mount_in_clamp),
+                _camera_mount.clamp_mount(mount_in_clamp=mount_in_clamp),
                 location=clamp_loc,
                 material=material_of(f"{prefix}_clamp_mount"),
                 color=color_of(f"{prefix}_clamp_mount"),
@@ -278,24 +263,17 @@ def add_m03_internal_checks(a: Assembly) -> Assembly:
     """Add every within-m03 cross-boundary check.
 
     Three blocks:
-      1. Rig-internal — every non-skeleton vs every skeleton; gussets
-         vs every non-gusset; gusset-vs-gusset.
+      1. Rig-internal — every non-arch (camera mounts) vs every arch
+         member.
       2. Turret-internal — every pair, with the small allow-list of
          known overlaps downgraded to `assert_interference(reason=…)`.
       3. Cross — every turret part vs every rig part.
     """
     # 1. Rig-internal.
-    non_skeleton = [n for n in CAMERA_RIG_PART_NAMES if n not in SKELETON_NAMES]
-    for internal in non_skeleton:
-        for member in SKELETON_NAMES:
+    non_arch = [n for n in CAMERA_RIG_PART_NAMES if n not in ARCH_NAMES]
+    for internal in non_arch:
+        for member in ARCH_NAMES:
             a = a.assert_no_interference(internal, member)
-    non_gusset = [n for n in non_skeleton if n not in GUSSET_NAMES]
-    for gusset in GUSSET_NAMES:
-        for other in non_gusset:
-            a = a.assert_no_interference(gusset, other)
-    for _i, _g1 in enumerate(GUSSET_NAMES):
-        for _g2 in GUSSET_NAMES[_i + 1:]:
-            a = a.assert_no_interference(_g1, _g2)
 
     # 2. Turret-internal.
     known = {(p, q) for p, q, _ in _KNOWN_OVERLAPS}

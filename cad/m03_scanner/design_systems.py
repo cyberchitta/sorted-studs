@@ -34,16 +34,13 @@ from cad.design_systems import (  # noqa: E402
 # system (hardware, optical glass, clear acrylic) and keeps its
 # material's intrinsic color.
 ROLE_OF: dict[str, Role | None] = {
-    # --- camera_rig.skeleton_t_frame (4 rails + 1 mitered brace) ------
-    "rail_a": Role.PRIMARY_STRUCTURE,
-    "rail_b": Role.PRIMARY_STRUCTURE,
-    "rail_c": Role.PRIMARY_STRUCTURE,
+    # --- camera_rig.arch (Phase-2 integrated frame) -------------------
+    "arch_post_pos_x": Role.PRIMARY_STRUCTURE,
+    "arch_post_neg_x": Role.PRIMARY_STRUCTURE,
+    "arch_stub_pos_x": Role.PRIMARY_STRUCTURE,
+    "arch_stub_neg_x": Role.PRIMARY_STRUCTURE,
     "rail_d": Role.PRIMARY_STRUCTURE,
-    "brace_bc": Role.PRIMARY_STRUCTURE,
-    # --- camera_rig: gussets + four ESP32-CAM mounts ------------------
-    "gusset_t_ab": Role.SECONDARY_STRUCTURE,
-    "gusset_l_cd_pos_x": Role.SECONDARY_STRUCTURE,
-    "gusset_l_cd_neg_x": Role.SECONDARY_STRUCTURE,
+    # --- camera_rig: four ESP32-CAM mounts ----------------------------
     "cam_front_low_clamp_mount": Role.OPTICAL_ENVELOPE,
     "cam_back_upper_clamp_mount": Role.OPTICAL_ENVELOPE,
     "cam_below_left_clamp_mount": Role.OPTICAL_ENVELOPE,
@@ -56,11 +53,13 @@ ROLE_OF: dict[str, Role | None] = {
     "cam_back_upper_lens": None,
     "cam_below_left_lens": None,
     "cam_below_right_lens": None,
-    # --- turret.turret_frame (5-member 2020 floor) --------------------
+    # --- turret.frame (6-member 2020 floor) ---------------------------
     "floor_back_x": Role.PRIMARY_STRUCTURE,
     "floor_left_y": Role.PRIMARY_STRUCTURE,
     "floor_right_y": Role.PRIMARY_STRUCTURE,
     "floor_cross_x": Role.PRIMARY_STRUCTURE,
+    "floor_outrig_pos_x": Role.PRIMARY_STRUCTURE,
+    "floor_outrig_neg_x": Role.PRIMARY_STRUCTURE,
     # --- turret.turret_hub --------------------------------------------
     "hub_housing": Role.SECONDARY_STRUCTURE,
     "hub_shaft": None,                                  # steel

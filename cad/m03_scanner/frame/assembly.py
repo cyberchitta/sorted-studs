@@ -1,37 +1,57 @@
 """
-M03 scanner — rev-4 turret frame (slice a of the 4-station turret).
+M03 scanner — turret floor frame (Phase-2 integrated topology).
 
-Standalone freestanding 2020 floor frame on the shared bench
-(z = -220), the M2 → M3 → M5 mechanical interface for the 4-station
-turret described in `../turret_design_brief.md`. This slice delivers
-just the floor frame; the hub + drive, arms, platform cartridges and
-cam ring land in later slices.
+Standalone freestanding 2020 floor frame on the m05 deck top face
+(world z = +890; turret-local z = -130 after the c7 floor rise), the
+mechanical interface for the 4-station turret described in
+`../turret_design_brief.md` *and* the rig-side anchor for the
+camera-rig below-* clamps + arch posts after the Phase-2 integrate
+(see `../integrated_frame_handoff.md`).
 
-Members (4 total — option a' dropped the front X-rail in 2026-05-05;
-all stock 2020 aluminum extrusion at z = -220):
-  * floor_back_x   — back X-rail at y = TURRET_FRAME_BACK_Y. When the
-                     turret is placed in world via Pos(0, +ARM_R, 0),
-                     this rail's +Y face lands CORNER_GAP forward of
-                     the camera rig's rail A front face — that
-                     boundary is asserted in `../../assembly.py`.
-  * floor_left_y   — left Y-rail at x = -TURRET_FRAME_SIDE_X.
-  * floor_right_y  — right Y-rail at x = +TURRET_FRAME_SIDE_X.
-  * floor_cross_x  — center X-rail at y = TURRET_FRAME_CROSS_Y (= hub
-                     axis Y = 0 in turret-local). Mounting line shared
-                     by the slice (b) hub bearing (x = 0) and the
-                     IDLE/LOAD neighbour-module anchors at x = ±R.
+Members (6 total — option a' dropped the front X-rail in 2026-05-05;
+Phase 2 bumped the back rail +20 mm in Y and added the back-side
+outriggers; all stock 2020 aluminum extrusion):
+  * floor_back_x         — shared back rail at y = TURRET_FRAME_BACK_Y
+                           = +142. The new "rail A" of the integrated
+                           frame: below-* camera clamps grip its +Z
+                           face and the two arch posts (`../arch/`)
+                           rise from its +Z face at x = ±145.
+  * floor_left_y         — left Y-rail at x = -TURRET_FRAME_SIDE_X.
+  * floor_right_y        — right Y-rail at x = +TURRET_FRAME_SIDE_X.
+  * floor_cross_x        — center X-rail at y = TURRET_FRAME_CROSS_Y
+                           (= hub axis Y = 0 in turret-local). Mounting
+                           line shared by the hub bearing (x = 0) and
+                           the IDLE/LOAD neighbour-module anchors at
+                           x = ±R.
+  * floor_outrig_pos_x   — back outrigger at x = +TURRET_FRAME_SIDE_X,
+                           cantilevered past the back rail's +Y face to
+                           land the m03 unit's support footprint past
+                           the arch post line. Bolted to the deck via
+                           a printed foot in a follow-up slice.
+  * floor_outrig_neg_x   — X-mirror of the +X outrigger.
 
 Topology change in option a' (2026-05-05): the front X-rail at
 y = -R (under the new DUMP station at heading 270°) was dropped
 because, with the turret placed at world Pos(0, +ARM_R, 0), that
 rail would sit at world y = 0 over the diverter top column body and
 intercept the brick drop path from DUMP into the diverter column.
-Frame is now a U-shape closed at the back; side rails cantilever
+Frame is a U-shape closed at the back; side rails cantilever
 ~115 mm forward of the cross-rail to where the front rail used to
 terminate. Acceptable because all 4 platforms hang off the spider
 arm at the hub (not the floor frame), the cross-rail still carries
 the hub housing, and the back perimeter (back X-rail + 2 side stubs
 back of cross) remains rigid.
+
+Phase-2 outriggers (2026-05-06): the rig+turret integrate moves
+mass back-of-back-rail (rail D's back cantilever + the back-upper
+camera mass at world y = +362) such that the structure's CoM trends
+toward the deck edge at world y ≈ +330. Two short 2020 outriggers
+butt the back rail's +Y face at x = ±TURRET_FRAME_SIDE_X and reach
+to the deck edge (turret-local y = +TURRET_FRAME_OUTRIG_Y_BACK,
+~+170 mm), so the support footprint (deck-foot mounts at the
+outrigger ends) sits past the arch post line at y = +142 and the
+back of the m03 unit cannot lift off the deck under the cantilever
+moment.
 
 Coordinate frame = turret-local frame (matches `../params.py`):
     origin = hub axis at the cross-rail's top face Z plane
@@ -82,6 +102,18 @@ MEMBER = 20.0                   # 2020 extrusion
 CORNER_GAP = 0.3                # butt-joint gap
 
 
+# --- Phase-2 outrigger reach -------------------------------------------
+#
+# Back-of-back-rail outrigger end Y in turret-local. The deck (m05
+# top_acrylic) is a Ø660 disk at world (0, 0); at world x = ±145
+# (= turret world x with turret centred on the hub axis) the deck's
+# Y boundary is √(330² - 145²) ≈ ±296. Setting the outrigger end at
+# turret-local +170 = world y = +295 puts the outrigger end face ~1
+# mm inside the deck edge so a printed deck-foot in a follow-up
+# slice can bolt cleanly to the deck without cantilevering past it.
+TURRET_FRAME_OUTRIG_Y_BACK = 170.0
+
+
 # --- Derived dimensions ------------------------------------------------
 
 # Back perimeter X-rail overhangs each side rail's centerline by half
@@ -98,6 +130,16 @@ _SIDE_Y_BACK = TURRET_FRAME_BACK_Y - MEMBER / 2 - CORNER_GAP
 _SIDE_Y_LEN = _SIDE_Y_BACK - _SIDE_Y_FRONT
 _SIDE_Y_CENTER = (_SIDE_Y_FRONT + _SIDE_Y_BACK) / 2
 
+# Outriggers: butt the back rail's +Y face with a CORNER_GAP separator
+# and run back to TURRET_FRAME_OUTRIG_Y_BACK. Anchored at x = ±SIDE_X
+# so they line up with the side rails on the back rail's other face,
+# making each (side-rail end / outrigger / back rail) joint a single-
+# X column the printed deck-foot can clamp.
+_OUTRIG_Y_FRONT = TURRET_FRAME_BACK_Y + MEMBER / 2 + CORNER_GAP
+_OUTRIG_Y_BACK = TURRET_FRAME_OUTRIG_Y_BACK
+_OUTRIG_Y_LEN = _OUTRIG_Y_BACK - _OUTRIG_Y_FRONT
+_OUTRIG_Y_CENTER = (_OUTRIG_Y_FRONT + _OUTRIG_Y_BACK) / 2
+
 # Center cross X-rail fits between the side rails (all rails share
 # z = -220 so the cross can't pass through them — same constraint
 # the side rails apply to the front/back X-rails).
@@ -112,6 +154,12 @@ assert _SIDE_Y_LEN > 0, (
     f"side rail length {_SIDE_Y_LEN:.1f} mm ≤ 0; front "
     f"({TURRET_FRAME_FRONT_Y}) must sit forward of back "
     f"({TURRET_FRAME_BACK_Y}) by more than MEMBER + 2·GAP"
+)
+
+assert _OUTRIG_Y_LEN > 0, (
+    f"outrigger length {_OUTRIG_Y_LEN:.1f} mm ≤ 0; outrigger end "
+    f"({TURRET_FRAME_OUTRIG_Y_BACK}) must sit aft of back rail "
+    f"+Y face by more than MEMBER + 2·GAP"
 )
 
 # Cross-rail Y must lie strictly between front and back rail Y so it
@@ -154,6 +202,14 @@ _MEMBERS = {
     ),
     "floor_cross_x": rail_x(
         0.0, _CROSS_X_LEN, TURRET_FRAME_CROSS_Y, TURRET_FRAME_FLOOR_Z
+    ),
+    "floor_outrig_pos_x": rail_y(
+        +TURRET_FRAME_SIDE_X, _OUTRIG_Y_CENTER, _OUTRIG_Y_LEN,
+        TURRET_FRAME_FLOOR_Z,
+    ),
+    "floor_outrig_neg_x": rail_y(
+        -TURRET_FRAME_SIDE_X, _OUTRIG_Y_CENTER, _OUTRIG_Y_LEN,
+        TURRET_FRAME_FLOOR_Z,
     ),
 }
 

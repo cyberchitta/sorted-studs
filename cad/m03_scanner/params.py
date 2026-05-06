@@ -232,45 +232,78 @@ def horizontal_x_roll_deg(normal: tuple[float, float, float]) -> float:
     return math.degrees(math.atan2(num, den))
 
 
-# --- T-frame rail positions ---------------------------------------------
+# --- Rig frame (post Phase-2 integrate) --------------------------------
 #
-# Slice c2 shrink (2026-05-05): rail anchors derived from
-# sizing.compute_geometry() at lens=3.6 / tilt=65 / r=160 using the
-# conservative mount-footprint envelope (rail centerline = vertex
-# coordinate ± rail_clear, where rail_clear = 40.3 = mount_offset (30)
-# + RAIL/2 (10) + CORNER_GAP (0.3); mount_offset = plate_t (5) +
-# plate_half_side (25) is the worst-case extent of the 50 × 50 × 5
-# mount plate behind its vertex along any direction).
+# Phase 2 (2026-05-06) collapsed the rev-3 rig T-frame (rails A/B/C/D
+# + B↔C corner brace) into the integrated topology described in
+# ``integrated_frame_handoff.md``: the turret's back-rail (bumped +20 mm
+# in Y to land at m03-local y = +17) plays the role of the old rail A
+# (it sits at the same Y and at z = -120 top face vs rail A's -121.2),
+# two vertical 2020 posts rise from the back-rail/side-rail corners
+# (``arch/``), two short inward stubs at z = +1188 / m03-local +158.1
+# bridge each post to rail D's east/west faces, and rail D survives as
+# a Y-axis cantilever centred on the arch.
 #
-# T_FRAME_RAIL_A_Y is not in sizing.py's output — the Y position is
-# free along rail A's long axis. Set to the below-left/right plate-
-# back-centre Y so the rail-pad clamp's Y-footprint sits centered on
-# rail A's top face.
+# What's left in this section:
+#   * the 2020 cross-section constant (still imported by clamp helpers)
+#   * the arch post / shared-back-rail anchors (used by ``arch/``,
+#     by below-* and back-upper clamp poses, and by the visibility
+#     audit)
+#   * rail D's centerline / Y-extent (used by ``arch/`` and by the
+#     front-low + back-upper clamp poses)
+#
+# Slice c2 shrink (2026-05-05) sized the rig at r = 160 (lens 3.6 mm,
+# tilt 65°). The clamp-Y of +17.0 below ties the new shared back-rail
+# Y to the below-* plate-back Y at r = 160 (= vertex_y * (1 + plate_t/r)
+# = 16.5 * 1.03125 ≈ 17.0); the clamp's ±10 mm footprint sits centred
+# on the back rail.
 
 # Stock 2020 T-slot extrusion cross-section.
 SKELETON_RAIL_MEMBER = 20.0
 
-T_FRAME_RAIL_A_Z = -131.2                                # rail A centerline Z (height)
-T_FRAME_RAIL_A_TOP_Z = T_FRAME_RAIL_A_Z + SKELETON_RAIL_MEMBER / 2   # = -121.2
-# Below-left/right plate-back centre Y at r=160 (= vertex_y * (1 +
-# plate_t/r) = 16.5 * 1.03125 ≈ 17.0). Centering rail A on this Y
-# puts each below-camera clamp's footprint inside rail A's ±10 mm
-# Y span.
-T_FRAME_RAIL_A_Y = 17.0
-T_FRAME_RAIL_A_FRONT_Y = T_FRAME_RAIL_A_Y - SKELETON_RAIL_MEMBER / 2 # = 7.0
-T_FRAME_RAIL_C_Y = 152.4                                 # rail C centerline Y (depth)
-T_FRAME_RAIL_C_FRONT_Y = T_FRAME_RAIL_C_Y - SKELETON_RAIL_MEMBER / 2 # = 142.4
-#
-# Rail D bumped 3.6 mm above sizing.py's conservative envelope (154.5)
-# to clear the back-upper rail-pad clamp's BASE_L=60 mm along-rail
-# footprint: clamp base extends ±30 along rail C (= world Z), so the
-# clamp body's max Z = mount-back Z (117.77) + 30 = 147.77, and rail
-# D's bottom face must sit ≥ 148.07 (CORNER_GAP from clamp top). Real
-# constraint here is clamp BASE_L/2, not the plate corner extent —
-# sizing.py's `mount_offset = plate_t + plate_half_side = 30` happens
-# to coincide numerically but governs a different geometry.
+# Shared back rail (= turret back-rail post-Phase-2) — m03-local
+# coordinates. The turret's ``frame/`` builder still owns the part;
+# these mirrors are the rig-side handle for clamp-Z derivation.
+SHARED_BACK_RAIL_Y = 17.0                                # = below-* plate-back Y
+SHARED_BACK_RAIL_TOP_Z = -120.0                          # = TURRET_FRAME_FLOOR_Z + MEMBER/2
+
+# Rail D — Y-axis cantilever anchored at the arch crossbar (m03-local
+# y = +17). Front cantilever 167 mm (y = -150 → +17, picks up the
+# front-low clamp at y ≈ -150); back cantilever 133 mm (y = +17 → +150,
+# carries the new back-upper clamp at y ≈ +115.6). The phase-2 back
+# end (y = +150) overshoots the handoff's nominal +145 by 5 mm so the
+# back-upper clamp's BASE_L/2 = 30 mm footprint at y = 115.6 sits
+# fully on rail D with a 4.4 mm margin.
 T_FRAME_RAIL_D_Z = 158.1                                 # rail D centerline Z (height)
 T_FRAME_RAIL_D_BOTTOM_Z = T_FRAME_RAIL_D_Z - SKELETON_RAIL_MEMBER / 2   # = 148.1
+T_FRAME_RAIL_D_TOP_Z = T_FRAME_RAIL_D_Z + SKELETON_RAIL_MEMBER / 2      # = 168.1
+T_FRAME_RAIL_D_Y_FRONT = -150.0                          # 5 mm past front-low vertex (y = -145)
+T_FRAME_RAIL_D_Y_BACK = +150.0                           # carries back-upper clamp at y ≈ 115.6
+
+# Arch posts — vertical 2020s standing on the shared back rail's top
+# face. Bottom face sits CORNER_GAP above the back rail; top face
+# flush with rail D's top face (post grips rail D's east/west face
+# indirectly via the inward stub at z = ARCH_CROSSBAR_Z).
+#
+# X position: the handoff's nominal "back-rail/side-rail corner"
+# (x = ±TURRET_FRAME_SIDE_X = ±145) collides with the below-*
+# camera clamps' BASE_L = 60 footprint along the back rail (clamps
+# centered at x = ±134.7 → footprint x ∈ [±104.7, ±164.7]). Posts
+# move inboard to x = ±90 so the post body x ∈ [±80, ±100] sits
+# 4.7 mm clear of the clamp footprint's inboard end. Posts now land
+# on the back rail in mid-span (~145 mm from each side-rail end);
+# the back rail's 2020 cross-section handles the 290 mm clear span
+# without trouble. Coordinates m03-local.
+ARCH_POST_X = 90.0
+ARCH_POST_Y = SHARED_BACK_RAIL_Y                         # = +17 (back-rail centerline)
+ARCH_POST_Z_BOTTOM = SHARED_BACK_RAIL_TOP_Z + 0.3        # = -119.7
+ARCH_POST_Z_TOP = T_FRAME_RAIL_D_TOP_Z                   # = +168.1
+
+# Arch crossbar plane — the inward stubs sit at this Z (= rail D
+# centerline) and at the post Y; they butt against rail D's east /
+# west faces with CORNER_GAP. Used by ``arch/assembly.py``.
+ARCH_CROSSBAR_Z = T_FRAME_RAIL_D_Z                       # = +158.1
+ARCH_CROSSBAR_Y = ARCH_POST_Y                            # = +17
 
 
 # --- Per-vertex camera-mount placement ---------------------------------
@@ -289,10 +322,16 @@ T_FRAME_RAIL_D_BOTTOM_Z = T_FRAME_RAIL_D_Z - SKELETON_RAIL_MEMBER / 2   # = 148.
 #     +Y     : away from rail (clamp body rises in +Y)
 #     +Z     : right-handed third axis
 #
-# Rail assignments (unchanged from rev-4):
+# Rail assignments (post Phase-2 integrate, 2026-05-06):
 #     front-low  → rail D's -Z (underside) face
-#     back-upper → rail C's -Y face
-#     below-*    → rail A's +Z (top) face
+#     back-upper → rail D's -Z (underside) face  (was rail C's -Y face)
+#     below-*    → shared back rail's +Z (top) face  (was rail A's +Z)
+#
+# Both front-low and back-upper now hang from rail D's underside —
+# same `Rot(-90, -90, 0)` clamp pose, different `mount_in_clamp`
+# rotations driven by their respective vertex positions. The wedge
+# variant of `clamp_mount` (which gripped both rail C's -Y face and
+# rail D's -Z face) is gone with rail C.
 
 _FL_BACK = plate_back_centre_world(VERTEX_FRONT_LOW_POS)
 _BU_BACK = plate_back_centre_world(VERTEX_BACK_UPPER_POS)
@@ -305,16 +344,18 @@ assert abs(_FL_BACK[0]) < 1e-6, (
 )
 assert abs(_BU_BACK[0]) < 1e-6, (
     "back-upper vertex has drifted off the YZ plane; the back-upper "
-    "rail clamp assumes the x-symmetric (centered on rail C) pose"
+    "rail clamp assumes the x-symmetric (centered on rail D) pose"
 )
 
-# Below-left: clamp on rail A's +Z face (top of rail), X-centred under
-# the mount-back centre. `Rot(90, 0, 0)` maps clamp-local +X→world +X
-# (along rail), +Y→world +Z (clamp body rises), +Z→world -Y.
+# Below-left: clamp on the shared back rail's +Z face, X-centred under
+# the mount-back centre. The shared back rail (turret-frame member,
+# bumped to m03-local y = +17 in Phase 2) plays the role of the old
+# rail A. `Rot(90, 0, 0)` maps clamp-local +X→world +X (along rail),
+# +Y→world +Z (clamp body rises), +Z→world -Y.
 RAIL_PAD_CLAMP_BELOW_LEFT_POS = (
     _BL_BACK[0],
     _BL_BACK[1],
-    T_FRAME_RAIL_A_TOP_Z,
+    SHARED_BACK_RAIL_TOP_Z,
 )
 RAIL_PAD_CLAMP_BELOW_LEFT_CLAMP_ROT = Rot(90, 0, 0)
 
@@ -325,24 +366,27 @@ RAIL_PAD_CLAMP_BELOW_LEFT_CLAMP_ROT = Rot(90, 0, 0)
 RAIL_PAD_CLAMP_BELOW_RIGHT_POS = (
     _BR_BACK[0],
     _BR_BACK[1],
-    T_FRAME_RAIL_A_TOP_Z,
+    SHARED_BACK_RAIL_TOP_Z,
 )
 RAIL_PAD_CLAMP_BELOW_RIGHT_CLAMP_ROT = Rot(90, 0, 0)
 
-# Back-upper: clamp on rail C's -Y face (rail C runs along world +Z).
-# Rot(180, 90, 0) maps clamp-local +X→world +Z (along rail C),
-# +Y→world -Y (away from rail toward mount), +Z→world +X.
+# Back-upper: clamp on rail D's -Z (underside) face — Phase-2 swap from
+# the rev-3 corner-wedge that gripped rail C's -Y face plus rail D's -Z
+# face. With rail C demolished, the back-upper hangs below rail D just
+# like the front-low (mirrored about the arch crossbar at y = +17).
+# Same `Rot(-90, -90, 0)` clamp pose; the per-instance vertex pose
+# supplies the lens axis so one printed `clamp_mount(...)` body covers
+# both front-low and back-upper.
 RAIL_PAD_CLAMP_BACK_UPPER_POS = (
-    _BU_BACK[0],                      # x = 0 (rail C is on the YZ plane)
-    T_FRAME_RAIL_C_FRONT_Y,           # rail C -Y face
-    _BU_BACK[2],                      # mount-back Z
+    _BU_BACK[0],                      # x = 0 (rail D centred on YZ plane)
+    _BU_BACK[1],                      # under plate back-face centre
+    T_FRAME_RAIL_D_BOTTOM_Z,          # rail D -Z face
 )
-RAIL_PAD_CLAMP_BACK_UPPER_CLAMP_ROT = Rot(180, 90, 0)
+RAIL_PAD_CLAMP_BACK_UPPER_CLAMP_ROT = Rot(-90, -90, 0)
 
 # Front-low: clamp on rail D's -Z (underside) face. Rail D is the
-# Y-cantilever projecting forward from the rail C ↔ D junction; the
-# camera hangs below rail D with its lens axis tilting back-and-up at
-# the brick centroid.
+# Y-cantilever centred on the arch (Phase 2); the camera hangs below
+# rail D with its lens axis tilting back-and-up at the brick centroid.
 #
 # Rot(-90, -90, 0): clamp-local +X→world +Y (along rail D toward back),
 # +Y→world -Z (down toward mount), +Z→world -X.
@@ -460,38 +504,30 @@ TURRET_FRAME_FLOOR_Z = -130.0                                # turret floor
 # bearing + neighbour-module anchors on a single line.
 TURRET_FRAME_CROSS_Y = TURRET_HUB_Y                          # = 0
 
-# Back X-rail centerline Y in turret-local. Sized so the rail's +Y
-# face is flush with the camera rig's rail A -Y face at world Y = +7
-# (= T_FRAME_RAIL_A_Y - MEMBER/2 = 17 - 10). With the turret placed
-# at world Pos(0, -ARM_R, 0), turret-local +Y face = world face +
-# ARM_R = 7 + 125 = 132, and centerline = 132 - MEMBER/2 = 122.
+# Back X-rail centerline Y in turret-local. Phase 2 (2026-05-06)
+# bumped this +20 mm (122 → 142) so the rail's centerline lands at
+# m03-local y = +17 = SHARED_BACK_RAIL_Y, the below-* plate-back Y.
+# The integrated frame collapses the rev-3 rig's rail A into this
+# turret member: below-left/right clamps now grip the rail's +Z face
+# (still the same X-symmetric pose; the 1.2 mm rise from rail A's
+# top z = -121.2 to back-rail top z = -120 is absorbed by the
+# clamp Z parameter at SHARED_BACK_RAIL_TOP_Z above).
 #
-# Slices c4–c5 raised the turret floor -220 → -180 → -150, narrowing
-# the vertical gap between the turret back rail's top face (z = -140
-# after c5) and the camera rig's rail A bottom face (z = -141.2) to
-# only 1.2 mm. The rev-3/4-era butt-joint constraint that c2 marked
-# "moot" (after the rig shrink lifted rail A to z=-131) is therefore
-# back in force as a Y-axis face-flush constraint: any further floor
-# rise would crash the two rails unless they no longer overlap in Y.
-# Slice c3's interim "+10 mm CORNER_GAP-class margin past the IMAGE
-# platform centroid" (= ARM_R + 10 = 135) put the rail directly under
-# rail A in plan view; c6 (2026-05-05) restored the boundary.
+# Slices c4–c5 raised the turret floor -220 → -180 → -150 to absorb
+# hub-housing shrinks; slice c7 (2026-05-05) raised it further to
+# z = -130. Phase 2's +20 mm Y bump and the demolition of rail A
+# eliminate the prior butt-joint Y constraint between the rev-3 rig
+# rail A (m03-local y = +17) and the rev-4 turret back rail (m03-
+# local y = -3 with corresponding face at +7) — the two rails are
+# now one member at y = +17.
 #
-# Slice c7 (2026-05-05) raised the floor a further 20 mm to z = -130.
-# The back-rail top face is now at z = -110, *above* rail A's bottom
-# face at z = -141.2 — the two rails now overlap in Z fully (turret
-# rail Z [-140, -120] ≈ rail A Z [-141.2, -121.2], 1.2 mm offset) in
-# addition to their existing plan-view overlap. The Y butt-flush
-# constraint (turret back-rail's +Y face at world y=+7 tangent to
-# rail A's -Y face at world y=+7) is what keeps them out of
-# interference; they share a face but no volume.
-#
-# The IMAGE platform's outer +Y edge sits at y = ARM_R + PLATFORM/2 =
-# 185, cantilevering 63 mm past this rail (was 50 mm). Acceptable
-# because the platform hangs off the spider arm at the hub, not off
-# the floor frame; the back rail is a perimeter rigidifier and a
-# mounting line for nothing back-of-hub.
-TURRET_FRAME_BACK_Y = 122.0                                  # rail-A boundary mirror
+# The IMAGE platform's outer +Y edge sits at turret-local y = ARM_R
+# + PLATFORM/2 = 185, cantilevering 43 mm past this rail (= 185 -
+# 142). Acceptable because all 4 platforms hang off the spider arm
+# at the hub, not off the floor frame; the back rail is a perimeter
+# rigidifier and the mounting line for the below-* camera clamps
+# (Phase 2) plus the arch posts (`arch/`) at x = ±145.
+TURRET_FRAME_BACK_Y = 142.0                                  # = SHARED_BACK_RAIL_Y + ARM_R
 
 # Front X-rail centerline Y — DROPPED in option a' (2026-05-05).
 # The new DUMP station lives at turret-local (0, -R, 0); a rail at

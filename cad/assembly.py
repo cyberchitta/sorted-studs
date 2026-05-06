@@ -82,16 +82,14 @@ _MODULE_LOCAL_HEADS = frozenset(
         # m02 internals (held in reserve — m02 returns in a later slice)
         "rotor",
         "stator",
-        # m03 internals (post Phase-1 flat layout, 2026-05-06)
+        # m03 internals (Phase-2 integrated frame, 2026-05-06)
+        "arch",
         "arm",
         "camera_mount_esp32cam",
         "dump_cam",
         "dump_kicker",
-        "frame_gusset_l",
-        "frame_gusset_t",
         "homing",
         "hub",
-        "skeleton_t_frame",
         "turret_platform",
         # shared between m02 (drive), m03 (drive, frame), m05 (frame)
         "drive",

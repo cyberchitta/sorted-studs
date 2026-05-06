@@ -3,14 +3,15 @@
 Two layers compose at the call site:
 
   * **Extrusions.** Each named 2020 stub is currently a solid
-    ``Box(20, 20, L)`` (or a mitered-end Box for the angled brace) —
-    the right primitive for the geometric-iteration loop
-    (interference / clearance) but visually indistinguishable from
-    MDF. ``default_detail`` swaps each for a real V-slot profile
-    from ``bd_warehouse`` at the same pose. Straight rails are
-    detected from their axis-aligned bbox; the mitered ``brace_bc``
-    re-uses the source assembly's ``build_braces(body_factory=…)``
-    hook so the same cutters trim a V-slot body identically.
+    ``Box(20, 20, L)`` — the right primitive for the geometric-
+    iteration loop (interference / clearance) but visually
+    indistinguishable from MDF. ``default_detail`` swaps each for
+    a real V-slot profile from ``bd_warehouse`` at the same pose.
+    Straight rails are detected from their axis-aligned bbox; after
+    the Phase-2 integrate (2026-05-06) every 2020 in the m03 unit
+    is axis-aligned (the rev-3 mitered ``brace_bc`` was demolished
+    with the rest of the rig T-frame), so no `body_factory` hook is
+    needed.
   * **Fasteners.** Visible bolts at high-value joints. Currently the
     two M5 SHCS that bolt the drive bracket foot to the cross-rail's
     top T-slot. Added as new placed parts (no cheap-model counterpart).
@@ -47,10 +48,6 @@ from cad_khana.mechanism.assembly import Assembly, DetailOverride
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from skeleton_t_frame.assembly import (  # noqa: E402
-    BRACE_NAMES,
-    build_braces,
-)
 from drive.assembly import (  # noqa: E402
     BRACKET_BOLT_SPACING_X,
     BRACKET_FOOT_Z,
@@ -69,19 +66,16 @@ _AXIS_TOL = 0.5
 
 _STRAIGHT_EXTRUSION_TARGETS = frozenset(
     {
-        "rail_a", "rail_b", "rail_c", "rail_d",
-        "floor_back_x", "floor_front_x", "floor_left_y",
-        "floor_right_y", "floor_cross_x",
+        # Phase-2 integrated rig (`arch/`)
+        "arch_post_pos_x", "arch_post_neg_x",
+        "arch_stub_pos_x", "arch_stub_neg_x",
+        "rail_d",
+        # Turret floor frame (`frame/`)
+        "floor_back_x", "floor_left_y", "floor_right_y",
+        "floor_cross_x",
+        "floor_outrig_pos_x", "floor_outrig_neg_x",
     }
 )
-
-
-def _vslot_body(length: float) -> Part:
-    """Centred V-slot 20×20 of the requested length, oriented along
-    +Z. Matches ``_box_body`` in the source assembly so the brace
-    miter cutters apply identically.
-    """
-    return Pos(0, 0, -length / 2) * VSlotLinearRail("20x20", length=length)
 
 
 def _vslot_for_axis_aligned_box(part: Part) -> Part:
@@ -117,21 +111,16 @@ def _vslot_for_axis_aligned_box(part: Part) -> Part:
 
 def default_detail(assembly: Assembly) -> dict[str, Part]:
     """Swap-only override map for every 2020 extrusion in the supplied
-    assembly — straight rails (axis-aligned, bbox-derived) and the
-    two mitered braces (rebuilt from the source recipe with a V-slot
-    body factory). Names absent from the assembly are silently
-    skipped, so the bundle stays robust to slice changes that drop
-    or rename a member.
+    assembly. Straight rails are detected by name (axis-aligned, bbox-
+    derived); names absent from the assembly are silently skipped, so
+    the bundle stays robust to slice changes that drop or rename a
+    member.
     """
     overrides: dict[str, Part] = {}
     parts_by_name = {p.name: p for p in assembly.parts}
     for name, placed in parts_by_name.items():
         if name in _STRAIGHT_EXTRUSION_TARGETS:
             overrides[name] = _vslot_for_axis_aligned_box(placed.part)
-    vslot_braces = build_braces(body_factory=_vslot_body)
-    for name in BRACE_NAMES:
-        if name in parts_by_name:
-            overrides[name] = vslot_braces[name]
     return overrides
 
 

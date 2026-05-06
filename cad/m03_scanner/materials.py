@@ -20,27 +20,25 @@ from __future__ import annotations
 
 
 MATERIAL_OF: dict[str, str | None] = {
-    # camera_rig.skeleton_t_frame — 2020 extrusions
-    "rail_a": "aluminium_anodized",
-    "rail_b": "aluminium_anodized",
-    "rail_c": "aluminium_anodized",
+    # camera_rig.arch — Phase-2 integrated frame (2020 extrusions)
+    "arch_post_pos_x": "aluminium_anodized",
+    "arch_post_neg_x": "aluminium_anodized",
+    "arch_stub_pos_x": "aluminium_anodized",
+    "arch_stub_neg_x": "aluminium_anodized",
     "rail_d": "aluminium_anodized",
-    "brace_bc": "aluminium_anodized",
-    # camera_rig: gussets + four ESP32-CAM mounts
-    "gusset_t_ab": "pla_matte",
-    "gusset_l_cd_pos_x": "pla_matte",
-    "gusset_l_cd_neg_x": "pla_matte",
+    # camera_rig: four ESP32-CAM mounts
     "cam_front_low_clamp_mount": "pla_matte",
     "cam_back_upper_clamp_mount": "pla_matte",
     "cam_below_left_clamp_mount": "pla_matte",
     "cam_below_right_clamp_mount": "pla_matte",
     # cam_*_pcb / cam_*_lens — see docstring; not in this dict.
-    # turret.turret_frame — 2020 floor
+    # turret.frame — 2020 floor + outriggers
     "floor_back_x": "aluminium_anodized",
-    "floor_front_x": "aluminium_anodized",
     "floor_left_y": "aluminium_anodized",
     "floor_right_y": "aluminium_anodized",
     "floor_cross_x": "aluminium_anodized",
+    "floor_outrig_pos_x": "aluminium_anodized",
+    "floor_outrig_neg_x": "aluminium_anodized",
     # turret.turret_hub
     "hub_housing": "pla_matte",
     "hub_shaft": "steel",

@@ -1,21 +1,23 @@
 """
 M03 scanner — rig-intrusion visibility analysis.
 
-Quantifies how much of each camera's frame is occupied by the
-T-frame extrusion rails. Goal: minimise — not eliminate —
-structural intrusion as we shrink the rig (smaller tetra radius,
-shorter focal lengths). Output supports comparing (lens × tilt)
-configs by intrusion cost.
+Quantifies how much of each camera's frame is occupied by the rig's
+2020 extrusions. Goal: minimise — not eliminate — structural
+intrusion as we shrink the rig (smaller tetra radius, shorter focal
+lengths). Output supports comparing (lens × tilt) configs by
+intrusion cost.
 
 Run:  .venv/bin/python cad/m03_scanner/visibility.py
 
 Strategy
   1. `build_rig(g)` returns 3D line segments + 20 mm cross-section
-     for rails A/B/C/D and brace_bc. Anchors come from `Geometry`
-     (sizing.py); the only T-frame literal not exposed by Geometry —
-     rail-A's Y position — is imported from
-     `camera_rig.params.T_FRAME_RAIL_A_Y`. Other derived endpoints
-     mirror the formulas in `skeleton_t_frame/assembly.py`.
+     for the Phase-2 integrated frame: shared back rail, two arch
+     posts, two inward stubs at the arch crossbar plane, and rail D
+     as a Y-axis cantilever. Anchors come from `Geometry`
+     (sizing.py) for the rig-level inputs and from
+     `cad/m03_scanner/params.py` for the integrated-frame literals
+     (back-rail Y/Z, arch post X, rail D Y span). If those constants
+     drift, update both.
   2. For each (camera, member): project both endpoints via
      `_camera_basis()`, near-clip at depth ≥ 5 mm (handles rails
      straddling the principal plane), normalise to FOV units, clip
@@ -48,7 +50,19 @@ from sizing import (  # noqa: E402
     _dot,
     compute_geometry,
 )
-from params import T_FRAME_RAIL_A_Y  # noqa: E402
+from params import (  # noqa: E402
+    ARCH_CROSSBAR_Y,
+    ARCH_CROSSBAR_Z,
+    ARCH_POST_X,
+    ARCH_POST_Y,
+    ARCH_POST_Z_BOTTOM,
+    ARCH_POST_Z_TOP,
+    SHARED_BACK_RAIL_Y,
+    SHARED_BACK_RAIL_TOP_Z,
+    T_FRAME_RAIL_D_Y_BACK,
+    T_FRAME_RAIL_D_Y_FRONT,
+    T_FRAME_RAIL_D_Z,
+)
 
 
 # ============================================================================
@@ -57,8 +71,6 @@ from params import T_FRAME_RAIL_A_Y  # noqa: E402
 
 MEMBER_MM = 20.0       # 2020 extrusion cross-section
 CORNER_GAP_MM = 0.3
-_BRACE_LEG_MM = 60.0
-_RAIL_B_BACK_PAST_C_MM = 40.0
 
 
 @dataclass
@@ -70,33 +82,57 @@ class RigMember:
 
 
 def build_rig(g: Geometry) -> list[RigMember]:
-    """Reconstruct the T-frame as 3D segments. Mirrors the formulas
-    in `skeleton_t_frame/assembly.py`; if those constants drift,
-    update both."""
-    a_y = T_FRAME_RAIL_A_Y
-    a_z = g.rail_a_z_mm
-    c_y = g.rail_c_y_mm
-    d_z = g.rail_d_z_mm
-    d_y_front = g.rail_d_y_front_mm
+    """Reconstruct the Phase-2 integrated rig as 3D segments. Mirrors
+    the geometry in `arch/assembly.py` and the shared-back-rail
+    placement in `frame/assembly.py`; if those constants drift,
+    update both. The `g` argument carries the rig sizing (tetra
+    radius / FOV / etc.) shared with the camera placements but no
+    longer drives the rail anchors — those are integrated-frame
+    literals in `params.py`.
+    """
+    # Shared back rail (centerline Z one MEMBER/2 below its top face).
+    back_rail_z = SHARED_BACK_RAIL_TOP_Z - MEMBER_MM / 2
+    back_rail_x_half = ARCH_POST_X + MEMBER_MM / 2
 
-    b_y_front = a_y + MEMBER_MM / 2 + CORNER_GAP_MM
-    b_y_back = c_y + _RAIL_B_BACK_PAST_C_MM
-    c_z_bottom = a_z + MEMBER_MM / 2 + CORNER_GAP_MM
-    c_z_top = d_z + MEMBER_MM / 2          # rail C top end-face flush with rail D top side face
-    d_y_back = c_y - MEMBER_MM / 2 - CORNER_GAP_MM
+    # Arch post Z range (centerlines).
+    post_z_lo, post_z_hi = ARCH_POST_Z_BOTTOM, ARCH_POST_Z_TOP
 
-    # brace_bc: rail B +Z face → rail C -Y face (60 mm legs).
-    brace_p1 = (0.0, c_y - MEMBER_MM / 2 - _BRACE_LEG_MM, a_z + MEMBER_MM / 2)
-    brace_p2 = (0.0, c_y - MEMBER_MM / 2, a_z + MEMBER_MM / 2 + _BRACE_LEG_MM)
+    # Inward stubs at the crossbar plane: between rail D's east/west
+    # face (CORNER_GAP) and the post inner face (CORNER_GAP).
+    stub_x_inner = MEMBER_MM / 2 + CORNER_GAP_MM
+    stub_x_outer = ARCH_POST_X - MEMBER_MM / 2 - CORNER_GAP_MM
 
     return [
-        RigMember("rail_a",
-                  (-g.rail_a_x_half_mm, a_y, a_z),
-                  (+g.rail_a_x_half_mm, a_y, a_z)),
-        RigMember("rail_b", (0.0, b_y_front, a_z), (0.0, b_y_back, a_z)),
-        RigMember("rail_c", (0.0, c_y, c_z_bottom), (0.0, c_y, c_z_top)),
-        RigMember("rail_d", (0.0, d_y_front, d_z), (0.0, d_y_back, d_z)),
-        RigMember("brace_bc", brace_p1, brace_p2),
+        RigMember(
+            "back_rail",
+            (-back_rail_x_half, SHARED_BACK_RAIL_Y, back_rail_z),
+            (+back_rail_x_half, SHARED_BACK_RAIL_Y, back_rail_z),
+        ),
+        RigMember(
+            "arch_post_pos_x",
+            (+ARCH_POST_X, ARCH_POST_Y, post_z_lo),
+            (+ARCH_POST_X, ARCH_POST_Y, post_z_hi),
+        ),
+        RigMember(
+            "arch_post_neg_x",
+            (-ARCH_POST_X, ARCH_POST_Y, post_z_lo),
+            (-ARCH_POST_X, ARCH_POST_Y, post_z_hi),
+        ),
+        RigMember(
+            "arch_stub_pos_x",
+            (+stub_x_inner, ARCH_CROSSBAR_Y, ARCH_CROSSBAR_Z),
+            (+stub_x_outer, ARCH_CROSSBAR_Y, ARCH_CROSSBAR_Z),
+        ),
+        RigMember(
+            "arch_stub_neg_x",
+            (-stub_x_outer, ARCH_CROSSBAR_Y, ARCH_CROSSBAR_Z),
+            (-stub_x_inner, ARCH_CROSSBAR_Y, ARCH_CROSSBAR_Z),
+        ),
+        RigMember(
+            "rail_d",
+            (0.0, T_FRAME_RAIL_D_Y_FRONT, T_FRAME_RAIL_D_Z),
+            (0.0, T_FRAME_RAIL_D_Y_BACK, T_FRAME_RAIL_D_Z),
+        ),
     ]
 
 
