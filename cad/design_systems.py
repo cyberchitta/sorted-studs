@@ -35,6 +35,7 @@ that's missing a tag.
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from enum import Enum
 
@@ -110,12 +111,50 @@ BAUHAUS_COLORS: dict[Enum, Color] = {
     Module.DIVERTER:   Color(0.08, 0.30, 0.75),         # primary blue
 }
 
+CLEAN_COLORS: dict[Enum, Color] = {
+    Role.PRIMARY_STRUCTURE:   Color(0.72, 0.70, 0.67),  # warm light grey (natural aluminium)
+    Role.SECONDARY_STRUCTURE: Color(0.94, 0.91, 0.86),  # cream white printed
+    Role.MECHANISM:           Color(0.80, 0.48, 0.10),  # warm amber
+    Role.OPTICAL_ENVELOPE:    Color(0.10, 0.14, 0.32),  # deep navy
+    Role.CONSUMABLE:          Color(0.96, 0.94, 0.90),  # off-white
+}
+
+MIDNIGHT_COLORS: dict[Enum, Color] = {
+    Role.PRIMARY_STRUCTURE:   Color(0.08, 0.10, 0.14),  # near-black blue-grey
+    Role.SECONDARY_STRUCTURE: Color(0.13, 0.15, 0.21),  # dark slate
+    Role.MECHANISM:           Color(0.12, 0.42, 0.92),  # electric blue
+    Role.OPTICAL_ENVELOPE:    Color(0.02, 0.02, 0.03),  # pure black
+    Role.CONSUMABLE:          Color(0.76, 0.82, 0.94),  # pale blue-white
+}
+
+SIGNAL_COLORS: dict[Enum, Color] = {
+    Role.PRIMARY_STRUCTURE:   Color(0.15, 0.15, 0.15),  # near-black charcoal
+    Role.SECONDARY_STRUCTURE: Color(0.22, 0.22, 0.22),  # dark grey
+    Role.MECHANISM:           Color(0.95, 0.40, 0.02),  # hi-vis orange
+    Role.OPTICAL_ENVELOPE:    Color(0.72, 0.06, 0.06),  # signal red
+    Role.CONSUMABLE:          Color(0.97, 0.96, 0.93),  # safety white
+}
+
+# CyberChitta brand palette — warm gold/bronze/earth tones from
+# www.cyberchitta.cc light theme (--color-neutral / base-300 / gold-decorative / bronze / base-100)
+CYBERCHITTA_COLORS: dict[Enum, Color] = {
+    Role.PRIMARY_STRUCTURE:   Color(0.290, 0.271, 0.251),  # neutral  #4a4540 — warm charcoal
+    Role.SECONDARY_STRUCTURE: Color(0.878, 0.867, 0.847),  # base-300 #e0ddd8 — warm cream-grey
+    Role.MECHANISM:           Color(0.824, 0.667, 0.196),  # gold-dec #d2aa32 — bright gold
+    Role.OPTICAL_ENVELOPE:    Color(0.804, 0.373, 0.176),  # bronze   #cd5f2d — warm bronze
+    Role.CONSUMABLE:          Color(0.969, 0.965, 0.957),  # base-100 #f7f6f4 — warm off-white
+}
+
 
 # --- Active selection -------------------------------------------------
 
-# Single switch for the whole repo. Each module's ``design_systems.py``
-# reads this on import to bind its local ``DESIGN_SYSTEM``.
-DESIGN_SYSTEM_NAME: str = "workshop"   # "workshop" | "bauhaus"
+# Single switch for the whole repo. Readable from the SORTED_STUDS_DS
+# environment variable so render scripts can override it per-process.
+# Each module's ``design_systems.py`` reads this on import to bind its
+# local ``DESIGN_SYSTEM``.
+DESIGN_SYSTEM_NAME: str = os.environ.get(
+    "SORTED_STUDS_DS", "workshop"
+)  # "workshop" | "bauhaus" | "clean" | "midnight" | "signal" | "cyberchitta"
 
 
 # --- compose helper ---------------------------------------------------
