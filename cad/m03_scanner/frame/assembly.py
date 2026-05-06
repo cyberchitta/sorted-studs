@@ -63,9 +63,9 @@ from build123d import Box, Part, Pos
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from turret.params import (  # noqa: E402
+from params import (  # noqa: E402
     TURRET_FRAME_BACK_Y,
     TURRET_FRAME_CROSS_Y,
     TURRET_FRAME_FLOOR_Z,

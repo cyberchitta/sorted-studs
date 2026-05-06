@@ -47,17 +47,17 @@ from cad_khana.mechanism.assembly import Assembly, DetailOverride
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from camera_rig.skeleton_t_frame.assembly import (  # noqa: E402
+from skeleton_t_frame.assembly import (  # noqa: E402
     BRACE_NAMES,
     build_braces,
 )
-from turret.turret_drive.assembly import (  # noqa: E402
+from drive.assembly import (  # noqa: E402
     BRACKET_BOLT_SPACING_X,
     BRACKET_FOOT_Z,
     BRACKET_WALL_T,
     BRACKET_WALL_X_MIN,
 )
-from turret.params import (  # noqa: E402
+from params import (  # noqa: E402
     TURRET_ARM_R,
     TURRET_FRAME_CROSS_Y,
     TURRET_FRAME_FLOOR_Z,

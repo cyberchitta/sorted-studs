@@ -1,46 +1,41 @@
 """
-M03 scanner — rev-4 top-level assembly.
+M03 scanner — flat unit composition + within-unit checks.
 
-Composes two relocatable units in world coordinates and runs only
-cross-unit checks here:
+Composes the merged camera rig + turret in m03-local coordinates
+(brick centroid on the IMAGE platform top face is the origin):
 
-  * camera_rig/ — placed at world identity (rig-local frame matches
-    world). Internal composition + within-unit checks live in
-    `camera_rig/assembly.py`.
-  * turret/ — placed at world `Pos(0, -TURRET_ARM_R, 0)` (turret-local
-    hub axis lands at world `(0, -185, *)`, IMAGE platform centroid at
-    world origin). Internal composition + within-unit checks live in
-    `turret/assembly.py`.
+  * Rig parts placed at m03 identity — rig-local frame matches m03,
+    so all rig coordinates in `params.py` are m03-local-equivalent.
+  * Turret parts placed at m03-local `Pos(0, -TURRET_ARM_R, 0)` so
+    the turret hub axis lands at m03-local `(0, -ARM_R, *)` and the
+    DUMP platform centroid sits at m03-local origin (option a',
+    2026-05-05).
 
-Cross-unit checks at this level:
+Within-unit checks at this level are the union of the previous
+camera-rig and turret internal checks plus every cross-pair between
+them. The earlier rev-3 split (rig + turret as separate relocatable
+units, each with its own `params.py`) was collapsed in the
+integrated-frame Phase-1 refactor — the rig and turret share a
+single bench frame in the upcoming Phase-2 geometry change, so a
+per-unit boundary no longer earns its place. Phase 1 is a pure
+file-layout refactor: the diagnostic JSON here matches the prior
+camera-rig + turret + cross-unit unions modulo part naming (the old
+rig/turret part-name prefixes are unchanged; only the directory
+layout changed).
 
-  1. Sanity: each unit's `WALL_MIN` and `PLATFORM_ACRYLIC_*` mirror
-     the top-level values. Drift is a hard error.
-  2. Interference: every turret part vs every camera-rig part — a
-     comprehensive regression guard. Catches drift in either subsystem
-     that would push a turret part into a rig part.
+Sub-assemblies (all in `cad/m03_scanner/<sub>/`):
+  Rig:    skeleton_t_frame, frame_gusset_t, frame_gusset_l,
+          camera_mount_esp32cam (×4 vertices)
+  Turret: frame, hub, arm, turret_platform (×4 stations), dump_cam,
+          dump_kicker, drive, homing
 
-Slice c2 (2026-05-05) retired the rev-3/rev-4 turret-back-rail-butts-
-rig-rail-A-front-face boundary assertion: with the rig shrunk to
-r=160, rail A's centerline rose from z=-220 to z=-131. Slice c4
-(2026-05-05) then raised the turret floor from -220 to -180 in
-lockstep with the hub housing shrink (100 → 60 mm); slice c5
-(2026-05-05) raised it further to -150. Both units now float above
-SHARED_BENCH_Z=-220 (rig 80 mm, turret 70 mm) until a future floor-
-feet slice bridges the gap.
-
-Slice c6 (2026-05-05) reinstated the boundary as a Y-axis face-flush
-constraint: the c4+c5 floor rise narrowed the vertical gap between
-the turret back rail's top face and rail A's bottom face to 1.2 mm,
-and any further compression would crash them while the two rails
-overlap in plan view. The turret back rail moved from turret-local
-y=135 to y=122 so its +Y face (world y=+7) is flush with rail A's
--Y face (world y=+7); the asserted boundary below catches drift.
-
-The rev-3 single-platform stack (`platform_frame/`,
-`platform_hinge_bearing/`, `platform_acrylic/`) was deleted in the
-rev-3 platform-stack cleanup commit; see
-`superseded_platform_designs.md` for the retrieval commit hash.
+`turret_platform/` keeps its `turret_` prefix because the bare
+`platform` directory name collides with Python's stdlib `platform`
+module — `from platform import assembly` would resolve to the
+already-imported stdlib copy after `cad_khana`/`build123d` load.
+The other turret subs (frame, hub, arm, ...) are safe to drop the
+prefix on; the m05 collisions on `frame`/`drive` are handled by
+`cad/assembly.py`'s per-unit module eviction.
 """
 
 import sys
@@ -54,109 +49,294 @@ from cad_khana.mechanism.check import check
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from params import (  # noqa: E402
-    PLATFORM_ACRYLIC_SIZE,
-    PLATFORM_ACRYLIC_T,
-    SHARED_BENCH_Z,
-    WALL_MIN,
-)
-from camera_rig import assembly as _camera_rig  # noqa: E402
-from camera_rig.params import (  # noqa: E402
-    SKELETON_RAIL_MEMBER as _RIG_RAIL_MEMBER,
-    T_FRAME_RAIL_A_FRONT_Y as _RIG_RAIL_A_FRONT_Y,
-)
-from camera_rig.params import WALL_MIN as _RIG_WALL_MIN  # noqa: E402
-from design_systems import DESIGN_SYSTEM  # noqa: E402
-from turret import assembly as _turret  # noqa: E402
-from turret.params import (  # noqa: E402
-    PLATFORM_ACRYLIC_SIZE as _TURRET_ACRYLIC_SIZE,
-    PLATFORM_ACRYLIC_T as _TURRET_ACRYLIC_T,
+    RAIL_PAD_CLAMP_BACK_UPPER_CLAMP_ROT,
+    RAIL_PAD_CLAMP_BACK_UPPER_POS,
+    RAIL_PAD_CLAMP_BELOW_LEFT_CLAMP_ROT,
+    RAIL_PAD_CLAMP_BELOW_LEFT_POS,
+    RAIL_PAD_CLAMP_BELOW_RIGHT_CLAMP_ROT,
+    RAIL_PAD_CLAMP_BELOW_RIGHT_POS,
+    RAIL_PAD_CLAMP_FRONT_LOW_CLAMP_ROT,
+    RAIL_PAD_CLAMP_FRONT_LOW_POS,
     TURRET_ARM_R,
-    TURRET_FRAME_BACK_Y as _TURRET_BACK_Y,
-    TURRET_FRAME_FLOOR_Z as _TURRET_FLOOR_Z,
+    VERTEX_BACK_UPPER_POS,
+    VERTEX_BELOW_LEFT_POS,
+    VERTEX_BELOW_RIGHT_POS,
+    VERTEX_FRONT_LOW_POS,
+    horizontal_x_roll_deg,
+    lens_axis_unit,
+    rotation_for_normal,
 )
-from turret.params import WALL_MIN as _TURRET_WALL_MIN  # noqa: E402
+from arm import assembly as _arm  # noqa: E402
+from camera_mount_esp32cam import assembly as _camera_mount  # noqa: E402
+from drive import assembly as _drive  # noqa: E402
+from dump_cam import assembly as _dump_cam  # noqa: E402
+from dump_kicker import assembly as _dump_kicker  # noqa: E402
+from frame import assembly as _frame  # noqa: E402
+from frame_gusset_l import assembly as _gusset_l  # noqa: E402
+from frame_gusset_t import assembly as _gusset_t  # noqa: E402
+from homing import assembly as _homing  # noqa: E402
+from hub import assembly as _hub  # noqa: E402
+from skeleton_t_frame import assembly as _skel  # noqa: E402
+from turret_platform import assembly as _turret_platform  # noqa: E402
+
+from design_systems import DESIGN_SYSTEM, color_of  # noqa: E402
+from materials import material_of  # noqa: E402
 
 
-# --- Cross-unit consistency asserts ------------------------------------
+# --- Per-vertex camera specs ------------------------------------------
 #
-# Each unit defines its own copy of project-policy constants so it can
-# stand alone without reaching upward. Drift between copies is caught
-# here.
+# Each instance contributes one printed body (`{prefix}_clamp_mount`)
+# placed at the clamp pose plus one PCB stub (`{prefix}_pcb`) and one
+# M12 lens stub (`{prefix}_lens`) placed at the vertex pose. The
+# printed body's plate orientation is parameterised by `mount_in_clamp`
+# so all four instances derive from one `clamp_mount(...)` function.
 
-assert WALL_MIN == _RIG_WALL_MIN == _TURRET_WALL_MIN, (
-    f"WALL_MIN mismatch across units: top={WALL_MIN}, "
-    f"camera_rig={_RIG_WALL_MIN}, turret={_TURRET_WALL_MIN}"
-)
-assert PLATFORM_ACRYLIC_SIZE == _TURRET_ACRYLIC_SIZE, (
-    f"PLATFORM_ACRYLIC_SIZE mismatch: top={PLATFORM_ACRYLIC_SIZE}, "
-    f"turret={_TURRET_ACRYLIC_SIZE}"
-)
-assert PLATFORM_ACRYLIC_T == _TURRET_ACRYLIC_T, (
-    f"PLATFORM_ACRYLIC_T mismatch: top={PLATFORM_ACRYLIC_T}, "
-    f"turret={_TURRET_ACRYLIC_T}"
-)
-assert _TURRET_FLOOR_Z >= SHARED_BENCH_Z, (
-    f"turret floor Z ({_TURRET_FLOOR_Z}) sinks below SHARED_BENCH_Z "
-    f"({SHARED_BENCH_Z}); the workbench surface is the absolute floor"
-)
-
-# Turret back rail's +Y face is flush with camera rig rail A's -Y
-# face (world y = T_FRAME_RAIL_A_FRONT_Y = +7). Reinstated in slice
-# c6 after c4+c5 narrowed the vertical gap between the two rails
-# (turret rail top z=-140 vs rail A bottom z=-141.2) to 1.2 mm; any
-# further floor rise would crash them while they overlap in plan
-# view. The turret is placed at world y = -TURRET_ARM_R, so the
-# turret-local centerline that maps to a given world face is
-# face_y_world + TURRET_ARM_R - MEMBER/2.
-_EXPECTED_TURRET_BACK_Y = (
-    _RIG_RAIL_A_FRONT_Y + TURRET_ARM_R - _RIG_RAIL_MEMBER / 2
-)
-assert abs(_TURRET_BACK_Y - _EXPECTED_TURRET_BACK_Y) < 1e-6, (
-    f"TURRET_FRAME_BACK_Y ({_TURRET_BACK_Y}) should equal "
-    f"{_EXPECTED_TURRET_BACK_Y} so the turret back rail's +Y face "
-    f"butts rail A's -Y face at world y = {_RIG_RAIL_A_FRONT_Y}; "
-    f"either the turret rail Y or T_FRAME_RAIL_A_Y has drifted"
-)
+_CAMERA_INSTANCES = {
+    "cam_front_low": {
+        "clamp_pos": RAIL_PAD_CLAMP_FRONT_LOW_POS,
+        "clamp_rot": RAIL_PAD_CLAMP_FRONT_LOW_CLAMP_ROT,
+        "vertex_pos": VERTEX_FRONT_LOW_POS,
+    },
+    "cam_back_upper": {
+        "clamp_pos": RAIL_PAD_CLAMP_BACK_UPPER_POS,
+        "clamp_rot": RAIL_PAD_CLAMP_BACK_UPPER_CLAMP_ROT,
+        "vertex_pos": VERTEX_BACK_UPPER_POS,
+    },
+    "cam_below_left": {
+        "clamp_pos": RAIL_PAD_CLAMP_BELOW_LEFT_POS,
+        "clamp_rot": RAIL_PAD_CLAMP_BELOW_LEFT_CLAMP_ROT,
+        "vertex_pos": VERTEX_BELOW_LEFT_POS,
+    },
+    "cam_below_right": {
+        "clamp_pos": RAIL_PAD_CLAMP_BELOW_RIGHT_POS,
+        "clamp_rot": RAIL_PAD_CLAMP_BELOW_RIGHT_CLAMP_ROT,
+        "vertex_pos": VERTEX_BELOW_RIGHT_POS,
+    },
+}
 
 
-# --- Design-system coverage --------------------------------------------
+# --- Naming -----------------------------------------------------------
+
+# Rig.
+SKELETON_NAMES = _skel.SKELETON_T_FRAME_PART_NAMES
+GUSSET_NAMES = ("gusset_t_ab", "gusset_l_cd_pos_x", "gusset_l_cd_neg_x")
+CAMERA_PART_NAMES = tuple(
+    name
+    for prefix in _CAMERA_INSTANCES
+    for name in (f"{prefix}_clamp_mount", f"{prefix}_pcb", f"{prefix}_lens")
+)
+CAMERA_RIG_PART_NAMES = (
+    list(SKELETON_NAMES) + list(GUSSET_NAMES) + list(CAMERA_PART_NAMES)
+)
+
+# Turret.
+TURRET_FRAME_NAMES = _frame.TURRET_FRAME_PART_NAMES
+TURRET_HUB_NAMES = _hub.HUB_PART_NAMES
+TURRET_ARM_NAMES = _arm.ARM_PART_NAMES
+TURRET_STATIONS = ("image", "load", "idle", "dump")
+TURRET_PLATFORM_NAMES = tuple(
+    f"platform_{station}_{sub_name}"
+    for station in TURRET_STATIONS
+    for sub_name, _ in _turret_platform._IMAGE_LOCS
+)
+TURRET_DUMP_CAM_NAMES = (_dump_cam.DUMP_CAM_PART_NAME,)
+TURRET_DUMP_KICKER_NAMES = _dump_kicker.KICKER_PART_NAMES
+TURRET_DRIVE_NAMES = _drive.DRIVE_PART_NAMES
+TURRET_HOMING_NAMES = _homing.HOMING_PART_NAMES
+
+TURRET_PART_NAMES = (
+    list(TURRET_FRAME_NAMES)
+    + list(TURRET_HUB_NAMES)
+    + list(TURRET_ARM_NAMES)
+    + list(TURRET_PLATFORM_NAMES)
+    + list(TURRET_DUMP_CAM_NAMES)
+    + list(TURRET_DUMP_KICKER_NAMES)
+    + list(TURRET_DRIVE_NAMES)
+    + list(TURRET_HOMING_NAMES)
+)
+
+M03_PART_NAMES = list(CAMERA_RIG_PART_NAMES) + list(TURRET_PART_NAMES)
+
+
+# --- Composition builders --------------------------------------------
+
+# Turret placement in m03-local. With option a' (2026-05-05), DUMP
+# centroid lives at turret-local (0, -ARM_R, 0); placing the unit at
+# m03-local (0, -ARM_R, 0) lifts DUMP centroid to m03-local origin
+# and IMAGE centroid to m03-local (0, +ARM_R, 0)... no wait — the
+# turret-internal DUMP is at (0, -R), and applying base=Pos(0, -R, 0)
+# puts DUMP at m03-local (0, -2R, 0). The historical placement here
+# is `Pos(0, -TURRET_ARM_R, 0)` so turret-internal hub (= origin)
+# lands at m03-local (0, -ARM_R, 0); the cad/assembly.py top-level
+# then lifts the whole m03 unit so the rig brick centroid reaches
+# world (0, +250, 1030).
+_TURRET_BASE = Pos(0, -TURRET_ARM_R, 0)
+
+
+def add_camera_rig(a: Assembly) -> Assembly:
+    """Add every camera-rig part in m03-local coordinates."""
+    a = _skel.add_skeleton_t_frame(a)
+    a = _gusset_t.add_frame_gusset_t(a, name=GUSSET_NAMES[0])
+    a = _gusset_l.add_frame_gusset_l(a, name=GUSSET_NAMES[1], side=+1)
+    a = _gusset_l.add_frame_gusset_l(a, name=GUSSET_NAMES[2], side=-1)
+    for prefix, spec in _CAMERA_INSTANCES.items():
+        clamp_loc = Pos(*spec["clamp_pos"]) * spec["clamp_rot"]
+        axis = lens_axis_unit(spec["vertex_pos"])
+        camera_loc = Pos(*spec["vertex_pos"]) * rotation_for_normal(
+            axis, roll_deg=horizontal_x_roll_deg(axis)
+        )
+        mount_in_clamp = _camera_mount.mount_in_clamp_for(**spec)
+        builder = (
+            _camera_mount.wedge_clamp_mount
+            if prefix == "cam_back_upper"
+            else _camera_mount.clamp_mount
+        )
+        a = (
+            a
+            .add(
+                f"{prefix}_clamp_mount",
+                builder(mount_in_clamp=mount_in_clamp),
+                location=clamp_loc,
+                material=material_of(f"{prefix}_clamp_mount"),
+                color=color_of(f"{prefix}_clamp_mount"),
+            )
+            .add(
+                f"{prefix}_pcb", _camera_mount.camera_pcb_stub(),
+                location=camera_loc,
+            )
+            .add(
+                f"{prefix}_lens", _camera_mount.m12_lens_stub(),
+                location=camera_loc,
+            )
+        )
+    return a
+
+
+def add_turret(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
+    """Add every turret part. Parts are placed in turret-local
+    coordinates; `base` is pre-multiplied to lift the unit into the
+    m03-local frame (default: `Pos(0, -TURRET_ARM_R, 0)` via
+    `add_m03`).
+    """
+    a = _frame.add_turret_frame(a, base=base)
+    a = _hub.add_turret_hub(a, base=base)
+    a = _arm.add_turret_arm(a, base=base)
+    for station in TURRET_STATIONS:
+        a = _turret_platform.add_turret_platform(a, station, base=base)
+    a = _dump_cam.add_turret_dump_cam(a, base=base)
+    a = _dump_kicker.add_turret_dump_kicker(a, base=base)
+    a = _drive.add_turret_drive(a, base=base)
+    a = _homing.add_turret_homing(a, base=base)
+    return a
+
+
+def add_m03(a: Assembly) -> Assembly:
+    """Add every rig + turret part in m03-local coordinates."""
+    a = add_camera_rig(a)
+    a = add_turret(a, base=_TURRET_BASE)
+    return a
+
+
+# --- Internal-checks helpers -----------------------------------------
 #
-# Every named camera-rig and turret part must appear in the active
-# design system's tagging dict (`None` allowed for hardware / optical
-# glass / acrylic — those keep their material's intrinsic color). A
-# part added without a tag fails here instead of silently rendering
-# off-palette. Swapping `DESIGN_SYSTEM` to a palette with missing
-# tags also fails here, so the swap surface is loud.
+# Turret-internal known overlaps (kept identical to the prior
+# `turret/assembly.py` `_KNOWN_OVERLAPS`). Each entry is
+# (part_a, part_b, reason); the integrate loop downgrades these
+# pairs to `assert_interference(reason=...)` so they self-fail when
+# the underlying design fix lands and the overlap goes away.
 
-_DESIGN_SYSTEM_PARTS = (
-    list(_camera_rig.CAMERA_RIG_PART_NAMES) + list(_turret.TURRET_PART_NAMES)
+_KNOWN_OVERLAPS = (
+    (
+        "hub_housing",
+        "homing_flag",
+        "homing flag's c4-era Z=-100 was orphaned by c5's housing-top "
+        "rise to -80 (and c7's to -58); the flag now sits inside the "
+        "housing volume. Redesign queued: relocate flag/sensor pair "
+        "out of the now-closed housing-pulley airspace.",
+    ),
+    (
+        "hub_housing",
+        "homing_sensor",
+        "homing sensor's c4-era Z=-100 was orphaned by c5+c7 housing "
+        "rise; sensor body now sits inside the housing volume. Pairs "
+        "with the homing_flag overlap above; same redesign clears both.",
+    ),
+    (
+        "kicker_lever",
+        "dump_cam",
+        "c7 cam rise (-64 → -44 center) lifted cam Z into the lifter-"
+        "beam slab; option a' (2026-05-05) swung the beam from Y=+30 "
+        "to Y=-25, moving the clipping corner from (X=-12, Y=+19) at "
+        "heading ~122° to (X=-19, Y=-14) at heading ~216°. The BASE_R "
+        "clip persists at the new heading. Redesign queued (notched "
+        "beam or smaller cam BASE_R).",
+    ),
 )
-_untagged = [n for n in _DESIGN_SYSTEM_PARTS if n not in DESIGN_SYSTEM.tag_of]
+
+
+def add_m03_internal_checks(a: Assembly) -> Assembly:
+    """Add every within-m03 cross-boundary check.
+
+    Three blocks:
+      1. Rig-internal — every non-skeleton vs every skeleton; gussets
+         vs every non-gusset; gusset-vs-gusset.
+      2. Turret-internal — every pair, with the small allow-list of
+         known overlaps downgraded to `assert_interference(reason=…)`.
+      3. Cross — every turret part vs every rig part.
+    """
+    # 1. Rig-internal.
+    non_skeleton = [n for n in CAMERA_RIG_PART_NAMES if n not in SKELETON_NAMES]
+    for internal in non_skeleton:
+        for member in SKELETON_NAMES:
+            a = a.assert_no_interference(internal, member)
+    non_gusset = [n for n in non_skeleton if n not in GUSSET_NAMES]
+    for gusset in GUSSET_NAMES:
+        for other in non_gusset:
+            a = a.assert_no_interference(gusset, other)
+    for _i, _g1 in enumerate(GUSSET_NAMES):
+        for _g2 in GUSSET_NAMES[_i + 1:]:
+            a = a.assert_no_interference(_g1, _g2)
+
+    # 2. Turret-internal.
+    known = {(p, q) for p, q, _ in _KNOWN_OVERLAPS}
+    known |= {(q, p) for p, q, _ in _KNOWN_OVERLAPS}
+    reasons = {(p, q): r for p, q, r in _KNOWN_OVERLAPS}
+    reasons |= {(q, p): r for p, q, r in _KNOWN_OVERLAPS}
+    for i in range(len(TURRET_PART_NAMES)):
+        for j in range(i + 1, len(TURRET_PART_NAMES)):
+            pair = (TURRET_PART_NAMES[i], TURRET_PART_NAMES[j])
+            if pair in known:
+                a = a.assert_interference(*pair, reason=reasons[pair])
+            else:
+                a = a.assert_no_interference(*pair)
+
+    # 3. Cross — turret × rig.
+    for tp in TURRET_PART_NAMES:
+        for rp in CAMERA_RIG_PART_NAMES:
+            a = a.assert_no_interference(tp, rp)
+
+    return a
+
+
+# --- Design-system coverage ------------------------------------------
+#
+# Every named m03 part must appear in the active design system's
+# tagging dict (`None` allowed for hardware / optical glass / acrylic
+# — those keep their material's intrinsic color). A part added without
+# a tag fails here instead of silently rendering off-palette. Swapping
+# `DESIGN_SYSTEM` to a palette with missing tags also fails here, so
+# the swap surface is loud.
+
+_untagged = [n for n in M03_PART_NAMES if n not in DESIGN_SYSTEM.tag_of]
 assert not _untagged, (
     f"{len(_untagged)} m03 part(s) missing a tag for design system "
     f"'{DESIGN_SYSTEM.name}' in design_systems.py: {_untagged}"
 )
 
 
-# --- Compose the two units in world ------------------------------------
+# --- Standalone assembly ---------------------------------------------
 
-assembly = Assembly()
-
-# Camera rig at world identity. Run the rig's internal composition
-# (no checks added at this level — those live in camera_rig/assembly.py
-# and are exercised by `khana check camera_rig/assembly.py`).
-assembly = _camera_rig.add_camera_rig(assembly)
-
-# Turret placed at world Pos(0, -ARM_R, 0) — translation only.
-_TURRET_WORLD_POSE = Pos(0, -TURRET_ARM_R, 0)
-assembly = _turret.add_turret(assembly, base=_TURRET_WORLD_POSE)
-
-
-# --- Cross-unit interference: every turret part vs every rig part -----
-
-for turret_part in _turret.TURRET_PART_NAMES:
-    for rig_part in _camera_rig.CAMERA_RIG_PART_NAMES:
-        assembly = assembly.assert_no_interference(turret_part, rig_part)
+assembly = add_m03_internal_checks(add_m03(Assembly()))
 
 
 if __name__ == "__main__":

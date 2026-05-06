@@ -48,7 +48,7 @@ from sizing import (  # noqa: E402
     _dot,
     compute_geometry,
 )
-from camera_rig.params import T_FRAME_RAIL_A_Y  # noqa: E402
+from params import T_FRAME_RAIL_A_Y  # noqa: E402
 
 
 # ============================================================================

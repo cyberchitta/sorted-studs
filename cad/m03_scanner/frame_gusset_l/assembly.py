@@ -41,9 +41,9 @@ from cad_khana.mechanism.check import check
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from camera_rig.params import (  # noqa: E402
+from params import (  # noqa: E402
     SKELETON_RAIL_MEMBER,
     T_FRAME_RAIL_C_FRONT_Y,
     T_FRAME_RAIL_D_BOTTOM_Z,

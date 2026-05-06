@@ -24,7 +24,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from assembly import assembly  # noqa: E402
-from camera_rig.params import (  # noqa: E402
+from params import (  # noqa: E402
     VERTEX_BACK_UPPER_POS,
     VERTEX_BELOW_LEFT_POS,
     VERTEX_BELOW_RIGHT_POS,
