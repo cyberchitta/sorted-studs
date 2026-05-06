@@ -280,30 +280,43 @@ T_FRAME_RAIL_D_TOP_Z = T_FRAME_RAIL_D_Z + SKELETON_RAIL_MEMBER / 2      # = 168.
 T_FRAME_RAIL_D_Y_FRONT = -150.0                          # 5 mm past front-low vertex (y = -145)
 T_FRAME_RAIL_D_Y_BACK = +150.0                           # carries back-upper clamp at y ≈ 115.6
 
-# Arch posts — vertical 2020s standing on the shared back rail's top
-# face. Bottom face sits CORNER_GAP above the back rail; top face
-# flush with rail D's top face (post grips rail D's east/west face
-# indirectly via the inward stub at z = ARCH_CROSSBAR_Z).
+# Arch posts — vertical 2020s standing on the side rail's +Z face,
+# just forward of the back rail with a CORNER_GAP butt. Bottom face
+# sits CORNER_GAP above the side rail's top face (= same Z as the
+# back rail's top face — both rails share TURRET_FRAME_FLOOR_Z); top
+# face flush with rail D's top face (post grips rail D's east/west
+# face indirectly via the inward stub at z = ARCH_CROSSBAR_Z).
 #
 # X position: the handoff's nominal "back-rail/side-rail corner"
-# (x = ±TURRET_FRAME_SIDE_X = ±145) collides with the below-*
-# camera clamps' BASE_L = 60 footprint along the back rail (clamps
-# centered at x = ±134.7 → footprint x ∈ [±104.7, ±164.7]). Posts
-# move inboard to x = ±90 so the post body x ∈ [±80, ±100] sits
-# 4.7 mm clear of the clamp footprint's inboard end. Posts now land
-# on the back rail in mid-span (~145 mm from each side-rail end);
-# the back rail's 2020 cross-section handles the 290 mm clear span
-# without trouble. Coordinates m03-local.
-ARCH_POST_X = 90.0
-ARCH_POST_Y = SHARED_BACK_RAIL_Y                         # = +17 (back-rail centerline)
-ARCH_POST_Z_BOTTOM = SHARED_BACK_RAIL_TOP_Z + 0.3        # = -119.7
+# (x = ±TURRET_FRAME_SIDE_X = ±145). The Phase-2 inboard move to
+# ±90 (to dodge the below-* clamp's BASE_L = 60 footprint along the
+# back rail at x ∈ [±104.7, ±164.7]) put posts ~7° off the below-*
+# lens axes — squarely inside FOV. Restoring ±145 puts posts at
+# ~62° off-axis (well outside any reasonable lens FOV) at the cost
+# of moving them off the back rail (clamp body still occupies
+# x ∈ [±104.7, ±164.7], overlapping the post's x ∈ [±135, ±155]).
+#
+# Y position: shifted forward of the back rail by MEMBER + CORNER_GAP
+# so the post body Y ∈ [-13.3, +6.7] sits 0.3 mm forward of the back
+# rail body Y ∈ [+7, +27] (and of the below-* clamp body, which
+# spans the same Y as the rail it grips). Post and clamp share X
+# range but separate in Y, so no 3D overlap. Post lands at the back
+# end of the side rail — its +Y face is flush with the side rail's
+# +Y end face (= TURRET_FRAME_BACK_Y - MEMBER/2 - CORNER_GAP in
+# turret-local = SHARED_BACK_RAIL_Y - MEMBER/2 - CORNER_GAP =
+# +6.7 in m03-local).
+#
+# Coordinates m03-local.
+ARCH_POST_X = 145.0                                      # = TURRET_FRAME_SIDE_X (back-rail/side-rail corner; below)
+ARCH_POST_Y = SHARED_BACK_RAIL_Y - SKELETON_RAIL_MEMBER - 0.3  # = -3.3 (just forward of back rail)
+ARCH_POST_Z_BOTTOM = SHARED_BACK_RAIL_TOP_Z + 0.3        # = -119.7 (side rail top + CORNER_GAP)
 ARCH_POST_Z_TOP = T_FRAME_RAIL_D_TOP_Z                   # = +168.1
 
 # Arch crossbar plane — the inward stubs sit at this Z (= rail D
 # centerline) and at the post Y; they butt against rail D's east /
 # west faces with CORNER_GAP. Used by ``arch/assembly.py``.
 ARCH_CROSSBAR_Z = T_FRAME_RAIL_D_Z                       # = +158.1
-ARCH_CROSSBAR_Y = ARCH_POST_Y                            # = +17
+ARCH_CROSSBAR_Y = ARCH_POST_Y                            # = -3.3 (matches post Y)
 
 
 # --- Per-vertex camera-mount placement ---------------------------------
@@ -548,6 +561,16 @@ TURRET_FRAME_FRONT_Y = -TURRET_ARM_R                          # = -125 (no membe
 # platform's outboard X face at +R+60 is at z = 0, well above the
 # z = -220 side rail).
 TURRET_FRAME_SIDE_X = TURRET_ARM_R + 20.0                     # = 145
+
+# Cross-check: ARCH_POST_X (defined earlier, before TURRET_ARM_R) is
+# the literal 145; assert it tracks TURRET_FRAME_SIDE_X so a future
+# change to TURRET_ARM_R can't silently desync the arch post position
+# from the side-rail corner it lands on.
+assert ARCH_POST_X == TURRET_FRAME_SIDE_X, (
+    f"ARCH_POST_X ({ARCH_POST_X}) must equal TURRET_FRAME_SIDE_X "
+    f"({TURRET_FRAME_SIDE_X}); arch post lands on the back end of the "
+    f"side rail at x = ±TURRET_FRAME_SIDE_X"
+)
 
 
 # --- Turret hub (slice b) ----------------------------------------------

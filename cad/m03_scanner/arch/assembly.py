@@ -10,27 +10,35 @@ rig+turret structural frame described in
 `../integrated_frame_handoff.md`.
 
 Members (5 total — all stock 2020 aluminum extrusion):
-  * arch_post_pos_x — vertical post at m03-local x = +ARCH_POST_X,
-                      y = SHARED_BACK_RAIL_Y. The handoff's nominal
-                      x = ±145 (= back-rail/side-rail corner) clashes
-                      with the below-* clamps' BASE_L footprint along
-                      the back rail; posts move inboard to x = ±90 to
-                      clear it (see ARCH_POST_X in params.py for the
-                      derivation). Bottom face sits CORNER_GAP above
-                      the shared back rail's top face; top face flush
-                      with rail D's top face.
+  * arch_post_pos_x — vertical post at m03-local x = +ARCH_POST_X
+                      (= +TURRET_FRAME_SIDE_X = +145, the back-rail/
+                      side-rail corner X), y = ARCH_POST_Y = -3.3
+                      (just forward of the back rail with CORNER_GAP).
+                      Bottom face sits CORNER_GAP above the side
+                      rail's top face; top face flush with rail D's
+                      top face. The post sits at the back end of the
+                      side rail — its +Y face is flush with the side
+                      rail's +Y end face. Post body shares X range
+                      with the below-* clamp body but separates in Y
+                      (post Y ∈ [-13.3, +6.7] vs clamp Y ∈ [+7, +27])
+                      so they don't share 3D volume; the same Y
+                      separation puts the post ~62° off the below-*
+                      lens axes (well outside any lens FOV).
   * arch_post_neg_x — X-mirror.
   * arch_stub_pos_x — short X-axis stub at z = ARCH_CROSSBAR_Z
-                      (= rail D centerline) running from the +X post's
+                      (= rail D centerline), y = ARCH_CROSSBAR_Y
+                      (= post Y = -3.3) running from the +X post's
                       inner face to rail D's +X face (CORNER_GAP each).
                       Plays the structural role of the demolished
                       rail C top + L-gusset corner.
   * arch_stub_neg_x — X-mirror.
   * rail_d          — Y-axis cantilever at x = 0 (m03-local) spanning
                       y ∈ [T_FRAME_RAIL_D_Y_FRONT, T_FRAME_RAIL_D_Y_BACK]
-                      = [-150, +150]. Front cantilever 167 mm hosts the
-                      front-low clamp at y ≈ -150; back cantilever 133
+                      = [-150, +150]. Front cantilever 147 mm hosts the
+                      front-low clamp at y ≈ -150; back cantilever 153
                       mm hosts the back-upper clamp at y ≈ +115.6.
+                      (Cantilever asymmetry shifted with the arch
+                      crossbar's forward move from y = +17 to y = -3.3.)
 
 Rail D is a continuous member centred on x = 0; the two arch stubs
 butt its east/west faces (CORNER_GAP separator). Posts and rail D are
@@ -42,10 +50,11 @@ L-arm — see the handoff's `Open in Phase 2` block) is realised here
 as **two inward stubs**: a full crossbar would require splitting rail
 D into two pieces or stacking the crossbar above rail D, neither of
 which is clean. The two-stub layout keeps rail D continuous through
-y = +17 and stays out of the below-* camera FOVs (the inward stubs
-sit at z = +1188 world, well above the brick centroid at z = +1030).
+the arch-crossbar Y plane and stays out of the below-* camera FOVs
+(the inward stubs sit at z = +1188 world, well above the brick
+centroid at z = +1030).
 
-Internal printed gussets at the post-to-back-rail and post-to-stub
+Internal printed gussets at the post-to-side-rail and post-to-stub
 joints are deferred to a follow-up slice. T-slot bolts via standard
 2020 corner brackets cover the joints in the meantime; the `khana
 check` butt-joint clearance reads zero volume at every interface
@@ -78,6 +87,7 @@ from params import (  # noqa: E402
     ARCH_POST_Y,
     ARCH_POST_Z_BOTTOM,
     ARCH_POST_Z_TOP,
+    SHARED_BACK_RAIL_Y,
     SKELETON_RAIL_MEMBER,
     T_FRAME_RAIL_D_Y_BACK,
     T_FRAME_RAIL_D_Y_FRONT,
@@ -125,6 +135,23 @@ assert _POST_LEN > 0, (
 assert _STUB_LEN > 0, (
     f"arch stub length {_STUB_LEN:.1f} mm ≤ 0; arch posts at "
     f"x = ±{ARCH_POST_X} too close to rail D (x = 0)"
+)
+
+# Arch post must clear the below-* camera FOV. The post centerline at
+# (±ARCH_POST_X, ARCH_POST_Y) and z up to ARCH_POST_Z_TOP must sit
+# outside the lens cone of each below-* camera. The Y-shift of the
+# post forward of the back rail (post Y = -3.3 vs back-rail Y = +17)
+# is what places the post ~62° off the below-* lens axes; an inboard
+# X (e.g. ±90 with post Y = +17) would put it ~7° off-axis, inside
+# any reasonable FOV. The Y-separation from the back rail (and from
+# the below-* clamp body that grips its top face) is therefore both
+# the structural butt-joint condition and the FOV-clearance condition.
+assert ARCH_POST_Y + MEMBER / 2 + CORNER_GAP <= SHARED_BACK_RAIL_Y - MEMBER / 2, (
+    f"arch post +Y face ({ARCH_POST_Y + MEMBER/2}) must sit "
+    f"≥ CORNER_GAP forward of the back rail's -Y face "
+    f"({SHARED_BACK_RAIL_Y - MEMBER/2}); post Y = {ARCH_POST_Y} "
+    f"is too far back. The same Y-shift keeps the post outside the "
+    f"below-* camera FOV cones."
 )
 
 assert _RAIL_D_LEN > 0, (
