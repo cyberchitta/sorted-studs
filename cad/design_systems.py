@@ -42,6 +42,16 @@ from enum import Enum
 from build123d import Color
 
 
+def _srgb(r: float, g: float, b: float) -> Color:
+    """Express a colour in sRGB 0–1 and convert to linear for Blender Cycles.
+
+    Build123d Color values are passed straight to Blender as linear light
+    intensities. Writing them as sRGB (how humans think about colour) and
+    converting here keeps palette definitions readable and physically correct.
+    """
+    return Color(r ** 2.2, g ** 2.2, b ** 2.2)
+
+
 # --- Functional-role axis ---------------------------------------------
 
 class Role(Enum):
@@ -98,51 +108,51 @@ class DesignSystem:
 # --- Palettes ---------------------------------------------------------
 
 WORKSHOP_COLORS: dict[Enum, Color] = {
-    Role.PRIMARY_STRUCTURE:   Color(0.18, 0.18, 0.20),  # graphite anodized
-    Role.SECONDARY_STRUCTURE: Color(0.18, 0.18, 0.20),  # graphite PLA
-    Role.MECHANISM:           Color(0.95, 0.78, 0.10),  # signal yellow
-    Role.OPTICAL_ENVELOPE:    Color(0.04, 0.04, 0.04),  # matte black
-    Role.CONSUMABLE:          Color(0.92, 0.90, 0.84),  # warm off-white
+    Role.PRIMARY_STRUCTURE:   _srgb(0.18, 0.18, 0.20),  # graphite anodized
+    Role.SECONDARY_STRUCTURE: _srgb(0.18, 0.18, 0.20),  # graphite PLA
+    Role.MECHANISM:           _srgb(0.95, 0.78, 0.10),  # signal yellow
+    Role.OPTICAL_ENVELOPE:    _srgb(0.04, 0.04, 0.04),  # matte black
+    Role.CONSUMABLE:          _srgb(0.92, 0.90, 0.84),  # warm off-white
 }
 
 BAUHAUS_COLORS: dict[Enum, Color] = {
-    Module.SINGULATOR: Color(1.00, 0.85, 0.05),         # primary yellow
-    Module.SCANNER:    Color(0.85, 0.10, 0.10),         # primary red
-    Module.DIVERTER:   Color(0.08, 0.30, 0.75),         # primary blue
+    Module.SINGULATOR: _srgb(1.00, 0.85, 0.05),         # primary yellow
+    Module.SCANNER:    _srgb(0.85, 0.10, 0.10),         # primary red
+    Module.DIVERTER:   _srgb(0.08, 0.30, 0.75),         # primary blue
 }
 
 CLEAN_COLORS: dict[Enum, Color] = {
-    Role.PRIMARY_STRUCTURE:   Color(0.72, 0.70, 0.67),  # warm light grey (natural aluminium)
-    Role.SECONDARY_STRUCTURE: Color(0.94, 0.91, 0.86),  # cream white printed
-    Role.MECHANISM:           Color(0.80, 0.48, 0.10),  # warm amber
-    Role.OPTICAL_ENVELOPE:    Color(0.10, 0.14, 0.32),  # deep navy
-    Role.CONSUMABLE:          Color(0.96, 0.94, 0.90),  # off-white
+    Role.PRIMARY_STRUCTURE:   _srgb(0.72, 0.70, 0.67),  # warm light grey (natural aluminium)
+    Role.SECONDARY_STRUCTURE: _srgb(0.94, 0.91, 0.86),  # cream white printed
+    Role.MECHANISM:           _srgb(0.80, 0.48, 0.10),  # warm amber
+    Role.OPTICAL_ENVELOPE:    _srgb(0.10, 0.14, 0.32),  # deep navy
+    Role.CONSUMABLE:          _srgb(0.96, 0.94, 0.90),  # off-white
 }
 
 MIDNIGHT_COLORS: dict[Enum, Color] = {
-    Role.PRIMARY_STRUCTURE:   Color(0.08, 0.10, 0.14),  # near-black blue-grey
-    Role.SECONDARY_STRUCTURE: Color(0.13, 0.15, 0.21),  # dark slate
-    Role.MECHANISM:           Color(0.12, 0.42, 0.92),  # electric blue
-    Role.OPTICAL_ENVELOPE:    Color(0.02, 0.02, 0.03),  # pure black
-    Role.CONSUMABLE:          Color(0.76, 0.82, 0.94),  # pale blue-white
+    Role.PRIMARY_STRUCTURE:   _srgb(0.08, 0.10, 0.14),  # near-black blue-grey
+    Role.SECONDARY_STRUCTURE: _srgb(0.13, 0.15, 0.21),  # dark slate
+    Role.MECHANISM:           _srgb(0.12, 0.42, 0.92),  # electric blue
+    Role.OPTICAL_ENVELOPE:    _srgb(0.02, 0.02, 0.03),  # pure black
+    Role.CONSUMABLE:          _srgb(0.76, 0.82, 0.94),  # pale blue-white
 }
 
 SIGNAL_COLORS: dict[Enum, Color] = {
-    Role.PRIMARY_STRUCTURE:   Color(0.15, 0.15, 0.15),  # near-black charcoal
-    Role.SECONDARY_STRUCTURE: Color(0.22, 0.22, 0.22),  # dark grey
-    Role.MECHANISM:           Color(0.95, 0.40, 0.02),  # hi-vis orange
-    Role.OPTICAL_ENVELOPE:    Color(0.72, 0.06, 0.06),  # signal red
-    Role.CONSUMABLE:          Color(0.97, 0.96, 0.93),  # safety white
+    Role.PRIMARY_STRUCTURE:   _srgb(0.15, 0.15, 0.15),  # near-black charcoal
+    Role.SECONDARY_STRUCTURE: _srgb(0.22, 0.22, 0.22),  # dark grey
+    Role.MECHANISM:           _srgb(0.95, 0.40, 0.02),  # hi-vis orange
+    Role.OPTICAL_ENVELOPE:    _srgb(0.72, 0.06, 0.06),  # signal red
+    Role.CONSUMABLE:          _srgb(0.97, 0.96, 0.93),  # safety white
 }
 
 # CyberChitta brand palette — warm gold/bronze/earth tones from
 # www.cyberchitta.cc light theme (--color-neutral / base-300 / gold-decorative / bronze / base-100)
 CYBERCHITTA_COLORS: dict[Enum, Color] = {
-    Role.PRIMARY_STRUCTURE:   Color(0.290, 0.271, 0.251),  # neutral  #4a4540 — warm charcoal
-    Role.SECONDARY_STRUCTURE: Color(0.878, 0.867, 0.847),  # base-300 #e0ddd8 — warm cream-grey
-    Role.MECHANISM:           Color(0.824, 0.667, 0.196),  # gold-dec #d2aa32 — bright gold
-    Role.OPTICAL_ENVELOPE:    Color(0.804, 0.373, 0.176),  # bronze   #cd5f2d — warm bronze
-    Role.CONSUMABLE:          Color(0.969, 0.965, 0.957),  # base-100 #f7f6f4 — warm off-white
+    Role.PRIMARY_STRUCTURE:   _srgb(0.290, 0.271, 0.251),  # neutral  #4a4540 — warm charcoal
+    Role.SECONDARY_STRUCTURE: _srgb(0.878, 0.867, 0.847),  # base-300 #e0ddd8 — warm cream-grey
+    Role.MECHANISM:           _srgb(0.824, 0.667, 0.196),  # gold-dec #d2aa32 — bright gold
+    Role.OPTICAL_ENVELOPE:    _srgb(0.804, 0.373, 0.176),  # bronze   #cd5f2d — warm bronze
+    Role.CONSUMABLE:          _srgb(0.969, 0.965, 0.957),  # base-100 #f7f6f4 — warm off-white
 }
 
 
