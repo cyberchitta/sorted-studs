@@ -280,10 +280,10 @@ T_FRAME_RAIL_D_TOP_Z = T_FRAME_RAIL_D_Z + SKELETON_RAIL_MEMBER / 2      # = 168.
 T_FRAME_RAIL_D_Y_FRONT = -150.0                          # 5 mm past front-low vertex (y = -145)
 T_FRAME_RAIL_D_Y_BACK = +150.0                           # carries back-upper clamp at y ≈ 115.6
 
-# Arch posts — vertical 2020s standing on the side rail's +Z face,
-# just forward of the back rail with a CORNER_GAP butt. Bottom face
-# sits CORNER_GAP above the side rail's top face (= same Z as the
-# back rail's top face — both rails share TURRET_FRAME_FLOOR_Z); top
+# Arch posts — vertical 2020s standing on the back outrigger's +Z
+# face, just behind the back rail with a CORNER_GAP butt. Bottom
+# face sits CORNER_GAP above the outrigger's top face (= same Z as
+# the back rail's top face — both share TURRET_FRAME_FLOOR_Z); top
 # face flush with rail D's top face (post grips rail D's east/west
 # face indirectly via the inward stub at z = ARCH_CROSSBAR_Z).
 #
@@ -296,20 +296,53 @@ T_FRAME_RAIL_D_Y_BACK = +150.0                           # carries back-upper cl
 # of moving them off the back rail (clamp body still occupies
 # x ∈ [±104.7, ±164.7], overlapping the post's x ∈ [±135, ±155]).
 #
-# Y position: shifted forward of the back rail by MEMBER + CORNER_GAP
-# so the post body Y ∈ [-13.3, +6.7] sits 0.3 mm forward of the back
-# rail body Y ∈ [+7, +27] (and of the below-* clamp body, which
-# spans the same Y as the rail it grips). Post and clamp share X
-# range but separate in Y, so no 3D overlap. Post lands at the back
-# end of the side rail — its +Y face is flush with the side rail's
-# +Y end face (= TURRET_FRAME_BACK_Y - MEMBER/2 - CORNER_GAP in
-# turret-local = SHARED_BACK_RAIL_Y - MEMBER/2 - CORNER_GAP =
-# +6.7 in m03-local).
+# Y position: shifted BEHIND the back rail far enough that the post
+# body Y ∈ [+45, +65] (post centerline +55) clears (a) the back
+# rail body Y ∈ [+7, +27], (b) the platform sweep envelope around
+# the hub at m03-local (0, -125), and (c) the below-* mount plate's
+# +Y reach. The third constraint is the binding one; details below.
+# Three reasons for behind-vs-forward (the slice that flipped this,
+# 2026-05-07):
+#   1. Platform sweep clearance. The 4-station turret sweeps each
+#      platform's outer corners on a circle of radius
+#      √((R + P/2)² + (P/2)²) = √(185² + 60²) ≈ 194.5 mm around
+#      the hub axis at m03-local (0, -TURRET_ARM_R) = (0, -125). At
+#      the prior y = -3.3, the post inner corner sat 175.2 mm from
+#      the hub — INSIDE the sweep, so the indexing platform crashed
+#      the post. At y = +55, the post inner corner sits ~217 mm
+#      from the hub (≈ 22 mm clear).
+#   2. Below-* mount plate clearance. The 50 × 50 below-* mount
+#      plates sit perpendicular to their lens axes and project onto
+#      world +Y by ~25 mm from the plate centre at world Y ≈ +16.8 —
+#      plate +Y reach ≈ +41.9. A naïve "just behind the back rail"
+#      placement (y = +37.3) put the post body inside that reach;
+#      y = +55 keeps post -Y face at +45, ~3 mm clear of plate +Y
+#      reach plus CORNER_GAP. (Computed in `arch/assembly.py`'s
+#      sweep+plate clearance asserts; see also the 2026-05-07
+#      Progress entry in NEXT_STEPS.md for the diagnostic.)
+#   3. FOV intrusion. Pushing the post farther in +Y moves it deeper
+#      into the back-upper camera's blind hemisphere and farther off
+#      every below-* lens axis — both strict improvements over the
+#      prior y = -3.3 placement.
+# The post no longer rests on the side rail (which ends 0.3 mm
+# forward of the back rail). It now stands on the back outrigger's
+# +Z face — the outrigger spans m03-local y ∈ [+27.3, +65] (turret-
+# local [+152.3, +190]) at x = ±TURRET_FRAME_SIDE_X = ±145, hosting
+# the full post body footprint. The outrigger end overhangs the
+# m05 deck cylinder edge (Ø660 at world (0, 0)) at world x = ±145
+# by ~18 mm; this is acceptable because the deck-foot in a follow-
+# up slice bolts at outrigger mid-span (turret-local y ≈ +171.2 =
+# world y ≈ +296.2, AT the deck cylinder boundary at x=±145) or
+# inboard (e.g. y ≈ +160 = world +285, well inside) — tip-over
+# resistance is set by the bolted foot's position, not the rail
+# end face. The mass past the deck edge (rail D back tail + arch
+# post + back-upper camera) is small and well within the restoring
+# moment from the m03 unit's CoM inboard of the foot.
 #
 # Coordinates m03-local.
-ARCH_POST_X = 145.0                                      # = TURRET_FRAME_SIDE_X (back-rail/side-rail corner; below)
-ARCH_POST_Y = SHARED_BACK_RAIL_Y - SKELETON_RAIL_MEMBER - 0.3  # = -3.3 (just forward of back rail)
-ARCH_POST_Z_BOTTOM = SHARED_BACK_RAIL_TOP_Z + 0.3        # = -119.7 (side rail top + CORNER_GAP)
+ARCH_POST_X = 145.0                                      # = TURRET_FRAME_SIDE_X (outrigger X; below)
+ARCH_POST_Y = 55.0                                       # m03-local; clears back rail + sweep + below-* plate +Y reach
+ARCH_POST_Z_BOTTOM = SHARED_BACK_RAIL_TOP_Z + 0.3        # = -119.7 (outrigger top + CORNER_GAP)
 ARCH_POST_Z_TOP = T_FRAME_RAIL_D_TOP_Z                   # = +168.1
 
 # Arch crossbar plane — the inward stubs sit at this Z (= rail D

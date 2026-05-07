@@ -45,13 +45,18 @@ back of cross) remains rigid.
 Phase-2 outriggers (2026-05-06): the rig+turret integrate moves
 mass back-of-back-rail (rail D's back cantilever + the back-upper
 camera mass at world y = +362) such that the structure's CoM trends
-toward the deck edge at world y ≈ +330. Two short 2020 outriggers
-butt the back rail's +Y face at x = ±TURRET_FRAME_SIDE_X and reach
-to the deck edge (turret-local y = +TURRET_FRAME_OUTRIG_Y_BACK,
-~+170 mm), so the support footprint (deck-foot mounts at the
-outrigger ends) sits past the arch post line at y = +142 and the
-back of the m03 unit cannot lift off the deck under the cantilever
-moment.
+toward the deck edge at world y ≈ +330. Two 2020 outriggers butt
+the back rail's +Y face at x = ±TURRET_FRAME_SIDE_X and reach past
+the deck edge (turret-local y = +TURRET_FRAME_OUTRIG_Y_BACK = +190,
+world y = +315; deck cylinder edge at world y ≈ +296.4 at x=±145).
+Outriggers carry the arch posts (now standing **behind** the back
+rail at turret-local y = +180 = m03-local y = +55) and host the
+deck-foot mounts inboard of mid-span (typically at turret-local
+y ≤ +171, world y ≤ +296.4 — at or inside the deck cylinder edge).
+Post-flip slice (2026-05-07) grew the outrigger 17.7 → 37.7 mm
+along Y so the post body (turret-local y ∈ [+170, +190]) lands
+flush on the outrigger top; the post-Y move was driven by below-*
+mount plate clearance, not just back-rail butt clearance.
 
 Coordinate frame = turret-local frame (matches `../params.py`):
     origin = hub axis at the cross-rail's top face Z plane
@@ -107,11 +112,30 @@ CORNER_GAP = 0.3                # butt-joint gap
 # Back-of-back-rail outrigger end Y in turret-local. The deck (m05
 # top_acrylic) is a Ø660 disk at world (0, 0); at world x = ±145
 # (= turret world x with turret centred on the hub axis) the deck's
-# Y boundary is √(330² - 145²) ≈ ±296. Setting the outrigger end at
-# turret-local +170 = world y = +295 puts the outrigger end face ~1
-# mm inside the deck edge so a printed deck-foot in a follow-up
-# slice can bolt cleanly to the deck without cantilevering past it.
-TURRET_FRAME_OUTRIG_Y_BACK = 170.0
+# Y boundary is √(330² - 145²) ≈ ±296.4. Outrigger end at turret-
+# local +190 = world y = +315 — the outrigger end face overhangs
+# the deck edge at x = ±145 by ~18.6 mm. Sized to give the arch post
+# (now sitting BEHIND the back rail at m03-local y = +55, post body
+# turret-local y ∈ [+170, +190]) a flush landing footprint over its
+# entire 20 mm width. The 2026-05-07 post-flip slice grew this
+# 170 → 190 in two steps:
+#   * 170 → 172.3 (post body originally Y ∈ [+27.3, +47.3] m03-local,
+#     just behind the back rail);
+#   * 172.3 → 190 (post body grew to Y ∈ [+45, +65] m03-local to
+#     clear the below-* mount plate's +Y reach at ~+41.9 m03-local —
+#     the binding constraint that the "just behind the back rail"
+#     placement missed; see arch/assembly.py's plate-clearance
+#     assert).
+# The printed deck-foot in a follow-up slice bolts the outrigger
+# inboard of mid-span (turret-local Y ≤ +171.2 = world y ≤ +296.4,
+# AT the deck cylinder boundary at x = ±145) — typically two bolts
+# at e.g. turret-local Y = +160 and +170 (world +285 and +295,
+# both well inside). The ~18 mm of outrigger past the deck edge
+# is inert: tip-over resistance is set by the bolted foot's
+# position, and the m03 unit's mass-inboard restoring moment
+# vastly exceeds the small mass-past-deck (rail D back tail +
+# arch posts + back-upper camera) tipping moment.
+TURRET_FRAME_OUTRIG_Y_BACK = 190.0
 
 
 # --- Derived dimensions ------------------------------------------------

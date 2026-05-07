@@ -1,44 +1,54 @@
 """
 M03 scanner — arch (Phase-2 integrated frame).
 
-Vertical 2020 posts at the back-rail/side-rail corners that carry
-rail D as a Y-axis cantilever centred on the arch crossbar plane.
-Successor to the rev-3 rig's rail B + rail C + B↔C corner brace +
-the C/D L-junction. Together with the shared back rail (now hosted
-in `../frame/`) and the new rail D position, this is the integrated
-rig+turret structural frame described in
-`../integrated_frame_handoff.md`.
+Vertical 2020 posts standing on the back outriggers behind the back
+rail, carrying rail D as a Y-axis cantilever overhead. Successor to
+the rev-3 rig's rail B + rail C + B↔C corner brace + the C/D L-
+junction. Together with the shared back rail (now hosted in
+`../frame/`) and rail D, this is the integrated rig+turret
+structural frame described in `../integrated_frame_handoff.md`.
 
 Members (5 total — all stock 2020 aluminum extrusion):
   * arch_post_pos_x — vertical post at m03-local x = +ARCH_POST_X
-                      (= +TURRET_FRAME_SIDE_X = +145, the back-rail/
-                      side-rail corner X), y = ARCH_POST_Y = -3.3
-                      (just forward of the back rail with CORNER_GAP).
-                      Bottom face sits CORNER_GAP above the side
-                      rail's top face; top face flush with rail D's
-                      top face. The post sits at the back end of the
-                      side rail — its +Y face is flush with the side
-                      rail's +Y end face. Post body shares X range
-                      with the below-* clamp body but separates in Y
-                      (post Y ∈ [-13.3, +6.7] vs clamp Y ∈ [+7, +27])
-                      so they don't share 3D volume; the same Y
-                      separation puts the post ~62° off the below-*
-                      lens axes (well outside any lens FOV).
+                      (= +TURRET_FRAME_SIDE_X = +145), y = ARCH_POST_Y
+                      = +55 (well behind the back rail). Bottom face
+                      sits CORNER_GAP above the back outrigger's top
+                      face; top face flush with rail D's top face.
+                      Post body footprint Y ∈ [+45, +65] sits on the
+                      outrigger top (`TURRET_FRAME_OUTRIG_Y_BACK`
+                      grew 170 → 190 in turret-local in the same
+                      slice). Post body shares X range with the
+                      below-* clamp body but separates in Y (post
+                      Y ∈ [+45, +65] vs clamp Y ∈ [+7, +27]) and
+                      clears the below-* mount plate's +Y reach
+                      (≈ +41.9 — see plate-clearance assert below).
+                      The Y-shift puts the post (a) outside every
+                      lens cone (≈ 54° off the back-upper lens axis,
+                      the binding "in FOV?" test; well outside the
+                      below-* and front-low cones too) and (b)
+                      outside the indexing platform sweep envelope
+                      (post inner corner ~217 mm from hub vs sweep
+                      envelope 194.5 mm — sweep-clearance assert
+                      below).
   * arch_post_neg_x — X-mirror.
   * arch_stub_pos_x — short X-axis stub at z = ARCH_CROSSBAR_Z
                       (= rail D centerline), y = ARCH_CROSSBAR_Y
-                      (= post Y = -3.3) running from the +X post's
+                      (= post Y = +55) running from the +X post's
                       inner face to rail D's +X face (CORNER_GAP each).
                       Plays the structural role of the demolished
                       rail C top + L-gusset corner.
   * arch_stub_neg_x — X-mirror.
   * rail_d          — Y-axis cantilever at x = 0 (m03-local) spanning
                       y ∈ [T_FRAME_RAIL_D_Y_FRONT, T_FRAME_RAIL_D_Y_BACK]
-                      = [-150, +150]. Front cantilever 147 mm hosts the
-                      front-low clamp at y ≈ -150; back cantilever 153
-                      mm hosts the back-upper clamp at y ≈ +115.6.
-                      (Cantilever asymmetry shifted with the arch
-                      crossbar's forward move from y = +17 to y = -3.3.)
+                      = [-150, +150]. With the arch crossbar at
+                      y = +55, both camera clamps hang FORWARD of the
+                      arch on a 205 mm front cantilever: front-low at
+                      y ≈ -150 (tip), back-upper at y ≈ +115.6
+                      (60 mm forward of the arch). The 95 mm tail
+                      past the arch (to y = +150) carries the back-
+                      upper clamp's BASE_L = 60 mm footprint that
+                      extends past the plate-back (+115.6 → +145.6)
+                      with 4.4 mm of bolt-engagement margin past it.
 
 Rail D is a continuous member centred on x = 0; the two arch stubs
 butt its east/west faces (CORNER_GAP separator). Posts and rail D are
@@ -70,6 +80,7 @@ Members are stock 2020 aluminum extrusion — bought, not printed —
 no `inspect()` calls.
 """
 
+import math
 import sys
 from pathlib import Path
 
@@ -87,16 +98,29 @@ from params import (  # noqa: E402
     ARCH_POST_Y,
     ARCH_POST_Z_BOTTOM,
     ARCH_POST_Z_TOP,
+    CAMERA_MOUNT_PLATE_T,
+    PLATFORM_ACRYLIC_SIZE,
     SHARED_BACK_RAIL_Y,
     SKELETON_RAIL_MEMBER,
     T_FRAME_RAIL_D_Y_BACK,
     T_FRAME_RAIL_D_Y_FRONT,
     T_FRAME_RAIL_D_Z,
+    TURRET_ARM_R,
     VERTEX_BACK_UPPER_POS,
+    VERTEX_BELOW_LEFT_POS,
+    VERTEX_BELOW_RIGHT_POS,
     VERTEX_FRONT_LOW_POS,
+    lens_axis_unit,
 )
 from design_systems import color_of  # noqa: E402
 from materials import material_of  # noqa: E402
+
+# Plate edge-grip half-extent — half the bonded mount plate's longest
+# in-plane dimension. The plate is square at PLATE_SIZE = 50 (private
+# to camera_mount_esp32cam); we mirror the half-size here to drive the
+# below-* plate-clearance assert below. If PLATE_SIZE in
+# camera_mount_esp32cam ever changes, update this mirror in lockstep.
+_MIRROR_PLATE_HALF = 25.0
 
 
 # --- Member cross-section ----------------------------------------------
@@ -137,21 +161,83 @@ assert _STUB_LEN > 0, (
     f"x = ±{ARCH_POST_X} too close to rail D (x = 0)"
 )
 
-# Arch post must clear the below-* camera FOV. The post centerline at
-# (±ARCH_POST_X, ARCH_POST_Y) and z up to ARCH_POST_Z_TOP must sit
-# outside the lens cone of each below-* camera. The Y-shift of the
-# post forward of the back rail (post Y = -3.3 vs back-rail Y = +17)
-# is what places the post ~62° off the below-* lens axes; an inboard
-# X (e.g. ±90 with post Y = +17) would put it ~7° off-axis, inside
-# any reasonable FOV. The Y-separation from the back rail (and from
-# the below-* clamp body that grips its top face) is therefore both
-# the structural butt-joint condition and the FOV-clearance condition.
-assert ARCH_POST_Y + MEMBER / 2 + CORNER_GAP <= SHARED_BACK_RAIL_Y - MEMBER / 2, (
-    f"arch post +Y face ({ARCH_POST_Y + MEMBER/2}) must sit "
-    f"≥ CORNER_GAP forward of the back rail's -Y face "
-    f"({SHARED_BACK_RAIL_Y - MEMBER/2}); post Y = {ARCH_POST_Y} "
-    f"is too far back. The same Y-shift keeps the post outside the "
-    f"below-* camera FOV cones."
+# Arch post must clear the back rail body (butt joint with CORNER_GAP)
+# AND every below-* / back-upper lens cone. After the 2026-05-07 post-
+# flip slice the post sits BEHIND the back rail (post Y = +37.3 vs
+# back-rail Y = +17) on the back outrigger; pushing the post deeper in
+# +Y both keeps it out of every camera's FOV (post inner corner ≥ 76°
+# off every lens axis) and outside the platform sweep envelope (the
+# separate sweep-clearance assertion below). The Y-separation from
+# the back rail is therefore the structural butt-joint condition; the
+# FOV consequence and the sweep-clearance consequence both follow.
+_FP_EPS = 1e-9
+assert ARCH_POST_Y - MEMBER / 2 + _FP_EPS >= SHARED_BACK_RAIL_Y + MEMBER / 2 + CORNER_GAP, (
+    f"arch post -Y face ({ARCH_POST_Y - MEMBER/2}) must sit "
+    f"≥ CORNER_GAP behind the back rail's +Y face "
+    f"({SHARED_BACK_RAIL_Y + MEMBER/2}); post Y = {ARCH_POST_Y} "
+    f"is too far forward. The +Y Y-shift behind the back rail keeps "
+    f"the post outside every camera FOV cone and outside the "
+    f"indexing platform sweep envelope."
+)
+
+# Platform sweep clearance. The 4-station turret rotates each platform
+# (PLATFORM_ACRYLIC_SIZE square, centred on radial = TURRET_ARM_R)
+# through 360° around the hub axis at m03-local (0, -TURRET_ARM_R).
+# A platform's outer corners trace a circle of radius
+# √((R + P/2)² + (P/2)²) around the hub; the post inner corner
+# (closest face of post to the hub) must sit outside that circle plus
+# a clearance margin. Pre-flip (post Y = -3.3) this failed: post
+# inner corner sat 175.2 mm from hub vs 194.5 mm sweep envelope
+# (≈ 19 mm interference). Post-flip (post Y = +55) the post inner
+# corner sits ~217 mm from hub, ~22 mm clear.
+_SWEEP_R = math.sqrt(
+    (TURRET_ARM_R + PLATFORM_ACRYLIC_SIZE / 2) ** 2
+    + (PLATFORM_ACRYLIC_SIZE / 2) ** 2
+)
+_HUB_M03_Y = -TURRET_ARM_R
+_POST_INNER_HUB_DIST = math.sqrt(
+    (ARCH_POST_X - MEMBER / 2) ** 2
+    + (ARCH_POST_Y - MEMBER / 2 - _HUB_M03_Y) ** 2
+)
+SWEEP_CLEARANCE = 5.0
+assert _POST_INNER_HUB_DIST >= _SWEEP_R + SWEEP_CLEARANCE, (
+    f"arch post inner corner sits {_POST_INNER_HUB_DIST:.1f} mm from "
+    f"the hub axis at m03-local (0, {_HUB_M03_Y}); must be "
+    f"≥ {_SWEEP_R + SWEEP_CLEARANCE:.1f} mm (sweep envelope "
+    f"{_SWEEP_R:.1f} mm + {SWEEP_CLEARANCE} mm clearance) so the "
+    f"indexing turret platforms don't crash the post"
+)
+
+# Below-* mount plate clearance. The 50 × 50 below-left/right mount
+# plates sit perpendicular to a tilted lens axis; their +Y reach in
+# world (= m03-local for the m03 unit at world identity for rig parts)
+# overshoots the back rail's +Y face by ~24 mm. The arch post -Y face
+# must clear that overshoot plus CORNER_GAP. Bound the +Y reach
+# conservatively with the tightest enclosing rectangle: plate centre
+# at vertex - 0.5*plate_t*axis, then add (plate_half * sqrt(1-axis_y²)
+# + 0.5*plate_t*|axis_y|) along world +Y. Same formula for both
+# below-left and below-right since they share |axis_y|.
+def _below_plate_y_reach(vertex_pos):
+    axis = lens_axis_unit(vertex_pos)
+    plate_centre_y = vertex_pos[1] - 0.5 * CAMERA_MOUNT_PLATE_T * axis[1]
+    in_plane_y = math.sqrt(max(0.0, 1.0 - axis[1] * axis[1]))
+    return (
+        plate_centre_y
+        + _MIRROR_PLATE_HALF * in_plane_y
+        + 0.5 * CAMERA_MOUNT_PLATE_T * abs(axis[1])
+    )
+
+_PLATE_Y_REACH = max(
+    _below_plate_y_reach(VERTEX_BELOW_LEFT_POS),
+    _below_plate_y_reach(VERTEX_BELOW_RIGHT_POS),
+)
+assert ARCH_POST_Y - MEMBER / 2 >= _PLATE_Y_REACH + CORNER_GAP - _FP_EPS, (
+    f"arch post -Y face ({ARCH_POST_Y - MEMBER/2:.3f}) must sit "
+    f"≥ CORNER_GAP behind the below-* mount plate's +Y reach "
+    f"({_PLATE_Y_REACH:.3f}); the 50×50 plate at the tilted below-* "
+    f"vertex projects ~25 mm in world +Y from its centre, well past "
+    f"a naive 'just behind the back rail' post placement. Move the "
+    f"post further in +Y or shrink/reshape the mount plate."
 )
 
 assert _RAIL_D_LEN > 0, (
