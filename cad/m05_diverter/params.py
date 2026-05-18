@@ -60,15 +60,28 @@ BRACKET_HOR_OFFSET = 22.0
 # inner/outer vertex direction). Top face at z=0 like every other
 # horizontal frame member.
 #
-# Each radial runs as a single through-line from just outside the
-# bearing-spider hub out to the outer-hex vertex. The outer end
-# reserves BRACKET_HOR_OFFSET for the outer-vertex bracket. The
-# inner end sits at RAIL_INNER_R — far enough inside the inner-hex
-# vertex that the spider saddle's grip zone
+# Each radial is split at the inner-hex vertex into two compression
+# segments so the inner-hex through-column at R_VERT_INNER backs
+# both adjacent rail ends. The inner-vertex bracket reserves
+# BRACKET_HOR_OFFSET on each side along the rail axis, mirroring how
+# the outer-vertex bracket reserves a stub on the outer side.
+#
+#                    spider          inner-vertex          outer-vertex
+#  r:  90 ─────────  saddle ──────── bracket ─────────── bracket ─────── 289.77
+#       └ radial_inner_k ─┘         ├─ radial_outer_k ───────────────────┘
+#       (RAIL_INNER_R                (R_VERT_INNER +              (RAIL_OUTER_R)
+#        → R_VERT_INNER -             BRACKET_HOR_OFFSET
+#        BRACKET_HOR_OFFSET)
+#
+# Outer end of `radial_outer_k` reserves BRACKET_HOR_OFFSET for the
+# outer-vertex bracket. Inner end of `radial_inner_k` sits at
+# RAIL_INNER_R — far enough inside the inner-hex vertex that the
+# spider saddle's grip zone
 # ([RAIL_INNER_R, RAIL_INNER_R + SADDLE_GRIP_LEN] in the ramp
-# sub-assembly) stays clear of the inner-hex vertex region where
-# inner_vertex_bracket sits. This also shrinks the spider's saddle
-# cantilever dramatically, which was the point.
+# sub-assembly) lands on this inner segment and stays well clear of
+# the inner-vertex bracket's hub region. Each segment is in pure
+# compression between its two anchors — no rail-as-beam under
+# basket load.
 #
 # RAIL_INNER_R lower bound = ramp_mechanism's SPIDER_HUB_OD/2 (≈ 85.5
 # mm for the current column geometry) + a small clearance. Hardcoded
@@ -76,8 +89,10 @@ BRACKET_HOR_OFFSET = 22.0
 # sub-assembly; a cross-sub-assembly assert in the top-level
 # `assembly.py` catches drift if the spider hub grows past this.
 RAIL_SIZE = 20.0
-RAIL_INNER_R = 90.0                                   # physical inner end
-RAIL_OUTER_R = R_VERT_OUTER - BRACKET_HOR_OFFSET      # ≈ 289.77 — physical outer end
+RAIL_INNER_R = 90.0                                            # physical inner end of inner segment
+RAIL_INNER_OUTER_END_R = R_VERT_INNER - BRACKET_HOR_OFFSET     # ≈ 139.66 — inner segment butts here
+RAIL_OUTER_INNER_END_R = R_VERT_INNER + BRACKET_HOR_OFFSET     # ≈ 183.66 — outer segment starts here
+RAIL_OUTER_R = R_VERT_OUTER - BRACKET_HOR_OFFSET               # ≈ 289.77 — physical outer end
 
 
 # Mixed floor layout. Each entry: (center_azimuth_deg, N_size, notch_set).

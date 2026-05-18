@@ -150,18 +150,21 @@ assembly = assembly.assert_no_interference("basket_000_06", "ramp")
 # 6-fold rotational symmetry but the mixed basket layout doesn't, so
 # every basket is checked against all six frame copies. This is also
 # the authoritative test of the notch cutouts against the real
-# outer-hex through-columns (outer_vert_k) — if a notch is missing
-# or misaligned, basket-vs-outer_vert interference fails here.
+# through-columns at both radii (outer_vert_k / inner_vert_k) — if a
+# notch is missing or misaligned, basket-vs-*_vert interference
+# fails here.
 for name in basket_names:
     for k in range(6):
         assembly = (
             assembly
             .assert_no_interference(name, f"outer_horiz_{k}")
             .assert_no_interference(name, f"outer_vert_{k}")
+            .assert_no_interference(name, f"inner_vert_{k}")
             .assert_no_interference(name, f"outer_vertex_bracket_{k}")
             .assert_no_interference(name, f"inner_horiz_{k}")
             .assert_no_interference(name, f"inner_vertex_bracket_{k}")
-            .assert_no_interference(name, f"radial_{k}")
+            .assert_no_interference(name, f"radial_inner_{k}")
+            .assert_no_interference(name, f"radial_outer_{k}")
         )
 
 # Column-side vs inner hex + radial rails (the frame parts radially
@@ -178,29 +181,45 @@ for name in basket_names:
 # relax this to assert_interference with a reason.
 for k in range(6):
     inner = f"inner_horiz_{k}"
-    radial = f"radial_{k}"
+    radial_in = f"radial_inner_{k}"
+    radial_out = f"radial_outer_{k}"
     assembly = (
         assembly
         .assert_no_interference("column", inner)
         .assert_no_interference("ring_bearing", inner)
         .assert_no_interference("bearing_spider", inner)
-        .assert_no_interference("column", radial)
-        .assert_no_interference("ring_bearing", radial)
-        .assert_no_interference("bearing_spider", radial)
+        .assert_no_interference("column", radial_in)
+        .assert_no_interference("column", radial_out)
+        .assert_no_interference("ring_bearing", radial_in)
+        .assert_no_interference("ring_bearing", radial_out)
+        # Spider saddle clamps the inboard rail segment's inner end
+        # (r ∈ [90, 110]); the outer segment is well past the spider
+        # hub. Tangent-contact on the saddle reads as zero clearance
+        # / zero overlap volume — passes today; will tighten when
+        # the saddle is modeled as a 3D clamp.
+        .assert_no_interference("bearing_spider", radial_in)
+        .assert_no_interference("bearing_spider", radial_out)
         # Lower-floor trap-open intrusion vs the frame members radially
         # closest to the axis. Inner hex + rails sit at z ∈ [-20, 0]
         # (top face at z=0); the intrusion sweeps up through the axis
         # region and must clear them.
         .assert_no_interference("lower_trap_open", inner)
-        .assert_no_interference("lower_trap_open", radial)
+        .assert_no_interference("lower_trap_open", radial_in)
+        .assert_no_interference("lower_trap_open", radial_out)
     )
 
-# Ramp extends radially past the inner hex (tip at x≈147) but stays
-# at z ≥ 50 while the inner hex sits at z ∈ [-20, 0]. Still worth
-# asserting in case either moves.
+# Ramp extends radially past the inner hex (tip at r≈146.4) but
+# stays at z ≥ 50 while the inner hex sits at z ∈ [-20, 0]. Inner
+# through-columns at r=R_VERT_INNER≈161.66 (inner face at 151.66)
+# clear the tip by ≈5.3 mm radially at any column rotation; the
+# nearest pair (V_0 / V_5) sits 30° off the +X delivery azimuth, so
+# the ramp tip is far in plan when the ramp is aimed at a basket
+# center. Still worth asserting in case any of these radii move.
 for k in range(6):
     assembly = assembly.assert_no_interference("ramp", f"inner_horiz_{k}")
-    assembly = assembly.assert_no_interference("ramp", f"radial_{k}")
+    assembly = assembly.assert_no_interference("ramp", f"radial_inner_{k}")
+    assembly = assembly.assert_no_interference("ramp", f"radial_outer_{k}")
+    assembly = assembly.assert_no_interference("ramp", f"inner_vert_{k}")
 
 
 if __name__ == "__main__":

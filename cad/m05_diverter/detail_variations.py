@@ -3,17 +3,19 @@
 One layer for now:
 
   * **Extrusions.** Every named 2020 in the frame — through-columns
-    (``outer_vert_k``), outer hex edges (``outer_horiz_k``), inner
-    hex edges (``inner_horiz_k``), and radials (``radial_k``) — is
-    currently a solid ``Box`` in part-local axes. ``default_detail``
-    swaps each for a real V-slot profile from ``bd_warehouse`` at
-    the same part-local pose; the existing ``PlacedPart.location``
-    (which carries the per-floor + per-azimuth rotation) flows
-    through untouched.
+    at both hex radii (``outer_vert_k`` / ``inner_vert_k``), outer
+    hex edges (``outer_horiz_k``), inner hex edges
+    (``inner_horiz_k``), and the split radials
+    (``radial_inner_k`` / ``radial_outer_k``) — is currently a
+    solid ``Box`` in part-local axes. ``default_detail`` swaps each
+    for a real V-slot profile from ``bd_warehouse`` at the same
+    part-local pose; the existing ``PlacedPart.location`` (which
+    carries the per-floor + per-azimuth rotation) flows through
+    untouched.
 
 The 4-floor tower instances every horizontal/radial under a
-``f{idx}_{role}__`` floor prefix; through-columns are tower-global
-and carry no prefix. ``basename_of(...)`` strips the prefix so the
+``f{idx}_{role}__`` floor prefix; through-columns at both radii are
+tower-global and carry no prefix. ``basename_of(...)`` strips the prefix so the
 target match is one set of basenames regardless of floor count.
 
 Fasteners (vertex-bracket bolts, motor mount bolts, joint hardware)
@@ -45,9 +47,11 @@ _AXIS_TOL = 0.5
 
 _STRAIGHT_EXTRUSION_BASENAMES = frozenset(
     [f"outer_vert_{k}" for k in range(6)]
+    + [f"inner_vert_{k}" for k in range(6)]
     + [f"outer_horiz_{k}" for k in range(6)]
     + [f"inner_horiz_{k}" for k in range(6)]
-    + [f"radial_{k}" for k in range(6)]
+    + [f"radial_inner_{k}" for k in range(6)]
+    + [f"radial_outer_{k}" for k in range(6)]
 )
 
 

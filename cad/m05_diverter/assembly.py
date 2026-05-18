@@ -250,10 +250,16 @@ for lower_idx in range(3):
 
 # Disc rests on the through-column tops (tangent contact at z = TOP_VERT_Z)
 # and clears the top floor's central column body + rotating collar through
-# its central aperture.
+# its central aperture. Inner-hex through-columns sit at r ≈ 162, well
+# inside the disc OD/2=330 and well outside the aperture R=75, so they
+# pass under the disc and contribute to its support too.
 top_pre = prefixes[3]
 for k in range(6):
-    assembly = assembly.assert_no_interference("top_acrylic", f"outer_vert_{k}")
+    assembly = (
+        assembly
+        .assert_no_interference("top_acrylic", f"outer_vert_{k}")
+        .assert_no_interference("top_acrylic", f"inner_vert_{k}")
+    )
 assembly = assembly.assert_no_interference("top_acrylic", f"{top_pre}column")
 
 
@@ -292,11 +298,14 @@ for other in (
 
 # Motor mount vs base-floor frame radials and inner hex (closest frame
 # members radially — outer hex / corner columns are ≥ 270 mm from
-# axis, well outside the mount's 89 mm reach).
+# axis, well outside the mount's 89 mm reach). Only the inboard
+# radial segment overlaps the mount's reach; the outboard segment
+# starts at r ≈ 183, well past the mount.
 for k in range(6):
     assembly = (
         assembly
-        .assert_no_interference(mount, f"{base_pre}radial_{k}")
+        .assert_no_interference(mount, f"{base_pre}radial_inner_{k}")
+        .assert_no_interference(mount, f"{base_pre}radial_outer_{k}")
         .assert_no_interference(mount, f"{base_pre}inner_horiz_{k}")
     )
 

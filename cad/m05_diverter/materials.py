@@ -35,9 +35,11 @@ def _basket_basenames() -> list[str]:
 MATERIAL_OF: dict[str, str | None] = {
     # 2020 extrusions — anodized aluminium
     **{f"outer_vert_{k}": "aluminium_anodized" for k in range(6)},
+    **{f"inner_vert_{k}": "aluminium_anodized" for k in range(6)},
     **{f"outer_horiz_{k}": "aluminium_anodized" for k in range(6)},
     **{f"inner_horiz_{k}": "aluminium_anodized" for k in range(6)},
-    **{f"radial_{k}": "aluminium_anodized" for k in range(6)},
+    **{f"radial_inner_{k}": "aluminium_anodized" for k in range(6)},
+    **{f"radial_outer_{k}": "aluminium_anodized" for k in range(6)},
     # Printed brackets / mechanism / mount — PLA matte
     **{f"outer_vertex_bracket_{k}": "pla_matte" for k in range(6)},
     **{f"inner_vertex_bracket_{k}": "pla_matte" for k in range(6)},

@@ -17,7 +17,8 @@ Two complications relative to m02 / m03:
 * **Floor-prefixed instance names.** ``assembly.py`` adds parts as
   ``f{idx}_{role}__<basename>`` so the four-floor stack stays
   collision-free. ``basename_of(...)`` strips that prefix; tower-
-  global parts (``outer_vert_k``) carry no prefix and pass through.
+  global parts (``outer_vert_k`` / ``inner_vert_k``) carry no
+  prefix and pass through.
 
 * **Stand-in names in ``single_floor.py``.** ``lower_trap_open`` is
   a stand-in for the floor below — same geometry as ``trap_open``,
@@ -67,10 +68,12 @@ def _basket_basenames() -> list[str]:
 ROLE_OF: dict[str, Role | None] = {
     # Frame — through-columns (tower-global, no floor prefix)
     **{f"outer_vert_{k}": Role.PRIMARY_STRUCTURE for k in range(6)},
+    **{f"inner_vert_{k}": Role.PRIMARY_STRUCTURE for k in range(6)},
     # Frame — per-floor horizontals
     **{f"outer_horiz_{k}": Role.PRIMARY_STRUCTURE for k in range(6)},
     **{f"inner_horiz_{k}": Role.PRIMARY_STRUCTURE for k in range(6)},
-    **{f"radial_{k}": Role.PRIMARY_STRUCTURE for k in range(6)},
+    **{f"radial_inner_{k}": Role.PRIMARY_STRUCTURE for k in range(6)},
+    **{f"radial_outer_{k}": Role.PRIMARY_STRUCTURE for k in range(6)},
     # Frame — per-floor printed vertex brackets
     **{f"outer_vertex_bracket_{k}": Role.SECONDARY_STRUCTURE for k in range(6)},
     **{f"inner_vertex_bracket_{k}": Role.SECONDARY_STRUCTURE for k in range(6)},
@@ -124,8 +127,9 @@ DESIGN_SYSTEM: DesignSystem = (
 
 def basename_of(part_name: str) -> str:
     """Strip the ``f{idx}_{role}__`` floor prefix from a m05 instance
-    name. Tower-global parts (``outer_vert_k``) and stand-ins used by
-    ``single_floor.py`` carry no prefix and pass through unchanged.
+    name. Tower-global parts (``outer_vert_k`` / ``inner_vert_k``)
+    and stand-ins used by ``single_floor.py`` carry no prefix and
+    pass through unchanged.
     """
     sep = "__"
     return part_name.split(sep, 1)[1] if sep in part_name else part_name

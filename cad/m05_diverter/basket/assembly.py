@@ -16,11 +16,13 @@ of N — the floor of buckets reads as one continuous cylindrical
 skirt below the disc edge.
 
 Each basket's radial side walls (and in one case, its center) are
-notched around the six outer-hex through-columns at vertices
-V_k = (k+0.5)·60°. The notch set per basket is declared in
-`FLOOR_LAYOUT`: `left`/`right` for boundary columns, `middle`
-for the V_1 column that sits inside the N=9 MIDDLE basket's
-interior.
+notched around the through-columns at vertices V_k = (k+0.5)·60°.
+With outer and inner hex aligned, every vertex azimuth carries two
+columns — one at R_VERT_OUTER and one at R_VERT_INNER — so each
+flagged notch cuts the basket twice along that azimuth (once per
+radius). The notch set per basket is declared in `FLOOR_LAYOUT`:
+`left`/`right` for boundary columns, `middle` for the V_1 column
+that sits inside the N=9 MIDDLE basket's interior.
 
 Floor sits on the shared stage datum (z=0); rim at z=+BASKET_DEPTH_Z.
 Basket floor cantilevers past the outer-hex edge but still rests on
@@ -61,6 +63,7 @@ from params import (
     FLOOR_LAYOUT,
     R_BASKET_INNER,
     R_HEX_OUTER,
+    R_VERT_INNER,
     R_VERT_OUTER,
 )
 
@@ -78,12 +81,15 @@ from params import (
 # so brick load drops through the supported zone — only the
 # outermost ~50 mm of floor hangs free.
 #
-# The basket's radial side walls lie on the outer-hex vertex
-# azimuths and would otherwise pass straight through the through-
-# columns (20×20 rotated, body at r ∈ [~301.77, ~321.77] along
-# vertex azimuth — fully inside the basket envelope at r=330).
-# `basket()` subtracts a column-footprint cutout at each boundary-
-# azimuth column position to absorb the column body.
+# The basket's radial side walls lie on the shared (outer = inner)
+# hex vertex azimuths and would otherwise pass straight through the
+# through-columns at both radii — at R_VERT_OUTER the column body
+# spans r ∈ [~301.77, ~321.77] along the vertex azimuth (fully
+# inside the basket envelope at r=330); at R_VERT_INNER it spans
+# r ∈ [~151.66, ~171.66] (just outboard of the basket's inner
+# corner at R_BASKET_INNER=150). `basket()` subtracts a column-
+# footprint cutout at *both* radii on each flagged boundary
+# azimuth.
 BASKET_HEX_OVERHANG = 60.0
 R_BASKET_OUTER = R_HEX_OUTER + BASKET_HEX_OVERHANG   # 330 = top-deck OD/2
 BASKET_WALL_T = 3.0
@@ -113,24 +119,24 @@ WALL_MIN = 1.5
 
 # --- Helpers ------------------------------------------------------------
 
-def _column_cutout_at(azimuth_deg: float) -> Part:
-    """Rotated 20×20 through-cutout centered on the outer-hex vertex
-    at `azimuth_deg`, spanning the full basket Z range with margin.
-    Removes the column body (and a thin clearance margin) from the
-    basket so the radial side wall wraps around the column instead
-    of passing through it. With the outer arc at r=R_BASKET_OUTER
-    > column-corner radius (~321.77), the cutout sits mid-wall
-    along the boundary radial rather than at the basket's outer
-    corner.
+def _column_cutout_at(azimuth_deg: float, radius: float) -> Part:
+    """Rotated 20×20 through-cutout centered on a hex vertex at
+    (`radius`, `azimuth_deg`), spanning the full basket Z range with
+    margin. Removes the column body (and a thin clearance margin)
+    from the basket so the radial side wall wraps around the column
+    instead of passing through it. Called once per column on each
+    flagged boundary azimuth: outer hex vertex at R_VERT_OUTER and
+    inner hex vertex at R_VERT_INNER (both share the azimuth).
 
-    Rotation matches frame's `Rot(0, 0, v_angle)` on `outer_vert_k`,
-    so the cutout's faces align with the real column's faces.
+    Rotation matches frame's `Rot(0, 0, v_angle)` on `outer_vert_k`
+    / `inner_vert_k`, so the cutout's faces align with the real
+    column's faces.
     """
     side = COLUMN_SIDE + 2 * COLUMN_CLEARANCE
     z_margin = 10.0
     height = BASKET_DEPTH_Z + 2 * z_margin
-    vx = R_VERT_OUTER * math.cos(math.radians(azimuth_deg))
-    vy = R_VERT_OUTER * math.sin(math.radians(azimuth_deg))
+    vx = radius * math.cos(math.radians(azimuth_deg))
+    vy = radius * math.sin(math.radians(azimuth_deg))
     z_center = (BASKET_FLOOR_Z + BASKET_RIM_Z) / 2.0
     return Pos(vx, vy, z_center) * Rot(0, 0, azimuth_deg) * Box(side, side, height)
 
@@ -214,12 +220,18 @@ def basket(
         inset=BASKET_WALL_T,
     )
     body = outer - cavity
-    if notch_right:
-        body = body - _column_cutout_at(+half_angle_deg)
-    if notch_left:
-        body = body - _column_cutout_at(-half_angle_deg)
-    if notch_middle:
-        body = body - _column_cutout_at(0.0)
+    # Two columns per flagged azimuth: one at the outer-hex vertex,
+    # one at the inner-hex vertex (the hexes are rotation-aligned so
+    # both sit on the same vertex azimuth).
+    for flagged, az in (
+        (notch_right, +half_angle_deg),
+        (notch_left, -half_angle_deg),
+        (notch_middle, 0.0),
+    ):
+        if not flagged:
+            continue
+        body = body - _column_cutout_at(az, R_VERT_OUTER)
+        body = body - _column_cutout_at(az, R_VERT_INNER)
     return body
 
 

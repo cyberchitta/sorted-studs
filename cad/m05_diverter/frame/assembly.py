@@ -5,10 +5,14 @@ Structural 2020-aluminum cage for one floor: an outer hex ring
 (apothem R_HEX_OUTER) with 6 vertical corner columns at the outer-
 hex vertices and an outer-vertex bracket at each; plus a concentric
 inner hex ring (apothem R_HEX_INNER) sharing the outer hex's
-rotation (aligned vertex azimuths). Six radial 2020 rails run along
-basket boundaries from each inner-hex vertex out to the matching
-outer-hex vertex; an inner-vertex bracket at each inner-hex vertex
-joins its two hex edges to the radial.
+rotation (aligned vertex azimuths) with 6 vertical columns at the
+inner-hex vertices too. Per basket boundary, two radial 2020
+segments run along the boundary azimuth: an inboard segment from
+the spider hub region out to the inner-hex vertex bracket, and an
+outboard segment from that bracket out to the matching outer-hex
+vertex bracket. The split lets the inner-hex through-column back
+both segments in compression instead of forcing a single rail to
+work as a bending beam under basket load.
 
 Why the hexes are aligned: placing both hex vertex rings on the same
 six azimuths — basket boundaries (k+0.5)·60° — makes every radial
@@ -23,8 +27,10 @@ midpoints with no vertical backing — that load path is what this
 layout replaces.
 
 V1 scope. This file models a MIDDLE floor. Explicitly deferred:
-- Inner-hex vertical columns (full-height vs per-floor is open in
-  hex-cascade.md).
+- Inner-hex vertical bracket clamp arms (the columns themselves are
+  modeled here; the inner-vertex bracket gains a hub cutout for the
+  column but the clamp jaws — vertical arm + bolts — are slice (d),
+  see `inner_columns_handoff.md`).
 - Diagonal braces.
 - Top cap and base floor (different corner-bracket variants).
 
@@ -33,7 +39,9 @@ extend *below* the floor datum too so the (now-flipped) outer-vertex
 bracket can clamp the column at z < 0 as well as above. In the real
 tower each column is a single extrusion spanning all floors (see
 `hex-cascade.md`); this per-floor model represents that by giving
-each column an extra VERT_EXT_BELOW mm below z=0.
+each column an extra VERT_EXT_BELOW mm below z=0. The same span
+applies to the inner-hex through-columns added alongside the outer
+set.
 
 Coordinate frame:
     origin = column axis (shared with basket / ramp_mechanism)
@@ -82,7 +90,9 @@ from outer_vertex_bracket.assembly import (
 from params import (
     BRACKET_HOR_OFFSET,
     FLOOR_H,
+    RAIL_INNER_OUTER_END_R,
     RAIL_INNER_R,
+    RAIL_OUTER_INNER_END_R,
     RAIL_OUTER_R,
     RAIL_SIZE,
     R_HEX_INNER,
@@ -103,10 +113,12 @@ EDGE_LEN_INNER = R_VERT_INNER
 OUTER_HORIZ_LEN = EDGE_LEN_OUTER - 2.0 * HOR_INNER_OFFSET
 INNER_HORIZ_LEN = EDGE_LEN_INNER - 2.0 * HOR_INNER_OFFSET
 
-# Radial rail length: the physical endpoints are already offset from
-# the vertex radii in params.py (RAIL_INNER_R = R_VERT_INNER +
-# BRACKET_HOR_OFFSET, etc.), so this is just the span.
-RADIAL_LEN = RAIL_OUTER_R - RAIL_INNER_R
+# Radial-rail spans. Each radial is split at the inner-hex vertex
+# (see params.py docstring); the inner segment runs from the spider
+# saddle out to the inner-vertex bracket's inboard arm, the outer
+# segment from the inboard arm out to the outer-vertex bracket.
+RADIAL_INNER_LEN = RAIL_INNER_OUTER_END_R - RAIL_INNER_R          # ≈ 49.66
+RADIAL_OUTER_LEN = RAIL_OUTER_R - RAIL_OUTER_INNER_END_R          # ≈ 106.11
 
 assert OUTER_HORIZ_LEN > 0, (
     f"OUTER_HORIZ_LEN = {OUTER_HORIZ_LEN:.1f} mm ≤ 0 — increase R_HEX_OUTER "
@@ -120,9 +132,13 @@ assert RAIL_SIZE == EXT_SIZE, (
     f"RAIL_SIZE ({RAIL_SIZE}) must equal frame EXT_SIZE ({EXT_SIZE}); "
     f"the radial rail is a standard 2020 and reuses the frame helper."
 )
-assert RADIAL_LEN > 0, (
-    f"RADIAL_LEN = {RADIAL_LEN:.1f} mm ≤ 0 — RAIL_OUTER_R must exceed "
-    f"RAIL_INNER_R."
+assert RADIAL_INNER_LEN > 0, (
+    f"RADIAL_INNER_LEN = {RADIAL_INNER_LEN:.1f} mm ≤ 0 — "
+    f"RAIL_INNER_OUTER_END_R must exceed RAIL_INNER_R."
+)
+assert RADIAL_OUTER_LEN > 0, (
+    f"RADIAL_OUTER_LEN = {RADIAL_OUTER_LEN:.1f} mm ≤ 0 — "
+    f"RAIL_OUTER_R must exceed RAIL_OUTER_INNER_END_R."
 )
 assert BRACKET_HOR_OFFSET == HOR_INNER_OFFSET, (
     f"params.BRACKET_HOR_OFFSET ({BRACKET_HOR_OFFSET}) must equal bracket "
@@ -160,7 +176,8 @@ def add_floor_horizontals(
     the given world z (= rail-top datum for that floor).
 
     Adds: outer hex (`{prefix}outer_horiz_k`), inner hex
-    (`{prefix}inner_horiz_k`), radial rails (`{prefix}radial_k`),
+    (`{prefix}inner_horiz_k`), radial rails split at the inner-hex
+    vertex (`{prefix}radial_inner_k` / `{prefix}radial_outer_k`),
     outer-vertex brackets (`{prefix}outer_vertex_bracket_k`), and
     inner-vertex brackets (`{prefix}inner_vertex_bracket_k`).
 
@@ -236,21 +253,31 @@ def add_floor_horizontals(
             material=_mt(n_ih),
         )
 
-        # Radial rail on basket boundary k (between baskets k and k+1).
-        # Azimuth = v_angle_k; physical endpoints at RAIL_INNER_R and
-        # RAIL_OUTER_R (already offset from the vertices in params.py).
+        # Radial rails on basket boundary k (between baskets k and k+1).
+        # Two segments split at the inner-hex vertex so the inner-hex
+        # through-column backs both adjacent rail ends. Azimuth =
+        # v_angle_k; endpoints offset from the vertices in params.py.
         r_angle = v_angle
-        r_mid = (RAIL_INNER_R + RAIL_OUTER_R) / 2.0
-        rx = r_mid * math.cos(math.radians(r_angle))
-        ry = r_mid * math.sin(math.radians(r_angle))
-        n_r = f"{prefix}radial_{k}"
-        a = a.add(
-            n_r,
-            _horiz_ext(RADIAL_LEN),
-            location=z_loc * Pos(rx, ry, 0.0) * Rot(0, 0, r_angle),
-            color=_co(n_r),
-            material=_mt(n_r),
-        )
+        cos_r = math.cos(math.radians(r_angle))
+        sin_r = math.sin(math.radians(r_angle))
+        for seg_name, seg_len, seg_mid in (
+            ("radial_inner",
+             RADIAL_INNER_LEN,
+             (RAIL_INNER_R + RAIL_INNER_OUTER_END_R) / 2.0),
+            ("radial_outer",
+             RADIAL_OUTER_LEN,
+             (RAIL_OUTER_INNER_END_R + RAIL_OUTER_R) / 2.0),
+        ):
+            rx = seg_mid * cos_r
+            ry = seg_mid * sin_r
+            n_r = f"{prefix}{seg_name}_{k}"
+            a = a.add(
+                n_r,
+                _horiz_ext(seg_len),
+                location=z_loc * Pos(rx, ry, 0.0) * Rot(0, 0, r_angle),
+                color=_co(n_r),
+                material=_mt(n_r),
+            )
 
     return a
 
@@ -262,33 +289,46 @@ def add_through_columns(
     color_fn: Callable[[str], Color | None] | None = None,
     material_fn: Callable[[str], str | None] | None = None,
 ) -> Assembly:
-    """Add the six outer-hex vertical 2020 corner columns spanning
-    [z_bot, z_top]. Single-floor default matches the historical
+    """Add the twelve vertical 2020 corner columns spanning
+    [z_bot, z_top]: six at the outer-hex vertices and six at the
+    inner-hex vertices (same azimuths since outer and inner hex are
+    rotation-aligned). Single-floor default matches the historical
     behavior; a multi-floor tower passes the full-tower span here so
     one continuous extrusion replaces per-floor stacks.
 
-    Names: `outer_vert_k` for k in 0..5 (no floor prefix — these are
-    global to the tower).
+    The inner verticals back the inner-hex ring against per-floor
+    basket load (~20 kg/floor → 60–80 kg cumulative across 3–4
+    floors), so every radial rail has both ends in compression
+    instead of bending the inner hex as a horizontal beam. Inner
+    columns are rotated by `v_angle` to match the outer convention
+    (their bracket clamp arm — slice (d) — will reuse the same
+    face-aligned-with-azimuth orientation).
+
+    Names: `outer_vert_k` and `inner_vert_k` for k in 0..5 (no floor
+    prefix — these are global to the tower).
     """
     length = z_top - z_bot
     z_center = (z_bot + z_top) / 2.0
     column = Pos(0, 0, z_center) * Box(EXT_SIZE, EXT_SIZE, length)
     for k in range(6):
         v_angle = (k + 0.5) * 60.0
-        vx_out = R_VERT_OUTER * math.cos(math.radians(v_angle))
-        vy_out = R_VERT_OUTER * math.sin(math.radians(v_angle))
+        cos_v = math.cos(math.radians(v_angle))
+        sin_v = math.sin(math.radians(v_angle))
         # Rotate by v_angle so one of the 2020's faces lines up with
         # the outer bracket's vert-arm plate (bracket local -X = world
         # +X rotated by v_angle at V_k). The 2020's 4-fold cross-
         # section makes v_angle mod 90° the only thing that matters.
-        n = f"outer_vert_{k}"
-        a = a.add(
-            n,
-            column,
-            location=Pos(vx_out, vy_out, 0.0) * Rot(0, 0, v_angle),
-            color=color_fn(n) if color_fn is not None else None,
-            material=material_fn(n) if material_fn is not None else None,
-        )
+        for r_vert, prefix in ((R_VERT_OUTER, "outer"), (R_VERT_INNER, "inner")):
+            vx = r_vert * cos_v
+            vy = r_vert * sin_v
+            n = f"{prefix}_vert_{k}"
+            a = a.add(
+                n,
+                column,
+                location=Pos(vx, vy, 0.0) * Rot(0, 0, v_angle),
+                color=color_fn(n) if color_fn is not None else None,
+                material=material_fn(n) if material_fn is not None else None,
+            )
     return a
 
 
@@ -324,19 +364,27 @@ assembly = (
     .assert_no_interference("outer_vertex_bracket_0", "outer_vert_0")
     .assert_no_interference("outer_vertex_bracket_0", "outer_horiz_0")
     .assert_no_interference("outer_vertex_bracket_0", "outer_horiz_5")
-    .assert_no_interference("outer_vertex_bracket_0", "radial_0")
+    .assert_no_interference("outer_vertex_bracket_0", "radial_outer_0")
     .assert_no_interference("outer_vert_0", "outer_horiz_0")
     .assert_no_interference("outer_vert_0", "outer_horiz_5")
-    .assert_no_interference("outer_vert_0", "radial_0")
+    .assert_no_interference("outer_vert_0", "radial_outer_0")
     # Adjacent outer edges meeting at V_1.
     .assert_no_interference("outer_horiz_0", "outer_horiz_1")
     # Far-apart outer edges (sanity — trivial pass).
     .assert_no_interference("outer_horiz_0", "outer_horiz_3")
     # Inner-vertex consistency at inner V_0. Inner edges 0 and 5 meet
-    # at inner V_0, and radial_0's inner end lands here.
+    # at inner V_0, the inner through-column passes through it, and
+    # both radial segments butt against the inner-vertex bracket
+    # here.
     .assert_no_interference("inner_vertex_bracket_0", "inner_horiz_0")
     .assert_no_interference("inner_vertex_bracket_0", "inner_horiz_5")
-    .assert_no_interference("inner_vertex_bracket_0", "radial_0")
+    .assert_no_interference("inner_vertex_bracket_0", "radial_inner_0")
+    .assert_no_interference("inner_vertex_bracket_0", "radial_outer_0")
+    .assert_no_interference("inner_vertex_bracket_0", "inner_vert_0")
+    .assert_no_interference("inner_vert_0", "inner_horiz_0")
+    .assert_no_interference("inner_vert_0", "inner_horiz_5")
+    .assert_no_interference("inner_vert_0", "radial_inner_0")
+    .assert_no_interference("inner_vert_0", "radial_outer_0")
     # Adjacent inner edges meeting at inner V_1.
     .assert_no_interference("inner_horiz_0", "inner_horiz_1")
     # Inner vs outer separation — same azimuth with aligned hexes but
@@ -345,17 +393,24 @@ assembly = (
     .assert_no_interference("inner_horiz_0", "outer_vert_0")
     .assert_no_interference("inner_horiz_0", "outer_vertex_bracket_0")
     .assert_no_interference("inner_vertex_bracket_0", "outer_vertex_bracket_0")
-    # Radial 0 clears the adjacent inner-hex edges it passes between
-    # at the inner vertex (edges 0 and 5 both terminate at inner V_0).
-    .assert_no_interference("radial_0", "inner_horiz_0")
-    .assert_no_interference("radial_0", "inner_horiz_5")
-    # Radial sits well clear of the outer hex edges adjacent to its
-    # outer-vertex landing (edges 0 and 5).
-    .assert_no_interference("radial_0", "outer_horiz_0")
-    .assert_no_interference("radial_0", "outer_horiz_5")
-    # Radial clearance from non-adjoining verticals / brackets (sanity).
-    .assert_no_interference("radial_0", "outer_vert_1")
-    .assert_no_interference("radial_0", "outer_vertex_bracket_1")
+    .assert_no_interference("inner_vert_0", "outer_vert_0")
+    .assert_no_interference("inner_vert_0", "outer_horiz_0")
+    .assert_no_interference("inner_vert_0", "outer_vertex_bracket_0")
+    # Both radial segments clear the adjacent inner-hex edges they
+    # pass between at the inner vertex (edges 0 and 5 both terminate
+    # at inner V_0).
+    .assert_no_interference("radial_inner_0", "inner_horiz_0")
+    .assert_no_interference("radial_inner_0", "inner_horiz_5")
+    .assert_no_interference("radial_outer_0", "inner_horiz_0")
+    .assert_no_interference("radial_outer_0", "inner_horiz_5")
+    # Outer segment sits well clear of the outer hex edges adjacent
+    # to its outer-vertex landing (edges 0 and 5).
+    .assert_no_interference("radial_outer_0", "outer_horiz_0")
+    .assert_no_interference("radial_outer_0", "outer_horiz_5")
+    # Outer-segment clearance from non-adjoining verticals / brackets
+    # (sanity).
+    .assert_no_interference("radial_outer_0", "outer_vert_1")
+    .assert_no_interference("radial_outer_0", "outer_vertex_bracket_1")
 )
 
 
