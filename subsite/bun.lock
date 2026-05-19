@@ -5,7 +5,7 @@
     "": {
       "name": "sorted-studs-subsite",
       "dependencies": {
-        "@cyberchitta/supramental-gold": "github:cyberchitta/supramental-gold#v0.2.2",
+        "@cyberchitta/supramental-gold": "github:cyberchitta/supramental-gold#v0.3.0",
       },
       "devDependencies": {
         "@11ty/eleventy": "^3.1.5",
@@ -35,7 +35,7 @@
 
     "@11ty/recursive-copy": ["@11ty/recursive-copy@4.0.4", "", { "dependencies": { "errno": "^1.0.0", "junk": "^3.1.0", "minimatch": "^3.1.5", "slash": "^3.0.0" } }, "sha512-oI7m8pa7/IAU/3lqRU9vjBbs20iKFo7x+1K9kT3aVira6scc1X9MjBdgLCHzLJeJ7iB6wydioA+kr9/qPnvmlQ=="],
 
-    "@cyberchitta/supramental-gold": ["@cyberchitta/supramental-gold@github:cyberchitta/supramental-gold#fb11f51", { "dependencies": { "ejs": "^5.0.2" } }, "cyberchitta-supramental-gold-fb11f51", "sha512-4Mlx5u9WisN2ZGpCGeQK0YyDq+PpquMmMFEadCrfXayllK1yZJgs6hdZhKxDnO+arPI8e6ALGT0+WKTZ7Hr8ew=="],
+    "@cyberchitta/supramental-gold": ["@cyberchitta/supramental-gold@github:cyberchitta/supramental-gold#e8bf107", { "dependencies": { "ejs": "^5.0.2" } }, "cyberchitta-supramental-gold-e8bf107", "sha512-VlXTe+dTacP+fMWsKcaIwlYNXEfuTt3sLzulo351NI6+HEcDsgEHxy6FxsNGJoVJZagqa76y44n2TUyXIFOmHw=="],
 
     "@sindresorhus/slugify": ["@sindresorhus/slugify@2.2.1", "", { "dependencies": { "@sindresorhus/transliterate": "^1.0.0", "escape-string-regexp": "^5.0.0" } }, "sha512-MkngSCRZ8JdSOCHRaYd+D01XhvU3Hjy6MGl06zhOk614hp9EOAp5gIkBeQg7wtmxpitU6eAL4kdiRMcJa2dlrw=="],
 
