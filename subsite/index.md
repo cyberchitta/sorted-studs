@@ -1,4 +1,5 @@
 ---
+layout: layouts/article
 title: sorted-studs
 description: An AI-powered LEGO sorting machine. Mechanical singulation, four-camera multi-view scanning, ML classification, automated bin output, Rebrickable-synced inventory. Building in public.
 ---
