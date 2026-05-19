@@ -1,0 +1,4 @@
+[build]
+  base = "subsite"
+  command = "bun run build"
+  publish = "_site"
