@@ -9,11 +9,9 @@ running from the vertex in toward the spider hub (both rails sit
 with top face at z=0). A vertical 2020 through-column passes
 through the bracket at the vertex axis (see
 `../inner_columns_handoff.md`); the hub plate carries a square
-cutout that clears the column footprint so the column can pass
-through the bracket's Z range. The clamp jaws / vertical arm that
-will actually grip the column are slice (d) — deferred — so this
-bracket geometrically tolerates the column but does not yet
-restrain it.
+cutout that clears the column footprint and a vertical clamp arm
+on the column's bracket-local -Y face grips it via two M5 bolts
+firing in +Y into the column's T-slot at z = 10 and z = 30.
 
 Splitting the radial at the inner vertex was forced by the through-
 column: a single radial spanning [RAIL_INNER_R, RAIL_OUTER_R] would
@@ -25,7 +23,11 @@ SADDLE_GRIP_LEN] and a 2-bolt inboard arm would crowd that grip
 zone.
 
 This mirrors `outer_vertex_bracket` structurally, but:
-  - no vertical clamp arm yet (slice d);
+  - vertical clamp arm sits on the column's bracket-local -Y face,
+    not -X — ±X are taken by the outboard and inboard radial arms,
+    leaving ±Y as the only free column faces. The choice between
+    +Y and -Y is arbitrary for a 4-fold-symmetric 2020 column;
+    -Y is the convention here;
   - two radial arms (inboard + outboard) rather than one.
 
 **Bottom-mounted.** The bracket hangs off the *bottom* T-slot of the
@@ -59,6 +61,9 @@ Coordinate frame:
     arm_rad_in  : inboard radial arm along +X carrying the rail
                   segment to the spider hub (1 bolt — see saddle
                   clearance note above)
+    vert        : vertical clamp arm on the column's -Y face,
+                  z ∈ [-26, VERT_ARM_TOP_Z]; 2 bolts fire +Y into
+                  the column at z = 10, z = 30.
 
 Each arm is a flat plate with M5 clearance hole(s) that align to a
 T-slot on the bottom face of its extrusion.
@@ -111,6 +116,14 @@ ARM_L_TOTAL = HOR_INNER_OFFSET + ARM_BOLT_SPAN  # 62
 ARM_IN_BOLT_SPAN = 2 * BOLT_FROM_EXT_END                 # 20 — single bolt centred
 ARM_IN_L_TOTAL = HOR_INNER_OFFSET + ARM_IN_BOLT_SPAN     # 42
 
+# Vertical clamp arm: single plate from the hub's bottom up to
+# VERT_ARM_TOP_Z. Matches the outer-vertex bracket's bolt z-positions
+# (10, 30) so both brackets clamp the column at the same heights on
+# the same floor — load paths and assembly procedure stay parallel.
+VERT_ARM_TOP_Z = ARM_BOLT_SPAN                            # 40 — top of vertical plate in world Z
+VERT_BOLT_Z_1 = BOLT_FROM_EXT_END                         # 10
+VERT_BOLT_Z_2 = BOLT_FROM_EXT_END + BOLT_SPACING          # 30
+
 # Hex interior half-angle.
 HALF_HEX_ANGLE_DEG = 60.0
 
@@ -136,18 +149,24 @@ def _through_hole_z(hole_d: float, plate_t: float) -> Part:
     return Cylinder(hole_d / 2, plate_t * 3)
 
 
+def _through_hole_y(hole_d: float, plate_t: float) -> Part:
+    """Cylindrical hole along +Y, long enough to cut cleanly through a
+    plate of thickness plate_t."""
+    return Rot(90, 0, 0) * Cylinder(hole_d / 2, plate_t * 3)
+
+
 # --- Part functions -----------------------------------------------------
 
 def bracket() -> Part:
     """Single-body inner-vertex bracket: square donut hub (cutout
     clears the inner-hex through-column) + two hex-edge arms (at
     ±60° from local +X) + outboard radial arm (along -X, 2 bolts)
-    + inboard radial arm (along +X, 1 bolt). All plates at PLATE_T
-    thickness, hanging below the extrusion plane at
-    z ∈ [BRACKET_Z_TOP - PLATE_T, BRACKET_Z_TOP] = [-26, -20]. The
-    through-column passes through the hub's square cutout at hub-Z;
-    the clamp arms that will actually grip the column are slice
-    (d) — not present yet.
+    + inboard radial arm (along +X, 1 bolt) + vertical clamp arm
+    on the column's -Y face. Horizontal plates at PLATE_T thickness
+    hang below the extrusion plane at z ∈ [BRACKET_Z_TOP - PLATE_T,
+    BRACKET_Z_TOP] = [-26, -20]. The vertical arm rises from the
+    hub bottom (z=-26) up to VERT_ARM_TOP_Z (=40) with two M5 bolts
+    at z = 10, 30.
     """
     plate_cz = BRACKET_Z_TOP - PLATE_T / 2  # plate center z
 
@@ -182,21 +201,48 @@ def bracket() -> Part:
         - Pos(bolt_in_x, 0, plate_cz) * _through_hole_z(BOLT_HOLE_D, PLATE_T)
     )
 
+    # Vertical clamp arm on the column's bracket-local -Y face. ±X
+    # are taken by radial arms; -Y picks one of the two free column
+    # faces. Plate thickness PLATE_T along Y, width ARM_W along X.
+    # Span z ∈ [hub bottom, VERT_ARM_TOP_Z] — same range as the
+    # outer bracket's clamp plate so the structural riser below the
+    # floor datum carries the same load path. The lower portion of
+    # this plate fuses with the hub and with the -60° hex-edge arm
+    # at z ∈ [-26, -20] (single Boolean union; merging is intended).
+    va_y_center = -EXT_SIZE / 2 - PLATE_T / 2
+    va_z_bot = BRACKET_Z_TOP - PLATE_T                    # flush with hub bottom
+    va_z_top = VERT_ARM_TOP_Z
+    va_h_total = va_z_top - va_z_bot
+    va_z_center = (va_z_bot + va_z_top) / 2
+    v_plate = Pos(0, va_y_center, va_z_center) * Box(ARM_W, PLATE_T, va_h_total)
+    vert_arm = (
+        v_plate
+        - Pos(0, va_y_center, VERT_BOLT_Z_1) * _through_hole_y(BOLT_HOLE_D, PLATE_T)
+        - Pos(0, va_y_center, VERT_BOLT_Z_2) * _through_hole_y(BOLT_HOLE_D, PLATE_T)
+    )
+
     # The through-column passes through the hub's Z range. Cut its
     # footprint out of the hub plate (4 mm wall thickness remains on
     # each side; hex-edge and radial arms connect to those walls).
+    # The vertical clamp plate at y ∈ [-16, -10] sits entirely
+    # outside the column's y ∈ [-10, 10] footprint, so the cutout
+    # leaves the clamp arm intact.
     vert_cutout = Pos(0, 0, plate_cz) * Box(
         EXT_SIZE, EXT_SIZE, PLATE_T * 3
     )
-    return (hub + arm_h1 + arm_h2 + arm_rad_out + arm_rad_in) - vert_cutout
+    return (
+        hub + arm_h1 + arm_h2 + arm_rad_out + arm_rad_in + vert_arm
+    ) - vert_cutout
 
 
 def vert_ext_stub(size: float = EXT_SIZE) -> Part:
     """Through-column vertical extrusion stand-in. Spans well past
-    the bracket's Z range so the column-vs-bracket interference
-    check sees a full vertical pass-through."""
+    the bracket's Z range (10 mm below the hub bottom up to 10 mm
+    above the vertical clamp arm's top) so the column-vs-bracket
+    interference check sees a full vertical pass-through covering
+    both clamp bolts."""
     z_bot = BRACKET_Z_TOP - PLATE_T - 10.0   # 10 mm below hub bottom
-    z_top = 30.0                              # well above the floor datum
+    z_top = VERT_ARM_TOP_Z + 10.0             # 10 mm above arm top
     length = z_top - z_bot
     return Pos(0, 0, (z_bot + z_top) / 2) * Box(size, size, length)
 

@@ -27,10 +27,6 @@ midpoints with no vertical backing — that load path is what this
 layout replaces.
 
 V1 scope. This file models a MIDDLE floor. Explicitly deferred:
-- Inner-hex vertical bracket clamp arms (the columns themselves are
-  modeled here; the inner-vertex bracket gains a hub cutout for the
-  column but the clamp jaws — vertical arm + bolts — are slice (d),
-  see `inner_columns_handoff.md`).
 - Diagonal braces.
 - Top cap and base floor (different corner-bracket variants).
 
@@ -300,9 +296,9 @@ def add_through_columns(
     basket load (~20 kg/floor → 60–80 kg cumulative across 3–4
     floors), so every radial rail has both ends in compression
     instead of bending the inner hex as a horizontal beam. Inner
-    columns are rotated by `v_angle` to match the outer convention
-    (their bracket clamp arm — slice (d) — will reuse the same
-    face-aligned-with-azimuth orientation).
+    columns are rotated by `v_angle` so one face aligns with the
+    inner-vertex bracket's -Y clamp plate, matching the outer
+    convention.
 
     Names: `outer_vert_k` and `inner_vert_k` for k in 0..5 (no floor
     prefix — these are global to the tower).
