@@ -48,8 +48,11 @@ the *lower* column's rotating collar — represented in the standalone
 middle/top assembly by `lower_column` placed at z = -FLOOR_H. Without
 that stand-in there is nothing here for this floor's bearing to grip.
 
-Motor pinion + ring gear, ceiling bearing, castellated joint tabs,
-and trap actuator are deferred — see the rolling NEXT_STEPS docs.
+Motor pinion + ring gear, ceiling bearing, and trap actuator are
+deferred — see the rolling NEXT_STEPS docs. Column-to-column joint
+torque transfer uses bas-relief bumps + depressions (Option A from
+NEXT_STEPS "Column-to-column joint"); outboard castellation
+(Option B) is held in reserve.
 
 Coordinate frame:
     origin = column axis ∩ floor datum (z=0 = bearing/spider base)
@@ -197,11 +200,45 @@ assert COL_Z_TOP >= max(OPENING_Z_TOP, _TRAP_FREE_Z_OPEN) + 5.0, (
 
 # Joint flange thickness at the column top. Top 5 mm of the column
 # carries a circular face flange (OD = COLLAR_OD) for end-to-end
-# coupling with the column above. Castellated tab geometry deferred —
-# see m05_diverter/NEXT_STEPS.md "Column-to-column joint".
+# coupling with the column above. Bas-relief interlock (Option A;
+# see m05_diverter/NEXT_STEPS.md "Column-to-column joint") — bumps on
+# this flange's top face slot into matching depressions on the upper
+# column's bottom-flange face for tangential torque lock.
 JOINT_FLANGE_T = COLLAR_T                            # 5.0
 JOINT_FLANGE_Z_BOT = COL_Z_TOP - JOINT_FLANGE_T      # 268
 JOINT_FLANGE_Z_TOP = COL_Z_TOP                       # 273
+
+# Bas-relief interlock features at the column-to-column joint plane.
+# Four cylindrical bumps on the lower column's top-flange face fit
+# into four matching depressions on the upper column's bottom-flange
+# face. 4-fold symmetry at cardinal azimuths {0°, 90°, 180°, 270°}
+# both maximizes the radial overhang band (column interior is square,
+# so cardinal azimuths give r ∈ [45, 69] vs. r ∈ [67.9, 69] at the
+# diagonals) and is a refinement of the 2-fold lock that an
+# alternating-opening install would need.
+N_JOINT_BUMPS = 4
+JOINT_BUMP_CENTERLINE_R = 56.0    # midway between r=45 (column hole) and r=69 (OD)
+JOINT_BUMP_D = 12.0
+JOINT_BUMP_H = 1.5
+JOINT_BUMP_CLEARANCE_R = 0.3      # depression is this much larger in radius (per side)
+JOINT_BUMP_CLEARANCE_Z = 0.2      # depression is this much deeper than the bump is tall
+JOINT_DEPRESSION_D = JOINT_BUMP_D + 2 * JOINT_BUMP_CLEARANCE_R
+JOINT_DEPRESSION_H = JOINT_BUMP_H + JOINT_BUMP_CLEARANCE_Z
+
+# Bump radial extent vs column interior (square hole, edge at r=45 on
+# cardinal axes) and flange OD (r ≈ 69). Keep both edges of the bump
+# inside the solid overhang band so the bump roots in flange material.
+_BUMP_R_INNER = JOINT_BUMP_CENTERLINE_R - JOINT_BUMP_D / 2
+_BUMP_R_OUTER = JOINT_BUMP_CENTERLINE_R + JOINT_BUMP_D / 2
+assert _BUMP_R_INNER >= COL_INTERIOR_SIDE / 2 + 2.0, (
+    f"Joint bump inner edge at r={_BUMP_R_INNER:.1f} crowds the column "
+    f"interior boundary at r={COL_INTERIOR_SIDE/2:.1f}; bump would not "
+    f"root in solid flange material on the cardinal axes."
+)
+assert _BUMP_R_OUTER + JOINT_BUMP_CLEARANCE_R <= COLLAR_OD / 2 - 2.0, (
+    f"Joint bump+depression outer edge at r={_BUMP_R_OUTER + JOINT_BUMP_CLEARANCE_R:.1f} "
+    f"crowds the flange OD at r={COLLAR_OD/2:.1f}; leave ≥2 mm rim."
+)
 
 # Rotating collar — circular OD on the column at mid-height that the
 # bearing on the floor *above* grips (so this floor's bearing engages
@@ -378,6 +415,24 @@ def _circular_feature(z_bot: float, z_top: float) -> Part:
     return disc - hole
 
 
+def _joint_interlock(z_face: float, d: float, h: float) -> Part:
+    """`N_JOINT_BUMPS` cylindrical features at cardinal azimuths,
+    centered on `JOINT_BUMP_CENTERLINE_R`, occupying z ∈ [z_face,
+    z_face + h]. Used twice per joint: unioned onto the lower
+    column's top flange as bumps; subtracted from the upper column's
+    bottom flange as depression voids (which under +Z stacking are
+    the same +Z-extending pocket above the mating face).
+    """
+    features = None
+    for i in range(N_JOINT_BUMPS):
+        theta = i * 360.0 / N_JOINT_BUMPS
+        feature = Rot(0, 0, theta) * Pos(
+            JOINT_BUMP_CENTERLINE_R, 0, z_face + h / 2,
+        ) * Cylinder(d / 2, h)
+        features = feature if features is None else features + feature
+    return features
+
+
 def column(role: str = "middle") -> Part:
     """Square-section tube with a +X exit opening, hinge bosses, a
     rotating collar at mid-height (the bearing-engagement surface for
@@ -403,20 +458,32 @@ def column(role: str = "middle") -> Part:
     # opening also slices the collar into a partial ring.
     tube = tube + _circular_feature(ROT_COLLAR_Z_BOT, ROT_COLLAR_Z_TOP)
 
-    # Top joint flange — castellated face flange placeholder (smooth
-    # disc here; tab geometry deferred per NEXT_STEPS).
+    # Top joint flange + bas-relief bumps. The disc carries 4
+    # cylindrical bumps at cardinal azimuths protruding +JOINT_BUMP_H
+    # above the flange face; they slot into matching depressions on
+    # the upper column's bottom flange to transfer torque across the
+    # joint without bolts or metal hardware.
     tube = tube + _circular_feature(JOINT_FLANGE_Z_BOT, JOINT_FLANGE_Z_TOP)
+    tube = tube + _joint_interlock(
+        JOINT_FLANGE_Z_TOP, JOINT_BUMP_D, JOINT_BUMP_H,
+    )
 
     # Role-specific bottom feature.
     if role == "base":
         # Bottom collar at z 0..5 — motor pinion engages a ring gear
         # integrated with this collar's OD (gear teeth not modeled).
+        # No bas-relief here — the base column has no lower mate.
         tube = tube + _circular_feature(BEARING_Z_BOT, BEARING_Z_TOP)
     else:
         # Middle/top: bottom face flange mating with the lower column's
-        # top flange at z = LOWER_COL_TOP_Z_MAX (= 53). Same OD; the two
-        # flanges contact face-to-face at the joint plane.
+        # top flange at z = LOWER_COL_TOP_Z_MAX (= 53). Same OD; the
+        # two flanges contact face-to-face at the joint plane. The
+        # mating face carries depression voids that receive the lower
+        # column's bumps.
         tube = tube + _circular_feature(z_bot, z_bot + JOINT_FLANGE_T)
+        tube = tube - _joint_interlock(
+            z_bot, JOINT_DEPRESSION_D, JOINT_DEPRESSION_H,
+        )
 
     # Exit opening on +X wall — cuts the tube AND any circular feature
     # that overlaps its z range (rotating collar at 220..225 ⊂ 164..258).
