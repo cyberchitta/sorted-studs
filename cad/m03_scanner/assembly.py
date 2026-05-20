@@ -163,7 +163,7 @@ M03_PART_NAMES = list(CAMERA_RIG_PART_NAMES) + list(TURRET_PART_NAMES)
 # lands at m03-local (0, -ARM_R, 0); the cad/assembly.py top-level
 # then lifts the whole m03 unit so the rig brick centroid reaches
 # world (0, +250, 1030).
-_TURRET_BASE = Pos(0, -TURRET_ARM_R, 0)
+TURRET_BASE = Pos(0, -TURRET_ARM_R, 0)
 
 
 def add_camera_rig(a: Assembly) -> Assembly:
@@ -218,7 +218,7 @@ def add_turret(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
 def add_m03(a: Assembly) -> Assembly:
     """Add every rig + turret part in m03-local coordinates."""
     a = add_camera_rig(a)
-    a = add_turret(a, base=_TURRET_BASE)
+    a = add_turret(a, base=TURRET_BASE)
     return a
 
 
