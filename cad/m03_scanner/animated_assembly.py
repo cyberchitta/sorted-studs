@@ -47,7 +47,13 @@ from assembly import (  # noqa: E402
     add_m03,
     add_m03_internal_checks,
 )
-from params import TURRET_HINGE_PIN_RADIAL, TURRET_HINGE_PIN_Z  # noqa: E402
+from params import (  # noqa: E402
+    TURRET_DUMP_KICKER_PIVOT_X,
+    TURRET_DUMP_KICKER_PIVOT_Y,
+    TURRET_DUMP_KICKER_PIVOT_Z,
+    TURRET_HINGE_PIN_RADIAL,
+    TURRET_HINGE_PIN_Z,
+)
 
 # Parts that revolve with the spider. The dump cam is keyed to the
 # hub shaft and rides the rotor; the kicker lever (and its mount +
@@ -81,6 +87,22 @@ DWELL_FRAC = 0.7
 # surface (acrylic-on-PLA static friction coefficient ≈ 0.3 → tan
 # 30° = 0.577 > 0.3). Tune by eye in the subsite preview.
 MAX_TILT_DEG = 30.0
+
+# Kicker lever co-tilt. The lever rotates around the kicker pin
+# (axis ±Y through turret-local pivot (-110, 0, -99)) in lock-step
+# with the platform tilt — its lifter pad pushes UP on the
+# platform's kicker extension, so the lever's tilt amount is
+# `platform_tilt * KICKER_LEVER_TILT_SCALE`. The scale ≈ 0.83
+# matches the rise of the lifter pad (radius ≈ 96 mm from pivot) to
+# the rise of the platform's kicker extension drop block (radius
+# ≈ 55 mm from its hinge pin) — to first order, equal vertical rise
+# means contact stays tight at peak tilt.
+KICKER_LEVER_PIVOT_TURRET = (
+    TURRET_DUMP_KICKER_PIVOT_X,
+    TURRET_DUMP_KICKER_PIVOT_Y,
+    TURRET_DUMP_KICKER_PIVOT_Z,
+)
+KICKER_LEVER_TILT_SCALE = 0.83
 
 # Per-station hinge pin geometry in **turret-local** (= before
 # TURRET_BASE lifts the unit into m03-local). For each static station
@@ -210,6 +232,16 @@ def build_m03_at(t: float) -> Assembly:
         tilt_xform = pin_in_m03 * tilt_factory(tilt_deg) * pin_in_m03.inverse()
         for sub in ("acrylic", "frame"):
             tilt_parts[f"platform_{dump_station}_{sub}"] = tilt_xform
+
+        # Co-tilt the kicker lever around its pivot pin. Rot(0, -α, 0)
+        # (= around -Y by +α) lifts the lifter pad UP, which is the
+        # mechanism that drives the platform tilt in the real
+        # machine. Same TURRET_BASE conjugation as the platform pin.
+        lever_pivot_m03 = TURRET_BASE * Pos(*KICKER_LEVER_PIVOT_TURRET)
+        lever_tilt = Rot(0, -tilt_deg * KICKER_LEVER_TILT_SCALE, 0)
+        tilt_parts["kicker_lever"] = (
+            lever_pivot_m03 * lever_tilt * lever_pivot_m03.inverse()
+        )
 
     rotor_xform = None
     if theta_rotor_deg != 0.0:
