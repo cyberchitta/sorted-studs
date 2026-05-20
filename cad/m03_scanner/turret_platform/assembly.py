@@ -78,7 +78,7 @@ import math
 import sys
 from pathlib import Path
 
-from build123d import Box, Cylinder, Pos, Rot
+from build123d import Box, Color, Cylinder, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
@@ -497,6 +497,12 @@ STATION_ANGLES = {
     "dump":  180,
 }
 
+# Acrylic insert shape-truth color — faint blue-white at α=0.25 to
+# render as clear PMMA in cad-khana's flat-shaded GLB path. The
+# chitra-cad photo-real path uses ``acrylic_clear`` from its material
+# catalog (transmission=1.0, ior=1.49) and ignores this color.
+ACRYLIC_INSERT_COLOR = Color(0.95, 0.97, 0.98, 0.25)
+
 _STATION_CENTROIDS = {
     "image": Pos(0, +TURRET_ARM_R, 0),
     "load":  Pos(+TURRET_ARM_R, 0, 0),
@@ -533,12 +539,24 @@ def add_turret_platform(
     rotation = Rot(0, 0, angle)
     for sub_name, image_loc in _IMAGE_LOCS:
         full_name = f"platform_{station}_{sub_name}"
+        # The acrylic insert carries an intrinsic translucent baseColor
+        # — design-system ``color_of`` returns None for it (intrinsic
+        # material colour), but the shape-truth GLB needs an alpha
+        # channel to render through. Faint blue-white at α=0.25 reads
+        # as clear PMMA in <model-viewer>'s flat-shaded path; the
+        # photo-real Cycles path (chitra-cad) uses the full
+        # transmission/IOR material instead and ignores this color.
+        color = (
+            ACRYLIC_INSERT_COLOR
+            if sub_name == "acrylic"
+            else color_of(full_name)
+        )
         a = a.add(
             full_name,
             _PART_BUILDERS[sub_name](),
             location=base * centroid * rotation * image_loc,
             material=material_of(full_name),
-            color=color_of(full_name),
+            color=color,
         )
     return a
 
