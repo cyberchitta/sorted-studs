@@ -34,4 +34,5 @@ if __name__ == "__main__":
         resolution=(1920, 1080),
         world_up=(0.0, 0.0, 1.0),
         framing=HERO_3Q,
+        transparent_background=True,
     )

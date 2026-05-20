@@ -42,6 +42,11 @@ Intra-floor pairs (basket-vs-frame, ramp-vs-basket, column-side self-
 clearance) are validated by `single_floor.py` and the standalone
 sub-assemblies; the geometry is z-translated only, so per-floor
 enumeration here would be redundant.
+
+The composition is factored into `build_tower(floor_plan, ...)` so an
+exhibit variant (`exhibit_assembly.py`) can reuse every per-floor
+helper with a reduced plan + basket layout + no drive train / top
+deck. The production assembly is `build_tower(FLOOR_PLAN)`.
 """
 
 import sys
@@ -84,9 +89,8 @@ FLOOR_PLAN = [
     (3, "top"),
 ]
 
-# Through-column top z. Mirrors the single-floor default
-# (add_through_columns z_top = FLOOR_H above the floor's rail datum):
-# one extra FLOOR_H above the top floor for the brick-entry zone.
+# Through-column top z for the production plan. One extra FLOOR_H
+# above the top floor for the brick-entry zone.
 TOP_VERT_Z = 4 * FLOOR_H
 
 
@@ -94,7 +98,7 @@ def _floor_prefix(idx: int, role: str) -> str:
     return f"f{idx}_{role}__"
 
 
-# --- Build -------------------------------------------------------------
+# --- Per-part add helpers ----------------------------------------------
 
 def _add(a: Assembly, name: str, part, **kwargs) -> Assembly:
     """Wrap ``.add(...)`` so every column-side / basket / base-floor
@@ -106,71 +110,40 @@ def _add(a: Assembly, name: str, part, **kwargs) -> Assembly:
     )
 
 
-assembly = Assembly()
+def _add_column_side(
+    a: Assembly, idx: int, role: str, prefix: str, *, with_trap_open: bool,
+) -> Assembly:
+    """Bearing spider + ring bearing + column + hinge pin + ramp +
+    trap-closed (+ trap-open if this floor has an upper neighbour)."""
+    fz_loc = Pos(0, 0, idx * FLOOR_H)
+    a = _add(a, f"{prefix}bearing_spider", _ramp.bearing_spider(role),
+             location=fz_loc)
+    a = _add(a, f"{prefix}ring_bearing", _ramp.ring_bearing(role),
+             location=fz_loc)
+    a = _add(a, f"{prefix}column", _ramp.column(role), location=fz_loc)
+    a = _add(a, f"{prefix}hinge_pin", _ramp.hinge_pin(),
+             location=fz_loc * _ramp.hinge_loc)
+    a = _add(a, f"{prefix}ramp", _ramp.ramp(),
+             location=fz_loc * _ramp.ramp_loc)
+    a = _add(a, f"{prefix}trap_closed", _ramp.trap(),
+             location=fz_loc * _ramp.hinge_loc * Rot(0, _ramp.TRAP_CLOSED_DEG, 0))
+    # Trap-open envelope only matters where an upper floor is present
+    # to check against; the top floor's open-swing has nothing above it.
+    if with_trap_open:
+        a = _add(a, f"{prefix}trap_open", _ramp.trap(),
+                 location=fz_loc * _ramp.hinge_loc * Rot(0, _ramp.TRAP_OPEN_DEG, 0))
+    return a
 
-# Six through-columns: one set, full-tower span. Replaces the per-
-# floor verticals from `add_frame`.
-assembly = _frame.add_through_columns(
-    assembly,
-    z_bot=-_frame.VERT_EXT_BELOW,
-    z_top=TOP_VERT_Z,
-    color_fn=color_of,
-    material_fn=material_of,
-)
 
-# Per-floor parts.
-prefixes: list[str] = []
-for idx, role in FLOOR_PLAN:
-    pre = _floor_prefix(idx, role)
-    prefixes.append(pre)
-    fz = idx * FLOOR_H
-    fz_loc = Pos(0, 0, fz)
-
-    # Frame horizontals at this floor's rail datum.
-    assembly = _frame.add_floor_horizontals(
-        assembly, z=fz, prefix=pre,
-        color_fn=color_of, material_fn=material_of,
-    )
-
-    # Column-side: spider / ring / column / hinge pin / ramp / trap-closed.
-    assembly = _add(
-        assembly, f"{pre}bearing_spider", _ramp.bearing_spider(role),
-        location=fz_loc,
-    )
-    assembly = _add(
-        assembly, f"{pre}ring_bearing", _ramp.ring_bearing(role),
-        location=fz_loc,
-    )
-    assembly = _add(
-        assembly, f"{pre}column", _ramp.column(role), location=fz_loc,
-    )
-    assembly = _add(
-        assembly, f"{pre}hinge_pin", _ramp.hinge_pin(),
-        location=fz_loc * _ramp.hinge_loc,
-    )
-    assembly = _add(
-        assembly, f"{pre}ramp", _ramp.ramp(),
-        location=fz_loc * _ramp.ramp_loc,
-    )
-    assembly = _add(
-        assembly, f"{pre}trap_closed", _ramp.trap(),
-        location=fz_loc * _ramp.hinge_loc * Rot(0, _ramp.TRAP_CLOSED_DEG, 0),
-    )
-    # Trap at max-open: only needed on floors that have an upper
-    # neighbour (its envelope reaches up into that next floor's
-    # column-bottom zone). Top floor's trap-open has nothing above it
-    # to test against — skip to keep the check matrix focused.
-    if idx < 3:
-        assembly = _add(
-            assembly, f"{pre}trap_open", _ramp.trap(),
-            location=fz_loc * _ramp.hinge_loc * Rot(0, _ramp.TRAP_OPEN_DEG, 0),
-        )
-
-    # Baskets per the mixed FLOOR_LAYOUT.
-    for center_deg, n_size, notches in FLOOR_LAYOUT:
-        bname = f"{pre}basket_{int(round(center_deg)):03d}_{n_size:02d}"
-        assembly = _add(
-            assembly, bname,
+def _add_baskets(
+    a: Assembly, idx: int, prefix: str, basket_layout,
+) -> Assembly:
+    """Baskets per the supplied layout at floor `idx`."""
+    fz_loc = Pos(0, 0, idx * FLOOR_H)
+    for center_deg, n_size, notches in basket_layout:
+        bname = f"{prefix}basket_{int(round(center_deg)):03d}_{n_size:02d}"
+        a = _add(
+            a, bname,
             _bkt.basket(
                 half_angle_deg=180.0 / n_size,
                 notch_left="left" in notches,
@@ -179,145 +152,227 @@ for idx, role in FLOOR_PLAN:
             ),
             location=fz_loc * Rot(0, 0, center_deg),
         )
-
-    # Base-floor-only: drive train (motor + drive shaft + mount) below
-    # the rail datum. Its parts live at z ∈ [-105, +5] in the floor
-    # frame — placed at fz_loc which is (0, 0, 0) for the base floor.
-    if role == "base":
-        assembly = _add(
-            assembly, f"{pre}motor", _base.motor(), location=fz_loc,
-        )
-        assembly = _add(
-            assembly, f"{pre}drive_shaft", _base.drive_shaft(), location=fz_loc,
-        )
-        assembly = _add(
-            assembly, f"{pre}motor_mount", _base.motor_mount(), location=fz_loc,
-        )
+    return a
 
 
-# Top deck — added once, after the per-floor loop. Bottom face at
-# z = TOP_VERT_Z (top of through-columns); annular aperture passes the
-# top floor's column body + rotating collar.
-_top_deck = (
-    Cylinder(TOP_DECK_OD / 2, TOP_DECK_T)
-    - Cylinder(TOP_DECK_APERTURE_D / 2, TOP_DECK_T * 2)
-)
-assembly = _add(
-    assembly, "top_acrylic", _top_deck,
-    location=Pos(0, 0, TOP_VERT_Z + TOP_DECK_T / 2),
-)
+def _add_drive_train(a: Assembly, idx: int, prefix: str) -> Assembly:
+    """Motor + drive shaft + motor mount below the base floor's rail
+    datum. Drive shaft is currently obsolete (see module docstring) —
+    kept in the model until the off-axis-pinion rework lands."""
+    fz_loc = Pos(0, 0, idx * FLOOR_H)
+    a = _add(a, f"{prefix}motor", _base.motor(), location=fz_loc)
+    a = _add(a, f"{prefix}drive_shaft", _base.drive_shaft(), location=fz_loc)
+    a = _add(a, f"{prefix}motor_mount", _base.motor_mount(), location=fz_loc)
+    return a
 
 
-# --- Design-system coverage --------------------------------------------
-#
-# Every named part this 4-floor tower adds must appear in the active
-# design system's tag dict (``None`` allowed for hardware — kept at
-# material's intrinsic color). A part added without a tag fails here
-# instead of silently rendering off-palette. Swapping
-# ``DESIGN_SYSTEM_NAME`` (in ``cad/design_systems.py``) to a palette
-# missing a tag also fails here, so the swap surface is loud.
-_untagged = sorted(
-    {p.name for p in assembly.parts if basename_of(p.name) not in DESIGN_SYSTEM.tag_of}
-)
-assert not _untagged, (
-    f"{len(_untagged)} m05 part(s) missing a tag for design system "
-    f"'{DESIGN_SYSTEM.name}' in design_systems.py: {_untagged}"
-)
+def _add_floor(
+    a: Assembly, idx: int, role: str, *,
+    basket_layout,
+    with_trap_open: bool,
+    with_drive_train: bool,
+) -> tuple[str, Assembly]:
+    """One full floor: frame horizontals + column-side stack + baskets
+    + (drive train if requested). Returns (prefix, assembly)."""
+    pre = _floor_prefix(idx, role)
+    a = _frame.add_floor_horizontals(
+        a, z=idx * FLOOR_H, prefix=pre,
+        color_fn=color_of, material_fn=material_of,
+    )
+    a = _add_column_side(a, idx, role, pre, with_trap_open=with_trap_open)
+    a = _add_baskets(a, idx, pre, basket_layout)
+    if with_drive_train:
+        a = _add_drive_train(a, idx, pre)
+    return pre, a
 
 
-# --- Cross-floor checks ------------------------------------------------
+def _add_top_deck(a: Assembly, *, top_z: float) -> Assembly:
+    """Clear-acrylic cap disc; bottom face tangent to through-column tops."""
+    top_deck = (
+        Cylinder(TOP_DECK_OD / 2, TOP_DECK_T)
+        - Cylinder(TOP_DECK_APERTURE_D / 2, TOP_DECK_T * 2)
+    )
+    return _add(
+        a, "top_acrylic", top_deck,
+        location=Pos(0, 0, top_z + TOP_DECK_T / 2),
+    )
 
-# Adjacent-floor pairs only. Non-adjacent floors are >1·FLOOR_H apart
-# and the trap-open envelope reaches at most ~70 mm above its hinge,
-# so floor i+2 is comfortably out of range.
-for lower_idx in range(3):
-    lower_pre = prefixes[lower_idx]
-    upper_pre = prefixes[lower_idx + 1]
+
+# --- Cross-check helpers -----------------------------------------------
+
+def _add_floor_pair_checks(
+    a: Assembly, lower_pre: str, upper_pre: str,
+) -> Assembly:
+    """Adjacent-floor cross-checks: upper floor's column-bottom stack
+    must clear the lower floor's open-trap envelope and column-top."""
     upper_stack = [
         f"{upper_pre}column",
         f"{upper_pre}ring_bearing",
         f"{upper_pre}bearing_spider",
     ]
     for u in upper_stack:
-        assembly = (
-            assembly
+        a = (
+            a
             .assert_no_interference(f"{lower_pre}trap_open", u)
             .assert_no_interference(f"{lower_pre}column", u)
         )
+    return a
 
 
-# --- Top-deck cross-checks ---------------------------------------------
-
-# Disc rests on the through-column tops (tangent contact at z = TOP_VERT_Z)
-# and clears the top floor's central column body + rotating collar through
-# its central aperture. Inner-hex through-columns sit at r ≈ 162, well
-# inside the disc OD/2=330 and well outside the aperture R=75, so they
-# pass under the disc and contribute to its support too.
-top_pre = prefixes[3]
-for k in range(6):
-    assembly = (
-        assembly
-        .assert_no_interference("top_acrylic", f"outer_vert_{k}")
-        .assert_no_interference("top_acrylic", f"inner_vert_{k}")
-    )
-assembly = assembly.assert_no_interference("top_acrylic", f"{top_pre}column")
+def _add_top_deck_checks(a: Assembly, top_pre: str) -> Assembly:
+    """Disc rests on the through-column tops (tangent contact at
+    z = top_z) and clears the top floor's central column body +
+    rotating collar through its central aperture. Inner-hex
+    through-columns sit at r ≈ 162, well inside the disc OD/2=330 and
+    well outside the aperture R=75."""
+    for k in range(6):
+        a = (
+            a
+            .assert_no_interference("top_acrylic", f"outer_vert_{k}")
+            .assert_no_interference("top_acrylic", f"inner_vert_{k}")
+        )
+    return a.assert_no_interference("top_acrylic", f"{top_pre}column")
 
 
-# --- Base-floor drive train cross-checks -------------------------------
+def _add_drive_train_checks(a: Assembly, base_pre: str) -> Assembly:
+    """Drive shaft / motor / motor mount clearance vs the base floor's
+    column-side stack, ramp_mechanism, and frame radials."""
+    shaft = f"{base_pre}drive_shaft"
+    mtr = f"{base_pre}motor"
+    mount = f"{base_pre}motor_mount"
 
-# Drive shaft passes coaxially up through the column-bottom stack
-# (spider hub ID ≫ shaft D, ring-bearing ID ≫ shaft D, column collar
-# square hole ≫ shaft D). Motor sits well below all frame members.
-# Motor mount sits flush with the radial-rail bottom face (tangent at
-# z = -RAIL_SIZE) and stops 1 mm short of the rail inner ends radially.
-base_pre = prefixes[0]
-shaft = f"{base_pre}drive_shaft"
-mtr = f"{base_pre}motor"
-mount = f"{base_pre}motor_mount"
-
-# Drive shaft vs base-floor column-side stack (clearance check inside
-# their respective IDs / interior cavities).
-assembly = (
-    assembly
-    .assert_no_interference(shaft, f"{base_pre}column")
-    .assert_no_interference(shaft, f"{base_pre}ring_bearing")
-    .assert_no_interference(shaft, f"{base_pre}bearing_spider")
-)
-
-# Motor body vs frame + ramp_mechanism on the base floor. Motor sits
-# at z ∈ [-105, -25], well below every other modeled part.
-for other in (
-    f"{base_pre}column",
-    f"{base_pre}ring_bearing",
-    f"{base_pre}bearing_spider",
-    f"{base_pre}ramp",
-    f"{base_pre}trap_closed",
-    f"{base_pre}trap_open",
-):
-    assembly = assembly.assert_no_interference(mtr, other)
-
-# Motor mount vs base-floor frame radials and inner hex (closest frame
-# members radially — outer hex / corner columns are ≥ 270 mm from
-# axis, well outside the mount's 89 mm reach). Only the inboard
-# radial segment overlaps the mount's reach; the outboard segment
-# starts at r ≈ 183, well past the mount.
-for k in range(6):
-    assembly = (
-        assembly
-        .assert_no_interference(mount, f"{base_pre}radial_inner_{k}")
-        .assert_no_interference(mount, f"{base_pre}radial_outer_{k}")
-        .assert_no_interference(mount, f"{base_pre}inner_horiz_{k}")
+    # Drive shaft passes coaxially up through the column-bottom stack
+    # (spider hub ID ≫ shaft D, ring-bearing ID ≫ shaft D, column collar
+    # square hole ≫ shaft D).
+    a = (
+        a
+        .assert_no_interference(shaft, f"{base_pre}column")
+        .assert_no_interference(shaft, f"{base_pre}ring_bearing")
+        .assert_no_interference(shaft, f"{base_pre}bearing_spider")
     )
 
-# Motor mount vs base-floor column-side stack. All ramp_mechanism base
-# parts sit at z ≥ 0; the mount is at z ∈ [-25, -20]. Tangent contact
-# nowhere — pure z separation.
-for other in (
-    f"{base_pre}column",
-    f"{base_pre}ring_bearing",
-    f"{base_pre}bearing_spider",
-):
-    assembly = assembly.assert_no_interference(mount, other)
+    # Motor body vs base-floor frame + ramp_mechanism. Motor sits at
+    # z ∈ [-105, -25], well below every other modeled part.
+    for other in (
+        f"{base_pre}column",
+        f"{base_pre}ring_bearing",
+        f"{base_pre}bearing_spider",
+        f"{base_pre}ramp",
+        f"{base_pre}trap_closed",
+        f"{base_pre}trap_open",
+    ):
+        a = a.assert_no_interference(mtr, other)
+
+    # Motor mount vs base-floor frame radials and inner hex (closest
+    # frame members radially). Outer hex / corner columns are ≥ 270 mm
+    # from axis, well outside the mount's 89 mm reach.
+    for k in range(6):
+        a = (
+            a
+            .assert_no_interference(mount, f"{base_pre}radial_inner_{k}")
+            .assert_no_interference(mount, f"{base_pre}radial_outer_{k}")
+            .assert_no_interference(mount, f"{base_pre}inner_horiz_{k}")
+        )
+
+    # Motor mount vs base-floor column-side stack. All ramp_mechanism
+    # base parts sit at z ≥ 0; the mount is at z ∈ [-25, -20]. Tangent
+    # contact nowhere — pure z separation.
+    for other in (
+        f"{base_pre}column",
+        f"{base_pre}ring_bearing",
+        f"{base_pre}bearing_spider",
+    ):
+        a = a.assert_no_interference(mount, other)
+
+    return a
+
+
+def _assert_design_system_coverage(a: Assembly) -> None:
+    """Every named part must appear in the active design system's tag
+    dict (``None`` allowed for hardware kept at material's intrinsic
+    color). A part added without a tag fails here instead of silently
+    rendering off-palette."""
+    untagged = sorted(
+        {p.name for p in a.parts if basename_of(p.name) not in DESIGN_SYSTEM.tag_of}
+    )
+    assert not untagged, (
+        f"{len(untagged)} m05 part(s) missing a tag for design system "
+        f"'{DESIGN_SYSTEM.name}' in design_systems.py: {untagged}"
+    )
+
+
+# --- Public composition ------------------------------------------------
+
+def build_tower(
+    floor_plan: list[tuple[int, str]],
+    *,
+    basket_layout=FLOOR_LAYOUT,
+    with_top_deck: bool = True,
+    with_drive_train: bool = True,
+) -> tuple[Assembly, list[str]]:
+    """Compose a hex-tower diverter assembly with cross-floor +
+    drive-train + top-deck checks, parameterised on which floors,
+    baskets, and capping features are present.
+
+    Returns ``(assembly, prefixes)`` so callers can hang custom
+    assertions off the per-floor prefixes if needed.
+
+    `floor_plan` is a list of ``(idx, role)`` tuples in stacking order
+    (lowest first). The exhibit variant passes a reduced plan; the
+    production tower passes ``FLOOR_PLAN`` and gets the default
+    ``FLOOR_LAYOUT`` of 11 baskets per floor.
+
+    `with_top_deck` and `with_drive_train` strip those features for
+    the exhibit. Drive-train assertions and top-deck assertions are
+    skipped accordingly — they reference parts that wouldn't exist.
+    """
+    top_z = (max(idx for idx, _ in floor_plan) + 1) * FLOOR_H
+
+    a = Assembly()
+    a = _frame.add_through_columns(
+        a, z_bot=-_frame.VERT_EXT_BELOW, z_top=top_z,
+        color_fn=color_of, material_fn=material_of,
+    )
+
+    n = len(floor_plan)
+    prefixes: list[str] = []
+    for i, (idx, role) in enumerate(floor_plan):
+        pre, a = _add_floor(
+            a, idx, role,
+            basket_layout=basket_layout,
+            # Trap-open envelope only needs to exist on floors that
+            # have an upper neighbour to check against.
+            with_trap_open=(i < n - 1),
+            with_drive_train=(role == "base" and with_drive_train),
+        )
+        prefixes.append(pre)
+
+    if with_top_deck:
+        a = _add_top_deck(a, top_z=top_z)
+
+    _assert_design_system_coverage(a)
+
+    # Adjacent-floor pairs only. Non-adjacent floors are >1·FLOOR_H
+    # apart and the trap-open envelope reaches at most ~70 mm above
+    # its hinge, so floor i+2 is comfortably out of range.
+    for i in range(n - 1):
+        a = _add_floor_pair_checks(a, prefixes[i], prefixes[i + 1])
+
+    if with_top_deck:
+        a = _add_top_deck_checks(a, prefixes[-1])
+
+    if with_drive_train:
+        base_pre = next(
+            p for (idx, role), p in zip(floor_plan, prefixes) if role == "base"
+        )
+        a = _add_drive_train_checks(a, base_pre)
+
+    return a, prefixes
+
+
+# --- Production assembly -----------------------------------------------
+
+assembly, _ = build_tower(FLOOR_PLAN)
 
 
 if __name__ == "__main__":
