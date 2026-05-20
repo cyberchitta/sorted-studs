@@ -96,7 +96,7 @@ workarounds.
 .venv/bin/khana check  <path/to/assembly.py>   # diagnostics only
 .venv/bin/khana build  <path/to/assembly.py>   # also write STL/STEP
 .venv/bin/khana view   <path/to/assembly.py>   # push to the OCP viewer
-.venv/bin/khana render <path/to/assembly.py>   # ortho + iso PNGs
+.venv/bin/khana draw   <path/to/assembly.py>   # ortho + iso engineering drawings
 ```
 
 `uv run khana …` works too. After any geometry change, run
