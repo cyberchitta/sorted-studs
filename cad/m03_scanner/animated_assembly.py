@@ -1,26 +1,37 @@
 """M03 scanner — time-parameterized assembly factory.
 
-`build_m03_at(t)` returns the static m03 ``Assembly`` at animation
-parameter ``t ∈ [0, 1]``, with the rotor (spider + platforms + cam +
-shaft + flag + drive pulley) revolved around the hub Z axis on a
-stepwise dwell/transit schedule, and the platform currently at the
-DUMP heading tipping outer-down within its dwell to mime the kicker
-dumping a brick.
+``build_m03_at(t)`` returns the static m03 ``Assembly`` at animation
+parameter ``t ∈ [0, 1]`` with three joint DOFs updated:
 
-The turret floor frame, hub housing, bearings, kicker (mount + lever
-+ pin), drive motor + bracket, and homing sensor + bracket all stay
-fixed — they're bolted to the deck, not the spider. The dump cam
-**is** on the rotor (it's keyed to the hub shaft); the kicker lever
-is the static follower bolted to the frame that rides over the cam
-profile as it sweeps past.
+  * ``turret_rotor`` → ``rotor_schedule(t)`` — stepwise 90° dwell-and-
+    transit revolution about the hub Z axis.
+  * ``turret_rotor.platform_<dump_station>`` → ``tilt_schedule(t)`` —
+    bell-shaped outer-down tilt of the platform parked at the DUMP
+    zone during the current dwell.
+  * ``kicker_lever`` → ``tilt_schedule(t) * KICKER_LEVER_TILT_SCALE``
+    — co-tilt of the bench-mounted lever in lock-step with the
+    platform tilt; the lifter pad rises against the platform's
+    kicker extension.
+
+The flat-trajectory ``replace(parts=...)`` rebuild from the prior rev
+is gone — joint structure carries the kinematic intent directly, so
+``cad_khana.export.export_animated_glb`` emits one animation channel
+per joint on the parent node instead of inferring rigid-body groups
+by trajectory match.
+
+The turret floor frame, hub housing + bearings, motor + bracket +
+motor pulley, homing sensor + bracket, kicker mount + pin, and the
+entire camera rig all stay fixed. The dump cam **is** on the rotor
+(keyed to the hub shaft); the kicker lever is the static follower
+that picks up the cam profile.
 
 Used by the GLB animation exporter (see ``export_glb_animated.py``)
-and as the unit of regression insurance for `khana check` across
+and as the unit of regression insurance for ``khana check`` across
 mid-motion frames.
 
 The t→Assembly model is the project's animation primitive: motion is
 expressed mathematically here (``theta_rotor_deg = rotor_schedule(t)``,
-``tilt_deg = tilt_schedule(t)``), the cad-khana sweep is a thin
+``tilt_deg = tilt_schedule(t)``), and the cad-khana sweep is a thin
 wrapper that samples ``factory(t)`` at N values.
 """
 
@@ -34,44 +45,11 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from build123d import Pos, Rot  # noqa: E402
-
 from cad_khana.mechanism.assembly import Assembly  # noqa: E402
 from cad_khana.mechanism.check import check  # noqa: E402
 
-from assembly import (  # noqa: E402
-    TURRET_BASE,
-    TURRET_ARM_NAMES,
-    TURRET_DUMP_CAM_NAMES,
-    TURRET_PLATFORM_NAMES,
-    add_m03,
-    add_m03_internal_checks,
-)
-from params import (  # noqa: E402
-    TURRET_DUMP_KICKER_PIVOT_X,
-    TURRET_DUMP_KICKER_PIVOT_Y,
-    TURRET_DUMP_KICKER_PIVOT_Z,
-    TURRET_HINGE_PIN_RADIAL,
-    TURRET_HINGE_PIN_Z,
-)
+from assembly import add_m03, add_m03_internal_checks  # noqa: E402
 
-# Parts that revolve with the spider. The dump cam is keyed to the
-# hub shaft and rides the rotor; the kicker lever (and its mount +
-# pin) is the static follower bolted to the frame. Hub bearings stay
-# with the housing — physically the outer race is static and the
-# inner spins with the shaft, but the bearing-as-a-whole is rendered
-# as one body, and the visual cost of pinning it to the housing side
-# is nil.
-ROTATING_TURRET_PARTS = frozenset(
-    (
-        "hub_shaft",
-        "drive_pulley_shaft",
-        "homing_flag",
-        *TURRET_ARM_NAMES,
-        *TURRET_PLATFORM_NAMES,
-        *TURRET_DUMP_CAM_NAMES,
-    )
-)
 
 # Number of stations on the turret (= number of dwells per
 # revolution). The scanner is a 4-station turret; the dwell/transit
@@ -88,46 +66,15 @@ DWELL_FRAC = 0.7
 # 30° = 0.577 > 0.3). Tune by eye in the subsite preview.
 MAX_TILT_DEG = 30.0
 
-# Kicker lever co-tilt. The lever rotates around the kicker pin
-# (axis ±Y through turret-local pivot (-110, 0, -99)) in lock-step
-# with the platform tilt — its lifter pad pushes UP on the
-# platform's kicker extension, so the lever's tilt amount is
-# `platform_tilt * KICKER_LEVER_TILT_SCALE`. The scale ≈ 0.83
-# matches the rise of the lifter pad (radius ≈ 96 mm from pivot) to
-# the rise of the platform's kicker extension drop block (radius
-# ≈ 55 mm from its hinge pin) — to first order, equal vertical rise
-# means contact stays tight at peak tilt.
-KICKER_LEVER_PIVOT_TURRET = (
-    TURRET_DUMP_KICKER_PIVOT_X,
-    TURRET_DUMP_KICKER_PIVOT_Y,
-    TURRET_DUMP_KICKER_PIVOT_Z,
-)
+# Kicker lever co-tilt scale. The lever rotates around the kicker pin
+# in lock-step with the platform tilt — its lifter pad pushes UP on
+# the platform's kicker extension, so the lever's tilt amount is
+# `platform_tilt * KICKER_LEVER_TILT_SCALE`. The scale ≈ 0.83 matches
+# the rise of the lifter pad (radius ≈ 96 mm from pivot) to the rise
+# of the platform's kicker extension drop block (radius ≈ 55 mm from
+# its hinge pin) — to first order, equal vertical rise means contact
+# stays tight at peak tilt.
 KICKER_LEVER_TILT_SCALE = 0.83
-
-# Per-station hinge pin geometry in **turret-local** (= before
-# TURRET_BASE lifts the unit into m03-local). For each static station
-# the hinge pin sits at radius TURRET_HINGE_PIN_RADIAL from the hub
-# axis along its arm's radial line. The tilt factory returns the
-# rotation that tips the platform's radially-outward edge toward -Z
-# (positive α = outer-down regardless of station): outer-edge
-# directions are LOAD +X, IMAGE +Y, IDLE -X, DUMP -Y and pin axes
-# alternate ±Y, ±X — signs derived from the right-hand rule on
-# `pin_axis × outer`. Applied in the static turret-local frame
-# (before rotor rotation), so the pin axis is always X- or Y-aligned
-# and a plain Euler ``Rot(...)`` is enough — no arbitrary-axis math.
-# The build_m03_at composition lifts the rotation into m03-local via
-# conjugation by TURRET_BASE (see _tilt_xform below).
-_STATION_TILT = {
-    # static heading → (pin position in turret-local, tilt rotation factory)
-    "load":  ((+TURRET_HINGE_PIN_RADIAL, 0.0, TURRET_HINGE_PIN_Z),
-              lambda a: Rot(0, +a, 0)),
-    "image": ((0.0, +TURRET_HINGE_PIN_RADIAL, TURRET_HINGE_PIN_Z),
-              lambda a: Rot(-a, 0, 0)),
-    "idle":  ((-TURRET_HINGE_PIN_RADIAL, 0.0, TURRET_HINGE_PIN_Z),
-              lambda a: Rot(0, -a, 0)),
-    "dump":  ((0.0, -TURRET_HINGE_PIN_RADIAL, TURRET_HINGE_PIN_Z),
-              lambda a: Rot(+a, 0, 0)),
-}
 
 
 def _quarter(t: float) -> tuple[int, float]:
@@ -194,75 +141,42 @@ def build_m03_at(t: float) -> Assembly:
     """``t ∈ [0, 1]`` ↔ one full rotor revolution. Stepwise dwell-and-
     transit schedule snaps the rotor 90° per quarter; during each
     dwell, the platform parked at the DUMP zone tips outer-down (the
-    kicker dumping a brick).
+    kicker dumping a brick) and the kicker lever co-tilts to drive it.
 
-    Composition order (right-to-left, applied to static m03-local
-    placement):
-        rotor_xform * tilt_xform * static_location
+    Three joints are animated:
+      * ``turret_rotor`` — rotor azimuth.
+      * ``turret_rotor.platform_<dump_station>`` — the one platform
+        currently at DUMP. Per-station axis direction (set in
+        ``assembly.py``'s ``_PLATFORM_PIN_TURRET``) makes positive
+        joint angle ↔ outer-DOWN tilt, so the same ``tilt_deg`` value
+        drives whichever station happens to be at DUMP.
+      * ``kicker_lever`` — bench-mounted follower, co-tilts.
 
-    Where ``rotor_xform`` is a rotation around the hub Z axis
-    (m03-local) and ``tilt_xform`` is a per-station rotation around
-    the DUMP-bound platform's hinge pin. Both are pre-multiplied,
-    leaving each part's static placement intact. The tilt is applied
-    in the **static** turret-local frame (before rotor rotation) so
-    the pin axis is always X- or Y-aligned — plain Euler ``Rot(...)``
-    suffices, no arbitrary-axis math.
-
-    Internal checks are added afterward; they're name-based, so the
-    location shuffle leaves them well-formed."""
+    Internal checks survive intact — they're name-based; nested joint
+    composition leaves part names unchanged."""
     theta_rotor_deg = rotor_schedule(t)
     tilt_deg = tilt_schedule(t)
     q, _ = _quarter(t)
     dump_station = _station_at_dump(q)
 
     a = add_m03(Assembly())
-    # Strip back to just the placements; we'll re-add assertions last.
-    a = replace(a, assertions=())
-
-    tilt_parts: dict[str, object] = {}
+    a = a.with_joint_angle("turret_rotor", theta_rotor_deg)
     if tilt_deg != 0.0:
-        pin_pos, tilt_factory = _STATION_TILT[dump_station]
-        # Conjugate the turret-local pivot into m03-local. TURRET_BASE
-        # is a pure translation, so the pin axis direction is
-        # preserved; only the pivot point shifts. For LOAD/IDLE the
-        # pivot already lies on the correct axis line (axis ±Y,
-        # shift along Y is a no-op) but IMAGE/DUMP have axis ±X and
-        # need the explicit lift.
-        pin_in_m03 = TURRET_BASE * Pos(*pin_pos)
-        tilt_xform = pin_in_m03 * tilt_factory(tilt_deg) * pin_in_m03.inverse()
-        for sub in ("acrylic", "frame"):
-            tilt_parts[f"platform_{dump_station}_{sub}"] = tilt_xform
-
-        # Co-tilt the kicker lever around its pivot pin. Rot(0, -α, 0)
-        # (= around -Y by +α) lifts the lifter pad UP, which is the
-        # mechanism that drives the platform tilt in the real
-        # machine. Same TURRET_BASE conjugation as the platform pin.
-        lever_pivot_m03 = TURRET_BASE * Pos(*KICKER_LEVER_PIVOT_TURRET)
-        lever_tilt = Rot(0, -tilt_deg * KICKER_LEVER_TILT_SCALE, 0)
-        tilt_parts["kicker_lever"] = (
-            lever_pivot_m03 * lever_tilt * lever_pivot_m03.inverse()
+        a = a.with_joint_angle(
+            f"turret_rotor.platform_{dump_station}", tilt_deg
         )
-
-    rotor_xform = None
-    if theta_rotor_deg != 0.0:
-        rotor_xform = (
-            TURRET_BASE * Rot(0, 0, theta_rotor_deg) * TURRET_BASE.inverse()
+        a = a.with_joint_angle(
+            "kicker_lever", tilt_deg * KICKER_LEVER_TILT_SCALE
         )
-
-    def _new_location(p):
-        loc = p.location
-        if p.name in tilt_parts:
-            loc = tilt_parts[p.name] * loc
-        if rotor_xform is not None and p.name in ROTATING_TURRET_PARTS:
-            loc = rotor_xform * loc
-        return loc
-
-    a = replace(
-        a,
-        parts=tuple(replace(p, location=_new_location(p)) for p in a.parts),
-    )
-    a = add_m03_internal_checks(a)
-    return a
+    # Re-add the static internal-check pair set so per-frame regression
+    # still catches mid-motion overlaps. The pre-existing baseline at
+    # tilt frames carries five intentionally-failing assertions
+    # (spider × platform_dump_frame, spider × kicker_lever, pin_idle ×
+    # kicker_lever, platform_dump_frame × kicker_lever, plus the loss
+    # of the c7 dump_cam × kicker_lever overlap as the lever lifts);
+    # the regression value is in surfacing *new* failures, not
+    # rebuilding the baseline.
+    return add_m03_internal_checks(a)
 
 
 assembly = build_m03_at(0.0)

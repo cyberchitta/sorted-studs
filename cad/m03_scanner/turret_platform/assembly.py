@@ -382,10 +382,19 @@ def acrylic_insert(
     size: float = ACRYLIC_INSERT_SIZE,
     thickness: float = ACRYLIC_INSERT_T,
 ):
-    """110 × 110 × 4 mm PMMA insert centred on origin in X / Y, top
-    face at z = 0. Drops into the frame's pocket; rests on the 4
-    corner support lips at z = -4."""
-    return Pos(0, 0, -thickness / 2) * Box(size, size, thickness)
+    """110 × 110 × 4 mm PMMA insert centred on origin in all three
+    axes (canonical local frame — identity intrinsic Location). The
+    placement site lifts the centroid to ``z = -thickness/2`` so the
+    top face sits at the cartridge-local ``z = 0`` plane (acrylic
+    rests on the frame's 4 corner support lips at ``z = -4``).
+
+    Identity intrinsic is load-bearing: cad-khana's
+    ``export_animated_glb`` per-frame TRS samplers extract only
+    ``PlacedPart.location`` and silently drop part-internal
+    Locations, so a dynamic part (any platform during a DUMP dwell)
+    with a non-identity intrinsic renders correctly at frame 0 and
+    quietly wrong thereafter."""
+    return Box(size, size, thickness)
 
 
 def frame():
@@ -513,8 +522,14 @@ _STATION_CENTROIDS = {
 # Cartridge-local part placements. Used by both the standalone
 # (cartridge in isolation) and the per-station builder below
 # (translated + rotated to its turret-local pose).
+#
+# Acrylic gets an explicit ``Pos(0, 0, -ACRYLIC_INSERT_T/2)`` shift so
+# its top face lands at cartridge-local ``z = 0`` — the part itself
+# stays at identity intrinsic (canonical local frame), required for
+# the animated GLB exporter to track its rigid-body trajectory
+# without losing the part-internal offset.
 _IMAGE_LOCS = (
-    ("acrylic", Pos(0, 0, 0)),
+    ("acrylic", Pos(0, 0, -ACRYLIC_INSERT_T / 2)),
     ("frame", Pos(0, 0, 0)),
 )
 

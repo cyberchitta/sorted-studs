@@ -503,24 +503,20 @@ def _cross_rail_stub(length: float = BRACKET_FOOT_X + 40.0):
 
 # --- Assembly builder --------------------------------------------------
 
-DRIVE_PART_NAMES = (
-    "drive_pulley_shaft",
+DRIVE_STATIC_PART_NAMES = (
     "drive_pulley_motor",
     "drive_motor",
     "drive_bracket",
 )
+DRIVE_ROTOR_PART_NAMES = ("drive_pulley_shaft",)
+DRIVE_PART_NAMES = DRIVE_ROTOR_PART_NAMES + DRIVE_STATIC_PART_NAMES
 
 
-def add_turret_drive(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
-    """Add the four drive parts. Parts are positioned in turret-local
-    coordinates; `base` (default: identity) is pre-multiplied to lift
-    them into a parent frame (e.g. world)."""
-    a = a.with_part(
-        "drive_pulley_shaft",
-        driven_pulley(),
-        location=base * Pos(TURRET_HUB_X, TURRET_HUB_Y, PULLEY_Z_CENTER),
-        material=material_of("drive_pulley_shaft"),
-    )
+def add_turret_drive_static(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
+    """Static drive parts: motor + driver pulley (on the motor shaft)
+    + motor bracket. The motor pulley turns in real life, but only
+    the driven-side pulley is locked to the hub shaft we animate —
+    the motor and its pulley render as static for the animation."""
     a = a.with_part(
         "drive_pulley_motor",
         driver_pulley(),
@@ -540,6 +536,26 @@ def add_turret_drive(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
         material=material_of("drive_bracket"),
         color=color_of("drive_bracket"),
     )
+    return a
+
+
+def add_turret_drive_rotor(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
+    """Rotor drive parts: the driven pulley (keyed to the hub shaft)."""
+    a = a.with_part(
+        "drive_pulley_shaft",
+        driven_pulley(),
+        location=base * Pos(TURRET_HUB_X, TURRET_HUB_Y, PULLEY_Z_CENTER),
+        material=material_of("drive_pulley_shaft"),
+    )
+    return a
+
+
+def add_turret_drive(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
+    """All four drive parts. Kept for the standalone test; the m03 top
+    level uses the split helpers so the driven pulley lands in the
+    rotor sub-assembly."""
+    a = add_turret_drive_static(a, base=base)
+    a = add_turret_drive_rotor(a, base=base)
     return a
 
 

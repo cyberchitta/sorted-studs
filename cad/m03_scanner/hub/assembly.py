@@ -256,26 +256,24 @@ _BOTTOM_BEARING_Z = BEARING_T / 2
 
 # --- Assembly builder --------------------------------------------------
 
-HUB_PART_NAMES = (
+HUB_STATIC_PART_NAMES = (
     "hub_housing",
-    "hub_shaft",
     "hub_bearing_top",
     "hub_bearing_bottom",
 )
+HUB_ROTOR_PART_NAMES = ("hub_shaft",)
+HUB_PART_NAMES = HUB_STATIC_PART_NAMES + HUB_ROTOR_PART_NAMES
 
 
-def add_turret_hub(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
-    """Add the four turret-hub parts (housing + shaft + 2 bearings).
-    Parts are positioned in turret-local coordinates; `base` (default:
-    identity) is pre-multiplied to lift them into a parent frame."""
+def add_turret_hub_static(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
+    """Static hub parts: housing + the two bearings. The bearing
+    outer race is physically static; the inner race spins with the
+    shaft, but each bearing renders as one rigid body so we pin it to
+    the housing side (visual cost is nil)."""
     hub_pose = base * Pos(TURRET_HUB_X, TURRET_HUB_Y, RAIL_TOP_Z)
     a = a.with_part(
         "hub_housing", housing(), location=hub_pose,
         material=material_of("hub_housing"), color=color_of("hub_housing"),
-    )
-    a = a.with_part(
-        "hub_shaft", shaft(), location=hub_pose,
-        material=material_of("hub_shaft"),
     )
     a = a.with_part(
         "hub_bearing_top",
@@ -289,6 +287,26 @@ def add_turret_hub(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
         location=hub_pose * Pos(0, 0, _BOTTOM_BEARING_Z),
         material=material_of("hub_bearing_bottom"),
     )
+    return a
+
+
+def add_turret_hub_rotor(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
+    """Rotor hub parts: the shaft (spins with the spider)."""
+    hub_pose = base * Pos(TURRET_HUB_X, TURRET_HUB_Y, RAIL_TOP_Z)
+    a = a.with_part(
+        "hub_shaft", shaft(), location=hub_pose,
+        material=material_of("hub_shaft"),
+    )
+    return a
+
+
+def add_turret_hub(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
+    """All four turret-hub parts (housing + shaft + 2 bearings) on the
+    same flat assembly. Kept for the standalone test; the m03 top
+    level composes via the split helpers above so the shaft can sit
+    in the rotor sub-assembly."""
+    a = add_turret_hub_static(a, base=base)
+    a = add_turret_hub_rotor(a, base=base)
     return a
 
 

@@ -598,20 +598,19 @@ def _cam_stub():
 
 # --- Assembly builder --------------------------------------------------
 
+KICKER_STATIC_PART_NAMES = ("kicker_mount", "kicker_pin")
+KICKER_LEVER_PART_NAMES = ("kicker_lever",)
 KICKER_PART_NAMES = ("kicker_mount", "kicker_lever", "kicker_pin")
 
 
-def add_turret_dump_kicker(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
-    """Place the kicker mount + lever + pin in turret-local. `base`
-    (default: identity) is pre-multiplied to lift the assembly into a
-    parent frame (e.g. world)."""
+def add_turret_dump_kicker_static(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
+    """Static kicker parts: clevis mount + pivot pin. Both bolt to the
+    bench cross-rail; the lever (which pivots around the pin) is added
+    separately so the m03 top level can wrap it in a jointed
+    sub-assembly."""
     a = a.with_part(
         "kicker_mount", kicker_mount(), location=base,
         material=material_of("kicker_mount"), color=color_of("kicker_mount"),
-    )
-    a = a.with_part(
-        "kicker_lever", kicker_lever(), location=base,
-        material=material_of("kicker_lever"), color=color_of("kicker_lever"),
     )
     # Pin axis = pivot bore axis = ±Y. Rotate default Cylinder (+Z) to
     # ±Y, then place centered along the bore axis.
@@ -625,6 +624,27 @@ def add_turret_dump_kicker(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
         ) * Rot(90, 0, 0),
         material=material_of("kicker_pin"),
     )
+    return a
+
+
+def add_turret_dump_kicker_lever(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
+    """Just the lever — the rigid body that swings on the pivot pin.
+    Added to whatever Assembly the caller passes, so the m03 top
+    level can hand in a fresh Assembly and wrap it in a jointed
+    sub-assembly around the pivot axis."""
+    a = a.with_part(
+        "kicker_lever", kicker_lever(), location=base,
+        material=material_of("kicker_lever"), color=color_of("kicker_lever"),
+    )
+    return a
+
+
+def add_turret_dump_kicker(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
+    """Mount + lever + pin on a single flat assembly. Kept for the
+    standalone test; the m03 top level composes via the split helpers
+    above so the lever can carry its own revolute joint."""
+    a = add_turret_dump_kicker_static(a, base=base)
+    a = add_turret_dump_kicker_lever(a, base=base)
     return a
 
 

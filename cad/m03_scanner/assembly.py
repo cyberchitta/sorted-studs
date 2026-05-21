@@ -39,9 +39,9 @@ prefix on; the m05 collisions on `frame`/`drive` are handled by
 import sys
 from pathlib import Path
 
-from build123d import Pos
+from build123d import Axis, Pos, Rot
 
-from cad_khana.mechanism.assembly import Assembly
+from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 from cad_khana.mechanism.check import check
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -56,6 +56,13 @@ from params import (  # noqa: E402
     RAIL_PAD_CLAMP_FRONT_LOW_CLAMP_ROT,
     RAIL_PAD_CLAMP_FRONT_LOW_POS,
     TURRET_ARM_R,
+    TURRET_DUMP_KICKER_PIVOT_X,
+    TURRET_DUMP_KICKER_PIVOT_Y,
+    TURRET_DUMP_KICKER_PIVOT_Z,
+    TURRET_HINGE_PIN_RADIAL,
+    TURRET_HINGE_PIN_Z,
+    TURRET_HUB_X,
+    TURRET_HUB_Y,
     VERTEX_BACK_UPPER_POS,
     VERTEX_BELOW_LEFT_POS,
     VERTEX_BELOW_RIGHT_POS,
@@ -197,21 +204,167 @@ def add_camera_rig(a: Assembly) -> Assembly:
     return a
 
 
-def add_turret(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
-    """Add every turret part. Parts are placed in turret-local
-    coordinates; `base` is pre-multiplied to lift the unit into the
-    m03-local frame (default: `Pos(0, -TURRET_ARM_R, 0)` via
-    `add_m03`).
-    """
-    a = _frame.add_turret_frame(a, base=base)
-    a = _hub.add_turret_hub(a, base=base)
-    a = _arm.add_turret_arm(a, base=base)
+# --- Kinematic joint table (turret-local) ------------------------------
+#
+# Each station's pin geometry, expressed in turret-local. Positive
+# joint angle tips the radially-outward edge DOWN regardless of
+# station — the axis direction is chosen by the right-hand rule on
+# (pin_axis × outer_radial) so the four platforms share one driver
+# signal. Pin axes are X- or Y-aligned because the platforms sit on
+# cardinal headings; this keeps the rotation a plain axis-angle
+# (no arbitrary-axis math).
+#
+#   station   outer dir   pin axis along   joint axis direction
+#   image     +Y          ±X               (-1,  0, 0)
+#   load      +X          ±Y               ( 0, +1, 0)
+#   idle      -X          ±Y               ( 0, -1, 0)
+#   dump      -Y          ±X               (+1,  0, 0)
+#
+# Pin position = (radial-X, radial-Y, TURRET_HINGE_PIN_Z) where
+# (radial-X, radial-Y) points from hub to the station's hinge edge.
+
+_PLATFORM_PIN_TURRET = {
+    "image": ((0.0, +TURRET_HINGE_PIN_RADIAL, TURRET_HINGE_PIN_Z),
+              (-1.0, 0.0, 0.0)),
+    "load":  ((+TURRET_HINGE_PIN_RADIAL, 0.0, TURRET_HINGE_PIN_Z),
+              (0.0, +1.0, 0.0)),
+    "idle":  ((-TURRET_HINGE_PIN_RADIAL, 0.0, TURRET_HINGE_PIN_Z),
+              (0.0, -1.0, 0.0)),
+    "dump":  ((0.0, -TURRET_HINGE_PIN_RADIAL, TURRET_HINGE_PIN_Z),
+              (+1.0, 0.0, 0.0)),
+}
+
+
+def _build_platform_subassembly(station: str) -> Assembly:
+    """Cartridge-local platform sub-assembly. Parts are placed at
+    cartridge identity; the station's centroid + Rz are folded into
+    ``location=`` at ``with_subassembly`` time, and the per-station
+    pin axis lives in the sub-assembly's ``joint``."""
+    sub = Assembly()
+    for sub_name, image_loc in _turret_platform._IMAGE_LOCS:
+        full_name = f"platform_{station}_{sub_name}"
+        # Mirror add_turret_platform's color/material rule — the
+        # acrylic insert carries a translucent intrinsic baseColor;
+        # everything else looks up via design_systems.
+        color = (
+            _turret_platform.ACRYLIC_INSERT_COLOR
+            if sub_name == "acrylic"
+            else color_of(full_name)
+        )
+        sub = sub.with_part(
+            full_name,
+            _turret_platform._PART_BUILDERS[sub_name](),
+            location=image_loc,
+            material=material_of(full_name),
+            color=color,
+        )
+    return sub
+
+
+def _build_turret_rotor() -> Assembly:
+    """Rotor sub-assembly in turret-local: the rigid body that revolves
+    about the hub Z axis. Includes the spider + hinge pins + dump cam
+    + every shaft-keyed part (hub shaft, driven pulley, homing flag),
+    plus four platform sub-sub-assemblies — each platform's hinge
+    pin axis is in the rotor's own frame (= turret-local), so the
+    platforms inherit the rotor's azimuth automatically and add only
+    their own tilt DOF on top."""
+    rotor = Assembly()
+    rotor = _arm.add_turret_arm(rotor)
+    rotor = _hub.add_turret_hub_rotor(rotor)
+    rotor = _drive.add_turret_drive_rotor(rotor)
+    rotor = _homing.add_turret_homing_rotor(rotor)
+    rotor = _dump_cam.add_turret_dump_cam(rotor)
     for station in TURRET_STATIONS:
-        a = _turret_platform.add_turret_platform(a, station, base=base)
-    a = _dump_cam.add_turret_dump_cam(a, base=base)
-    a = _dump_kicker.add_turret_dump_kicker(a, base=base)
-    a = _drive.add_turret_drive(a, base=base)
-    a = _homing.add_turret_homing(a, base=base)
+        pin_pos, pin_dir = _PLATFORM_PIN_TURRET[station]
+        rotor = rotor.with_subassembly(
+            f"platform_{station}",
+            _build_platform_subassembly(station),
+            location=(
+                _turret_platform._STATION_CENTROIDS[station]
+                * Rot(0, 0, _turret_platform.STATION_ANGLES[station])
+            ),
+            joint=RevoluteJoint(axis=Axis(pin_pos, pin_dir), angle_deg=0.0),
+        )
+    return rotor
+
+
+def _build_kicker_lever_subassembly() -> Assembly:
+    """Lever-only sub-assembly in turret-local. The pivot axis is
+    attached at ``with_subassembly`` time on the m03 root; the lever
+    rotates around the pin during a dump dwell while the mount + pin
+    stay with the static frame."""
+    lever = Assembly()
+    lever = _dump_kicker.add_turret_dump_kicker_lever(lever)
+    return lever
+
+
+def add_turret(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
+    """Static turret parts in m03-local plus the rotor and the kicker
+    lever as jointed sub-assemblies.
+
+    Structure:
+      * static parts (frame, hub housing + bearings, motor + bracket
+        + motor pulley, homing sensor + bracket, kicker mount + pin)
+        sit flat on ``a``, lifted by ``base`` to m03-local.
+      * ``turret_rotor`` is a sub-assembly whose ``RevoluteJoint``
+        about the m03-local Z axis through the hub drives the spider
+        rotation. Inside the rotor live four ``platform_<station>``
+        sub-sub-assemblies, each with its own pin-axis joint in
+        turret-local — only the platform parked at DUMP tilts during
+        a dwell, but the same axis table covers any station.
+      * ``kicker_lever`` is a sub-assembly with its pivot-pin joint
+        in m03-local; the mount + pin remain static.
+
+    Joint axes attached to a sub-assembly are interpreted in the
+    parent's frame. The rotor and the lever live in the m03 root, so
+    their axes use m03-local coordinates (= ``base * turret-local``);
+    the platforms live inside the rotor, so their axes stay in
+    turret-local (= the rotor's parts' frame)."""
+    # Static frame (in m03-local via `base`).
+    a = _frame.add_turret_frame(a, base=base)
+    a = _hub.add_turret_hub_static(a, base=base)
+    a = _drive.add_turret_drive_static(a, base=base)
+    a = _homing.add_turret_homing_static(a, base=base)
+    a = _dump_kicker.add_turret_dump_kicker_static(a, base=base)
+
+    # Rotor — placed at `base`, joint about the m03-local Z axis
+    # through the hub. (Z is parallel to itself everywhere, so the
+    # pivot's Z value is irrelevant; pick 0 for clarity.)
+    hub_m03 = base * Pos(TURRET_HUB_X, TURRET_HUB_Y, 0.0)
+    a = a.with_subassembly(
+        "turret_rotor",
+        _build_turret_rotor(),
+        location=base,
+        joint=RevoluteJoint(
+            axis=Axis(
+                (hub_m03.position.X, hub_m03.position.Y, hub_m03.position.Z),
+                (0.0, 0.0, 1.0),
+            ),
+            angle_deg=0.0,
+        ),
+    )
+
+    # Kicker lever — bench-mounted at `base`, joint about the lever's
+    # pivot pin (m03-local axis along -Y so positive angle = lifter
+    # pad up, matching the cam push direction).
+    pivot_m03 = base * Pos(
+        TURRET_DUMP_KICKER_PIVOT_X,
+        TURRET_DUMP_KICKER_PIVOT_Y,
+        TURRET_DUMP_KICKER_PIVOT_Z,
+    )
+    a = a.with_subassembly(
+        "kicker_lever",
+        _build_kicker_lever_subassembly(),
+        location=base,
+        joint=RevoluteJoint(
+            axis=Axis(
+                (pivot_m03.position.X, pivot_m03.position.Y, pivot_m03.position.Z),
+                (0.0, -1.0, 0.0),
+            ),
+            angle_deg=0.0,
+        ),
+    )
     return a
 
 

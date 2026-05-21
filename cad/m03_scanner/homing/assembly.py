@@ -434,24 +434,14 @@ def _cross_rail_stub(length: float = BRACKET_FOOT_X + 40.0):
 
 # --- Assembly builder --------------------------------------------------
 
-HOMING_PART_NAMES = (
-    "homing_flag",
-    "homing_sensor",
-    "homing_bracket",
-)
+HOMING_STATIC_PART_NAMES = ("homing_sensor", "homing_bracket")
+HOMING_ROTOR_PART_NAMES = ("homing_flag",)
+HOMING_PART_NAMES = HOMING_ROTOR_PART_NAMES + HOMING_STATIC_PART_NAMES
 
 
-def add_turret_homing(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
-    """Add the three homing parts. Parts are positioned in turret-local
-    coordinates; `base` (default: identity) is pre-multiplied to lift
-    them into a parent frame (e.g. world)."""
-    a = a.with_part(
-        "homing_flag",
-        flag(),
-        location=base * Pos(TURRET_HUB_X, TURRET_HUB_Y, FLAG_Z_CENTER),
-        material=material_of("homing_flag"),
-        color=color_of("homing_flag"),
-    )
+def add_turret_homing_static(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
+    """Static homing parts: sensor + bracket. Both bolt to the bench
+    frame; only the flag (keyed to the hub shaft) revolves."""
     # homing_sensor material left unset — opto-interrupter housing,
     # render.py overrides.
     a = a.with_part(
@@ -466,6 +456,27 @@ def add_turret_homing(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
         material=material_of("homing_bracket"),
         color=color_of("homing_bracket"),
     )
+    return a
+
+
+def add_turret_homing_rotor(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
+    """Rotor homing parts: the flag (keyed to the hub shaft)."""
+    a = a.with_part(
+        "homing_flag",
+        flag(),
+        location=base * Pos(TURRET_HUB_X, TURRET_HUB_Y, FLAG_Z_CENTER),
+        material=material_of("homing_flag"),
+        color=color_of("homing_flag"),
+    )
+    return a
+
+
+def add_turret_homing(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
+    """All three homing parts. Kept for the standalone test; the m03
+    top level uses the split helpers so the flag lands in the rotor
+    sub-assembly."""
+    a = add_turret_homing_static(a, base=base)
+    a = add_turret_homing_rotor(a, base=base)
     return a
 
 
