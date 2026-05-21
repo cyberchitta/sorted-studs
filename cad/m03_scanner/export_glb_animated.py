@@ -10,6 +10,7 @@ which loops the sweep in ``DURATION_S`` seconds.
 """
 
 import sys
+from datetime import date
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -38,7 +39,7 @@ def main() -> None:
         factory,
         ts=ts,
         out=OUT_DIR,
-        name="scanner-animated-260520.glb",
+        name=f"scanner-animated-{date.today():%y%m%d}.glb",
         duration_s=DURATION_S,
     )
     print(f"wrote {path} ({path.stat().st_size:,} bytes)")
