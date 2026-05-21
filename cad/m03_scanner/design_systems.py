@@ -18,16 +18,11 @@ from build123d import Color
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from cad.design_systems import (  # noqa: E402
-    BAUHAUS_COLORS,
-    CLEAN_COLORS,
-    CYBERCHITTA_COLORS,
     DESIGN_SYSTEM_NAME,
     DesignSystem,
-    MIDNIGHT_COLORS,
     Module,
     Role,
-    SIGNAL_COLORS,
-    WORKSHOP_COLORS,
+    bind_all,
 )
 
 
@@ -115,23 +110,9 @@ MODULE_OF: dict[str, Module | None] = {
 }
 
 
-# --- Bound DesignSystems ----------------------------------------------
+# --- Bound DesignSystem -----------------------------------------------
 
-WORKSHOP     = DesignSystem(name="workshop",     tag_of=ROLE_OF,   palette=WORKSHOP_COLORS)
-BAUHAUS      = DesignSystem(name="bauhaus",      tag_of=MODULE_OF, palette=BAUHAUS_COLORS)
-CLEAN        = DesignSystem(name="clean",        tag_of=ROLE_OF,   palette=CLEAN_COLORS)
-MIDNIGHT     = DesignSystem(name="midnight",     tag_of=ROLE_OF,   palette=MIDNIGHT_COLORS)
-SIGNAL       = DesignSystem(name="signal",       tag_of=ROLE_OF,   palette=SIGNAL_COLORS)
-CYBERCHITTA  = DesignSystem(name="cyberchitta",  tag_of=ROLE_OF,   palette=CYBERCHITTA_COLORS)
-
-DESIGN_SYSTEM: DesignSystem = {
-    "workshop":    WORKSHOP,
-    "bauhaus":     BAUHAUS,
-    "clean":       CLEAN,
-    "midnight":    MIDNIGHT,
-    "signal":      SIGNAL,
-    "cyberchitta": CYBERCHITTA,
-}[DESIGN_SYSTEM_NAME]
+DESIGN_SYSTEM: DesignSystem = bind_all(ROLE_OF, MODULE_OF)[DESIGN_SYSTEM_NAME]
 
 
 def color_of(part_name: str) -> Color | None:

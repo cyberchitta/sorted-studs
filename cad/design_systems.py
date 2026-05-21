@@ -161,10 +161,35 @@ CYBERCHITTA_COLORS: dict[Enum, Color] = {
 # Single switch for the whole repo. Readable from the SORTED_STUDS_DS
 # environment variable so render scripts can override it per-process.
 # Each module's ``design_systems.py`` reads this on import to bind its
-# local ``DESIGN_SYSTEM``.
-DESIGN_SYSTEM_NAME: str = os.environ.get(
-    "SORTED_STUDS_DS", "workshop"
-)  # "workshop" | "bauhaus" | "clean" | "midnight" | "signal" | "cyberchitta"
+# local ``DESIGN_SYSTEM``. Valid values match the keys returned by
+# ``bind_all`` below — keep them in sync when adding a palette.
+DESIGN_SYSTEM_NAME: str = os.environ.get("SORTED_STUDS_DS", "workshop")
+
+
+# --- Bind every palette for a module ----------------------------------
+
+def bind_all(
+    role_of: dict[str, Role | None],
+    module_of: dict[str, Module | None],
+) -> dict[str, DesignSystem]:
+    """Bind every known palette to a module's tag dicts.
+
+    Each module's ``design_systems.py`` declares two tag dicts
+    (``ROLE_OF`` and ``MODULE_OF``) and then picks the active palette
+    with ``bind_all(ROLE_OF, MODULE_OF)[DESIGN_SYSTEM_NAME]``. Role-
+    keyed palettes (workshop / clean / midnight / signal / cyberchitta)
+    consume ``role_of``; the module-keyed ``bauhaus`` palette consumes
+    ``module_of``. Adding a new palette is one line here — modules
+    pick it up automatically on the next import.
+    """
+    return {
+        "workshop":    DesignSystem("workshop",    role_of,   WORKSHOP_COLORS),
+        "bauhaus":     DesignSystem("bauhaus",     module_of, BAUHAUS_COLORS),
+        "clean":       DesignSystem("clean",       role_of,   CLEAN_COLORS),
+        "midnight":    DesignSystem("midnight",    role_of,   MIDNIGHT_COLORS),
+        "signal":      DesignSystem("signal",      role_of,   SIGNAL_COLORS),
+        "cyberchitta": DesignSystem("cyberchitta", role_of,   CYBERCHITTA_COLORS),
+    }
 
 
 # --- compose helper ---------------------------------------------------
