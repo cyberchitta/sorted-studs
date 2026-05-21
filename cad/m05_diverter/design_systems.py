@@ -37,11 +37,11 @@ from build123d import Color
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from cad.design_systems import (  # noqa: E402
-    DESIGN_SYSTEM_NAME,
     DesignSystem,
     Module,
     Role,
     bind_all,
+    resolve_name,
 )
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -114,7 +114,7 @@ MODULE_OF: dict[str, Module | None] = {
 
 # --- Bound DesignSystem -----------------------------------------------
 
-DESIGN_SYSTEM: DesignSystem = bind_all(ROLE_OF, MODULE_OF)[DESIGN_SYSTEM_NAME]
+DESIGN_SYSTEM: DesignSystem = bind_all(ROLE_OF, MODULE_OF)[resolve_name("M05")]
 
 
 # --- Instance-name → basename helpers ---------------------------------

@@ -43,13 +43,19 @@ from build123d import Color
 
 
 def _srgb(r: float, g: float, b: float) -> Color:
-    """Express a colour in sRGB 0–1 and convert to linear for Blender Cycles.
+    """Express a colour in sRGB 0–1 — the way CSS, web pickers, and
+    design tools think about colour.
 
-    Build123d Color values are passed straight to Blender as linear light
-    intensities. Writing them as sRGB (how humans think about colour) and
-    converting here keeps palette definitions readable and physically correct.
+    The returned ``build123d.Color`` carries the sRGB-encoded values
+    *as-is*; consumers that need linear light (Blender Cycles via
+    ``chitra-cad.scene._color_to_rgb``) convert at their input
+    boundary. Consumers that emit sRGB (cad-khana's glTF export, which
+    labels OCP colours as ``Quantity_TOC_sRGB``) use the values
+    directly — double-linearization would crush them to near-black,
+    which is what was happening before this helper stopped doing the
+    conversion itself.
     """
-    return Color(r ** 2.2, g ** 2.2, b ** 2.2)
+    return Color(r, g, b)
 
 
 # --- Functional-role axis ---------------------------------------------
@@ -158,12 +164,37 @@ CYBERCHITTA_COLORS: dict[Enum, Color] = {
 
 # --- Active selection -------------------------------------------------
 
-# Single switch for the whole repo. Readable from the SORTED_STUDS_DS
-# environment variable so render scripts can override it per-process.
-# Each module's ``design_systems.py`` reads this on import to bind its
-# local ``DESIGN_SYSTEM``. Valid values match the keys returned by
+# Repo-wide default palette. Resolves in three layers, highest-priority
+# first:
+#
+#   1. Per-module env var ``SORTED_STUDS_DS_<MODULE>`` (e.g.
+#      ``SORTED_STUDS_DS_M03``) — a module's own switch, useful for
+#      one-pane subsite refreshes where the rest of the assemblies
+#      stay on the global palette.
+#   2. Global env var ``SORTED_STUDS_DS`` — captured here into
+#      ``DESIGN_SYSTEM_NAME`` at import time.
+#   3. The fallback default below.
+#
+# Each module's ``design_systems.py`` calls ``resolve_name("M0X")`` to
+# pick its palette; layers 2 and 3 share the ``DESIGN_SYSTEM_NAME``
+# state (so ``cad/render.py``'s mutate-and-reload schema-switch dance
+# keeps working). Valid palette names match the keys returned by
 # ``bind_all`` below — keep them in sync when adding a palette.
-DESIGN_SYSTEM_NAME: str = os.environ.get("SORTED_STUDS_DS", "workshop")
+DESIGN_SYSTEM_NAME: str = os.environ.get("SORTED_STUDS_DS", "cyberchitta")
+
+
+def resolve_name(module: str | None = None) -> str:
+    """Resolve the active palette name for ``module`` (e.g. ``"M03"``).
+
+    Layered per the docstring above ``DESIGN_SYSTEM_NAME``:
+    per-module env var → global env var (captured into
+    ``DESIGN_SYSTEM_NAME``) → repo default.
+    """
+    if module:
+        per_module = os.environ.get(f"SORTED_STUDS_DS_{module.upper()}")
+        if per_module:
+            return per_module
+    return DESIGN_SYSTEM_NAME
 
 
 # --- Bind every palette for a module ----------------------------------
