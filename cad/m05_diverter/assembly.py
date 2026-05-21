@@ -122,7 +122,7 @@ def _add_column_side(
              location=fz_loc)
     a = _add(a, f"{prefix}column", _ramp.column(role), location=fz_loc)
     a = _add(a, f"{prefix}hinge_pin", _ramp.hinge_pin(),
-             location=fz_loc * _ramp.hinge_loc)
+             location=fz_loc * _ramp.hinge_pin_loc)
     a = _add(a, f"{prefix}ramp", _ramp.ramp(),
              location=fz_loc * _ramp.ramp_loc)
     a = _add(a, f"{prefix}trap_closed", _ramp.trap(),
@@ -322,10 +322,21 @@ def build_tower(
     production tower passes ``FLOOR_PLAN`` and gets the default
     ``FLOOR_LAYOUT`` of 11 baskets per floor.
 
+    `basket_layout` is either a single layout list shared across every
+    floor (production / single-tier exhibits) or a
+    ``dict[floor_idx, layout]`` keyed by floor index for per-floor
+    overrides (the article exhibit, which stages different sizes on
+    different floors).
+
     `with_top_deck` and `with_drive_train` strip those features for
     the exhibit. Drive-train assertions and top-deck assertions are
     skipped accordingly — they reference parts that wouldn't exist.
     """
+    def _layout_for(idx: int):
+        if isinstance(basket_layout, dict):
+            return basket_layout[idx]
+        return basket_layout
+
     top_z = (max(idx for idx, _ in floor_plan) + 1) * FLOOR_H
 
     a = Assembly()
@@ -339,7 +350,7 @@ def build_tower(
     for i, (idx, role) in enumerate(floor_plan):
         pre, a = _add_floor(
             a, idx, role,
-            basket_layout=basket_layout,
+            basket_layout=_layout_for(idx),
             # Trap-open envelope only needs to exist on floors that
             # have an upper neighbour to check against.
             with_trap_open=(i < n - 1),

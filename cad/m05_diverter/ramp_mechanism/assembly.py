@@ -512,7 +512,12 @@ def column(role: str = "middle") -> Part:
 
 
 def hinge_pin() -> Part:
-    return _cyl_along_y(PIN_D / 2, PIN_LEN)
+    """Hinge pin in canonical local frame (axis along +Z). The +Y
+    orientation it needs in the assembly is composed into
+    ``hinge_pin_loc``, not the part itself — see ``ramp()``'s
+    docstring for why this matters for animated GLB exports.
+    """
+    return Cylinder(PIN_D / 2, PIN_LEN)
 
 
 def trap() -> Part:
@@ -530,21 +535,31 @@ def trap() -> Part:
 
 
 def ramp() -> Part:
-    """Fixed sloped delivery plate. Root in the +X half of the column
-    interior just below the trap hinge; extends in +X through the
-    exit opening, sloped down at RAMP_DEG.
+    """Fixed delivery plate. Returned **flat and centered at origin**
+    (identity part-local Location). The full pose — translation to the
+    ramp root, the downward tilt at ``RAMP_DEG``, and the
+    near-edge-at-origin shift of ``+RAMP_L/2`` — is composed into
+    ``ramp_loc`` (assembly-level placement), not the part itself.
 
-    Built in local frame with root at origin, plate extending in +X,
-    then rotated about Y by +RAMP_DEG (tilts +X end toward -Z).
+    Keeping the pose in the placement is what lets animated GLB
+    exporters pick it up via per-frame TRS samplers, which only see
+    ``PlacedPart.location`` and silently drop part-internal Locations.
     """
-    plate = Pos(RAMP_L / 2, 0, 0) * Box(RAMP_L, RAMP_W, RAMP_T)
-    return Rot(0, RAMP_DEG, 0) * plate
+    return Box(RAMP_L, RAMP_W, RAMP_T)
 
 
 # --- Assembly -----------------------------------------------------------
 
 hinge_loc = Location((TRAP_HINGE_X, 0, TRAP_HINGE_Z))
-ramp_loc = Location((RAMP_ROOT_X, 0, RAMP_ROOT_Z))
+# The hinge pin needs its axis along +Y (the canonical hinge direction
+# in the assembly). The rotation lives here in the placement, not in
+# `hinge_pin()`, so per-frame TRS samplers carry it.
+hinge_pin_loc = hinge_loc * Rot(90, 0, 0)
+ramp_loc = (
+    Location((RAMP_ROOT_X, 0, RAMP_ROOT_Z))
+    * Rot(0, RAMP_DEG, 0)
+    * Pos(RAMP_L / 2, 0, 0)
+)
 # Lower-floor stand-ins (middle/top roles only; base has no floor below).
 # Both are mapped into this floor's frame via -FLOOR_H.
 # - lower_trap_open: the floor below's trap at max-open (60°). Reaches
@@ -573,7 +588,7 @@ def make_assembly(role: str = "middle") -> Assembly:
         .add("bearing_spider", bearing_spider(role))
         .add("ring_bearing", ring_bearing(role))
         .add("column", column(role))
-        .add("hinge_pin", hinge_pin(), location=hinge_loc)
+        .add("hinge_pin", hinge_pin(), location=hinge_pin_loc)
         .add("ramp", ramp(), location=ramp_loc)
         .add("trap_closed", trap(), location=hinge_loc * Rot(0, TRAP_CLOSED_DEG, 0))
         .add("trap_open", trap(), location=hinge_loc * Rot(0, TRAP_OPEN_DEG, 0))

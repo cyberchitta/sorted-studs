@@ -77,7 +77,7 @@ def _add(a: Assembly, name: str, part, **kwargs) -> Assembly:
 assembly = _add(assembly, "bearing_spider", _ramp.bearing_spider())
 assembly = _add(assembly, "ring_bearing", _ramp.ring_bearing())
 assembly = _add(assembly, "column", _ramp.column())
-assembly = _add(assembly, "hinge_pin", _ramp.hinge_pin(), location=_ramp.hinge_loc)
+assembly = _add(assembly, "hinge_pin", _ramp.hinge_pin(), location=_ramp.hinge_pin_loc)
 assembly = _add(assembly, "ramp", _ramp.ramp(), location=_ramp.ramp_loc)
 assembly = _add(
     assembly, "trap_closed", _ramp.trap(),
