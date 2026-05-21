@@ -383,7 +383,7 @@ def add_m03(a: Assembly) -> Assembly:
 # pairs to `assert_interference(reason=...)` so they self-fail when
 # the underlying design fix lands and the overlap goes away.
 
-_KNOWN_OVERLAPS = (
+_KNOWN_OVERLAPS_STATIC: tuple[tuple[str, str, str], ...] = (
     (
         "hub_housing",
         "homing_flag",
@@ -407,21 +407,47 @@ _KNOWN_OVERLAPS = (
         "to Y=-25, moving the clipping corner from (X=-12, Y=+19) at "
         "heading ~122° to (X=-19, Y=-14) at heading ~216°. The BASE_R "
         "clip persists at the new heading. Redesign queued (notched "
-        "beam or smaller cam BASE_R).",
+        "beam or smaller cam BASE_R). Persists only at REST — lever "
+        "lifts the clipping corner clear of the cam during dump-dwell "
+        "frames, so animated_assembly.py removes this pair from the "
+        "known-overlap set when the lever joint angle is non-zero.",
     ),
 )
 
+# Backwards-compatible alias (kept for module-level callers that took
+# the previous symbol name).
+_KNOWN_OVERLAPS = _KNOWN_OVERLAPS_STATIC
 
-def add_m03_internal_checks(a: Assembly) -> Assembly:
+
+def add_m03_internal_checks(
+    a: Assembly,
+    known_overlaps: tuple[tuple[str, str, str], ...] = _KNOWN_OVERLAPS_STATIC,
+    suppressed_pairs: frozenset[tuple[str, str]] = frozenset(),
+) -> Assembly:
     """Add every within-m03 cross-boundary check.
 
     Three blocks:
       1. Rig-internal — every non-arch (camera mounts) vs every arch
          member.
       2. Turret-internal — every pair, with the small allow-list of
-         known overlaps downgraded to `assert_interference(reason=…)`.
+         known overlaps downgraded to `assert_interference(reason=…)`
+         and the optional `suppressed_pairs` skipped entirely.
       3. Cross — every turret part vs every rig part.
+
+    ``known_overlaps`` defaults to the static set; per-frame callers in
+    ``animated_assembly.py`` swap in a different set when the lever /
+    a platform is mid-lift.
+
+    ``suppressed_pairs`` (frozenset of ``(name_a, name_b)`` — order
+    independent) skips both the ``assert_no_interference`` and any
+    ``assert_interference`` for those pairs. Use for dynamic-conflict
+    pairs whose overlap state changes throughout the animation but is
+    a single documented kinematic root cause (e.g. the lever hub-end
+    block in the IDLE arm corridor — overlap present at some frames,
+    absent at others, no clean per-frame predicate).
     """
+    suppressed = {tuple(sorted(p)) for p in suppressed_pairs}
+
     # 1. Rig-internal.
     non_arch = [n for n in CAMERA_RIG_PART_NAMES if n not in ARCH_NAMES]
     for internal in non_arch:
@@ -429,13 +455,15 @@ def add_m03_internal_checks(a: Assembly) -> Assembly:
             a = a.assert_no_interference(internal, member)
 
     # 2. Turret-internal.
-    known = {(p, q) for p, q, _ in _KNOWN_OVERLAPS}
-    known |= {(q, p) for p, q, _ in _KNOWN_OVERLAPS}
-    reasons = {(p, q): r for p, q, r in _KNOWN_OVERLAPS}
-    reasons |= {(q, p): r for p, q, r in _KNOWN_OVERLAPS}
+    known = {(p, q) for p, q, _ in known_overlaps}
+    known |= {(q, p) for p, q, _ in known_overlaps}
+    reasons = {(p, q): r for p, q, r in known_overlaps}
+    reasons |= {(q, p): r for p, q, r in known_overlaps}
     for i in range(len(TURRET_PART_NAMES)):
         for j in range(i + 1, len(TURRET_PART_NAMES)):
             pair = (TURRET_PART_NAMES[i], TURRET_PART_NAMES[j])
+            if tuple(sorted(pair)) in suppressed:
+                continue
             if pair in known:
                 a = a.assert_interference(*pair, reason=reasons[pair])
             else:
@@ -444,6 +472,8 @@ def add_m03_internal_checks(a: Assembly) -> Assembly:
     # 3. Cross — turret × rig.
     for tp in TURRET_PART_NAMES:
         for rp in CAMERA_RIG_PART_NAMES:
+            if tuple(sorted((tp, rp))) in suppressed:
+                continue
             a = a.assert_no_interference(tp, rp)
 
     return a

@@ -225,10 +225,13 @@ def housing(
 
 
 def shaft(shaft_d: float = SHAFT_D, length: float = _SHAFT_LEN):
-    """Stock Ø8 round shaft, vertical at hub axis. Origin at the
-    placement (caller positions); extends from z = 0 up to z = length
-    in part-local coords."""
-    return Pos(0, 0, length / 2) * Cylinder(shaft_d / 2, length)
+    """Stock Ø8 round shaft, vertical at hub axis (canonical local
+    frame — identity intrinsic Location). The placement site lifts
+    the centroid so the bottom face lands at the caller's reference
+    plane; required for ``export_animated_glb`` to track the shaft's
+    rigid-body trajectory inside the rotor sub-assembly without
+    losing the part-internal offset."""
+    return Cylinder(shaft_d / 2, length)
 
 
 def bearing(
@@ -291,10 +294,15 @@ def add_turret_hub_static(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
 
 
 def add_turret_hub_rotor(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
-    """Rotor hub parts: the shaft (spins with the spider)."""
+    """Rotor hub parts: the shaft (spins with the spider). Bake the
+    +length/2 Z lift into the placement (Cylinder's centroid is at
+    the placement origin) so the part itself stays at canonical
+    identity intrinsic — required by ``export_animated_glb`` for
+    parts inside the rotor sub-assembly."""
     hub_pose = base * Pos(TURRET_HUB_X, TURRET_HUB_Y, RAIL_TOP_Z)
     a = a.with_part(
-        "hub_shaft", shaft(), location=hub_pose,
+        "hub_shaft", shaft(),
+        location=hub_pose * Pos(0, 0, _SHAFT_LEN / 2),
         material=material_of("hub_shaft"),
     )
     return a

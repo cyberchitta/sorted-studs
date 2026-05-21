@@ -203,9 +203,16 @@ HUB_SKIRT_Z_TOP = ACRYLIC_BOTTOM_Z                                 # = -4
 # the same 0.5 mm air gap used for bracket-to-block clearance.
 _BUSHING_NOTCH_HALF_X = _BUSHING_HALF_X + _PIN_AIR_GAP             # = 10.5
 _BUSHING_NOTCH_X_LEN = 2 * _BUSHING_NOTCH_HALF_X                   # = 21
-# Notch only needs to cover the bushing-block Z range; above z = -10
-# the skirt is intact across the full X span.
-_BUSHING_BLOCK_TOP_Z = -10.0    # mirrors slice (c) BUSHING_BLOCK_W Z
+# Notch spans the full skirt Z. Static clearance only needs to cover
+# the bushing-block Z range (top at -10), but at peak DUMP tilt (~30°
+# about cart pin at Y=-60, Z=-22.5) the skirt's inner edge at cart
+# (Y=-55, Z=-10) — the bottom of the unnotched upper band that
+# would otherwise sit between bushing top and skirt top — swings into
+# turret (Y≈-73.6, Z≈-12.2), clipping the bushing block by ~145 mm³.
+# Extending the notch to the skirt top removes that material; the
+# brackets at cart X=±13 still attach to the skirt outboard portion
+# (X ≤ -10.5 and X ≥ +10.5).
+_BUSHING_NOTCH_Z_TOP = HUB_SKIRT_Z_TOP                              # = -4
 
 
 # --- Kicker extension (cantilevered from skirt past hinge) -------------
@@ -434,8 +441,11 @@ def frame():
     )
 
     # Notch the skirt for the slice (c) bushing block to pass through.
-    notch_z_center = (HUB_SKIRT_Z_BOTTOM + _BUSHING_BLOCK_TOP_Z) / 2
-    notch_z_len = _BUSHING_BLOCK_TOP_Z - HUB_SKIRT_Z_BOTTOM        # = 17.3
+    # Z extends to the skirt top so the inner edge of the upper band
+    # (cart Y=-55, Z=-10) doesn't swing into the bushing block top
+    # face during DUMP tilt.
+    notch_z_center = (HUB_SKIRT_Z_BOTTOM + _BUSHING_NOTCH_Z_TOP) / 2
+    notch_z_len = _BUSHING_NOTCH_Z_TOP - HUB_SKIRT_Z_BOTTOM         # = 23.3
     body -= (
         Pos(0, skirt_y_center, notch_z_center)
         * Box(_BUSHING_NOTCH_X_LEN, FRAME_WALL_T * 3, notch_z_len)
