@@ -36,10 +36,12 @@ that's missing a tag.
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
 
 from build123d import Color
+
+from cad_khana.mechanism.assembly import Assembly
 
 
 def _srgb(r: float, g: float, b: float) -> Color:
@@ -151,14 +153,40 @@ SIGNAL_COLORS: dict[Enum, Color] = {
     Role.CONSUMABLE:          _srgb(0.97, 0.96, 0.93),  # safety white
 }
 
-# CyberChitta brand palette — warm gold/bronze/earth tones from
-# www.cyberchitta.cc light theme (--color-neutral / base-300 / gold-decorative / bronze / base-100)
-CYBERCHITTA_COLORS: dict[Enum, Color] = {
+# CyberChitta brand palettes — warm gold/bronze/earth tones from the
+# supramental-gold theme tokens (www.cyberchitta.cc).
+#
+# Paired light/dark variants: the subsite serves whichever matches the
+# visitor's ``prefers-color-scheme``, so every entry must hold an edge
+# against its target background. Sticking to L ≈ 0.40–0.70 also lets
+# either palette degrade gracefully on the opposite background.
+#
+# The original ``cyberchitta`` palette mapped SECONDARY_STRUCTURE and
+# CONSUMABLE to ``--color-base-300`` / ``--color-base-100`` — which are
+# *page-background* tokens and by design blend into the page. The
+# retuned values below use mid-luminance neutrals and a clay accent
+# (``--color-link``) so painted parts read against the page.
+CYBERCHITTA_LIGHT_COLORS: dict[Enum, Color] = {
     Role.PRIMARY_STRUCTURE:   _srgb(0.290, 0.271, 0.251),  # neutral  #4a4540 — warm charcoal
-    Role.SECONDARY_STRUCTURE: _srgb(0.878, 0.867, 0.847),  # base-300 #e0ddd8 — warm cream-grey
+    Role.SECONDARY_STRUCTURE: _srgb(0.478, 0.443, 0.416),  # mid-grey #7a716a — warm mid grey
     Role.MECHANISM:           _srgb(0.824, 0.667, 0.196),  # gold-dec #d2aa32 — bright gold
     Role.OPTICAL_ENVELOPE:    _srgb(0.804, 0.373, 0.176),  # bronze   #cd5f2d — warm bronze
-    Role.CONSUMABLE:          _srgb(0.969, 0.965, 0.957),  # base-100 #f7f6f4 — warm off-white
+    Role.CONSUMABLE:          _srgb(0.722, 0.329, 0.125),  # link     #b85420 — deep clay
+}
+
+# Mirrors CYBERCHITTA_LIGHT across the luminance band:
+#   neutral / mid-grey shift to lighter warm greys (foreground on dark);
+#   gold and bronze use the dark-theme variants (slightly brighter so
+#   they pop against ``--color-base-100`` #1e1c18).
+# CONSUMABLE re-uses ``--color-link`` dark-theme value, which equals
+# bronze-dark in this theme — fine for m05 because OPTICAL_ENVELOPE is
+# unused there. If a future module mixes both, split them.
+CYBERCHITTA_DARK_COLORS: dict[Enum, Color] = {
+    Role.PRIMARY_STRUCTURE:   _srgb(0.722, 0.690, 0.643),  # neutral  #b8b0a4 — light warm grey
+    Role.SECONDARY_STRUCTURE: _srgb(0.541, 0.510, 0.471),  # mid-grey #8a8278 — slightly brighter mid grey
+    Role.MECHANISM:           _srgb(0.831, 0.659, 0.227),  # gold     #d4a83a — gold (dark theme, --color-gold/--color-primary)
+    Role.OPTICAL_ENVELOPE:    _srgb(0.878, 0.502, 0.290),  # bronze   #e0804a — bronze (dark theme)
+    Role.CONSUMABLE:          _srgb(0.878, 0.502, 0.290),  # link     #e0804a — clay (dark theme)
 }
 
 
@@ -180,7 +208,7 @@ CYBERCHITTA_COLORS: dict[Enum, Color] = {
 # state (so ``cad/render.py``'s mutate-and-reload schema-switch dance
 # keeps working). Valid palette names match the keys returned by
 # ``bind_all`` below — keep them in sync when adding a palette.
-DESIGN_SYSTEM_NAME: str = os.environ.get("SORTED_STUDS_DS", "cyberchitta")
+DESIGN_SYSTEM_NAME: str = os.environ.get("SORTED_STUDS_DS", "cyberchitta-light")
 
 
 def resolve_name(module: str | None = None) -> str:
@@ -208,19 +236,71 @@ def bind_all(
     Each module's ``design_systems.py`` declares two tag dicts
     (``ROLE_OF`` and ``MODULE_OF``) and then picks the active palette
     with ``bind_all(ROLE_OF, MODULE_OF)[DESIGN_SYSTEM_NAME]``. Role-
-    keyed palettes (workshop / clean / midnight / signal / cyberchitta)
-    consume ``role_of``; the module-keyed ``bauhaus`` palette consumes
-    ``module_of``. Adding a new palette is one line here — modules
-    pick it up automatically on the next import.
+    keyed palettes (workshop / clean / midnight / signal /
+    cyberchitta-light / cyberchitta-dark) consume ``role_of``; the
+    module-keyed ``bauhaus`` palette consumes ``module_of``. Adding a
+    new palette is one line here — modules pick it up automatically on
+    the next import.
     """
     return {
-        "workshop":    DesignSystem("workshop",    role_of,   WORKSHOP_COLORS),
-        "bauhaus":     DesignSystem("bauhaus",     module_of, BAUHAUS_COLORS),
-        "clean":       DesignSystem("clean",       role_of,   CLEAN_COLORS),
-        "midnight":    DesignSystem("midnight",    role_of,   MIDNIGHT_COLORS),
-        "signal":      DesignSystem("signal",      role_of,   SIGNAL_COLORS),
-        "cyberchitta": DesignSystem("cyberchitta", role_of,   CYBERCHITTA_COLORS),
+        "workshop":         DesignSystem("workshop",         role_of,   WORKSHOP_COLORS),
+        "bauhaus":          DesignSystem("bauhaus",          module_of, BAUHAUS_COLORS),
+        "clean":            DesignSystem("clean",            role_of,   CLEAN_COLORS),
+        "midnight":         DesignSystem("midnight",         role_of,   MIDNIGHT_COLORS),
+        "signal":           DesignSystem("signal",           role_of,   SIGNAL_COLORS),
+        "cyberchitta-light": DesignSystem("cyberchitta-light", role_of, CYBERCHITTA_LIGHT_COLORS),
+        "cyberchitta-dark":  DesignSystem("cyberchitta-dark",  role_of, CYBERCHITTA_DARK_COLORS),
     }
+
+
+# --- Luminance blend helper -------------------------------------------
+
+def blend(color: Color, t: float) -> Color:
+    """Blend ``color`` toward black (``t < 0``) or white (``t > 0``) by
+    fraction ``|t|``. Used to derive monotonic luminance ramps off a
+    palette base — e.g. m05's basket-size colouring picks a darker
+    shade for the smallest basket and a lighter shade for the largest.
+    Alpha passes through unchanged.
+    """
+    r, g, b, a = tuple(color)
+    target = 0.0 if t < 0 else 1.0
+    f = abs(t)
+    return Color(
+        r + (target - r) * f,
+        g + (target - g) * f,
+        b + (target - b) * f,
+        a,
+    )
+
+
+# --- GLB-export neutral fill ------------------------------------------
+
+def fill_palette_neutrals(assembly: Assembly, neutral: Color) -> Assembly:
+    """Recursively assign ``neutral`` to every PlacedPart whose ``color``
+    is ``None``. Used by static GLB exports only.
+
+    cad-khana's ``export_glb`` is the geometry-truth path: it writes
+    only per-part ``Color`` and ignores ``material``. Parts tagged
+    ``None`` in a module's ``ROLE_OF`` (clear acrylic, glass, FR4, …)
+    therefore default to glTF's flat white baseColor — which has no
+    contrast against ``--color-base-100`` ``#f7f6f4`` in the light
+    palette. Filling with the palette's mid-luminance neutral
+    (``Role.SECONDARY_STRUCTURE``) reads cleanly against both themes.
+
+    Photo-real chitra-cad renders are unaffected: they go through a
+    different driver (``cad/render.py``) that builds its own Assembly
+    instance per palette pass, so this in-place-style return value
+    doesn't leak into Cycles' material catalog.
+    """
+    new_parts = tuple(
+        replace(p, color=neutral) if p.color is None else p
+        for p in assembly.parts
+    )
+    new_subs = tuple(
+        replace(s, assembly=fill_palette_neutrals(s.assembly, neutral))
+        for s in assembly.subassemblies
+    )
+    return replace(assembly, parts=new_parts, subassemblies=new_subs)
 
 
 # --- compose helper ---------------------------------------------------

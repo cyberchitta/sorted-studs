@@ -41,8 +41,10 @@ from cad.design_systems import (  # noqa: E402
     Module,
     Role,
     bind_all,
+    blend,
     resolve_name,
 )
+from build123d import Color  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -127,6 +129,55 @@ def basename_of(part_name: str) -> str:
     """
     sep = "__"
     return part_name.split(sep, 1)[1] if sep in part_name else part_name
+
+
+# --- Basket size ramp -------------------------------------------------
+#
+# All baskets are tagged ``Role.CONSUMABLE``, which is a single palette
+# color. To make basket sizes (N = sides per polygon) visually
+# distinguishable, ramp luminance off the CONSUMABLE base.
+#
+# The ramp is anchored to the page: smaller baskets blend *toward* the
+# page background (less contrast), larger baskets shift *away* (more
+# contrast). The direction therefore flips between light and dark
+# palettes — in light mode smaller = lighter (toward the warm-paper
+# page), in dark mode smaller = darker (toward the near-black page).
+#
+# ``_BASKET_TINT_BY_N`` values are signed magnitudes; positive means
+# "toward the page direction", negative means "away". The palette's
+# page direction is resolved at lookup time via ``_PAGE_SHIFT_SIGN``:
+# +1 for a light page (blend toward white), -1 for a dark page (blend
+# toward black). Net shift fed to ``blend`` is ``tint * sign``.
+_BASKET_TINT_BY_N: dict[int, float] = {
+    6:  +0.30,   # smallest — most blended with the page
+    9:  +0.10,
+    12: -0.10,
+    18: -0.30,   # largest — most contrasted from the page
+}
+
+# Palettes whose page background is dark. Other palettes are assumed
+# light-backgrounded (the historical default). Adding a new dark
+# palette? Add its name here.
+_DARK_PAGE_PALETTES: frozenset[str] = frozenset({"cyberchitta-dark", "midnight"})
+
+
+def _page_shift_sign() -> int:
+    return -1 if resolve_name("M05") in _DARK_PAGE_PALETTES else +1
+
+
+def basket_color_of(n_size: int) -> Color:
+    """Per-size basket color: CONSUMABLE base with a luminance shift
+    keyed to ``n_size`` and the active palette's page direction.
+    Raises ``KeyError`` for an unknown size so a new basket variant
+    surfaces loudly instead of silently inheriting the base color.
+    """
+    if n_size not in _BASKET_TINT_BY_N:
+        raise KeyError(
+            f"no basket-size tint for N={n_size} — add an entry to "
+            f"_BASKET_TINT_BY_N in cad/m05_diverter/design_systems.py"
+        )
+    base = DESIGN_SYSTEM.palette[Role.CONSUMABLE]
+    return blend(base, _BASKET_TINT_BY_N[n_size] * _page_shift_sign())
 
 
 def color_of(part_name: str) -> Color | None:

@@ -54,14 +54,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from build123d import Axis, Cylinder, Pos, Rot
+from build123d import Axis, Color, Cylinder, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 from cad_khana.mechanism.check import check
 
 from base_floor import assembly as _base
 from basket import assembly as _bkt
-from design_systems import DESIGN_SYSTEM, basename_of, color_of
+from design_systems import DESIGN_SYSTEM, basename_of, basket_color_of, color_of
 from materials import material_of
 from frame import assembly as _frame
 from params import FLOOR_H, FLOOR_LAYOUT
@@ -149,12 +149,16 @@ def _add_column_side_rotating(
 def _add_baskets(
     a: Assembly, idx: int, prefix: str, basket_layout,
 ) -> Assembly:
-    """Baskets per the supplied layout at floor `idx`."""
+    """Baskets per the supplied layout at floor `idx`. Color is a
+    size-keyed luminance shift off the palette's CONSUMABLE base
+    (see ``basket_color_of``), so basket sizes are immediately
+    distinguishable in renders. Bypasses ``_add`` to pass the
+    per-instance color explicitly."""
     fz_loc = Pos(0, 0, idx * FLOOR_H)
     for center_deg, n_size, notches in basket_layout:
         bname = f"{prefix}basket_{int(round(center_deg)):03d}_{n_size:02d}"
-        a = _add(
-            a, bname,
+        a = a.with_part(
+            bname,
             _bkt.basket(
                 half_angle_deg=180.0 / n_size,
                 notch_left="left" in notches,
@@ -162,6 +166,8 @@ def _add_baskets(
                 notch_middle="middle" in notches,
             ),
             location=fz_loc * Rot(0, 0, center_deg),
+            color=basket_color_of(n_size),
+            material=material_of(bname),
         )
     return a
 
@@ -202,15 +208,27 @@ def _add_floor(
     return pre, a, rotating
 
 
+# Top-deck shape-truth color — faint blue-white at α=0.25 to render as
+# clear PMMA in cad-khana's flat-shaded GLB path (mirrors
+# m03_scanner/turret_platform/assembly.py:ACRYLIC_INSERT_COLOR). The
+# chitra-cad photo-real path uses ``acrylic_clear`` from its material
+# catalog (transmission=1.0, ior=1.49) and effectively ignores this
+# color (alpha is stripped at render time and the RGB matches the
+# material's base_color).
+_TOP_DECK_COLOR = Color(0.95, 0.97, 0.98, 0.25)
+
+
 def _add_top_deck(a: Assembly, *, top_z: float) -> Assembly:
     """Clear-acrylic cap disc; bottom face tangent to through-column tops."""
     top_deck = (
         Cylinder(TOP_DECK_OD / 2, TOP_DECK_T)
         - Cylinder(TOP_DECK_APERTURE_D / 2, TOP_DECK_T * 2)
     )
-    return _add(
-        a, "top_acrylic", top_deck,
+    return a.with_part(
+        "top_acrylic", top_deck,
         location=Pos(0, 0, top_z + TOP_DECK_T / 2),
+        color=_TOP_DECK_COLOR,
+        material=material_of("top_acrylic"),
     )
 
 

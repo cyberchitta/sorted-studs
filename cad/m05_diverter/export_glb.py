@@ -8,6 +8,7 @@ non-animated diverter pane; an animated variant is deferred.
 """
 
 import sys
+from datetime import date
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -18,12 +19,24 @@ from detail_variations import apply_default_detail  # noqa: E402
 
 from cad_khana.export import export_glb  # noqa: E402
 
+sys.path.insert(0, str(HERE.parent.parent))
+from cad.design_systems import Role, fill_palette_neutrals, resolve_name  # noqa: E402
+
+from design_systems import DESIGN_SYSTEM  # noqa: E402
+
 OUT_DIR = HERE.parent.parent / "subsite" / "assets" / "exhibits"
 
 
 def main() -> None:
     detailed = apply_default_detail(assembly)
-    path = export_glb(detailed, out=OUT_DIR, name="diverter-260520.glb")
+    filled = fill_palette_neutrals(detailed, DESIGN_SYSTEM.palette[Role.SECONDARY_STRUCTURE])
+    palette = resolve_name("M05")
+    tag = palette.removeprefix("cyberchitta-")
+    path = export_glb(
+        filled,
+        out=OUT_DIR,
+        name=f"diverter-{date.today():%y%m%d}-{tag}.glb",
+    )
     print(f"wrote {path} ({path.stat().st_size:,} bytes)")
 
 
