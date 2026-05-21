@@ -254,7 +254,7 @@ def add_turret_dump_cam(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
     TURRET_DUMP_CAM_CENTER_Z. Cam is positioned in turret-local;
     `base` (default: identity) is pre-multiplied to lift it into a
     parent frame (e.g. world)."""
-    return a.add(
+    return a.with_part(
         DUMP_CAM_PART_NAME,
         dump_cam(),
         location=base * Pos(
@@ -274,7 +274,7 @@ _SHAFT_BASE_Z = -170.0
 _SHAFT_LEN = TURRET_SHAFT_TOP_Z - _SHAFT_BASE_Z      # = 160
 
 assembly = add_turret_dump_cam(Assembly())
-assembly = assembly.add(
+assembly = assembly.with_part(
     "hub_shaft_stub",
     _shaft_stub(length=_SHAFT_LEN),
     location=Pos(TURRET_HUB_X, TURRET_HUB_Y, _SHAFT_BASE_Z),

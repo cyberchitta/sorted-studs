@@ -307,7 +307,7 @@ ARCH_PART_NAMES = tuple(_MEMBERS.keys())
 def add_arch(a: Assembly) -> Assembly:
     """Add every arch member in m03-local coordinates."""
     for name, part in _MEMBERS.items():
-        a = a.add(
+        a = a.with_part(
             name, part,
             material=material_of(name), color=color_of(name),
         )

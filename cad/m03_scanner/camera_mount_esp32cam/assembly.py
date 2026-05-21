@@ -382,9 +382,9 @@ def m12_lens_stub(
 # face. assert_no_interference treats tangency as zero overlap volume.
 assembly = (
     Assembly()
-    .add("clamp_mount", clamp_mount())
-    .add("pcb", camera_pcb_stub(), location=_MOUNT_IN_CLAMP)
-    .add("lens", m12_lens_stub(), location=_MOUNT_IN_CLAMP)
+    .with_part("clamp_mount", clamp_mount())
+    .with_part("pcb", camera_pcb_stub(), location=_MOUNT_IN_CLAMP)
+    .with_part("lens", m12_lens_stub(), location=_MOUNT_IN_CLAMP)
     .assert_no_interference("clamp_mount", "pcb")
     .assert_no_interference("clamp_mount", "lens")
     .assert_no_interference("pcb", "lens")

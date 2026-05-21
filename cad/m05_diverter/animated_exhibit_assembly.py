@@ -1,12 +1,11 @@
 """M05 diverter — time-parameterized exhibit assembly factory.
 
 ``build_exhibit_at(t)`` returns the static exhibit ``Assembly`` at
-animation parameter ``t ∈ [0, 1]`` with the entire column stack
-(every floor's column / hinge / ramp / trap) rotated around the
-shared world-Z axis by one shared angle — the stack is mechanically
-a single rigid body (base motor + bas-relief joints), so all three
-columns turn together. Frame, baskets, bearings, and the top
-acrylic deck stay still.
+animation parameter ``t ∈ [0, 1]`` with the ``rotating_stack``
+sub-assembly's revolute joint set to one shared azimuth. The whole
+column-side stack (every floor's column / hinge / ramp / trap) is one
+rigid body (base motor + bas-relief joints), so a single joint DOF
+captures the motion.
 
 Per-floor basket selection happens through the *trap doors* in the
 real design (each floor decides whether to drop or pass the brick),
@@ -18,7 +17,9 @@ single shared rotation tells the story unambiguously.
 
 The t→Assembly model is the project's animation primitive: motion is
 expressed mathematically here, and ``cad_khana.export.export_animated_glb``
-samples the factory at N timestamps to emit glTF TRS samplers.
+samples the factory at N timestamps and emits one rotation channel
+on the ``rotating_stack`` parent node — the structural-emission path,
+free of trajectory inference and chord-vs-arc drift.
 """
 
 from __future__ import annotations
@@ -30,8 +31,6 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from build123d import Rot  # noqa: E402
-
 from cad_khana.mechanism.assembly import Assembly  # noqa: E402
 
 from assembly import build_tower  # noqa: E402
@@ -39,26 +38,6 @@ from exhibit_assembly import (  # noqa: E402
     EXHIBIT_BASKETS_BY_FLOOR,
     EXHIBIT_FLOOR_PLAN,
 )
-
-
-# Per-column parts that rotate with the column. Identified by basename
-# (the part name after stripping the `f{idx}_{role}__` floor prefix).
-# bearing_spider + ring_bearing stay with the frame; baskets, frame
-# horizontals, brackets, through-columns, and the top deck are all
-# static.
-ROTATING_BASENAMES = frozenset(
-    (
-        "column",
-        "hinge_pin",
-        "ramp",
-        "trap_closed",
-        "trap_open",
-    )
-)
-
-
-def _floor_prefix(idx: int, role: str) -> str:
-    return f"f{idx}_{role}__"
 
 
 # Per-floor basket azimuths. Mirrors ``EXHIBIT_BASKETS_BY_FLOOR``
@@ -122,42 +101,20 @@ def pose_at(t: float) -> float:
 def build_exhibit_at(t: float) -> Assembly:
     """Animated exhibit assembly at time ``t ∈ [0, 1]``.
 
-    Builds the static exhibit assembly via ``build_tower(...)``, then
-    pre-multiplies the location of every rotating part on every floor
-    with the shared ``Rot(0, 0, theta)``. The column stack is one
-    rigid body — base motor drives the bottom column and bas-relief
-    joints couple the upper columns to it — so all rotating parts on
-    all three floors share the same angle.
-
+    Rebuilds the exhibit assembly via ``build_tower(...)`` and sets the
+    ``rotating_stack`` sub-assembly's joint angle to ``pose_at(t)``.
     Assertions are stripped — the rotating ramp intentionally swings
     into basket interiors, which is the mechanism's whole point and
     would fail static interference checks.
     """
-    theta = pose_at(t)
-    rot = Rot(0, 0, theta)
-    prefixes = {_floor_prefix(idx, role) for idx, role in EXHIBIT_FLOOR_PLAN}
-
     a, _ = build_tower(
         EXHIBIT_FLOOR_PLAN,
         basket_layout=EXHIBIT_BASKETS_BY_FLOOR,
         with_top_deck=True,
         with_drive_train=False,
     )
-
-    def _new_location(p):
-        for prefix in prefixes:
-            if p.name.startswith(prefix):
-                basename = p.name[len(prefix):]
-                if basename in ROTATING_BASENAMES:
-                    return rot * p.location
-                break
-        return p.location
-
-    return replace(
-        a,
-        parts=tuple(replace(p, location=_new_location(p)) for p in a.parts),
-        assertions=(),
-    )
+    a = a.with_joint_angle("rotating_stack", pose_at(t))
+    return replace(a, assertions=())
 
 
 assembly = build_exhibit_at(0.0)

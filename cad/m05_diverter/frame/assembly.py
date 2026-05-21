@@ -203,7 +203,7 @@ def add_floor_horizontals(
 
         # Outer-vertex bracket: local +X points INWARD toward hex center.
         n_ovb = f"{prefix}outer_vertex_bracket_{k}"
-        a = a.add(
+        a = a.with_part(
             n_ovb,
             outer_bracket(),
             location=z_loc * Pos(vx_out, vy_out, 0.0) * Rot(0, 0, v_angle + 180.0),
@@ -213,7 +213,7 @@ def add_floor_horizontals(
 
         # Inner-vertex bracket: same orientation convention as outer.
         n_ivb = f"{prefix}inner_vertex_bracket_{k}"
-        a = a.add(
+        a = a.with_part(
             n_ivb,
             inner_bracket(),
             location=z_loc * Pos(vx_in, vy_in, 0.0) * Rot(0, 0, v_angle + 180.0),
@@ -227,7 +227,7 @@ def add_floor_horizontals(
         oex = R_HEX_OUTER * math.cos(math.radians(oe_angle))
         oey = R_HEX_OUTER * math.sin(math.radians(oe_angle))
         n_oh = f"{prefix}outer_horiz_{k}"
-        a = a.add(
+        a = a.with_part(
             n_oh,
             _horiz_ext(OUTER_HORIZ_LEN),
             location=z_loc * Pos(oex, oey, 0.0) * Rot(0, 0, oe_angle + 90.0),
@@ -241,7 +241,7 @@ def add_floor_horizontals(
         iex = R_HEX_INNER * math.cos(math.radians(ie_angle))
         iey = R_HEX_INNER * math.sin(math.radians(ie_angle))
         n_ih = f"{prefix}inner_horiz_{k}"
-        a = a.add(
+        a = a.with_part(
             n_ih,
             _horiz_ext(INNER_HORIZ_LEN),
             location=z_loc * Pos(iex, iey, 0.0) * Rot(0, 0, ie_angle + 90.0),
@@ -267,7 +267,7 @@ def add_floor_horizontals(
             rx = seg_mid * cos_r
             ry = seg_mid * sin_r
             n_r = f"{prefix}{seg_name}_{k}"
-            a = a.add(
+            a = a.with_part(
                 n_r,
                 _horiz_ext(seg_len),
                 location=z_loc * Pos(rx, ry, 0.0) * Rot(0, 0, r_angle),
@@ -318,7 +318,7 @@ def add_through_columns(
             vx = r_vert * cos_v
             vy = r_vert * sin_v
             n = f"{prefix}_vert_{k}"
-            a = a.add(
+            a = a.with_part(
                 n,
                 column,
                 location=Pos(vx, vy, 0.0) * Rot(0, 0, v_angle),

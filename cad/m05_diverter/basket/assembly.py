@@ -252,13 +252,13 @@ def col_stub() -> Part:
 
 # --- Assembly -----------------------------------------------------------
 
-assembly = Assembly().add("col_stub", col_stub())
+assembly = Assembly().with_part("col_stub", col_stub())
 
 basket_names = []
 for center_deg, n_size, notches in FLOOR_LAYOUT:
     name = f"basket_{int(round(center_deg)):03d}_{n_size:02d}"
     basket_names.append(name)
-    assembly = assembly.add(
+    assembly = assembly.with_part(
         name,
         basket(
             half_angle_deg=180.0 / n_size,

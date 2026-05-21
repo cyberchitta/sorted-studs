@@ -1,15 +1,15 @@
 """Render-only material overrides for the M03 scanner.
 
 Settled materials live on the assembly itself (set at each
-``.add(name=..., material=...)`` site). This module only carries
+``.with_part(name=..., material=...)`` site). This module only carries
 *unsettled* assignments — parts whose real-world material isn't yet
 representable in chitra-cad's material table (transparent acrylic,
 first-surface mirror glass, FR4 PCB) or whose answer is genuinely open
 (opto-interrupter housing finish).
 
 When a TODO is resolved upstream:
-  * promote the material into the part's ``.add(...)`` call in the
-    relevant ``assembly.py`` (intrinsic) or its parent ``.add()`` site
+  * promote the material into the part's ``.with_part(...)`` call in the
+    relevant ``assembly.py`` (intrinsic) or its parent ``.with_part()`` site
     (placement-varying), and
   * delete its entry here.
 

@@ -3,17 +3,17 @@
 Material is a physical property of the part, independent of the
 WORKSHOP/BAUHAUS render-axis swap in ``design_systems.py``.
 Centralised here so a material change is one edit; every
-``.add(...)`` site reads ``material_of(name)``.
+``.with_part(...)`` site reads ``material_of(name)``.
 
 Several parts are deliberately omitted (``cam_*_pcb``, ``cam_*_lens``,
-``homing_sensor``): their settled material is unset at the ``.add(...)``
+``homing_sensor``): their settled material is unset at the ``.with_part(...)``
 site and ``material_variations.py`` applies a render-time override.
 Calling ``material_of(...)`` on them raises, by design.
 
 Sub-assembly-local stub fixtures (``hub_shaft_stub``, ``cross_rail_stub``,
 ``cam_stub``, ``rail_*_stub``, the standalone ``"gusset"``) are not in
 ``ROLE_OF`` and not here either — they keep their inline material
-strings at the standalone-test ``.add(...)`` sites.
+strings at the standalone-test ``.with_part(...)`` sites.
 """
 
 from __future__ import annotations

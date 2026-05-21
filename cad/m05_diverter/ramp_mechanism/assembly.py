@@ -585,13 +585,13 @@ def make_assembly(role: str = "middle") -> Assembly:
     a = Assembly()
     a = (
         a
-        .add("bearing_spider", bearing_spider(role))
-        .add("ring_bearing", ring_bearing(role))
-        .add("column", column(role))
-        .add("hinge_pin", hinge_pin(), location=hinge_pin_loc)
-        .add("ramp", ramp(), location=ramp_loc)
-        .add("trap_closed", trap(), location=hinge_loc * Rot(0, TRAP_CLOSED_DEG, 0))
-        .add("trap_open", trap(), location=hinge_loc * Rot(0, TRAP_OPEN_DEG, 0))
+        .with_part("bearing_spider", bearing_spider(role))
+        .with_part("ring_bearing", ring_bearing(role))
+        .with_part("column", column(role))
+        .with_part("hinge_pin", hinge_pin(), location=hinge_pin_loc)
+        .with_part("ramp", ramp(), location=ramp_loc)
+        .with_part("trap_closed", trap(), location=hinge_loc * Rot(0, TRAP_CLOSED_DEG, 0))
+        .with_part("trap_open", trap(), location=hinge_loc * Rot(0, TRAP_OPEN_DEG, 0))
     )
     if role != "base":
         # Lower floor's column placed at -FLOOR_H. Modeled as `column("middle")`
@@ -603,11 +603,11 @@ def make_assembly(role: str = "middle") -> Assembly:
         # assembly role-independent of which floor the lower one is.
         a = (
             a
-            .add("lower_column", column("middle"), location=lower_column_loc)
-            .add("lower_trap_open", trap(), location=lower_trap_loc)
+            .with_part("lower_column", column("middle"), location=lower_column_loc)
+            .with_part("lower_trap_open", trap(), location=lower_trap_loc)
         )
     for angle in TRAP_SAMPLES:
-        a = a.add(
+        a = a.with_part(
             f"trap_at_{int(angle)}", trap(),
             location=hinge_loc * Rot(0, angle, 0),
         )

@@ -264,12 +264,12 @@ def horiz_ext_stub_local(length: float = EXT_STUB_LEN,
 # through-column passing vertically through the hub's cutout.
 assembly = (
     Assembly()
-    .add("bracket", bracket())
-    .add("vert_ext", vert_ext_stub())
-    .add("horiz_ext_1", horiz_ext_stub_local(), location=Rot(0, 0, HALF_HEX_ANGLE_DEG))
-    .add("horiz_ext_2", horiz_ext_stub_local(), location=Rot(0, 0, -HALF_HEX_ANGLE_DEG))
-    .add("radial_ext_out", horiz_ext_stub_local(), location=Rot(0, 0, 180.0))
-    .add("radial_ext_in", horiz_ext_stub_local())
+    .with_part("bracket", bracket())
+    .with_part("vert_ext", vert_ext_stub())
+    .with_part("horiz_ext_1", horiz_ext_stub_local(), location=Rot(0, 0, HALF_HEX_ANGLE_DEG))
+    .with_part("horiz_ext_2", horiz_ext_stub_local(), location=Rot(0, 0, -HALF_HEX_ANGLE_DEG))
+    .with_part("radial_ext_out", horiz_ext_stub_local(), location=Rot(0, 0, 180.0))
+    .with_part("radial_ext_in", horiz_ext_stub_local())
     .assert_no_interference("bracket", "vert_ext")
     .assert_no_interference("bracket", "horiz_ext_1")
     .assert_no_interference("bracket", "horiz_ext_2")

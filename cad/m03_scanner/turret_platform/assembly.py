@@ -551,7 +551,7 @@ def add_turret_platform(
             if sub_name == "acrylic"
             else color_of(full_name)
         )
-        a = a.add(
+        a = a.with_part(
             full_name,
             _PART_BUILDERS[sub_name](),
             location=base * centroid * rotation * image_loc,
@@ -569,7 +569,7 @@ def add_turret_platform(
 assembly = Assembly()
 _STANDALONE_NAMES = tuple(f"cartridge_{sub_name}" for sub_name, _ in _IMAGE_LOCS)
 for (sub_name, image_loc), full_name in zip(_IMAGE_LOCS, _STANDALONE_NAMES):
-    assembly = assembly.add(full_name, _PART_BUILDERS[sub_name](), location=image_loc)
+    assembly = assembly.with_part(full_name, _PART_BUILDERS[sub_name](), location=image_loc)
 
 for _i, _a in enumerate(_STANDALONE_NAMES):
     for _b in _STANDALONE_NAMES[_i + 1:]:

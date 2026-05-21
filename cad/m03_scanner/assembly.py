@@ -178,18 +178,18 @@ def add_camera_rig(a: Assembly) -> Assembly:
         mount_in_clamp = _camera_mount.mount_in_clamp_for(**spec)
         a = (
             a
-            .add(
+            .with_part(
                 f"{prefix}_clamp_mount",
                 _camera_mount.clamp_mount(mount_in_clamp=mount_in_clamp),
                 location=clamp_loc,
                 material=material_of(f"{prefix}_clamp_mount"),
                 color=color_of(f"{prefix}_clamp_mount"),
             )
-            .add(
+            .with_part(
                 f"{prefix}_pcb", _camera_mount.camera_pcb_stub(),
                 location=camera_loc,
             )
-            .add(
+            .with_part(
                 f"{prefix}_lens", _camera_mount.m12_lens_stub(),
                 location=camera_loc,
             )

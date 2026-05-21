@@ -4,7 +4,7 @@ Schema (``Role``, ``Module``, ``DesignSystem``, palettes,
 ``DESIGN_SYSTEM_NAME`` switch, ``compose`` helper) lives in
 ``cad/design_systems.py``; this file holds only m05's tag dicts and
 binds the module-local ``DESIGN_SYSTEM`` + ``color_of`` shim that
-``assembly.py`` and ``single_floor.py`` use at every ``.add(...)``
+``assembly.py`` and ``single_floor.py`` use at every ``.with_part(...)``
 site. Material is a physical property, not a render axis — see
 ``materials.py``.
 

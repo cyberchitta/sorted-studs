@@ -67,7 +67,7 @@ CAMERA_VFOV_DEG = 32.0
 # the lens. Per-camera in the loop below.
 
 
-detailed = apply_default_detail(assembly).add(
+detailed = apply_default_detail(assembly).with_part(
     "brick_2x4_stand_in",
     Box(*BRICK_2X4),
     material="pla_matte",

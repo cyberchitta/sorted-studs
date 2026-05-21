@@ -445,7 +445,7 @@ def add_turret_homing(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
     """Add the three homing parts. Parts are positioned in turret-local
     coordinates; `base` (default: identity) is pre-multiplied to lift
     them into a parent frame (e.g. world)."""
-    a = a.add(
+    a = a.with_part(
         "homing_flag",
         flag(),
         location=base * Pos(TURRET_HUB_X, TURRET_HUB_Y, FLAG_Z_CENTER),
@@ -454,12 +454,12 @@ def add_turret_homing(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
     )
     # homing_sensor material left unset — opto-interrupter housing,
     # render.py overrides.
-    a = a.add(
+    a = a.with_part(
         "homing_sensor",
         sensor(),
         location=base,
     )
-    a = a.add(
+    a = a.with_part(
         "homing_bracket",
         bracket(),
         location=base,
@@ -475,13 +475,13 @@ assembly = add_turret_homing(Assembly())
 
 # Stubs.
 _SHAFT_LEN = TURRET_SHAFT_TOP_Z - RAIL_TOP_Z               # = 200
-assembly = assembly.add(
+assembly = assembly.with_part(
     "hub_shaft_stub",
     _shaft_stub(length=_SHAFT_LEN),
     location=Pos(TURRET_HUB_X, TURRET_HUB_Y, RAIL_TOP_Z),
     material="steel",
 )
-assembly = assembly.add(
+assembly = assembly.with_part(
     "cross_rail_stub",
     _cross_rail_stub(),
     material="aluminium_anodized",

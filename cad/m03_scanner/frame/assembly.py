@@ -251,7 +251,7 @@ def add_turret_frame(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
     module-private state.
     """
     for name, part in _MEMBERS.items():
-        a = a.add(
+        a = a.with_part(
             name, part, location=base,
             material=material_of(name), color=color_of(name),
         )

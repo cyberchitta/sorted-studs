@@ -211,7 +211,7 @@ def rotor(
 
 ROTOR_PART_NAMES = ("rotor",)
 
-assembly = Assembly().add(
+assembly = Assembly().with_part(
     "rotor", rotor(), material=material_of("rotor"), color=color_of("rotor"),
 )
 

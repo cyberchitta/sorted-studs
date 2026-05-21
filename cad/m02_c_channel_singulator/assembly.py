@@ -72,16 +72,16 @@ assert not _untagged, (
 
 def _kw(name: str) -> dict:
     """Color + material kwargs for the active design system, so every
-    ``.add(...)`` site below picks them up without boilerplate."""
+    ``.with_part(...)`` site below picks them up without boilerplate."""
     return {"color": color_of(name), "material": material_of(name)}
 
 
 assembly = (
     Assembly()
-    .add("rotor", _rotor.rotor(), **_kw("rotor"))
-    .add("stator", _stator.stator(), **_kw("stator"))
-    .add("stem", _drive.stem(), **_kw("stem"))
-    .add("motor", _drive.motor(), **_kw("motor"))
+    .with_part("rotor", _rotor.rotor(), **_kw("rotor"))
+    .with_part("stator", _stator.stator(), **_kw("stator"))
+    .with_part("stem", _drive.stem(), **_kw("stem"))
+    .with_part("motor", _drive.motor(), **_kw("motor"))
     # V-gap
     .assert_no_interference("rotor", "stator")
     .assert_clearance(

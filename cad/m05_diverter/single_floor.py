@@ -64,10 +64,10 @@ assembly = _frame.add_frame(
 
 
 def _add(a: Assembly, name: str, part, **kwargs) -> Assembly:
-    """Wrap `.add(...)` so every column-side / basket call site picks up
+    """Wrap `.with_part(...)` so every column-side / basket call site picks up
     the active design system's color + material without repeating the
     boilerplate."""
-    return a.add(
+    return a.with_part(
         name, part, color=color_of(name), material=material_of(name), **kwargs,
     )
 

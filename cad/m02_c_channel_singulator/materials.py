@@ -3,7 +3,7 @@
 Material is a physical property of the part, independent of the
 WORKSHOP/BAUHAUS render-axis swap in ``design_systems.py``.
 Centralised here so a material change is one edit; every
-``.add(...)`` site reads ``material_of(name)``.
+``.with_part(...)`` site reads ``material_of(name)``.
 """
 
 from __future__ import annotations

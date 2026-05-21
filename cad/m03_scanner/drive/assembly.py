@@ -515,25 +515,25 @@ def add_turret_drive(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
     """Add the four drive parts. Parts are positioned in turret-local
     coordinates; `base` (default: identity) is pre-multiplied to lift
     them into a parent frame (e.g. world)."""
-    a = a.add(
+    a = a.with_part(
         "drive_pulley_shaft",
         driven_pulley(),
         location=base * Pos(TURRET_HUB_X, TURRET_HUB_Y, PULLEY_Z_CENTER),
         material=material_of("drive_pulley_shaft"),
     )
-    a = a.add(
+    a = a.with_part(
         "drive_pulley_motor",
         driver_pulley(),
         location=base * Pos(MOTOR_X, MOTOR_Y, PULLEY_Z_CENTER),
         material=material_of("drive_pulley_motor"),
     )
-    a = a.add(
+    a = a.with_part(
         "drive_motor",
         motor(),
         location=base * Pos(MOTOR_X, MOTOR_Y, _MOTOR_BODY_CENTER_Z),
         material=material_of("drive_motor"),
     )
-    a = a.add(
+    a = a.with_part(
         "drive_bracket",
         bracket(),
         location=base,
@@ -549,13 +549,13 @@ assembly = add_turret_drive(Assembly())
 
 # Stubs.
 _SHAFT_LEN = TURRET_SHAFT_TOP_Z - RAIL_TOP_Z               # = 160
-assembly = assembly.add(
+assembly = assembly.with_part(
     "hub_shaft_stub",
     _shaft_stub(length=_SHAFT_LEN),
     location=Pos(TURRET_HUB_X, TURRET_HUB_Y, RAIL_TOP_Z),
     material="steel",
 )
-assembly = assembly.add(
+assembly = assembly.with_part(
     "cross_rail_stub",
     _cross_rail_stub(),
     material="aluminium_anodized",

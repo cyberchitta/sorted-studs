@@ -115,9 +115,9 @@ def make_assembly() -> Assembly:
     """
     return (
         Assembly()
-        .add("motor", motor())
-        .add("drive_shaft", drive_shaft())
-        .add("motor_mount", motor_mount())
+        .with_part("motor", motor())
+        .with_part("drive_shaft", drive_shaft())
+        .with_part("motor_mount", motor_mount())
         .assert_no_interference("motor", "drive_shaft")
         .assert_no_interference("motor", "motor_mount")
         .assert_no_interference("drive_shaft", "motor_mount")

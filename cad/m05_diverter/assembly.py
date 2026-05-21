@@ -54,9 +54,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from build123d import Cylinder, Pos, Rot
+from build123d import Axis, Cylinder, Pos, Rot
 
-from cad_khana.mechanism.assembly import Assembly
+from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 from cad_khana.mechanism.check import check
 
 from base_floor import assembly as _base
@@ -101,38 +101,49 @@ def _floor_prefix(idx: int, role: str) -> str:
 # --- Per-part add helpers ----------------------------------------------
 
 def _add(a: Assembly, name: str, part, **kwargs) -> Assembly:
-    """Wrap ``.add(...)`` so every column-side / basket / base-floor
+    """Wrap ``.with_part(...)`` so every column-side / basket / base-floor
     call site picks up the active design system's color + material
     without repeating the boilerplate. ``color_of`` / ``material_of``
     strip the floor prefix internally before lookup."""
-    return a.add(
+    return a.with_part(
         name, part, color=color_of(name), material=material_of(name), **kwargs,
     )
 
 
-def _add_column_side(
-    a: Assembly, idx: int, role: str, prefix: str, *, with_trap_open: bool,
+def _add_column_side_static(
+    a: Assembly, idx: int, role: str, prefix: str,
 ) -> Assembly:
-    """Bearing spider + ring bearing + column + hinge pin + ramp +
-    trap-closed (+ trap-open if this floor has an upper neighbour)."""
+    """Static column-side parts: bearing spider + ring bearing. These
+    stay with the frame regardless of the rotating-stack DOF."""
     fz_loc = Pos(0, 0, idx * FLOOR_H)
     a = _add(a, f"{prefix}bearing_spider", _ramp.bearing_spider(role),
              location=fz_loc)
     a = _add(a, f"{prefix}ring_bearing", _ramp.ring_bearing(role),
              location=fz_loc)
-    a = _add(a, f"{prefix}column", _ramp.column(role), location=fz_loc)
-    a = _add(a, f"{prefix}hinge_pin", _ramp.hinge_pin(),
-             location=fz_loc * _ramp.hinge_pin_loc)
-    a = _add(a, f"{prefix}ramp", _ramp.ramp(),
-             location=fz_loc * _ramp.ramp_loc)
-    a = _add(a, f"{prefix}trap_closed", _ramp.trap(),
-             location=fz_loc * _ramp.hinge_loc * Rot(0, _ramp.TRAP_CLOSED_DEG, 0))
-    # Trap-open envelope only matters where an upper floor is present
-    # to check against; the top floor's open-swing has nothing above it.
-    if with_trap_open:
-        a = _add(a, f"{prefix}trap_open", _ramp.trap(),
-                 location=fz_loc * _ramp.hinge_loc * Rot(0, _ramp.TRAP_OPEN_DEG, 0))
     return a
+
+
+def _add_column_side_rotating(
+    rotating: Assembly, idx: int, role: str, prefix: str, *,
+    with_trap_open: bool,
+) -> Assembly:
+    """Rotating column-side parts: column + hinge pin + ramp +
+    trap-closed (+ trap-open if this floor has an upper neighbour).
+    Added to the rotating sub-assembly; the revolute joint in
+    ``build_tower`` carries the per-frame azimuth."""
+    fz_loc = Pos(0, 0, idx * FLOOR_H)
+    rotating = _add(rotating, f"{prefix}column", _ramp.column(role),
+                    location=fz_loc)
+    rotating = _add(rotating, f"{prefix}hinge_pin", _ramp.hinge_pin(),
+                    location=fz_loc * _ramp.hinge_pin_loc)
+    rotating = _add(rotating, f"{prefix}ramp", _ramp.ramp(),
+                    location=fz_loc * _ramp.ramp_loc)
+    rotating = _add(rotating, f"{prefix}trap_closed", _ramp.trap(),
+                    location=fz_loc * _ramp.hinge_loc * Rot(0, _ramp.TRAP_CLOSED_DEG, 0))
+    if with_trap_open:
+        rotating = _add(rotating, f"{prefix}trap_open", _ramp.trap(),
+                        location=fz_loc * _ramp.hinge_loc * Rot(0, _ramp.TRAP_OPEN_DEG, 0))
+    return rotating
 
 
 def _add_baskets(
@@ -167,23 +178,28 @@ def _add_drive_train(a: Assembly, idx: int, prefix: str) -> Assembly:
 
 
 def _add_floor(
-    a: Assembly, idx: int, role: str, *,
+    a: Assembly, rotating: Assembly, idx: int, role: str, *,
     basket_layout,
     with_trap_open: bool,
     with_drive_train: bool,
-) -> tuple[str, Assembly]:
-    """One full floor: frame horizontals + column-side stack + baskets
-    + (drive train if requested). Returns (prefix, assembly)."""
+) -> tuple[str, Assembly, Assembly]:
+    """One full floor: frame horizontals + static column-side parts +
+    baskets + (drive train if requested) into ``a``; column / hinge pin
+    / ramp / trap parts into ``rotating``. Returns
+    ``(prefix, a, rotating)``."""
     pre = _floor_prefix(idx, role)
     a = _frame.add_floor_horizontals(
         a, z=idx * FLOOR_H, prefix=pre,
         color_fn=color_of, material_fn=material_of,
     )
-    a = _add_column_side(a, idx, role, pre, with_trap_open=with_trap_open)
+    a = _add_column_side_static(a, idx, role, pre)
+    rotating = _add_column_side_rotating(
+        rotating, idx, role, pre, with_trap_open=with_trap_open,
+    )
     a = _add_baskets(a, idx, pre, basket_layout)
     if with_drive_train:
         a = _add_drive_train(a, idx, pre)
-    return pre, a
+    return pre, a, rotating
 
 
 def _add_top_deck(a: Assembly, *, top_z: float) -> Assembly:
@@ -288,12 +304,15 @@ def _add_drive_train_checks(a: Assembly, base_pre: str) -> Assembly:
 
 
 def _assert_design_system_coverage(a: Assembly) -> None:
-    """Every named part must appear in the active design system's tag
-    dict (``None`` allowed for hardware kept at material's intrinsic
-    color). A part added without a tag fails here instead of silently
-    rendering off-palette."""
+    """Every named part (root + any sub-assembly) must appear in the
+    active design system's tag dict (``None`` allowed for hardware kept
+    at material's intrinsic color). A part added without a tag fails
+    here instead of silently rendering off-palette."""
     untagged = sorted(
-        {p.name for p in a.parts if basename_of(p.name) not in DESIGN_SYSTEM.tag_of}
+        {
+            p.name for p in a.placed_parts
+            if basename_of(p.name) not in DESIGN_SYSTEM.tag_of
+        }
     )
     assert not untagged, (
         f"{len(untagged)} m05 part(s) missing a tag for design system "
@@ -340,6 +359,7 @@ def build_tower(
     top_z = (max(idx for idx, _ in floor_plan) + 1) * FLOOR_H
 
     a = Assembly()
+    rotating = Assembly()
     a = _frame.add_through_columns(
         a, z_bot=-_frame.VERT_EXT_BELOW, z_top=top_z,
         color_fn=color_of, material_fn=material_of,
@@ -348,8 +368,8 @@ def build_tower(
     n = len(floor_plan)
     prefixes: list[str] = []
     for i, (idx, role) in enumerate(floor_plan):
-        pre, a = _add_floor(
-            a, idx, role,
+        pre, a, rotating = _add_floor(
+            a, rotating, idx, role,
             basket_layout=_layout_for(idx),
             # Trap-open envelope only needs to exist on floors that
             # have an upper neighbour to check against.
@@ -361,11 +381,24 @@ def build_tower(
     if with_top_deck:
         a = _add_top_deck(a, top_z=top_z)
 
+    # The rotating stack — every floor's column / hinge pin / ramp /
+    # trap parts — is one rigid body driven by a single revolute joint
+    # about world Z. Animation factories update the joint angle via
+    # ``with_joint_angle("rotating_stack", theta)``; static callers (the
+    # production tower, ``khana check``) leave it at 0, which matches
+    # the previous flat geometry exactly.
+    a = a.with_subassembly(
+        "rotating_stack",
+        rotating,
+        joint=RevoluteJoint(axis=Axis.Z, angle_deg=0.0),
+    )
+
     _assert_design_system_coverage(a)
 
     # Adjacent-floor pairs only. Non-adjacent floors are >1·FLOOR_H
     # apart and the trap-open envelope reaches at most ~70 mm above
-    # its hinge, so floor i+2 is comfortably out of range.
+    # its hinge, so floor i+2 is comfortably out of range. Cross-subassembly
+    # references resolve through ``placed_parts`` at evaluation time.
     for i in range(n - 1):
         a = _add_floor_pair_checks(a, prefixes[i], prefixes[i + 1])
 

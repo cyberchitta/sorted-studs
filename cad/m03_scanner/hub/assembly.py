@@ -269,21 +269,21 @@ def add_turret_hub(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
     Parts are positioned in turret-local coordinates; `base` (default:
     identity) is pre-multiplied to lift them into a parent frame."""
     hub_pose = base * Pos(TURRET_HUB_X, TURRET_HUB_Y, RAIL_TOP_Z)
-    a = a.add(
+    a = a.with_part(
         "hub_housing", housing(), location=hub_pose,
         material=material_of("hub_housing"), color=color_of("hub_housing"),
     )
-    a = a.add(
+    a = a.with_part(
         "hub_shaft", shaft(), location=hub_pose,
         material=material_of("hub_shaft"),
     )
-    a = a.add(
+    a = a.with_part(
         "hub_bearing_top",
         bearing(),
         location=hub_pose * Pos(0, 0, _TOP_BEARING_Z),
         material=material_of("hub_bearing_top"),
     )
-    a = a.add(
+    a = a.with_part(
         "hub_bearing_bottom",
         bearing(),
         location=hub_pose * Pos(0, 0, _BOTTOM_BEARING_Z),

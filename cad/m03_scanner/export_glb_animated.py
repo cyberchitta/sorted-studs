@@ -20,7 +20,7 @@ from detail_variations import apply_default_detail  # noqa: E402
 
 from cad_khana.export import export_animated_glb  # noqa: E402
 
-OUT_DIR = HERE.parent.parent / "subsite" / "assets" / "exhibits" / "scanner"
+OUT_DIR = HERE.parent.parent / "subsite" / "assets" / "exhibits"
 
 # 61 samples = one revolution at 6° steps. Closes the loop (t=1 equals
 # t=0), so a glTF LOOP plays seamlessly.
@@ -38,7 +38,7 @@ def main() -> None:
         factory,
         ts=ts,
         out=OUT_DIR,
-        name="scanner-animated.glb",
+        name="scanner-animated-260520.glb",
         duration_s=DURATION_S,
     )
     print(f"wrote {path} ({path.stat().st_size:,} bytes)")

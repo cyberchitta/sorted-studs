@@ -196,7 +196,7 @@ def _splice(top: Assembly, mod: Assembly, base: Location, prefix: str) -> Assemb
     own ``khana check`` validates them.
     """
     for p in mod.parts:
-        top = top.add(
+        top = top.with_part(
             f"{prefix}{p.name}",
             p.part,
             location=base * p.location,

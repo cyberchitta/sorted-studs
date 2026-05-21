@@ -207,7 +207,7 @@ def stator(
 
 STATOR_PART_NAMES = ("stator",)
 
-assembly = Assembly().add(
+assembly = Assembly().with_part(
     "stator", stator(), material=material_of("stator"), color=color_of("stator"),
 )
 

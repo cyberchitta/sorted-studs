@@ -130,11 +130,11 @@ DRIVE_PART_NAMES = ("stem", "motor")
 # as zero clearance but zero overlap volume.
 assembly = (
     Assembly()
-    .add(
+    .with_part(
         "stem", stem(),
         material=material_of("stem"), color=color_of("stem"),
     )
-    .add(
+    .with_part(
         "motor", motor(),
         # `motor` is tagged None in the design system (NEMA-17 cast
         # body — outside palette); falls through to the material's
