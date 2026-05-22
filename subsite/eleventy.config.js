@@ -19,8 +19,11 @@ export default function (eleventyConfig) {
 
   eleventyConfig.addGlobalData('layout', 'layouts/base.ejs');
 
+  eleventyConfig.addPassthroughCopy('assets');
+
   eleventyConfig.ignores.add('README.md');
   eleventyConfig.ignores.add('CLAUDE.md');
+  eleventyConfig.ignores.add('diverter_exhibit.md');
 
   return {
     dir: { input: '.', output: '_site', includes: '_includes', data: '_data' },

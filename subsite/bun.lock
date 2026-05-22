@@ -5,7 +5,8 @@
     "": {
       "name": "sorted-studs-subsite",
       "dependencies": {
-        "@cyberchitta/supramental-gold": "github:cyberchitta/supramental-gold#v0.3.0",
+        "@cyberchitta/supramental-gold": "github:cyberchitta/supramental-gold#v0.3.1",
+        "marked": "^18.0.3",
       },
       "devDependencies": {
         "@11ty/eleventy": "^3.1.5",
@@ -35,7 +36,7 @@
 
     "@11ty/recursive-copy": ["@11ty/recursive-copy@4.0.4", "", { "dependencies": { "errno": "^1.0.0", "junk": "^3.1.0", "minimatch": "^3.1.5", "slash": "^3.0.0" } }, "sha512-oI7m8pa7/IAU/3lqRU9vjBbs20iKFo7x+1K9kT3aVira6scc1X9MjBdgLCHzLJeJ7iB6wydioA+kr9/qPnvmlQ=="],
 
-    "@cyberchitta/supramental-gold": ["@cyberchitta/supramental-gold@github:cyberchitta/supramental-gold#e8bf107", { "dependencies": { "ejs": "^5.0.2" } }, "cyberchitta-supramental-gold-e8bf107", "sha512-VlXTe+dTacP+fMWsKcaIwlYNXEfuTt3sLzulo351NI6+HEcDsgEHxy6FxsNGJoVJZagqa76y44n2TUyXIFOmHw=="],
+    "@cyberchitta/supramental-gold": ["@cyberchitta/supramental-gold@github:cyberchitta/supramental-gold#668befd", { "dependencies": { "ejs": "^5.0.2" } }, "cyberchitta-supramental-gold-668befd", "sha512-PhKs6IsiRIuG4Bg4ET1rw0YR/fc52FMDA8r6xcz1AfFQsBK16FgKkXweJR48n1KNswg9+9xyB3PafdIIAWxCEw=="],
 
     "@sindresorhus/slugify": ["@sindresorhus/slugify@2.2.1", "", { "dependencies": { "@sindresorhus/transliterate": "^1.0.0", "escape-string-regexp": "^5.0.0" } }, "sha512-MkngSCRZ8JdSOCHRaYd+D01XhvU3Hjy6MGl06zhOk614hp9EOAp5gIkBeQg7wtmxpitU6eAL4kdiRMcJa2dlrw=="],
 
@@ -178,6 +179,8 @@
     "luxon": ["luxon@3.7.2", "", {}, "sha512-vtEhXh/gNjI9Yg1u4jX/0YVPMvxzHuGgCm6tC5kZyb08yjGWGnqAjGJvcXbqQR2P3MyMEFnRbpcdFS6PBcLqew=="],
 
     "markdown-it": ["markdown-it@14.1.1", "", { "dependencies": { "argparse": "^2.0.1", "entities": "^4.4.0", "linkify-it": "^5.0.0", "mdurl": "^2.0.0", "punycode.js": "^2.3.1", "uc.micro": "^2.1.0" }, "bin": { "markdown-it": "bin/markdown-it.mjs" } }, "sha512-BuU2qnTti9YKgK5N+IeMubp14ZUKUUw7yeJbkjtosvHiP0AZ5c8IAgEMk79D0eC8F23r4Ac/q8cAIFdm2FtyoA=="],
+
+    "marked": ["marked@18.0.3", "", { "bin": { "marked": "bin/marked.js" } }, "sha512-7VT90JOkDeaRWpfjOReRGPEKn0ecdARBkDGL+tT1wZY0efPPqkUxLUSmzy/C7TIylQYJC9STISEsCHrqb/7VIA=="],
 
     "mdurl": ["mdurl@2.0.0", "", {}, "sha512-Lf+9+2r+Tdp5wXDXC4PcIBjTDtq4UKjCPMQhKIuzpJNW0b96kVqSwW0bT7FhRSfmAiFYgP+SCRvdrDozfh0U5w=="],
 

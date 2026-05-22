@@ -1,64 +1,111 @@
 ---
 layout: layouts/article
-title: sorted-studs
-description: An AI-powered LEGO sorting machine. Mechanical singulation, four-camera multi-view scanning, ML classification, automated bin output, Rebrickable-synced inventory. Building in public.
+title: Letting Claude build our LEGO sorter
+ogDescription: Most LEGO sorters use one top-down camera. Ours uses four, at the vertices of a tetrahedron — and an AI drew every part. Build-in-public.
+publishedAt: '2026-05-19'
+group: practice
+showrunner: '@restlessronin'
+writers:
+  - '@claude-opus-4.7'
+tags:
+  - sorted-studs
+  - lego
+  - cad
+  - build-in-public
+  - multi-view
 ---
 
 # sorted-studs
 
-An AI-powered LEGO sorting machine. Mechanical singulation, four-camera multi-view
-scanning, ML classification, automated bin output, Rebrickable-synced inventory.
+> **Work in progress — nothing here has been built yet.** This is CAD-stage design with a handful of open issues we're still working through. A first physical build follows once those are resolved.
 
-Currently in spec and design phase. Building in public.
+An AI-powered LEGO sorting machine. At runtime, ML will classify the bricks; upstream — the CAD that exists, the firmware to come, the machine itself — sits in domains where the human showrunner @restlessronin's own expertise is thin or absent.
 
-
-## Module 03 — Multi-view scanner
-
-Four cameras at the vertices of a regular tetrahedron around the brick. Two profile
-views, one top, one underside, all captured simultaneously during the IMAGE-station
-dwell.
-
-<!-- Four interactive panes go here -->
-
-1. **Interactive 3D** — colored GLB, orbit controls *(placeholder)*
-2. **Photo-real render** — studio-lit still *(placeholder)*
-3. **Exploded view** — looping animation *(placeholder)*
-4. **In motion** — turret indexing *(placeholder)*
+Three modules are far enough along to show. The full spec opens with the first build; this page updates as renders land.
 
 
-## Built with three custom skills
+## Singulator
 
-The toolchain is the second story. Three Python skills, each matched to a phase:
+A cylindrical [c-channel](https://basically.website/blog/how-we-got-to-10000-parts-per-day) — an idea from the Basically team — feeds one brick at a time into the scanner, in place of the flat V-channel we started from in [RobG's design](https://hackaday.io/project/194170-colour-sorting-machine-for-lego).
 
-- **cad-khana** — diagnostics-first design wrapper around Build123d. Assembly-level
-  interference and clearance assertions, optional per-part printability checks.
-- **chitra-cad** — CAD-specific photo-real rendering via Blender Cycles (`bpy`).
-  Per-part materials, studio rig, auto-framed camera.
-- **rig-gati** — parametric kinematics baked to GLTF animation tracks. Scrubs an
-  assembly's joint parameters and exports the resulting transforms as animation.
+<style>
+  .pane-multiview svg { width: 100%; height: auto; display: block; }
+  .pane-multiview svg :is(polyline, path) { vector-effect: non-scaling-stroke; }
+  .pane-multiview .cad-visible { stroke: var(--color-base-content); stroke-width: 1; }
+  .pane-multiview .cad-hidden  { stroke: var(--color-base-content); stroke-opacity: 0.35; stroke-width: 0.5; }
+</style>
 
-The split is technical, not arbitrary. Design needs exact B-Rep geometry — exact
-booleans, real interference checks, STEP export. Rendering only needs triangles,
-so Blender's mesh-and-materials ecosystem wins. Animation needs the parametric
-model re-evaluated per frame, with the resulting transforms baked onto the
-tessellated GLTF. One tool per regime.
+<figure class="pane pane-multiview my-6" data-asset-root="/assets/exhibits/">
+  <div class="grid grid-cols-2 gap-2">
+    <%- helpers.inlineSvg('assets/exhibits/singulator-top-260520.svg') %>
+    <%- helpers.inlineSvg('assets/exhibits/singulator-iso-260520.svg') %>
+    <%- helpers.inlineSvg('assets/exhibits/singulator-front-260520.svg') %>
+    <%- helpers.inlineSvg('assets/exhibits/singulator-right-260520.svg') %>
+  </div>
+</figure>
 
 
-## Status
+## Scanner
 
-| #   | Module                       | Status                 |
-| --- | ---------------------------- | ---------------------- |
-| 1   | Drum Feeder                  | Build from base design |
-| 2   | Vibratory Singulation        | Build from base design |
-| 3   | Multi-View Scanning Station  | Original design        |
-| 4   | Brick Classification Engine  | Original design        |
-| 5   | Diverter & Bin Output        | TBD                    |
-| 6   | Inventory & Rebrickable Sync | To build               |
-| 7   | Set Coverage & Build Planner | To build               |
-| 8   | Packet Generator             | To build               |
-| 9   | Control & Orchestration      | To build               |
-| 10  | User Interface               | To build               |
+A turret indexes bricks one at a time into a scanned volume, then tilts each platform to drop the brick into the diverter below. Around it, four cameras sit at the vertices of a regular tetrahedron — every pair of lens axes 109.47° apart, provably the most informative way to place four eyes around a point.
 
-Mechanical platform derived from
-[RobG's Colour Sorting Machine for Lego](https://hackaday.io/project/194170-colour-sorting-machine-for-lego);
-the multi-view scanner and ML classifier replace the single-sensor colour pipeline.
+<figure class="pane pane-interactive my-6" data-asset-root="/assets/exhibits/">
+  <model-viewer
+    data-glb-base="/assets/exhibits/scanner-260521.glb"
+    alt="Scanner rig — tetrahedral four-camera scanning station, turret rotating through its four stations"
+    autoplay
+    camera-controls
+    camera-orbit="-85deg 45deg auto"
+    touch-action="pan-y"
+    interaction-prompt="none"
+    shadow-intensity="1"
+    exposure="1.1"
+    style="width: 100%; height: auto; aspect-ratio: 1 / 1; background: transparent;"
+  ></model-viewer>
+</figure>
+
+
+## Diverter
+
+A hex tower of baskets. The central rotating column points its ramp at one basket at a time, and per-floor trap doors decide whether the brick drops there or falls through to the floor below.
+
+<figure class="pane pane-interactive my-6" data-asset-root="/assets/exhibits/">
+  <model-viewer
+    data-glb-base="/assets/exhibits/diverter-260521.glb"
+    alt="Diverter mechanism — hex tower with central rotating ramp and per-floor trap doors"
+    autoplay
+    camera-controls
+    camera-orbit="0deg 75deg auto"
+    touch-action="pan-y"
+    interaction-prompt="none"
+    shadow-intensity="1"
+    exposure="1.1"
+    style="width: 100%; height: auto; aspect-ratio: 1 / 1; background: transparent;"
+  ></model-viewer>
+</figure>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    function apply() {
+      var t = root.dataset.theme === 'dark' ? 'dark' : 'light';
+      document.querySelectorAll('model-viewer[data-glb-base]').forEach(function (mv) {
+        var themed = mv.dataset.glbBase.replace(/\.glb$/i, '-' + t + '.glb');
+        if (mv.getAttribute('src') !== themed) mv.setAttribute('src', themed);
+      });
+    }
+    apply();
+    new MutationObserver(apply).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+  })();
+</script>
+
+
+## Credits
+
+Concept by @restlessronin. Written by @claude-opus-4.7.
+
+All sorted-stud CAD designs were vibe Caded primarily with @claude-opus-4.7 using the [cad-khana](https://github.com/cyberchitta/cad-khana) skill. All display artifacts for this article were also generated by @claude-opus-4.7.
+
+We began by trying to replicate [RobG's LEGO sorter](https://hackaday.io/project/194170-colour-sorting-machine-for-lego) in full. Not being adept at fabrication, we restricted ourselves to aluminum extrusion and 3D-printed parts. That constraint, plus needing to scaffold every module together in a limited footprint, brought us step by step to something not far from [the Basically Lego Sorter by LegoSpencer and team](https://basically.website/sorter-v2).
+
+LEGO® is a trademark of the LEGO Group, which does not sponsor, authorize, or endorse this site.

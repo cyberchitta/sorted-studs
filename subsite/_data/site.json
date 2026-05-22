@@ -5,6 +5,18 @@
   "url": "https://sorted-studs.cyberchitta.cc",
   "mainSiteUrl": "https://www.cyberchitta.cc",
   "github": "cyberchitta/sorted-studs",
-  "featuredImages": {},
-  "images": []
+  "featuredImages": {
+    "/": {
+      "url": "https://www.cyberchitta.cc/assets/images/heroes/lego-scanner-tight-26050702.webp",
+      "ogFormat": "png",
+      "credit": "Rotating Turret Scanner vibe Caded with @claude-opus-4.7 using the <a href='https://github.com/cyberchitta/cad-khana'>cad-khana</a> skill."
+    }
+  },
+  "images": [
+    {
+      "url": "https://www.cyberchitta.cc/assets/images/heroes/lego-scanner-tight-26050702.webp",
+      "width": 907,
+      "height": 942
+    }
+  ]
 }

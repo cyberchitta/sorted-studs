@@ -14,3 +14,5 @@ cad/**/outputs/
 
 .DS_Store
 .commit-msg
+
+*.md

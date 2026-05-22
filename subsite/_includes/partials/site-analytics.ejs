@@ -1,0 +1,13 @@
+<% if (env.eleventyEnv == 'production') { %>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RG8JCFCNMC"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+
+  function gtag() {
+    dataLayer.push(arguments);
+  }
+  gtag('js', new Date());
+  gtag('config', 'G-RG8JCFCNMC');
+</script>
+<% } %>
