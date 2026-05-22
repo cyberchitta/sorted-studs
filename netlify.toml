@@ -2,7 +2,7 @@
   base = "subsite"
   command = "bun run build"
   publish = "_site"
-  ignore = "[ -n \"$CACHED_COMMIT_REF\" ] && git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- subsite/ netlify.toml"
+  ignore = "echo \"PWD=$PWD CACHED=$CACHED_COMMIT_REF COMMIT=$COMMIT_REF\"; git diff --quiet HEAD^ HEAD -- subsite/ netlify.toml"
 
 [build.environment]
   GIT_LFS_ENABLED = "true"
