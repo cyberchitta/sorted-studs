@@ -1,7 +1,7 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import ejsPlugin from '@11ty/eleventy-plugin-ejs';
-import sgPlugin from '@cyberchitta/supramental-gold/eleventy';
+import sgPlugin, { createCustomElementRenderer } from '@cyberchitta/supramental-gold/eleventy';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const sgRoot = path.dirname(
@@ -17,6 +17,17 @@ export default function (eleventyConfig) {
   });
   eleventyConfig.addPlugin(sgPlugin);
 
+  const renderCustomElements = createCustomElementRenderer(
+    { 'glb-pane': 'elements/glb-pane.ejs' },
+    path.join(__dirname, '_includes'),
+  );
+  eleventyConfig.addTransform('renderCustomElements', async function (content, outputPath) {
+    if (outputPath && outputPath.endsWith('.html')) {
+      return await renderCustomElements(content);
+    }
+    return content;
+  });
+
   eleventyConfig.addGlobalData('layout', 'layouts/base.ejs');
 
   eleventyConfig.addPassthroughCopy('assets');
@@ -24,6 +35,7 @@ export default function (eleventyConfig) {
   eleventyConfig.ignores.add('README.md');
   eleventyConfig.ignores.add('CLAUDE.md');
   eleventyConfig.ignores.add('diverter_exhibit.md');
+  eleventyConfig.ignores.add('NEXT_STEPS.md');
 
   return {
     dir: { input: '.', output: '_site', includes: '_includes', data: '_data' },

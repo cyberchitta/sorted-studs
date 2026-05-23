@@ -49,55 +49,14 @@ A cylindrical [c-channel](https://basically.website/blog/how-we-got-to-10000-par
 
 A turret indexes bricks one at a time into a scanned volume, then tilts each platform to drop the brick into the diverter below. Around it, four cameras sit at the vertices of a regular tetrahedron — every pair of lens axes 109.47° apart, provably the most informative way to place four eyes around a point.
 
-<figure class="pane pane-interactive my-6" data-asset-root="/assets/exhibits/">
-  <model-viewer
-    data-glb-base="/assets/exhibits/scanner-260521.glb"
-    alt="Scanner rig — tetrahedral four-camera scanning station, turret rotating through its four stations"
-    autoplay
-    camera-controls
-    camera-orbit="-85deg 45deg auto"
-    touch-action="pan-y"
-    interaction-prompt="none"
-    shadow-intensity="1"
-    exposure="1.1"
-    style="width: 100%; height: auto; aspect-ratio: 1 / 1; background: transparent;"
-  ></model-viewer>
-</figure>
+<glb-pane src="/assets/exhibits/scanner-260521.glb" orbit="-85deg 45deg auto" alt="Scanner rig — tetrahedral four-camera scanning station, turret rotating through its four stations" />
 
 
 ## Diverter
 
 A hex tower of baskets. The central rotating column points its ramp at one basket at a time, and per-floor trap doors decide whether the brick drops there or falls through to the floor below.
 
-<figure class="pane pane-interactive my-6" data-asset-root="/assets/exhibits/">
-  <model-viewer
-    data-glb-base="/assets/exhibits/diverter-260521.glb"
-    alt="Diverter mechanism — hex tower with central rotating ramp and per-floor trap doors"
-    autoplay
-    camera-controls
-    camera-orbit="0deg 75deg auto"
-    touch-action="pan-y"
-    interaction-prompt="none"
-    shadow-intensity="1"
-    exposure="1.1"
-    style="width: 100%; height: auto; aspect-ratio: 1 / 1; background: transparent;"
-  ></model-viewer>
-</figure>
-
-<script>
-  (function () {
-    var root = document.documentElement;
-    function apply() {
-      var t = root.dataset.theme === 'dark' ? 'dark' : 'light';
-      document.querySelectorAll('model-viewer[data-glb-base]').forEach(function (mv) {
-        var themed = mv.dataset.glbBase.replace(/\.glb$/i, '-' + t + '.glb');
-        if (mv.getAttribute('src') !== themed) mv.setAttribute('src', themed);
-      });
-    }
-    apply();
-    new MutationObserver(apply).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
-  })();
-</script>
+<glb-pane src="/assets/exhibits/diverter-260521.glb" orbit="0deg 75deg auto" alt="Diverter mechanism — hex tower with central rotating ramp and per-floor trap doors" />
 
 
 ## Credits
