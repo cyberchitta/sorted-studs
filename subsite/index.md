@@ -56,7 +56,7 @@ A turret indexes bricks one at a time into a scanned volume, then tilts each pla
 
 A hex tower of baskets. The central rotating column points its ramp at one basket at a time, and per-floor trap doors decide whether the brick drops there or falls through to the floor below.
 
-<glb-pane src="/assets/exhibits/diverter-260523.glb" orbit="0deg 75deg auto" alt="Diverter mechanism — hex tower with central rotating ramp and per-floor trap doors" />
+<glb-pane src="/assets/exhibits/diverter-260523-00.glb" orbit="0deg 75deg auto" alt="Diverter mechanism — hex tower with central rotating ramp and per-floor trap doors" />
 
 
 ## Credits
