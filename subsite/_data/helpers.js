@@ -8,14 +8,13 @@ import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { marked } from 'marked';
+import env from './env.js';
 
 const subsiteRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 const AUTHOR_IMAGES = {
-  '@restlessronin':
-    'https://www.cyberchitta.cc/assets/images/authors/restlessronin.webp',
-  '@claude-opus-4.7':
-    'https://www.cyberchitta.cc/assets/images/authors/claude.webp',
+  '@restlessronin': `${env.mainSiteUrl}/assets/images/authors/restlessronin.webp`,
+  '@claude-opus-4.7': `${env.mainSiteUrl}/assets/images/authors/claude.webp`,
 };
 
 // Inline an SVG so page CSS reaches its content. cad-khana writes
@@ -31,7 +30,7 @@ export default {
   stripHtml: (html) => (html ? html.replace(/<[^>]*>/g, '') : ''),
   getAuthorImage: (tag) =>
     AUTHOR_IMAGES[tag] ||
-    'https://www.cyberchitta.cc/assets/images/authors/unknown.webp',
+    `${env.mainSiteUrl}/assets/images/authors/unknown.webp`,
   renderMarkdown: (md) => (md ? marked.parse(md) : ''),
   inlineSvg,
 };
