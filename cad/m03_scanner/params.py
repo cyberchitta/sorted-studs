@@ -514,33 +514,34 @@ TURRET_FRAME_FLOOR_Z = -130.0                                # turret floor
 # Slice c5 (2026-05-05) raised the floor a further 30 mm (-180 → -150)
 # without shrinking the housing. The housing top therefore rose
 # 30 mm to z = -80, closing the housing-top → pulley-bottom gap from
-# 20 to 1 mm; the pulley and cam disc rose 11 mm in lockstep
-# (PULLEY_Z_CENTER -86 → -75 in drive, TURRET_DUMP_CAM_CENTER_Z
-# -75 → -64 below) so the cam-bottom → pulley-top gap stays at 1 mm
-# and the cam-top → spider-bottom gap closes from 34 to 23 mm.
+# 20 to 1 mm; the pulley rose 11 mm in lockstep (PULLEY_Z_CENTER
+# -86 → -75 in drive) so the housing-pulley airspace stays at 1 mm.
+# The retired shaft-mounted dump cam rode the pulley up too.
 #
 # Slice c7 (2026-05-05) raised the floor a further 20 mm (-150 → -130)
 # so the turret floor rails sit at the same Z band as the camera rig's
 # rail A — turret rails span Z[-140, -120] vs rail A's [-141.2, -121.2]
 # (1.2 mm offset because rail A was bumped a sliver to the
 # conservative-envelope value). Housing top rose 20 mm to z = -60
-# (housing height unchanged at 60); pulley center -75 → -55 and cam
-# center -64 → -44 in lockstep, preserving the 1 mm pulley-top →
-# cam-bottom airspace; motor body rose 20 mm (flange -88 → -68, body
-# bottom -128 → -108); shaft shortened 130 → 110. Cam-top →
-# spider-bottom gap closes from 23 to 3 mm (cam top -38 vs spider
-# bottom -35) — most of the available compression along this axis,
-# stopping 2 mm shy of the 1 mm floor that further floor-rise budgets
-# would imply. The kicker pivot rose 31 mm (TURRET_DUMP_KICKER_PIVOT_Z
-# below) — more than the 20 mm floor rise — to lift the lever's hub
-# disc clear of the cross-rail and the kicker_mount foot. Brick-
-# silhouette occlusion from the motor was rechecked by inspection
-# (motor at world x=+59, outboard of below-vertex sightlines: line
-# from below_right at world (130.6, 16.5, -90.9) to brick at origin
-# passes through x≈95 at the new motor-top Z=-68, well outboard of
-# motor body's x=+80 face). The formal silhouette-cone assertion
-# (per the spec's c5b retrofit) is deferred to a follow-up slice
-# that adds sightline-rod stub parts.
+# (housing height unchanged at 60); pulley center -75 → -55, preserving
+# the 1 mm housing-pulley airspace; motor body rose 20 mm (flange
+# -88 → -68, body bottom -128 → -108); shaft shortened 130 → 110. The
+# retired shaft cam closed the cam-top → spider-bottom gap to 3 mm at
+# this floor — the marker for the floor-rise stopping point at the
+# time. Brick-silhouette occlusion from the motor was rechecked by
+# inspection (motor at world x=+59, outboard of below-vertex
+# sightlines: line from below_right at world (130.6, 16.5, -90.9) to
+# brick at origin passes through x≈95 at the new motor-top Z=-68,
+# well outboard of motor body's x=+80 face). The formal silhouette-
+# cone assertion (per the spec's c5b retrofit) is deferred to a
+# follow-up slice that adds sightline-rod stub parts.
+#
+# Slice 2026-05-23 retired the shaft-mounted dump cam and bench
+# kicker (see `dump_servo_handoff.md`) — neither is on the shaft
+# stack any more, so the compression budget no longer hinges on
+# cam-spider clearance. The dump now fires from a bench-mounted
+# hobby servo (`dump_servo/`); housing/pulley clearances are still
+# load-bearing.
 #
 # The project workbench reference (SHARED_BENCH_Z = -220 above)
 # didn't move; the turret floor now floats 90 mm above it, mirroring
@@ -642,139 +643,55 @@ TURRET_HINGE_PIN_RADIAL = TURRET_ARM_R - PLATFORM_ACRYLIC_SIZE / 2  # = 65
 TURRET_HINGE_PIN_D = 5.0
 
 
-# --- Turret dump cam (slice f1 — shaft cam + bench kicker) -------------
+# --- Turret dump servo (bench-mounted hobby servo at DUMP) -------------
 #
-# Printed cam disc keyed to the slice (b) shaft. Drives the bench-
-# mounted DUMP kicker (slice f2) via a follower lever: 4 radial lobes
-# 90° apart aligned with the spider arm headings (LOAD/IMAGE/DUMP/
-# RETURN). At every indexed dwell, one lobe sits under the bench-fixed
-# follower at heading 180° and pushes the kicker outward to lift the
-# DUMP-station platform's tab; in transit the follower drops into the
-# valley between lobes and the kicker retracts.
+# MCU-triggered hobby servo (SG90 class) bench-mounted at the DUMP
+# heading, driving a short lifter arm that pushes up on the DUMP-pose
+# platform extension's drop block from below. Replaces the retired
+# shaft cam + bench kicker pair (`dump_cam/`, `dump_kicker/`) — see
+# `dump_servo_handoff.md` for the rationale and `turret_design_brief.md`
+# §6.1 for the brief.
 #
-# Profile (4-fold rotational symmetry):
-#   - base radius (valley)        TURRET_DUMP_CAM_BASE_R = 25
-#   - peak radius (lobe top)      TURRET_DUMP_CAM_PEAK_R = 30
-#   - 5 mm lobe rise sets the follower's nominal radial stroke; the
-#     slice (f2) kicker linkage maps that radial motion to the
-#     vertical lifter stroke needed for the platform tilt.
+# Why a servo instead of a cam: the M3 control board already runs an
+# MCU for rotor indexing + beam-break sensing, so one extra PWM pin
+# is free. The cam approach added a kinematic synchronization puzzle
+# (cam lobe headings vs spider arm headings on the same shaft) that
+# the face-cam slice tried and failed to resolve; the servo eliminates
+# the puzzle entirely. Trade: dump timing is firmware-defined rather
+# than mechanically locked to the indexer.
 #
-# Disc Z span: [-50, -38] (centered on TURRET_DUMP_CAM_CENTER_Z).
-# Sits between the housing top (z = -60) and the slice (c) spider
-# bottom (z = -35), leaving 1 mm below before the pulley top (z=-51)
-# and 3 mm above before the spider. Slice c5 (2026-05-05) raised the
-# cam 11 mm (-75 → -64 center) along with the pulley to absorb the
-# housing rise; slice c7 (2026-05-05) raised it a further 20 mm
-# (-64 → -44 center), closing the cam-top → spider-bottom gap from
-# 23 mm to 3 mm. The remaining 2 mm of along-shaft compression budget
-# is held back: the lifter beam already clips the cam BASE_R footprint
-# at heading ~120° (documented at integrate level) and tightening the
-# spider-cam gap further compounds that without addressing the
-# underlying redesign. Cam-bottom → pulley-top still 1 mm (pulley
-# climbed in lockstep). Lobe-peak / lobe-ramp angular split + the
-# polygon discretisation are private to the sub-assembly
-# (`dump_cam/assembly.py`).
-TURRET_DUMP_CAM_BASE_R = 25.0
-TURRET_DUMP_CAM_PEAK_R = 30.0
-TURRET_DUMP_CAM_HEIGHT = 12.0
-TURRET_DUMP_CAM_CENTER_Z = -44.0
-TURRET_DUMP_CAM_TOP_Z = TURRET_DUMP_CAM_CENTER_Z + TURRET_DUMP_CAM_HEIGHT / 2
-TURRET_DUMP_CAM_BOTTOM_Z = TURRET_DUMP_CAM_CENTER_Z - TURRET_DUMP_CAM_HEIGHT / 2
+# Anchor:
+#   * Pivot (= servo output shaft axis) at turret (-80, -25, -100).
+#     Output shaft along +Y so the body extends in -Y; the lifter arm
+#     sweeps in the X-Z plane around the Y-axis.
+#   * X = -80 puts the body clear of the homing bracket
+#     (X ∈ [-62.5, -31.5] on the cross-rail top) and the hub housing
+#     (X ∈ [-30, +30]).
+#   * Y = -25 is the lifter pad target Y (drop block centroid in
+#     turret-local at DUMP heading 270°).
+#   * Z = -100 puts the body bottom flush with an 8-mm-thick bracket
+#     foot sitting on rail top (z = -120). Arm reaches 52 mm vertical
+#     and 50 mm horizontal from pivot to pad — a ~72 mm slanted beam.
+#
+# Lifter pad TOP-FACE Z at rest stays at z = -45, 2 mm below the
+# platform extension's bottom at z = -43 (slice (d) bracket bottom
+# inherits the LIFTER_TOP_Z value via the assertion in
+# `turret_platform/assembly.py`). Pad XY (turret-local) preserved from
+# the kicker era so the platform extension geometry doesn't move.
+TURRET_DUMP_SERVO_PIVOT_X = -80.0
+TURRET_DUMP_SERVO_PIVOT_Y = -25.0
+TURRET_DUMP_SERVO_PIVOT_Z = -100.5
 
+# Lifter pad TOP-FACE Z at rest. 2 mm below the platform extension's
+# bottom at z = -43 — clears the swept platform footprint so a non-
+# DUMP-station platform indexing through doesn't crash the pad.
+TURRET_DUMP_SERVO_LIFTER_TOP_Z = -45.0
 
-# --- Turret dump kicker (slice f2 — bench-mounted lever at DUMP) -------
-#
-# Bench-mounted 3D L-lever pivoted on a printed bracket bolted to the
-# slice (a) cross-rail's top T-slot at turret (x = TURRET_DUMP_KICKER_
-# PIVOT_X, y = 0). The lever's hub-end (in the y = 0 plane, in line
-# with the cam disc) picks off the slice (f1) shaft cam's OD at heading
-# 180° (the -X side, between hub and IDLE); a -Y cantilever (option a',
-# 2026-05-05) then carries the lifter pad to turret (x = -30, y = -25)
-# so the pad lands under the tip of the slice (d) platform frame's
-# inward extension at the new DUMP station (heading 270°, turret-local
-# centroid (0, -R, 0)). At rest (cam valley between dwells) the
-# follower sits at radial BASE_R = 25 from the cam axis and the lifter
-# pad is retracted; at every dwell a cam lobe rotates into heading 180°
-# and pushes the follower outward to PEAK_R = 30 (5 mm radial stroke),
-# tilting the lever and raising the lifter pad against the extension
-# tip at DUMP.
-#
-# The cam follower heading is independent of the firing-station
-# heading: the shaft cam is 4-fold symmetric, so a peak rotates into
-# every heading at every dwell. Picking the follower at heading 180°
-# (where the existing mount sits) is a free choice; it leaves the
-# clevis bracket bolted to the cross-rail at turret (-110, 0)
-# regardless of which station fires.
-#
-# Lifter / extension-tip position. The slice (d) platform frame
-# extends one corner inward (in cart -Y direction) past the hinge to
-# a lift point at cart-frame (X=+30, Y=-100) — 40 mm hub-side of the
-# hinge axis (cart Y=-60), giving a clean single-direction torque
-# about the hinge with no competing bonded brick-side push. Cart X=+30
-# keeps the extension well inside the rev-5 acrylic and clear of the
-# slice (c) DUMP spider arm at cart X ∈ [-7, +7]. Under option a',
-# the firing station (DUMP at heading 270°) carries the cart-local
-# IMAGE pose to turret-local via Rz(+180) (= the prior RETURN
-# station's rotation): cart (X=+30, Y=-100) maps to (-30, +100),
-# then translates by the DUMP centroid (0, -125) to turret
-# (-30, -25), which is where the lifter lives in turret-local.
-#
-# This slice ships REST geometry only — static placement of mount,
-# lever, pin. Cam-follower kinematics under shaft rotation (lever
-# rotation angle vs cam profile, follower roller geometry, peak-stroke
-# clearance to extension tip) are deferred until slices f3/f4 add the
-# per-arm hinge stop and the platform extension; slice f5 integrate
-# ties the kinematics together.
-#
-# Pivot location: x outboard of the homing bracket region
-# (X∈[-62.5,-31.5]) so the kicker foot can sit at the same X∈[-140,-80]
-# the homing slice's KICKER_FOOT_X_INNER mirror assumes; z above cross-
-# rail top (after c7: -120) plus a clearance for the lever's hub disc
-# (R = LEVER_HUB_DISC_OD/2 = 12 in dump_kicker/assembly.py).
-# Axis along ±Y so the hub-arm rotates in the X-Z plane; bridge-Y
-# cantilevers in -Y (option a', 2026-05-05) to reach the lifter at
-# y=-25. PIVOT_X stays at -110.
-#
-# Slice c7 (2026-05-05) raised this 31 mm (-130 → -99), more than the
-# 20 mm floor rise that motivated the slice. Geometry: the lever's
-# hub disc is centred on the pivot in Y∈[-6,+6] (in the clevis gap)
-# but extends radially R=12 mm in the X-Z plane. With the foot top
-# climbing to z=-112 (rail_top -120 + foot_z 8) and the cross-rail
-# top at z=-120, the disc bottom (= pivot - R) must land ≥ -111 to
-# leave 1 mm clearance to the foot top: pivot ≥ -112 + R + 1 = -99.
-# A latent c5 bug (kicker_lever overlapping cross_rail by 216 mm³ and
-# kicker_mount foot by 1904 mm³, both because the c5 floor rise
-# climbed toward the static pivot) is folded into this c7 fix —
-# c5/c6's "khana check passes" claim was true only at the standalones
-# that use stale local mirrors, not at turret/assembly.py-level. The
-# 11 mm gain over the spec's nominal "rises 20 mm" is the explicit
-# fix for that bug.
-TURRET_DUMP_KICKER_PIVOT_X = -110.0
-TURRET_DUMP_KICKER_PIVOT_Y = 0.0
-TURRET_DUMP_KICKER_PIVOT_Z = -99.0
-
-# Lifter pad TOP-FACE Z at rest. 17.7 mm below the slice (d) platform
-# bracket bottom (z = -27.3) — clear of the swept platform footprint at
-# any station so the lever-at-rest doesn't crash an indexing platform
-# that's not yet at DUMP. Slice (d)'s integrated extension drops down
-# to z = -43 at the lift point; the 2 mm REST clearance lets the cam
-# stroke close the gap and then push the platform.
-TURRET_DUMP_KICKER_LIFTER_TOP_Z = -45.0
-
-# Lifter pad XY in turret-local. Resolves the cart-frame extension-tip
-# position (X=+30, Y=-100) under the DUMP rotation Rz(+180) (option a',
-# 2026-05-05 — same rotation the prior RETURN station used):
-#     turret_x = -cart_x         =         -30
-#     turret_y = -ARM_R - cart_y = -125 - (-100) = -25
-# Lever arm = |cart_y - hinge_cart_y| = |-100 - (-60)| = 40 mm hub-side
-# of the hinge — single-direction torque (no competing bonded brick-side
-# push as in the prior straddle-the-hinge tab design). Slice c3
-# (2026-05-05) shrunk the cart-frame coords with the platform: cart X
-# from +80 → +30 (well inside the new 120 acrylic; spider arm at ±7
-# unchanged), cart Y from -130 → -100 (preserving the 40 mm lever
-# arm against the new hinge at cart Y=-60). Option a' (2026-05-05)
-# kept the cart-frame coords and switched the firing station from
-# heading 180° (Rz(+90), turret (-25, +30)) to heading 270° (Rz(+180),
-# turret (-30, -25)).
-TURRET_DUMP_KICKER_LIFTER_TURRET_X = -30.0
-TURRET_DUMP_KICKER_LIFTER_TURRET_Y = -25.0
+# Lifter pad XY in turret-local. Same mapping the retired kicker used
+# (option a', 2026-05-05): cart-frame extension-tip (X=+30, Y=-100)
+# under DUMP rotation Rz(+180) + centroid translate (0, -ARM_R) gives
+# turret (-30, -25). Kept for consistency with the platform's
+# integrated drop block — `turret_platform/assembly.py` cross-checks
+# these against EXTENSION_X_CENTER and LIFT_POINT_Y_LOCAL.
+TURRET_DUMP_SERVO_LIFTER_TURRET_X = -30.0
+TURRET_DUMP_SERVO_LIFTER_TURRET_Y = -25.0

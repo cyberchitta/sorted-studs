@@ -24,8 +24,8 @@ with rail C).
 
 Sub-assemblies (all in `cad/m03_scanner/<sub>/`):
   Rig:    arch, camera_mount_esp32cam (×4 vertices)
-  Turret: frame, hub, arm, turret_platform (×4 stations), dump_cam,
-          dump_kicker, drive, homing
+  Turret: frame, hub, arm, turret_platform (×4 stations), dump_servo,
+          drive, homing
 
 `turret_platform/` keeps its `turret_` prefix because the bare
 `platform` directory name collides with Python's stdlib `platform`
@@ -56,9 +56,9 @@ from params import (  # noqa: E402
     RAIL_PAD_CLAMP_FRONT_LOW_CLAMP_ROT,
     RAIL_PAD_CLAMP_FRONT_LOW_POS,
     TURRET_ARM_R,
-    TURRET_DUMP_KICKER_PIVOT_X,
-    TURRET_DUMP_KICKER_PIVOT_Y,
-    TURRET_DUMP_KICKER_PIVOT_Z,
+    TURRET_DUMP_SERVO_PIVOT_X,
+    TURRET_DUMP_SERVO_PIVOT_Y,
+    TURRET_DUMP_SERVO_PIVOT_Z,
     TURRET_HINGE_PIN_RADIAL,
     TURRET_HINGE_PIN_Z,
     TURRET_HUB_X,
@@ -75,8 +75,7 @@ from arch import assembly as _arch  # noqa: E402
 from arm import assembly as _arm  # noqa: E402
 from camera_mount_esp32cam import assembly as _camera_mount  # noqa: E402
 from drive import assembly as _drive  # noqa: E402
-from dump_cam import assembly as _dump_cam  # noqa: E402
-from dump_kicker import assembly as _dump_kicker  # noqa: E402
+from dump_servo import assembly as _dump_servo  # noqa: E402
 from frame import assembly as _frame  # noqa: E402
 from homing import assembly as _homing  # noqa: E402
 from hub import assembly as _hub  # noqa: E402
@@ -139,8 +138,7 @@ TURRET_PLATFORM_NAMES = tuple(
     for station in TURRET_STATIONS
     for sub_name, _ in _turret_platform._IMAGE_LOCS
 )
-TURRET_DUMP_CAM_NAMES = (_dump_cam.DUMP_CAM_PART_NAME,)
-TURRET_DUMP_KICKER_NAMES = _dump_kicker.KICKER_PART_NAMES
+TURRET_DUMP_SERVO_NAMES = _dump_servo.SERVO_PART_NAMES
 TURRET_DRIVE_NAMES = _drive.DRIVE_PART_NAMES
 TURRET_HOMING_NAMES = _homing.HOMING_PART_NAMES
 
@@ -149,8 +147,7 @@ TURRET_PART_NAMES = (
     + list(TURRET_HUB_NAMES)
     + list(TURRET_ARM_NAMES)
     + list(TURRET_PLATFORM_NAMES)
-    + list(TURRET_DUMP_CAM_NAMES)
-    + list(TURRET_DUMP_KICKER_NAMES)
+    + list(TURRET_DUMP_SERVO_NAMES)
     + list(TURRET_DRIVE_NAMES)
     + list(TURRET_HOMING_NAMES)
 )
@@ -263,18 +260,18 @@ def _build_platform_subassembly(station: str) -> Assembly:
 
 def _build_turret_rotor() -> Assembly:
     """Rotor sub-assembly in turret-local: the rigid body that revolves
-    about the hub Z axis. Includes the spider + hinge pins + dump cam
-    + every shaft-keyed part (hub shaft, driven pulley, homing flag),
-    plus four platform sub-sub-assemblies — each platform's hinge
-    pin axis is in the rotor's own frame (= turret-local), so the
-    platforms inherit the rotor's azimuth automatically and add only
-    their own tilt DOF on top."""
+    about the hub Z axis. Includes the spider + hinge pins + every
+    shaft-keyed part (hub shaft, driven pulley, homing flag), plus
+    four platform sub-sub-assemblies — each platform's hinge pin axis
+    is in the rotor's own frame (= turret-local), so the platforms
+    inherit the rotor's azimuth automatically and add only their own
+    tilt DOF on top. The dump_servo is bench-mounted (not on the
+    rotor), so it doesn't appear here."""
     rotor = Assembly()
     rotor = _arm.add_turret_arm(rotor)
     rotor = _hub.add_turret_hub_rotor(rotor)
     rotor = _drive.add_turret_drive_rotor(rotor)
     rotor = _homing.add_turret_homing_rotor(rotor)
-    rotor = _dump_cam.add_turret_dump_cam(rotor)
     for station in TURRET_STATIONS:
         pin_pos, pin_dir = _PLATFORM_PIN_TURRET[station]
         rotor = rotor.with_subassembly(
@@ -289,23 +286,23 @@ def _build_turret_rotor() -> Assembly:
     return rotor
 
 
-def _build_kicker_lever_subassembly() -> Assembly:
-    """Lever-only sub-assembly in turret-local. The pivot axis is
-    attached at ``with_subassembly`` time on the m03 root; the lever
-    rotates around the pin during a dump dwell while the mount + pin
-    stay with the static frame."""
-    lever = Assembly()
-    lever = _dump_kicker.add_turret_dump_kicker_lever(lever)
-    return lever
+def _build_servo_arm_subassembly() -> Assembly:
+    """Arm-only sub-assembly in turret-local. The servo shaft axis is
+    attached at ``with_subassembly`` time on the m03 root; the arm
+    rotates around that shaft during a dump dwell while the bracket +
+    body stay with the static frame."""
+    arm = Assembly()
+    arm = _dump_servo.add_turret_dump_servo_arm(arm)
+    return arm
 
 
 def add_turret(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
-    """Static turret parts in m03-local plus the rotor and the kicker
-    lever as jointed sub-assemblies.
+    """Static turret parts in m03-local plus the rotor and the servo
+    arm as jointed sub-assemblies.
 
     Structure:
       * static parts (frame, hub housing + bearings, motor + bracket
-        + motor pulley, homing sensor + bracket, kicker mount + pin)
+        + motor pulley, homing sensor + bracket, servo bracket + body)
         sit flat on ``a``, lifted by ``base`` to m03-local.
       * ``turret_rotor`` is a sub-assembly whose ``RevoluteJoint``
         about the m03-local Z axis through the hub drives the spider
@@ -313,11 +310,11 @@ def add_turret(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
         sub-sub-assemblies, each with its own pin-axis joint in
         turret-local — only the platform parked at DUMP tilts during
         a dwell, but the same axis table covers any station.
-      * ``kicker_lever`` is a sub-assembly with its pivot-pin joint
-        in m03-local; the mount + pin remain static.
+      * ``servo_arm`` is a sub-assembly with its servo-shaft joint
+        in m03-local; the bracket + body remain static.
 
     Joint axes attached to a sub-assembly are interpreted in the
-    parent's frame. The rotor and the lever live in the m03 root, so
+    parent's frame. The rotor and the arm live in the m03 root, so
     their axes use m03-local coordinates (= ``base * turret-local``);
     the platforms live inside the rotor, so their axes stay in
     turret-local (= the rotor's parts' frame)."""
@@ -326,7 +323,7 @@ def add_turret(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
     a = _hub.add_turret_hub_static(a, base=base)
     a = _drive.add_turret_drive_static(a, base=base)
     a = _homing.add_turret_homing_static(a, base=base)
-    a = _dump_kicker.add_turret_dump_kicker_static(a, base=base)
+    a = _dump_servo.add_turret_dump_servo_static(a, base=base)
 
     # Rotor — placed at `base`, joint about the m03-local Z axis
     # through the hub. (Z is parallel to itself everywhere, so the
@@ -345,17 +342,19 @@ def add_turret(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
         ),
     )
 
-    # Kicker lever — bench-mounted at `base`, joint about the lever's
-    # pivot pin (m03-local axis along -Y so positive angle = lifter
-    # pad up, matching the cam push direction).
+    # Servo arm — bench-mounted at `base`, joint about the servo
+    # output shaft (m03-local axis along -Y so positive joint angle =
+    # lifter pad up; same sign convention as the retired kicker_lever
+    # so animated_assembly.py can drive it from the same tilt_schedule
+    # without changing the schedule's sign).
     pivot_m03 = base * Pos(
-        TURRET_DUMP_KICKER_PIVOT_X,
-        TURRET_DUMP_KICKER_PIVOT_Y,
-        TURRET_DUMP_KICKER_PIVOT_Z,
+        TURRET_DUMP_SERVO_PIVOT_X,
+        TURRET_DUMP_SERVO_PIVOT_Y,
+        TURRET_DUMP_SERVO_PIVOT_Z,
     )
     a = a.with_subassembly(
-        "kicker_lever",
-        _build_kicker_lever_subassembly(),
+        "servo_arm",
+        _build_servo_arm_subassembly(),
         location=base,
         joint=RevoluteJoint(
             axis=Axis(
@@ -398,19 +397,6 @@ _KNOWN_OVERLAPS_STATIC: tuple[tuple[str, str, str], ...] = (
         "homing sensor's c4-era Z=-100 was orphaned by c5+c7 housing "
         "rise; sensor body now sits inside the housing volume. Pairs "
         "with the homing_flag overlap above; same redesign clears both.",
-    ),
-    (
-        "kicker_lever",
-        "dump_cam",
-        "c7 cam rise (-64 → -44 center) lifted cam Z into the lifter-"
-        "beam slab; option a' (2026-05-05) swung the beam from Y=+30 "
-        "to Y=-25, moving the clipping corner from (X=-12, Y=+19) at "
-        "heading ~122° to (X=-19, Y=-14) at heading ~216°. The BASE_R "
-        "clip persists at the new heading. Redesign queued (notched "
-        "beam or smaller cam BASE_R). Persists only at REST — lever "
-        "lifts the clipping corner clear of the cam during dump-dwell "
-        "frames, so animated_assembly.py removes this pair from the "
-        "known-overlap set when the lever joint angle is non-zero.",
     ),
 )
 

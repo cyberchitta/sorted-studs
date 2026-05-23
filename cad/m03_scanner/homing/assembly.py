@@ -14,7 +14,8 @@ Layout: flag disc + sensor live in the 20 mm of clear airspace between
 the slice (b) housing top (z = -110) and the slice (g) driven pulley
 bottom (z = -90). The bracket bolts to the slice (a) cross-rail's top
 T-slot at -X side, in the gap between the hub housing (x_max = +30)
-and the slice (f2) kicker mount foot (x_min = -80). Sensor azimuth at
+and the dump_servo bracket footprint (well outboard at X ∈ [-92, -68]
+on the cross-rail top, 2026-05-23 onward). Sensor azimuth at
 heading 180° (-X direction); detect feature on the disc at the same
 azimuth at home.
 
@@ -142,11 +143,6 @@ HOUSING_HALF_X = 30.0
 # with ≥ 1 mm gap. (STALE: actual post-c7 value -59. See note above.)
 PULLEY_BOTTOM_Z = -90.0
 
-# Slice (f2) kicker mount foot +X face (most-toward-axis face on -X
-# side). Bracket foot outer edge must clear this with ≥ WALL_MIN gap.
-KICKER_FOOT_X_INNER = -80.0
-
-
 # --- Flag disc geometry ------------------------------------------------
 
 FLAG_OD = 32.0                                             # disc diameter
@@ -197,10 +193,11 @@ _PRONG_T = (SENSOR_BODY_Z - FLAG_T) / 2                    # = 2.5
 # --- Bracket geometry --------------------------------------------------
 
 # Foot: 2 M5 bolts dropping into cross-rail's top T-slot at y = 0.
-# Centered at -X side, between the hub housing (x_max = +30) and the
-# kicker mount foot (x_min = -80). With a 31 mm wide foot at center
-# x = -47, the foot's inner edge sits 1.5 mm clear of the housing
-# (-X face -30) and the outer edge sits ≫ WALL_MIN clear of the kicker.
+# Centered at -X side, outboard of the hub housing (x_max = +30) and
+# inboard of the dump_servo bracket (x_min ≈ -92 on the cross-rail top,
+# 2026-05-23 onward). With a 31 mm wide foot at center x = -47, the
+# foot's inner edge sits 1.5 mm clear of the housing (-X face -30); the
+# outer edge sits ≫ WALL_MIN clear of the servo bracket.
 BRACKET_FOOT_X = 31.0
 BRACKET_FOOT_Y = 14.0    # depth
 BRACKET_FOOT_Z = 8.0     # vertical
@@ -299,14 +296,6 @@ assert _foot_to_housing >= WALL_MIN, (
     f"housing -X face (-{HOUSING_HALF_X}); gap {_foot_to_housing:.2f} "
     f"mm < WALL_MIN ({WALL_MIN}); shift bracket further -X or shrink "
     f"BRACKET_FOOT_X"
-)
-
-# Bracket foot outer edge clears kicker mount foot inner edge.
-_foot_to_kicker = _BRACKET_FOOT_X_MIN - KICKER_FOOT_X_INNER
-assert _foot_to_kicker >= WALL_MIN, (
-    f"bracket foot outer edge ({_BRACKET_FOOT_X_MIN}) too close to "
-    f"kicker foot inner edge ({KICKER_FOOT_X_INNER}); gap "
-    f"{_foot_to_kicker:.2f} mm < WALL_MIN ({WALL_MIN})"
 )
 
 # Bolt holes fit inside the foot with WALL_MIN walls on each side, and

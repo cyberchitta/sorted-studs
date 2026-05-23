@@ -8,10 +8,10 @@ parameter ``t ∈ [0, 1]`` with three joint DOFs updated:
   * ``turret_rotor.platform_<dump_station>`` → ``tilt_schedule(t)`` —
     bell-shaped outer-down tilt of the platform parked at the DUMP
     zone during the current dwell.
-  * ``kicker_lever`` → ``tilt_schedule(t) * KICKER_LEVER_TILT_SCALE``
-    — co-tilt of the bench-mounted lever in lock-step with the
+  * ``servo_arm`` → ``tilt_schedule(t) * SERVO_ARM_TILT_SCALE`` —
+    co-tilt of the bench-mounted servo arm in lock-step with the
     platform tilt; the lifter pad rises against the platform's
-    kicker extension.
+    drop block.
 
 The flat-trajectory ``replace(parts=...)`` rebuild from the prior rev
 is gone — joint structure carries the kinematic intent directly, so
@@ -20,10 +20,11 @@ per joint on the parent node instead of inferring rigid-body groups
 by trajectory match.
 
 The turret floor frame, hub housing + bearings, motor + bracket +
-motor pulley, homing sensor + bracket, kicker mount + pin, and the
-entire camera rig all stay fixed. The dump cam **is** on the rotor
-(keyed to the hub shaft); the kicker lever is the static follower
-that picks up the cam profile.
+motor pulley, homing sensor + bracket, servo bracket + body, and the
+entire camera rig all stay fixed. The servo arm pivots on the static
+servo body's output shaft; firmware (not modeled here) commands the
+servo to lift on the rotor index pulse at DUMP and return to rest
+during transit.
 
 Used by the GLB animation exporter (see ``export_glb_animated.py``)
 and as the unit of regression insurance for ``khana check`` across
@@ -66,15 +67,16 @@ DWELL_FRAC = 0.7
 # 30° = 0.577 > 0.3). Tune by eye in the subsite preview.
 MAX_TILT_DEG = 30.0
 
-# Kicker lever co-tilt scale. The lever rotates around the kicker pin
-# in lock-step with the platform tilt — its lifter pad pushes UP on
-# the platform's kicker extension, so the lever's tilt amount is
-# `platform_tilt * KICKER_LEVER_TILT_SCALE`. The scale ≈ 0.83 matches
-# the rise of the lifter pad (radius ≈ 96 mm from pivot) to the rise
-# of the platform's kicker extension drop block (radius ≈ 55 mm from
-# its hinge pin) — to first order, equal vertical rise means contact
-# stays tight at peak tilt.
-KICKER_LEVER_TILT_SCALE = 0.83
+# Servo arm co-tilt scale. The arm rotates around the servo output
+# shaft in lock-step with the platform tilt — its lifter pad pushes
+# UP on the platform's drop block, so the arm's rotation amount is
+# `platform_tilt * SERVO_ARM_TILT_SCALE`. The scale ≈ 0.83 matches
+# the rise of the lifter pad (radius ≈ 72 mm from pivot in X-Z) to
+# the rise of the platform's drop block (radius ≈ 55 mm from hinge
+# pin) — to first order, equal vertical rise means contact stays
+# tight at peak tilt. Identical sign convention to the retired
+# kicker_lever: positive joint angle = pad up = platform tilts.
+SERVO_ARM_TILT_SCALE = 0.83
 
 
 def _quarter(t: float) -> tuple[int, float]:
@@ -139,88 +141,31 @@ def _station_at_dump(q: int) -> str:
 
 # --- Dynamic-conflict pair suppression ---------------------------------
 #
-# Five pairs whose interference state varies with (rotor_angle,
-# lever_angle): present at some frames, absent at others, no clean
-# per-frame predicate. Each one has a single documented kinematic
-# root cause, so the per-frame check just SKIPS them entirely during
-# any frame where the geometric situation makes overlap possible —
-# both the `assert_no_interference` and the `assert_interference` are
-# omitted, so neither presence nor absence triggers a regression
-# alarm.
-#
-# Why skip instead of assert_interference:
-#   * `assert_interference` requires the overlap to be PRESENT (so it
-#     fires when a design fix lands and the overlap goes away).
-#     Several of these pairs come and go through the dump dwell —
-#     present at moderate tilt, absent at peak when the drop block
-#     and lifter pad have both risen past each other, etc. We'd need
-#     a per-tilt-window predicate that's noisier than the regression
-#     value.
-#   * Skipping documents the kinematic root cause here in code and
-#     accepts that the regression won't catch this family. Any *new*
-#     unrelated overlap elsewhere on the part-pair grid still trips
-#     loudly.
-#
-# The pairs:
-#
-#  * (spider, kicker_lever) — lever's hub-end cam-follower block
-#    sweeps through the spider IDLE arm during DUMP tilt. Cam
-#    follower must sit at heading 180° (= IDLE arm azimuth), so any
-#    lever rotation lifts the block into the arm. Resolution needs a
-#    kinematic redesign (8-lobe cam + off-azimuth follower / lower
-#    cam Z / pivot above spider plane); not addressable by
-#    tightening the lever's footprint.
-#
-#  * (pin_idle, kicker_lever) — same root cause (pin sits at IDLE
-#    arm's tip); same redesign clears both.
-#
-#  * (platform_idle_frame, kicker_lever) — TWO distinct modes share
-#    this pair:
-#      a) HIGH-tilt (lever angle >~22°): lever's hub-arm beam clips
-#         the IDLE platform's hub-side skirt. Same swept-volume root
-#         cause as the spider clip — platforms hang off spider arms,
-#         so structure in the IDLE-arm corridor drags IDLE platform
-#         features with it.
-#      b) TRANSIT (rotor angle ≠ 0): IDLE platform's kicker-extension
-#         drop block sweeps over the lever's hub-end block as the
-#         rotor turns. Drop-block X[-50, -22] (after rotor +30°)
-#         overlaps hub-end block X[-54, -36]; their Z[-43, -15] and
-#         Z[-51, -37] intersect at Z[-43, -37].
-#    Same kinematic root cause for both modes (lever hub-end block
-#    sits in the rotor's drop-block sweep ring at heading 180°).
-#
-#  * (platform_dump_frame, kicker_lever) — DESIGN-INTENDED contact at
-#    moderate tilt (~10°-20°): lifter pad pushes UP on DUMP drop
-#    block. Overlap absent at low tilt (pad below drop) and at peak
-#    (pad above drop — both have risen). No clean per-frame
-#    predicate without modelling the contact arc; skipped.
-#
-#  * (kicker_lever, dump_cam) — the static `_KNOWN_OVERLAPS_STATIC`
-#    entry asserts overlap at REST (lifter-beam inner corner clips
-#    cam BASE_R footprint at heading ~216°). The overlap disappears
-#    during lift (corner rises clear of cam Z plane) and during
-#    transit (cam rotates, lobe heading shifts so the corner is in a
-#    valley). Suppressed at every frame where rotor or lever angle
-#    is non-zero.
+# One pair after the 2026-05-23 servo slice. The previous five entries
+# all named ``kicker_lever`` (the retired bench-mounted lever paired
+# with the shaft cam); four of them encoded kinematic overlaps the cam
+# linkage couldn't resolve and disappeared with the lever's hub-end
+# block leaving the rotor sweep ring. The fifth — DESIGN-INTENDED
+# contact between the lifter pad and the DUMP-pose drop block at
+# moderate tilt — is geometry-independent: any lifter mechanism that
+# raises a pad against a drop block from below will trip it. The
+# servo arm reproduces it exactly. Skipped here for the same reason
+# the kicker era skipped it: per-frame predicate (pad below drop /
+# pad against drop / pad above drop) is noisier than the value.
 
 _DYNAMIC_CONFLICT_PAIRS: frozenset[tuple[str, str]] = frozenset({
-    ("spider",              "kicker_lever"),
-    ("pin_idle",            "kicker_lever"),
-    ("platform_idle_frame", "kicker_lever"),
-    ("platform_dump_frame", "kicker_lever"),
-    ("kicker_lever",        "dump_cam"),
+    ("platform_dump_frame", "servo_arm"),
 })
 
 
 def _suppressed_for_frame(
-    lever_angle_deg: float, rotor_angle_deg: float
+    arm_angle_deg: float, rotor_angle_deg: float
 ) -> frozenset[tuple[str, str]]:
     """Pairs to skip at this frame. Empty at the pure-REST frame
-    (rotor=0, lever=0) so the static known-overlap set in
-    `_KNOWN_OVERLAPS_STATIC` still fires its assert_interference
-    alarms. Suppressed at every dynamic frame to silence the
-    documented kinematic-redesign conflicts."""
-    if lever_angle_deg == 0.0 and rotor_angle_deg == 0.0:
+    (rotor=0, arm=0) so the static `_KNOWN_OVERLAPS_STATIC` still
+    fires its assert_interference alarms. The lone DUMP-platform ×
+    arm pad-contact suppression activates at every dynamic frame."""
+    if arm_angle_deg == 0.0 and rotor_angle_deg == 0.0:
         return frozenset()
     return _DYNAMIC_CONFLICT_PAIRS
 
@@ -229,7 +174,7 @@ def build_m03_at(t: float) -> Assembly:
     """``t ∈ [0, 1]`` ↔ one full rotor revolution. Stepwise dwell-and-
     transit schedule snaps the rotor 90° per quarter; during each
     dwell, the platform parked at the DUMP zone tips outer-down (the
-    kicker dumping a brick) and the kicker lever co-tilts to drive it.
+    servo dumping a brick) and the servo arm co-tilts to drive it.
 
     Three joints are animated:
       * ``turret_rotor`` — rotor azimuth.
@@ -238,7 +183,7 @@ def build_m03_at(t: float) -> Assembly:
         ``assembly.py``'s ``_PLATFORM_PIN_TURRET``) makes positive
         joint angle ↔ outer-DOWN tilt, so the same ``tilt_deg`` value
         drives whichever station happens to be at DUMP.
-      * ``kicker_lever`` — bench-mounted follower, co-tilts.
+      * ``servo_arm`` — bench-mounted lifter, co-tilts.
 
     Internal checks survive intact — they're name-based; nested joint
     composition leaves part names unchanged."""
@@ -249,24 +194,23 @@ def build_m03_at(t: float) -> Assembly:
 
     a = add_m03(Assembly())
     a = a.with_joint_angle("turret_rotor", theta_rotor_deg)
-    lever_angle_deg = 0.0
+    arm_angle_deg = 0.0
     if tilt_deg != 0.0:
         a = a.with_joint_angle(
             f"turret_rotor.platform_{dump_station}", tilt_deg
         )
-        lever_angle_deg = tilt_deg * KICKER_LEVER_TILT_SCALE
-        a = a.with_joint_angle("kicker_lever", lever_angle_deg)
-    # Per-frame regression check. At pure REST (rotor=0, lever=0) the
-    # static known-overlap set in `assembly.py` still fires its three
-    # assert_interference alarms (hub_housing × flag/sensor, lever ×
-    # cam). At every dynamic frame, the five
-    # `_DYNAMIC_CONFLICT_PAIRS` are suppressed entirely (see header
-    # for the kinematic root-cause documentation) so the loop catches
-    # only *new* failures.
+        arm_angle_deg = tilt_deg * SERVO_ARM_TILT_SCALE
+        a = a.with_joint_angle("servo_arm", arm_angle_deg)
+    # Per-frame regression check. At pure REST (rotor=0, arm=0) the
+    # static known-overlap set in `assembly.py` still fires its two
+    # assert_interference alarms (hub_housing × flag/sensor). Dynamic
+    # frames suppress only the design-intended platform_dump_frame ×
+    # servo_arm pad-contact pair; any other transit-time overlap
+    # surfaces loudly.
     return add_m03_internal_checks(
         a,
         suppressed_pairs=_suppressed_for_frame(
-            lever_angle_deg, theta_rotor_deg
+            arm_angle_deg, theta_rotor_deg
         ),
     )
 
@@ -282,11 +226,9 @@ if __name__ == "__main__":
     # local_t = dwell_frac = 0.7 ⇒ t = 0.175), and one transit point
     # per quarter so the rotor is checked at each station.
     #
-    # The static m03 is already clean; dynamic frames suppress the
-    # five `_DYNAMIC_CONFLICT_PAIRS` (kinematic-redesign overlaps +
-    # the design-intended pad/drop contact + the cam-vs-lever pair
-    # whose overlap state varies with rotor/tilt). This loop catches
-    # any NEW interference outside that suppressed set.
+    # The static m03 is already clean; the post-servo
+    # `_DYNAMIC_CONFLICT_PAIRS` is empty, so any new transit-time
+    # overlap surfaces here.
     from cad_khana.mechanism.assertions import evaluate as _evaluate
 
     out_root = HERE / "outputs" / "animated"

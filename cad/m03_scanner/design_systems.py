@@ -81,12 +81,10 @@ ROLE_OF: dict[str, Role | None] = {
             ("frame", Role.MECHANISM),
         )
     },
-    # --- turret.turret_dump_cam ---------------------------------------
-    "dump_cam": Role.MECHANISM,
-    # --- turret.turret_dump_kicker ------------------------------------
-    "kicker_mount": Role.SECONDARY_STRUCTURE,
-    "kicker_lever": Role.MECHANISM,
-    "kicker_pin": None,                                 # steel
+    # --- turret.dump_servo --------------------------------------------
+    "servo_bracket": Role.SECONDARY_STRUCTURE,
+    "servo_arm": Role.MECHANISM,
+    "servo_body": None,                                 # bought hobby servo
     # --- turret.turret_drive ------------------------------------------
     "drive_pulley_shaft": None,                         # GT2 pulley, hardware
     "drive_pulley_motor": None,                         # GT2 pulley, hardware

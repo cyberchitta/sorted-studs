@@ -108,7 +108,6 @@ from cad_khana.printability.methods import FDM
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from params import (  # noqa: E402
-    TURRET_DUMP_CAM_BOTTOM_Z,
     TURRET_FRAME_CROSS_Y,
     TURRET_FRAME_FLOOR_Z,
     TURRET_HUB_X,
@@ -117,6 +116,11 @@ from params import (  # noqa: E402
     TURRET_SHAFT_TOP_Z,
     WALL_MIN,
 )
+
+# Slice (c) spider bottom Z — private mirror so the pulley-to-spider
+# clearance below doesn't import the spider sub-assembly directly.
+# Update if the spider's HEIGHT or top-Z anchor moves.
+_SPIDER_BOTTOM_Z = -35.0
 from design_systems import color_of  # noqa: E402
 from materials import material_of  # noqa: E402
 
@@ -304,10 +308,10 @@ assert _pulley_to_housing >= 1.0, (
     f"driven pulley bottom ({_PULLEY_BOTTOM_Z}) too close to housing "
     f"top ({HOUSING_TOP_Z}); gap {_pulley_to_housing:.2f} mm < 1 mm"
 )
-_pulley_to_cam = TURRET_DUMP_CAM_BOTTOM_Z - _PULLEY_TOP_Z
-assert _pulley_to_cam >= 1.0, (
-    f"driven pulley top ({_PULLEY_TOP_Z}) too close to cam bottom "
-    f"({TURRET_DUMP_CAM_BOTTOM_Z}); gap {_pulley_to_cam:.2f} mm < 1 mm"
+_pulley_to_spider = _SPIDER_BOTTOM_Z - _PULLEY_TOP_Z
+assert _pulley_to_spider >= 1.0, (
+    f"driven pulley top ({_PULLEY_TOP_Z}) too close to spider bottom "
+    f"({_SPIDER_BOTTOM_Z}); gap {_pulley_to_spider:.2f} mm < 1 mm"
 )
 
 # Driven pulley OD doesn't crash motor body in X.

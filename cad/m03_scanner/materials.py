@@ -59,12 +59,10 @@ MATERIAL_OF: dict[str, str | None] = {
             ("frame", "pla_matte"),
         )
     },
-    # turret.turret_dump_cam
-    "dump_cam": "pla_matte",
-    # turret.turret_dump_kicker
-    "kicker_mount": "pla_matte",
-    "kicker_lever": "pla_matte",
-    "kicker_pin": "steel",
+    # turret.dump_servo
+    "servo_bracket": "pla_matte",
+    "servo_arm": "pla_matte",
+    "servo_body": "pla_matte",
     # turret.turret_drive
     "drive_pulley_shaft": "aluminium_anodized",
     "drive_pulley_motor": "aluminium_anodized",

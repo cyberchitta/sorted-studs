@@ -91,9 +91,9 @@ from params import (  # noqa: E402
     PLATFORM_ACRYLIC_SIZE,
     PLATFORM_ACRYLIC_T,
     TURRET_ARM_R,
-    TURRET_DUMP_KICKER_LIFTER_TOP_Z,
-    TURRET_DUMP_KICKER_LIFTER_TURRET_X,
-    TURRET_DUMP_KICKER_LIFTER_TURRET_Y,
+    TURRET_DUMP_SERVO_LIFTER_TOP_Z,
+    TURRET_DUMP_SERVO_LIFTER_TURRET_X,
+    TURRET_DUMP_SERVO_LIFTER_TURRET_Y,
     TURRET_HINGE_PIN_D,
     TURRET_HINGE_PIN_RADIAL,
     TURRET_HINGE_PIN_Z,
@@ -237,7 +237,7 @@ LIFT_POINT_Y_LOCAL = -100.0     # = cart Y where lifter pad center contacts
 # tip hangs down to the lifter contact face.
 EXTENSION_LIFTER_CLEARANCE_Z = 2.0
 EXTENSION_BOTTOM_Z = (
-    TURRET_DUMP_KICKER_LIFTER_TOP_Z + EXTENSION_LIFTER_CLEARANCE_Z  # = -43
+    TURRET_DUMP_SERVO_LIFTER_TOP_Z + EXTENSION_LIFTER_CLEARANCE_Z  # = -43
 )
 EXTENSION_STEM_BOTTOM_Z = -15.0
 EXTENSION_STEM_TOP_Z = ACRYLIC_BOTTOM_Z                            # = -4
@@ -360,9 +360,9 @@ assert _LEVER_ARM >= 30.0, (
 # (Extension below-view occlusion is rig-level — visibility.py.)
 
 # Extension bottom strictly above lifter pad top at REST.
-assert EXTENSION_BOTTOM_Z > TURRET_DUMP_KICKER_LIFTER_TOP_Z, (
+assert EXTENSION_BOTTOM_Z > TURRET_DUMP_SERVO_LIFTER_TOP_Z, (
     f"extension bottom {EXTENSION_BOTTOM_Z} ≤ lifter top at REST "
-    f"{TURRET_DUMP_KICKER_LIFTER_TOP_Z}; would contact at rest"
+    f"{TURRET_DUMP_SERVO_LIFTER_TOP_Z}; would contact at rest"
 )
 
 # Lifter pad cart-frame position derived from turret-local matches the
@@ -371,8 +371,8 @@ assert EXTENSION_BOTTOM_Z > TURRET_DUMP_KICKER_LIFTER_TOP_Z, (
 # from turret-local back to cart-frame is:
 #   cart_x = -turret_x
 #   cart_y = -(turret_y + ARM_R) = -turret_y - ARM_R
-_LIFTER_CART_X = -TURRET_DUMP_KICKER_LIFTER_TURRET_X                # = +30
-_LIFTER_CART_Y = -TURRET_DUMP_KICKER_LIFTER_TURRET_Y - TURRET_ARM_R  # = -100
+_LIFTER_CART_X = -TURRET_DUMP_SERVO_LIFTER_TURRET_X                # = +30
+_LIFTER_CART_Y = -TURRET_DUMP_SERVO_LIFTER_TURRET_Y - TURRET_ARM_R  # = -100
 assert _LIFTER_CART_X == EXTENSION_X_CENTER, (
     f"lifter cart X {_LIFTER_CART_X} ≠ extension X center "
     f"{EXTENSION_X_CENTER}"
