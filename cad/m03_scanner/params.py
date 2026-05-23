@@ -642,58 +642,44 @@ TURRET_HINGE_PIN_RADIAL = TURRET_ARM_R - PLATFORM_ACRYLIC_SIZE / 2  # = 65
 TURRET_HINGE_PIN_D = 5.0
 
 
-# --- Turret dump cam (slice f1 — shaft face cam + pin follower) --------
+# --- Turret dump cam (slice f1 — shaft cam + bench kicker) -------------
 #
-# Printed cam disc keyed to the slice (b) shaft. Drives the slice (f2)
-# bench-mounted DUMP follower (vertical pin + slide guide + rocker)
-# via 4 raised lobes on the disc's +Z face — same 90° / heading-aligned
-# layout the radial-OD cam had, but the lobes rise in +Z instead of in
-# +R. At every indexed dwell, one lobe rotates under the bench-fixed
-# pin at heading 180° and lifts the pin in pure Z; the rocker (slice
-# f2) maps that small Z stroke to the lifter pad's larger vertical
-# stroke at the DUMP-station platform's tab. In transit the lobe
-# rotates clear and the pin drops back to the disc top face.
+# Printed cam disc keyed to the slice (b) shaft. Drives the bench-
+# mounted DUMP kicker (slice f2) via a follower lever: 4 radial lobes
+# 90° apart aligned with the spider arm headings (LOAD/IMAGE/DUMP/
+# RETURN). At every indexed dwell, one lobe sits under the bench-fixed
+# follower at heading 180° and pushes the kicker outward to lift the
+# DUMP-station platform's tab; in transit the follower drops into the
+# valley between lobes and the kicker retracts.
 #
-# History: this slice replaces the rev-1 radial-OD cam (4 lobes
-# rising from BASE_R=25 to PEAK_R=30 in +R) with a face-cam topology
-# because the lever family that consumed the radial profile carried
-# an unresolvable arc-Z conflict with the slice (c) spider band — see
-# `dump_facecam_handoff.md` for the kinematic root-cause analysis.
-# The face cam keeps the cam stack Z-anchored: lobes ≤ 2 mm above the
-# disc top face leave 1 mm spider clearance (spider bottom z=-35,
-# disc top z=-38, lobe top z=-36). The 5 → 2 mm stroke loss is
-# recovered in the rocker ratio (Slice 2).
+# Profile (4-fold rotational symmetry):
+#   - base radius (valley)        TURRET_DUMP_CAM_BASE_R = 25
+#   - peak radius (lobe top)      TURRET_DUMP_CAM_PEAK_R = 30
+#   - 5 mm lobe rise sets the follower's nominal radial stroke; the
+#     slice (f2) kicker linkage maps that radial motion to the
+#     vertical lifter stroke needed for the platform tilt.
 #
-# Profile (4-fold rotational symmetry on +Z face):
-#   - disc OD                     TURRET_DUMP_CAM_BASE_R   = 25 (plain
-#                                 cylinder, no radial profile)
-#   - lobe rise above disc top    TURRET_DUMP_CAM_LOBE_RISE = 2 mm
-#   - lobe angular half-extent    ±15° per lobe (cos² ramp)
-#   - pin contact radius          TURRET_DUMP_CAM_PIN_R    = 20 mm
-#                                 (lobe annulus centroid; pin sits at
-#                                 this radius at heading 180°)
-#
-# Disc Z span: [-50, -38] (centered on TURRET_DUMP_CAM_CENTER_Z) is
-# unchanged from the radial-cam era. Lobe top now reaches z = -36,
-# leaving 1 mm clearance to the spider bottom at z = -35. Slice c5
-# (2026-05-05) raised the cam 11 mm along with the pulley; c7
-# (2026-05-05) raised it a further 20 mm, closing the cam-top →
-# spider-bottom gap from 23 mm to 3 mm. The face-cam slice consumes
-# 2 mm of that gap for the lobe rise, leaving 1 mm.
-#
-# `TURRET_DUMP_CAM_PEAK_R` is retained at 25 (= BASE_R) only as a
-# back-compat constant for the slice (f2) `dump_kicker/` assembly's
-# radial _radius_at(); deleted in Slice 2 of the face-cam cascade
-# when `dump_kicker/` is replaced by `dump_follower/`.
+# Disc Z span: [-50, -38] (centered on TURRET_DUMP_CAM_CENTER_Z).
+# Sits between the housing top (z = -60) and the slice (c) spider
+# bottom (z = -35), leaving 1 mm below before the pulley top (z=-51)
+# and 3 mm above before the spider. Slice c5 (2026-05-05) raised the
+# cam 11 mm (-75 → -64 center) along with the pulley to absorb the
+# housing rise; slice c7 (2026-05-05) raised it a further 20 mm
+# (-64 → -44 center), closing the cam-top → spider-bottom gap from
+# 23 mm to 3 mm. The remaining 2 mm of along-shaft compression budget
+# is held back: the lifter beam already clips the cam BASE_R footprint
+# at heading ~120° (documented at integrate level) and tightening the
+# spider-cam gap further compounds that without addressing the
+# underlying redesign. Cam-bottom → pulley-top still 1 mm (pulley
+# climbed in lockstep). Lobe-peak / lobe-ramp angular split + the
+# polygon discretisation are private to the sub-assembly
+# (`dump_cam/assembly.py`).
 TURRET_DUMP_CAM_BASE_R = 25.0
-TURRET_DUMP_CAM_PEAK_R = TURRET_DUMP_CAM_BASE_R   # deprecated, see above
+TURRET_DUMP_CAM_PEAK_R = 30.0
 TURRET_DUMP_CAM_HEIGHT = 12.0
 TURRET_DUMP_CAM_CENTER_Z = -44.0
 TURRET_DUMP_CAM_TOP_Z = TURRET_DUMP_CAM_CENTER_Z + TURRET_DUMP_CAM_HEIGHT / 2
 TURRET_DUMP_CAM_BOTTOM_Z = TURRET_DUMP_CAM_CENTER_Z - TURRET_DUMP_CAM_HEIGHT / 2
-TURRET_DUMP_CAM_LOBE_RISE = 2.0
-TURRET_DUMP_CAM_LOBE_TOP_Z = TURRET_DUMP_CAM_TOP_Z + TURRET_DUMP_CAM_LOBE_RISE
-TURRET_DUMP_CAM_PIN_R = 20.0
 
 
 # --- Turret dump kicker (slice f2 — bench-mounted lever at DUMP) -------
