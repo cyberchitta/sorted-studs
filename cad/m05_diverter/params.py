@@ -13,7 +13,24 @@ N_BASKETS_PER_FLOOR = 6         # N of the ramp-facing basket (drives
                                 # ramp_mechanism's BASKET_SLOT_W_AT_TIP
                                 # calc). The floor itself is a mixed
                                 # layout — see FLOOR_LAYOUT below.
-R_BASKET_INNER = 150.0          # radial distance column axis → basket lip (mm)
+R_BASKET_INNER = 130.0          # radial distance column axis → basket lip (mm).
+                                # Constant arc radius: the basket's inner
+                                # wall is a cylindrical arc at this radius
+                                # at every azimuth, so the lip overhangs
+                                # the ramp tip by `r_tip - R_BASKET_INNER`
+                                # = 16.4 mm uniformly across all basket
+                                # sizes (N=6 / 9 / 12 / 18). The earlier
+                                # straight-chord inner wall let lip radius
+                                # vary 129.9 (N=6) → 147.7 (N=18); N=18
+                                # sat 1.3 mm *outboard* of the tip, and a
+                                # near-vertical drop fell into the gap.
+                                # 130 = R_HEX_INNER - EXT_SIZE/2 = hex
+                                # inner-face apothem, so the basket floor
+                                # fully covers the hex top everywhere
+                                # along bisectors; it cantilevers up to
+                                # 20.1 mm inboard at each vertex
+                                # direction as a small flap (resolved by
+                                # local bracket / floor-notch geometry).
 R_HEX_OUTER = 270.0             # outer-hex apothem (center → edge midpoint, mm)
 R_HEX_INNER = 140.0             # inner-hex apothem (mm). With both
                                 # vertex brackets flipped below the
@@ -26,13 +43,14 @@ R_HEX_INNER = 140.0             # inner-hex apothem (mm). With both
                                 # collides with the outer-vertex
                                 # bracket's radial arm — real ceiling
                                 # ≈ 180. Landed at 140 so the basket's
-                                # inner chord at R_BASKET_INNER·cos(30°)
-                                # ≈ 129.9 overhangs the hex inner face
-                                # at R_HEX_INNER - EXT_SIZE/2 = 130 by
-                                # ~0.1 mm (basket just clears the hex's
-                                # inner edge; the full 20 mm of hex top
-                                # face sits under the basket floor for
-                                # solid support).
+                                # arc inner wall at R_BASKET_INNER = 130
+                                # lands exactly on the hex inner face
+                                # at R_HEX_INNER - EXT_SIZE/2 = 130 along
+                                # bisector azimuths (full 20 mm of hex
+                                # top face sits under the basket floor
+                                # along bisectors; at vertex directions
+                                # the basket floor cantilevers ~20 mm
+                                # inboard of the hex inner corner).
 FLOOR_H = 220.0                 # vertical corner-column height spanning one
                                 # floor (top face z=0 → base z=-FLOOR_H)
 

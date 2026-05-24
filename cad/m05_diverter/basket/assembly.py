@@ -1,19 +1,23 @@
 """
 M05 hex-tower — basket sub-assembly.
 
-Wedge **buckets** with a flat inner chord, two radial side walls,
-and a cylindrical-arc outer wall at R_BASKET_OUTER, sitting on a
-rotating-column floor. The floor is a **mixed layout** — baskets
-of four sizes (N=6 / 9 / 12 / 18, each with half-angle 180°/N)
-placed around the hex per `params.FLOOR_LAYOUT`, with the ramp-
-facing N=6 basket straddling +X and the remaining sections filled
-by N=9 triples, N=12 pairs, and an N=18 triple + (N=9, N=18) pair
-around the back.
+Annular-sector **buckets** with cylindrical-arc inner and outer
+walls and two radial side walls, sitting on a rotating-column
+floor. The floor is a **mixed layout** — baskets of four sizes
+(N=6 / 9 / 12 / 18, each with half-angle 180°/N) placed around
+the hex per `params.FLOOR_LAYOUT`, with the ramp-facing N=6 basket
+straddling +X and the remaining sections filled by N=9 triples,
+N=12 pairs, and an N=18 triple + (N=9, N=18) pair around the back.
 
-Outer arc radius matches the top-deck acrylic disc OD/2 (330 mm),
-so all baskets share the same outer cylindrical surface regardless
-of N — the floor of buckets reads as one continuous cylindrical
-skirt below the disc edge.
+Outer arc radius matches the top-deck acrylic disc OD/2 (330 mm)
+and inner arc radius matches the hex inner-face apothem (130 mm),
+so all baskets share the same outer **and** inner cylindrical
+surfaces regardless of N. The lip-radius is constant at every
+azimuth, giving uniform 16.4 mm overhang past the ramp tip across
+all basket sizes (vs. the earlier straight-chord inner wall that
+varied the lip radius from 129.9 mm at N=6 to 147.7 mm at N=18 —
+N=18 sat outboard of the tip and a near-vertical drop fell into
+the gap).
 
 Each basket's radial side walls (and in one case, its center) are
 notched around the through-columns at vertices V_k = (k+0.5)·60°.
@@ -81,15 +85,24 @@ from params import (
 # so brick load drops through the supported zone — only the
 # outermost ~50 mm of floor hangs free.
 #
+# Basket inner wall is a cylindrical arc at r = R_BASKET_INNER =
+# 130, exactly on the hex inner-face apothem. Along bisector
+# azimuths the basket floor sits over the full 20 mm hex top strip
+# (r ∈ [130, 150]) for solid support. At vertex azimuths the hex
+# inner corner sits at r ≈ 150.1, so the basket floor extends ~20
+# mm inboard of the hex as an unsupported flap (max 20.1 mm at the
+# vertex line, tapering to 0 mm at the bisectors). The flap shares
+# the z ∈ [0, 3] band with the inner-vertex bracket bodies; their
+# coexistence is resolved at the top-level assembly.
+#
 # The basket's radial side walls lie on the shared (outer = inner)
 # hex vertex azimuths and would otherwise pass straight through the
 # through-columns at both radii — at R_VERT_OUTER the column body
 # spans r ∈ [~301.77, ~321.77] along the vertex azimuth (fully
 # inside the basket envelope at r=330); at R_VERT_INNER it spans
-# r ∈ [~151.66, ~171.66] (just outboard of the basket's inner
-# corner at R_BASKET_INNER=150). `basket()` subtracts a column-
-# footprint cutout at *both* radii on each flagged boundary
-# azimuth.
+# r ∈ [~151.66, ~171.66] (just outboard of the basket's inner arc
+# at R_BASKET_INNER=130). `basket()` subtracts a column-footprint
+# cutout at *both* radii on each flagged boundary azimuth.
 BASKET_HEX_OVERHANG = 60.0
 R_BASKET_OUTER = R_HEX_OUTER + BASKET_HEX_OVERHANG   # 330 = top-deck OD/2
 BASKET_WALL_T = 3.0
@@ -149,24 +162,38 @@ def _arc_prism(
     z_top: float,
     inset: float = 0.0,
 ) -> Part:
-    """Angular-sector wedge with flat inner chord, two radial side
-    walls, and a cylindrical-arc outer wall at radius `r_out`.
-    Centered on +X.
+    """Annular sector with cylindrical-arc inner and outer walls plus
+    two radial side walls. Centered on +X.
 
     `inset` offsets each bounding feature perpendicular-inward by
     that amount — used to carve the hollow interior from an outer
-    shell with a uniform wall thickness. Inner chord moves outward
-    by `inset`, radial walls move inward perpendicularly, outer arc
-    radius shrinks by `inset`.
+    shell with a uniform wall thickness. Inner arc radius grows by
+    `inset`, outer arc radius shrinks by `inset`, radial walls move
+    inward perpendicularly.
 
-    Implementation: build a sector trapezoid extending well past
-    `r_out` and intersect it with a coaxial cylinder of radius
-    `r_out - inset`; the cylinder clips the outer edge into a
-    circular arc.
+    Implementation: build a sector trapezoid that straddles the
+    annular region, intersect with the outer cylinder of radius
+    `r_out - inset` (clips the outer edge to a circular arc), then
+    subtract the inner cylinder of radius `r_in + inset` (clips the
+    inner edge to a circular arc). The trapezoid's inner edge `x_in`
+    sits well inside `r_in + inset` so the subtraction defines the
+    inner boundary; `x_in` is also kept outboard of the radial-wall
+    intersection point at `x = inset / sin(ha)` so the polygon stays
+    non-degenerate.
     """
     ha = math.radians(half_angle_deg)
     r_far = r_out * 2.0
-    x_in = r_in * math.cos(ha) + inset
+    # Inner edge of the polygon at x = x_in. The polygon's two inner
+    # corners sit at (x_in, ±(x_in·tan_ha − dy)), so their distance
+    # from the axis is x_in / cos_ha (for inset=0) or slightly less
+    # (for inset > 0). For the inner-cylinder subtraction to clean up
+    # the polygon's full inner edge, both corners must lie strictly
+    # inside `r_in + inset`. Setting `x_in = r_in · cos_ha − 1`
+    # places the corners exactly 1 mm inside r_in (always inside
+    # `r_in + inset` since inset ≥ 0) and stays comfortably above the
+    # radial-wall crossing at `x = inset / sin_ha` for all (ha, inset)
+    # in this assembly.
+    x_in = r_in * math.cos(ha) - 1.0
     x_far = r_far * math.cos(ha) - inset
     tan_ha = math.tan(ha)
     dy = inset / math.cos(ha)
@@ -180,8 +207,9 @@ def _arc_prism(
     wedge = Pos(0, 0, z_bot) * extrude(sketch, amount=z_top - z_bot)
     cyl_h = (z_top - z_bot) + 2.0
     cyl_z_center = (z_bot + z_top) / 2.0
-    cyl = Pos(0, 0, cyl_z_center) * Cylinder(r_out - inset, cyl_h)
-    return wedge & cyl
+    outer_cyl = Pos(0, 0, cyl_z_center) * Cylinder(r_out - inset, cyl_h)
+    inner_cyl = Pos(0, 0, cyl_z_center) * Cylinder(r_in + inset, cyl_h)
+    return (wedge & outer_cyl) - inner_cyl
 
 
 # --- Part functions -----------------------------------------------------
