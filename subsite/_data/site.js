@@ -1,4 +1,10 @@
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+import { readingTimeForFile } from '@cyberchitta/supramental-gold/eleventy/build-helpers';
 import env from './env.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const articleRoot = join(__dirname, '..');
 
 const featuredImage = {
   url: `${env.mainSiteUrl}/assets/images/heroes/lego-scanner-tight-26050702.webp`,
@@ -25,4 +31,5 @@ export default {
       height: 942,
     },
   ],
+  articles: [{ url: '/', readingTime: readingTimeForFile(join(articleRoot, 'index.md')) }],
 };
