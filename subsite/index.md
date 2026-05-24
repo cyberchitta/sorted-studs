@@ -1,7 +1,7 @@
 ---
 layout: layouts/article
 title: Letting Claude Build Our LEGO Sorter
-ogDescription: Most LEGO sorters use one top-down camera. Ours uses four, at the vertices of a tetrahedron — and an AI drew every part. Build-in-public.
+ogDescription: Most LEGO sorters use one top-down camera. Ours uses four, at the vertices of a tetrahedron — and an AI drew every part.
 publishedAt: "2026-05-25"
 group: practice
 showrunner: "@restlessronin"
@@ -11,7 +11,6 @@ tags:
   - sorted-studs
   - lego
   - cad
-  - build-in-public
   - multi-view
 ---
 
@@ -19,21 +18,19 @@ tags:
 
 > **Work in progress — nothing here has been built yet.** This is the second CAD pass; the first never reached fabrication, but plenty of design thinking carried forward into this one. Enough has been done to validate the premises; not yet enough to build.
 
-An AI-powered LEGO sorting machine. At runtime, ML will classify the bricks. Everything upstream sits in domains where the human showrunner @restlessronin's own expertise is thin or absent: the CAD that exists, the firmware to come, the machine itself.
+An AI-powered LEGO sorting machine — every part vibe Caded with @claude-opus-4.7 using [cad-khana](https://github.com/cyberchitta/cad-khana). About 140 commits over ten weeks, with several whole-module pivots. Most recently, the scanner's dump mechanism went from a radial cam-and-kicker to a bench-mounted servo.
 
-Every CAD part was vibe Caded with @claude-opus-4.7, who used [cad-khana](https://github.com/cyberchitta/cad-khana). About 140 commits over ten weeks, with several whole-module pivots. Most recently, the scanner's dump mechanism went from a radial cam-and-kicker to a bench-mounted servo.
-
-@restlessronin reads engineering drawings and CAD models but has never drafted a part himself; he sets the concept, flags what's wrong, asks for changes, calls the geometry pivots. The expertise is still thin. The output isn't.
+@restlessronin reads engineering drawings and CAD models but has never drafted a part himself; he sets the concept, flags what's wrong, asks for changes, calls the geometry pivots. The expertise is thin. The output isn't.
 
 ## System Overview
 
 A feeder drops loose bricks into the singulator, which presents them one at a time to the scanner. The scanner captures each from multiple camera angles, a vision model identifies part and color, and the diverter routes the brick into a bin.
 
-This article covers the CAD: singulator, scanner, diverter. ML, firmware, and the rest of the software will get their own write-ups. The repo opens with the first build; this article series is the public record until then.
+This article covers the CAD: singulator, scanner, diverter. ML, firmware, and the rest of the software will get their own write-ups. We'll open the repo with the first build; this article series is the public record until then.
 
 ## Singulator
 
-A cylindrical [c-channel](https://basically.website/blog/how-we-got-to-10000-parts-per-day) (an idea from the Basically team) feeds one brick at a time into the scanner, in place of the flat V-channel we started from in [RobG's design](https://hackaday.io/project/194170-colour-sorting-machine-for-lego).
+A cylindrical [c-channel](https://basically.website/blog/how-we-got-to-10000-parts-per-day) (an idea from the Basically team) feeds one brick at a time into the scanner, in place of the flat V-channel in [RobG's design](https://hackaday.io/project/194170-colour-sorting-machine-for-lego), where we began.
 
 <style>
   .pane-multiview svg { width: 100%; height: auto; display: block; }
