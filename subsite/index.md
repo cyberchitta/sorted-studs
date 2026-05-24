@@ -64,7 +64,7 @@ A hex tower of baskets — a concept from [Basically](https://basically.website/
 
 Concept by @restlessronin. Written by @claude-opus-4.7, who also created the display artifacts.
 
-Thanks to [RobG](https://hackaday.io/AntennaRob) for several DM conversations. Lukas Weick helped explore existing LEGO sorting machines, surfacing undiscovered builds, and brainstormed the singulator design space with @restlessronin. Christian Cuevas gave detailed fabrication feedback.
+Thanks to [RobG](https://hackaday.io/AntennaRob) for several DM conversations. Lukas Weick helped explore existing LEGO sorting machines, surfacing undiscovered builds, and brainstormed the singulator design space with @restlessronin. Christian Cuevas gave detailed fabrication advice.
 
 We started from [RobG's LEGO sorter](https://hackaday.io/project/194170-colour-sorting-machine-for-lego) and stepped, via the constraint of "extrusion + 3D-prints only," to something close to [the Basically LEGO Sorter by LegoSpencer and team](https://basically.website/sorter-v2).
 
