@@ -50,13 +50,13 @@ A cylindrical [c-channel](https://basically.website/blog/how-we-got-to-10000-par
 
 ## Scanner
 
-Four cameras sit at the vertices of a regular tetrahedron around the brick, every pair of lens axes 109.47° apart. A 2x2 brick and a 2x2 plate look identical from above; from any other angle, they don't. A central turret indexes bricks one at a time into the scanned volume, then tilts each platform to drop the brick into the diverter below.
+Four cameras sit at the vertices of a regular tetrahedron[^tetra-original] around the brick, every pair of lens axes 109.47° apart. A 2x2 brick and a 2x2 plate look identical from above; from any other angle, they don't. A central turret indexes bricks one at a time into the scanned volume, then tilts each platform to drop the brick into the diverter below.
 
 <glb-pane src="/assets/exhibits/scanner-260523.glb" orbit="-85deg 45deg auto" alt="Scanner rig — tetrahedral four-camera scanning station, turret rotating through its four stations" />
 
 ## Diverter
 
-A hex tower of baskets. The central rotating column points its ramp at one basket at a time, and per-floor trap doors decide whether the brick drops there or falls through to the floor below.
+A hex tower of baskets, first designed using only extrusion by Christian Cuevas at [Minvayu FabLab](https://minvayu.org/machines/). The central rotating column points its ramp at one basket at a time, and per-floor trap doors decide whether the brick drops there or falls through to the floor below.
 
 <glb-pane src="/assets/exhibits/diverter-260523-00.glb" orbit="0deg 75deg auto" alt="Diverter mechanism — hex tower with central rotating ramp and per-floor trap doors" />
 
@@ -64,8 +64,10 @@ A hex tower of baskets. The central rotating column points its ramp at one baske
 
 Concept by @restlessronin. Written by @claude-opus-4.7, who also created the display artifacts.
 
-Thanks to [RobG](https://hackaday.io/AntennaRob) for several DM conversations. Lukas Weick helped explore existing LEGO sorting machines, surfacing undiscovered builds, and brainstormed the singulator design space with @restlessronin. Christian Cuevas of [Minvayu FabLab](https://minvayu.org/machines/) did the first version of the hex tower using only extrusion, and gave detailed fabrication suggestions.
+Thanks to [RobG](https://hackaday.io/AntennaRob) for several DM conversations. Lukas Weick helped explore existing LEGO sorting machines, surfacing undiscovered builds, and brainstormed the singulator design space with @restlessronin. Christian Cuevas gave detailed fabrication feedback.
 
-We began by trying to replicate [RobG's LEGO sorter](https://hackaday.io/project/194170-colour-sorting-machine-for-lego) in full, but the non-printed pieces — routine in a machine shop, cumbersome for us, even a simple V-channel — drove us to a design needing only aluminum extrusion and 3D-printed parts. That constraint, plus needing to scaffold every module together in a limited footprint, brought us step by step to something not far from [the Basically LEGO Sorter by LegoSpencer and team](https://basically.website/sorter-v2). The tetrahedral scanner is the one piece we couldn't find prior art for; singulator and diverter sit on community shoulders.
+We started from [RobG's LEGO sorter](https://hackaday.io/project/194170-colour-sorting-machine-for-lego) and stepped, via the constraint of "extrusion + 3D-prints only," to something close to [the Basically LEGO Sorter by LegoSpencer and team](https://basically.website/sorter-v2).
 
 LEGO® is a trademark of the LEGO Group of companies, which does not sponsor, authorize, or endorse this site.
+
+[^tetra-original]: The tetrahedral arrangement is the one piece of this build we couldn't find prior art for; singulator and diverter sit on community shoulders.
