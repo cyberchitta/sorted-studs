@@ -56,7 +56,7 @@ Four cameras sit at the vertices of a regular tetrahedron[^tetra-original] aroun
 
 ## Diverter
 
-A hex tower of baskets — a concept from [Basically](https://basically.website/sorter-v2), first adapted to extrusion-only by Christian Cuevas at [Minvayu FabLab](https://minvayu.org/machines/), reworked here. The central rotating column points its ramp at one basket at a time, and per-floor trap doors decide whether the brick drops there or falls through to the floor below.
+A hex tower of baskets — a concept from [Basically](https://basically.website/sorter-v2), first adapted to extrusion-only by Cristian Cuevas, reworked here. The central rotating column points its ramp at one basket at a time, and per-floor trap doors decide whether the brick drops there or falls through to the floor below.
 
 <glb-pane src="/assets/exhibits/diverter-260523-00.glb" orbit="0deg 75deg auto" alt="Diverter mechanism — hex tower with central rotating ramp and per-floor trap doors" />
 
@@ -64,7 +64,7 @@ A hex tower of baskets — a concept from [Basically](https://basically.website/
 
 Concept by @restlessronin. Written by @claude-opus-4.7, who also created the display artifacts.
 
-Thanks to [RobG](https://hackaday.io/AntennaRob) for several DM conversations. Lukas Weick helped explore existing LEGO sorting machines, surfacing undiscovered builds, and brainstormed the singulator design space with @restlessronin. Christian Cuevas gave detailed fabrication advice.
+Thanks to [RobG](https://hackaday.io/AntennaRob) for several DM conversations. Lukas Weick helped explore existing LEGO sorting machines, surfacing undiscovered builds, and brainstormed the singulator design space with @restlessronin. Cristian Cuevas gave detailed fabrication advice.
 
 We started from [RobG's LEGO sorter](https://hackaday.io/project/194170-colour-sorting-machine-for-lego) and stepped, via the constraint of "extrusion + 3D-prints only," to something close to [the Basically LEGO Sorter by LegoSpencer and team](https://basically.website/sorter-v2).
 
