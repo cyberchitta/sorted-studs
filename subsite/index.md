@@ -17,7 +17,7 @@ tags:
 
 # sorted-studs
 
-> **Work in progress — nothing here has been built yet.** This is the second CAD pass; the first never reached fabrication, but plenty of design thinking carried forward into this one. A handful of open issues remain before the first physical build.
+> **Work in progress — nothing here has been built yet.** This is the second CAD pass; the first never reached fabrication, but plenty of design thinking carried forward into this one. Enough has been done to validate the premises; not yet enough to build.
 
 An AI-powered LEGO sorting machine. At runtime, ML will classify the bricks; upstream — the CAD that exists, the firmware to come, the machine itself — sits in domains where the human showrunner @restlessronin's own expertise is thin or absent.
 
@@ -29,7 +29,7 @@ Every CAD part was vibe Caded with @claude-opus-4.7, who used [cad-khana](https:
 
 A vibrating hopper meters loose bricks into the singulator, which feeds them through one at a time. The scanner captures each from multiple camera angles, a vision model identifies part and color, and the diverter routes the brick into a bin.
 
-This page shows three of those stages: singulator, scanner, diverter. The hopper upstream and the vision software downstream are separate workstreams. The full spec opens with the first build; this page updates as renders land.
+This article covers the CAD: singulator, scanner, diverter. ML, firmware, and the rest of the software stack will get their own write-ups. The repo opens with the first build; this article series is the public record until then.
 
 ## Singulator
 
