@@ -70,4 +70,4 @@ We started from [RobG's LEGO sorter](https://hackaday.io/project/194170-colour-s
 
 LEGO® is a trademark of the LEGO Group of companies, which does not sponsor, authorize, or endorse this site.
 
-[^tetra-original]: The tetrahedral arrangement is the one piece of this build we couldn't find prior art for; singulator and diverter sit on community shoulders.
+[^tetra-original]: The tetrahedral arrangement is original to this build. The singulator and diverter stand on community shoulders.
