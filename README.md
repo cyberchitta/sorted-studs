@@ -15,46 +15,61 @@ iterate on their own systems.
 
 ---
 
+## Status
+
+**Second CAD pass; nothing fabricated yet.** Three modules
+(singulator, scanner, diverter) have detailed Build123d assemblies under
+`cad/` and rendered exhibits on the [build-in-public
+subsite](https://sortedstuds.cyberchitta.cc). The first CAD pass never
+reached fabrication; this second pass carries forward the lessons and
+targets a workshop build. A handful of open mechanical questions
+remain before the first physical print.
+
+---
+
 ## System Overview
 
 ### Physical Flow
 
 ```
- ┌──────────┐    ┌──────────────┐    ┌──────────────┐    ┌────────────┐    ┌───────────┐
- │ VIBRATING│───▶│  VIBRATORY   │───▶│  MULTI-VIEW  │───▶│  DIVERTER  │───▶│  OUTPUT   │
- │  HOPPER  │    │ SINGULATION  │    │   SCANNER    │    │            │    │   BINS    │
- └──────────┘    └──────────────┘    └──────────────┘    └────────────┘    └───────────┘
-                                           │
-                                           ▼
-                                    ┌──────────────┐
-                                    │CLASSIFICATION│
-                                    │   ENGINE     │
-                                    └──────┬───────┘
-                                           │
-                                           ▼
-                                    ┌──────────────┐    ┌──────────────┐    ┌───────────┐
-                                    │  INVENTORY   │───▶│ SET COVERAGE │───▶│  PACKET   │
-                                    │   DATABASE   │    │  & PLANNER   │    │ GENERATOR │
-                                    └──────────────┘    └──────────────┘    └───────────┘
+ ┌──────────────┐    ┌──────────────┐    ┌────────────┐    ┌───────────┐
+ │  C-CHANNEL   │───▶│  MULTI-VIEW  │───▶│  HEX-TOWER │───▶│  OUTPUT   │
+ │  SINGULATOR  │    │   SCANNER    │    │  DIVERTER  │    │   BINS    │
+ └──────────────┘    └──────────────┘    └────────────┘    └───────────┘
+                            │
+                            ▼
+                     ┌──────────────┐
+                     │CLASSIFICATION│
+                     │   ENGINE     │
+                     └──────┬───────┘
+                            │
+                            ▼
+                     ┌──────────────┐    ┌──────────────┐    ┌───────────┐
+                     │  INVENTORY   │───▶│ SET COVERAGE │───▶│  PACKET   │
+                     │   DATABASE   │    │  & PLANNER   │    │ GENERATOR │
+                     └──────────────┘    └──────────────┘    └───────────┘
 ```
 
 ### Compute Architecture
 
-The system has three compute layers connected over local WiFi:
+Three compute layers connected over local WiFi:
 
-**Real-time layer** — Arduino Mega handles motor control, sensors, and diverter
-positioning. An ESP32 bridges the Arduino's serial interface to WiFi as HTTP endpoints.
+**Real-time layer** — Arduino handles motor control, sensors, and diverter
+positioning. An ESP32 bridges the Arduino's serial interface to WiFi as HTTP
+endpoints.
 
-**Capture layer** — four ESP32-CAM nodes (one per tetrahedral vertex around the
-brick) each run stock CameraWebServer firmware exposing an HTTP `/capture`
-endpoint. Pure capture devices, no on-board inference.
+**Capture layer** — four ESP32-CAM nodes (AI-Thinker boards with the M12
+lens variant) at the vertices of a regular tetrahedron around the brick.
+Each runs stock `CameraWebServer` firmware exposing an HTTP `/capture`
+endpoint as `cameraN.local`. Pure capture devices, no on-board inference.
 
-**Application layer** — Mac runs the classification pipeline, inventory, planning,
-and UI. During each scan the Mac fans 4 parallel HTTP GETs to
-`cameraN.local/capture`, fuses the views, runs inference (PyTorch / CoreML), and
-returns a routing decision to the Arduino. An iPhone-as-inference-host path was
-considered earlier and is deferred indefinitely; the Mac is the live capture +
-inference host.
+**Application layer** — Mac runs the classification pipeline, inventory,
+planning, and UI. During each scan the Mac fans 4 parallel HTTP GETs to
+`cameraN.local/capture`, fuses the views, runs PyTorch inference, and
+returns a routing decision to the Arduino. An iPhone-as-host path was
+considered earlier and is deferred indefinitely; the Mac is the live
+capture + inference host. A future edge accelerator (Coral / Jetson) can
+take the Mac's role without changing the cameras.
 
 ### Data Flow
 
@@ -79,53 +94,70 @@ inference host.
   designated "uncertain" bin for manual review or re-scanning.
 - **Capture/inference decoupling.** The capture layer (ESP32-CAM nodes) and the
   inference layer (Mac) talk over HTTP only, so either side can be swapped
-  independently — e.g. moving inference to an edge accelerator (Coral / Jetson)
-  later for standalone operation without changing the cameras.
+  independently — e.g. moving inference to an edge accelerator later for
+  standalone operation without changing the cameras.
 - **Open source, reproducible.** All 3D-printed parts designed for common FDM printers
-  (≥200mm build plate). Electronics use widely available off-the-shelf components.
+  (≥200mm build plate). Mechanical structure is 2020 aluminum extrusion plus printed
+  brackets and bodies. Electronics use widely available off-the-shelf components.
 
-### Base Mechanical Platform
+### Inspiration and Divergence
 
-The mechanical foundation is derived from the
+The project began as a port of the
 [Colour Sorting Machine for Lego](https://hackaday.io/project/194170-colour-sorting-machine-for-lego)
-by RobG on Hackaday.io. This project provides a proven, fully 3D-printed mechanical
-platform with downloadable STL files, a complete bill of materials, and 23 detailed
-build logs. The original machine sorts by colour only using an RGB sensor and Arduino.
-sorted-studs reuses the mechanical flow (drum feeder → vibratory singulation → gravity
-slide → diverter) and replaces the classification system with a multi-view camera
-scanning station and ML pipeline.
+by RobG on Hackaday.io, replacing the TCS34725 colour sensor with a
+multi-view camera + ML pipeline. As the CAD work progressed the
+constraint of "FDM-printable + aluminum extrusion only" pushed us
+away from RobG's non-printed pieces (V-channel, rotary diverter); we
+ended up at a singulator + diverter architecture much closer to
+[the Basically LEGO Sorter](https://basically.website/sorter-v2) by
+LegoSpencer and team. The classification approach (multi-view tetrahedral
+camera station + ML) remains the sorted-studs original innovation.
 
-| Base Design                      | sorted-studs Replacement                                                                   |
+| What changed                     | sorted-studs choice                                                                        |
 | -------------------------------- | ------------------------------------------------------------------------------------------ |
 | TCS34725 colour sensor           | 4-camera tetrahedral scanning station ([Module 3](docs/m03-multi-view-scanner.md))         |
-| Arduino Nano + HSL classifier    | Arduino Mega + ESP32 + 4× ESP32-CAM + Mac pipeline ([Module 4](docs/m04-classification-engine.md)) |
-| Small rotary diverter (few bins) | Larger diverter — design TBD ([Module 5](docs/m05-diverter.md))                            |
+| Arduino HSL classifier           | Mac + ConvNeXt V2 + 4× ESP32-CAM ([Module 4](docs/m04-classification-engine.md))           |
+| Flat V-channel singulator        | Cylindrical C-channel with faceted rotor ([Module 2](docs/m02-c-channel-singulator.md))    |
+| Small rotary diverter            | Hex tower cascade ([Module 5](docs/m05-diverter.md))                                       |
 
 ---
 
 ## Modules
 
+Status tiers: **Spec** = `docs/mNN-*.md` only; **CAD** = `cad/mNN_*/` Build123d
+assembly in progress; **Built** = physically fabricated and tested.
+
 ### Hardware
 
-| #   | Module                                                        | Status                         | Spec |
-| --- | ------------------------------------------------------------- | ------------------------------ | ---- |
-| 1   | [Vibrating Hopper](docs/m01-vibrating-hopper.md)              | Original design (sorted-studs) | 📄   |
-|     | ↳ [Drum Feeder](docs/m01-drum-feeder.md)                      | Build from base design         | 📄   |
-| 2   | [Vibratory Singulation](docs/m02-vibratory-singulation.md)    | Build from base design         | 📄   |
-|     | ↳ [C-Channel Singulator](docs/m02-c-channel-singulator.md)    | Original design (sorted-studs) | 📄   |
-| 3   | [Multi-View Scanning Station](docs/m03-multi-view-scanner.md) | Original design (sorted-studs) | 📄   |
-| 5   | [Diverter & Bin Output](docs/m05-diverter.md)                 | Design TBD — scalable          | 📄   |
+| #   | Module                                                        | Status | Spec |
+| --- | ------------------------------------------------------------- | ------ | ---- |
+| 2   | [C-Channel Singulator](docs/m02-c-channel-singulator.md)      | CAD    | 📄   |
+| 3   | [Multi-View Scanning Station](docs/m03-multi-view-scanner.md) | CAD    | 📄   |
+| 5   | [Hex Tower Diverter](docs/m05-diverter.md)                    | CAD    | 📄   |
+
+The C-channel singulator integrates the bulk-input hopper into its own
+extended-wall lid (the "Module 1" hopper / drum feeder is no longer a
+separate stage). Earlier hopper and singulation variants are kept as
+design archive under "Alternatives considered" below.
 
 ### Software
 
-| #   | Module                                                            | Status                         | Spec |
-| --- | ----------------------------------------------------------------- | ------------------------------ | ---- |
-| 4   | [Brick Classification Engine](docs/m04-classification-engine.md)  | Original design (sorted-studs) | 📄   |
-| 6   | [Inventory & Rebrickable Sync](docs/m06-inventory-rebrickable.md) | To build                       | 📄   |
-| 7   | [Set Coverage & Build Planner](docs/m07-set-coverage-planner.md)  | To build                       | 📄   |
-| 8   | [Packet Generator](docs/m08-packet-generator.md)                  | To build                       | 📄   |
-| 9   | [Control & Orchestration](docs/m09-control-orchestration.md)      | To build                       | 📄   |
-| 10  | [User Interface](docs/m10-user-interface.md)                      | To build                       | 📄   |
+| #   | Module                                                            | Status | Spec |
+| --- | ----------------------------------------------------------------- | ------ | ---- |
+| 4   | [Brick Classification Engine](docs/m04-classification-engine.md)  | Spec   | 📄   |
+| 6   | [Inventory & Rebrickable Sync](docs/m06-inventory-rebrickable.md) | Spec   | 📄   |
+| 7   | [Set Coverage & Build Planner](docs/m07-set-coverage-planner.md)  | Spec   | 📄   |
+| 8   | [Packet Generator](docs/m08-packet-generator.md)                  | Spec   | 📄   |
+| 9   | [Control & Orchestration](docs/m09-control-orchestration.md)      | Spec   | 📄   |
+| 10  | [User Interface](docs/m10-user-interface.md)                      | Spec   | 📄   |
+
+### Alternatives considered
+
+Kept as design archive — not part of the current build path.
+
+- [Module 1 — Drum Feeder](docs/m01-drum-feeder.md) (from RobG's base design)
+- [Module 1 — Vibrating Hopper](docs/m01-vibrating-hopper.md)
+- [Module 2 — Two-Stage Vibratory Singulation](docs/m02-vibratory-singulation.md)
 
 ### Reference
 
@@ -134,28 +166,55 @@ scanning station and ML pipeline.
 
 ---
 
+## Repository Layout
+
+```
+docs/           Module specifications (the source of design intent).
+cad/            Build123d / cad-khana assemblies — one directory per module
+                under active CAD. Each has its own NEXT_STEPS.md tracking
+                live design state. Top-level cad/assembly.py composes the
+                modules that have integrated cross-checks (currently m05
+                diverter + m03 turret unit).
+subsite/        Build-in-public eleventy site (bun-managed). Published
+                exhibits are GLB models exported from cad/.
+pyproject.toml  uv-managed Python environment. cad-khana and chitra-cad
+                are installed editable from sibling repos.
+```
+
+CAD tooling: [cad-khana](https://github.com/cyberchitta/cad-khana) wraps
+Build123d with assembly-level interference/clearance assertions and
+per-part printability checks. [chitra-cad](https://github.com/cyberchitta/chitra-cad)
+renders the same assemblies through Blender Cycles for the exhibits.
+Run checks with `.venv/bin/khana check <assembly.py>`.
+
+---
+
 ## Development Phases
 
-**Phase 1 — Mechanical Foundation.** Print and build the base design (Modules 1, 2,
-5-small). Verify bricks feed, singulate, and route reliably.
+**Phase 1 — CAD foundation (current).** Detailed Build123d assemblies
+for the singulator, scanner, and diverter, including interference and
+clearance assertions across the integrated rig. The
+[subsite](https://sortedstuds.cyberchitta.cc) publishes rendered
+exhibits as modules stabilize.
 
-**Phase 2 — Multi-View Scanner.** Design and build the 4-vertex tetrahedral camera
-station (Module 3). Integrate the four ESP32-CAM nodes with the Mac capture host.
-Validate multi-angle capture.
+**Phase 2 — First physical build.** Print and assemble Modules 2, 3, 5
+together. Verify mechanical flow end-to-end with manual brick routing,
+no classification yet.
 
-**Phase 3 — Classification Pipeline.** Synthetic data rendering, initial model training,
-Brickognize API benchmarking (Module 4). Mac is the capture + inference host.
+**Phase 3 — Capture + classification.** Bring up the four ESP32-CAM
+nodes against the printed scanner rig. Train ConvNeXt V2 on synthetic
+LDraw renders (Module 4), benchmark against Brickognize API as a
+reference oracle.
 
-**Phase 4 — Inventory & Planning.** Rebrickable integration, coverage analysis, web
-dashboard (Modules 6, 7, 10).
+**Phase 4 — Inventory & planning.** Rebrickable integration, coverage
+analysis, web dashboard (Modules 6, 7, 10).
 
-**Phase 5 — Diverter Upgrade.** Larger diverter for 18+ bins (Module 5).
+**Phase 5 — Packet generation.** Step-level mapping, pick lists,
+bag-filling (Module 8).
 
-**Phase 6 — Packet Generation.** Step-level mapping, pick lists, bag-filling (Module 8).
-
-**Phase 7 — Polish & Scale.** 2,000+ parts recognition. Optional edge-accelerator
-(Coral / Jetson) deployment for standalone operation without a Mac.
-Community documentation.
+**Phase 6 — Polish & scale.** 2,000+ part recognition. Optional edge-
+accelerator (Coral / Jetson) deployment for standalone operation
+without a Mac. Community documentation.
 
 ---
 

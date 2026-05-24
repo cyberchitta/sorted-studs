@@ -1,9 +1,9 @@
 # Module 1: Drum Feeder & Bulk Storage
 
-**Status:** Build from base design
-**Alternative:** [Module 1 — Vibrating Hopper](m01-vibrating-hopper.md)
-**Dependencies:** None (first stage in physical flow)
-**Feeds into:** [Module 2 — Vibratory Singulation](m02-vibratory-singulation.md)
+> **Status:** Alternative considered; not pursued for the current build.
+> The chosen path uses the [C-Channel Singulator](m02-c-channel-singulator.md)'s
+> extended-wall lid as the bulk-input hopper, eliminating the separate
+> Module 1 stage. This document is retained as design archive.
 
 ---
 

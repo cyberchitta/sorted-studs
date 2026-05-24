@@ -1,11 +1,15 @@
 # Module 2: C-Channel Singulator
 
-**Status:** Original design (sorted-studs), adapted from the faceted-rotor
-C-channel developed by [basicallysource (Nexus sorter)](https://github.com/basicallysource/sorter)
+**Status:** Chosen for v1 — CAD in progress (`cad/m02_c_channel_singulator/`).
+Adapted from the faceted-rotor C-channel developed by
+[basicallysource (Nexus sorter)](https://github.com/basicallysource/sorter)
 and documented in its public blog/video archive.
-**Alternative:** [Module 2 — Two-Stage Singulation](m02-vibratory-singulation.md)
-**Dependencies:** [Module 1 — Vibrating Hopper](m01-vibrating-hopper.md) (input),
-or none if the extended-wall hopper variant is used (see Design).
+**Alternatives considered (not pursued):**
+[Module 2 — Two-Stage Vibratory Singulation](m02-vibratory-singulation.md),
+[Module 1 — Drum Feeder](m01-drum-feeder.md),
+[Module 1 — Vibrating Hopper](m01-vibrating-hopper.md).
+**Dependencies:** none — the extended-wall variant integrates the bulk-input
+hopper into the singulator's own lid (see Design).
 **Feeds into:** [Module 3 — Multi-View Scanner](m03-multi-view-scanner.md)
 
 ---

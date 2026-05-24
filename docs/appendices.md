@@ -17,70 +17,63 @@
 
 ## B. Bill of Materials (Estimated, v1 Prototype)
 
-### From base design (Hackaday.io Colour Sorter)
+Costs are rough — final BOM will follow the first physical build.
 
-| Component                    | Purpose                 | Est. Cost |
-| ---------------------------- | ----------------------- | --------- |
-| NEMA 17 stepper (17HS3404-Z) | Diverter rotation       | ~$10      |
-| A4988 stepper driver         | Stepper control         | ~$3       |
-| Arduino Mega 2560            | Motor/sensor control    | existing  |
-| DC motor ("280") + driver    | Drum feeder             | ~$5       |
-| DC motor ("280") + DRV8871   | Vibratory feeder (v1)   | ~$8       |
-| 3D-printed parts (~500g–1kg) | Frame, scoops, channels | ~$15      |
+### Mechanical
 
-### Added for sorted-studs
+| Component                                  | Purpose                                 | Est. Cost |
+| ------------------------------------------ | --------------------------------------- | --------- |
+| 2020 aluminum extrusion (~10 m)            | Scanner rig, diverter columns, frames   | ~$30      |
+| T-nuts, M4/M5 SHCS hardware                | Extrusion assembly                      | ~$15      |
+| 3D-printed parts (~2 kg PLA/PETG)          | Brackets, rotors, baskets, mounts       | ~$30      |
+| Clear cast acrylic sheet (Ø660 mm, 10 mm)  | Diverter top deck                       | ~$25      |
+| Clear cast acrylic sheet (180×180×4 mm)    | Scanner platform (transparent aperture) | ~$5       |
+| Bearings, slewing-ring or lazy-susan       | Diverter rotation                       | ~$15      |
 
-| Component                               | Purpose                          | Est. Cost                 |
-| --------------------------------------- | -------------------------------- | ------------------------- |
-| iPhone XS or later (iPhone 12+ rec.)    | Camera capture + ML inference    | ~$200 (existing hardware) |
-| ESP32 dev board (WROOM-32)              | WiFi bridge: Arduino ↔ app layer | ~$5                       |
-| First-surface mirrors (×2–3)            | Side/bottom views                | ~$15                      |
-| LED strip (5000K, high-CRI) + diffuser  | Scan lighting                    | ~$10                      |
-| VL53L1X ToF sensor (×1–2)               | Brick detection + dimensions     | ~$5                       |
-| Load cell (100g–500g) + HX711 amplifier | Brick weight measurement         | ~$5                       |
-| Clear acrylic sheet                     | Bottom view window               | ~$5                       |
-| Additional 3D-printed parts (~500g)     | Light box, mirror mounts         | ~$10                      |
+### Electronics / compute
 
-### Total: ~$300–350
+| Component                                  | Purpose                                 | Est. Cost |
+| ------------------------------------------ | --------------------------------------- | --------- |
+| 4× AI-Thinker ESP32-CAM (M12 lens variant) | Multi-view capture nodes                | ~$48      |
+| 4× M12 lenses (focal TBD per testing)      | Brick framing at 250 mm working dist    | ~$20      |
+| ESP32 dev board (WROOM-32)                 | WiFi ↔ serial bridge to Arduino         | ~$5       |
+| Arduino Mega 2560                          | Motor / sensor / diverter control       | existing  |
+| Stepper + driver (NEMA 17 + A4988)         | Singulator rotor drive                  | ~$15      |
+| Hobby servo (SG90 / MG90S)                 | Scanner dump-lift actuator              | ~$3       |
+| Slewing-ring + motor for diverter rotation | Hex tower drive                         | ~$40      |
+| LED strip (5000K, high-CRI) + diffuser     | Scanner lighting                        | ~$10      |
+| HW-201 IR beam-break sensors (×2–3)        | Brick position detection                | ~$5       |
+| Mac (host)                                 | Capture orchestration + ML + UI         | existing  |
 
-Does not include 3D printer (~$200–300 for Bambu Lab A1 Mini or Prusa MINI+). iPhone
-assumed to be existing hardware; if purchasing, an iPhone 12 secondhand runs ~$150–200.
-Mac assumed for development. Arduino Mega assumed existing.
+### Total: ~$260 in new parts (plus existing Mac + Arduino)
+
+3D printer is not included (~$200–300 for a Bambu Lab A1 Mini or Prusa
+MINI+ class machine). All printed parts are sized for ≥200 mm build
+plates.
 
 ## C. Development Phases
 
-1. **Mechanical Foundation** — Print/build base design (Modules 1, 2, 5-small). Verify
-   feed, singulate, and route.
-2. **Multi-View Scanner** — Design multi-mirror light box (Module 3). Camera + Pi
-   integration.
-3. **Classification Pipeline** — Synthetic data, model training, Brickognize
-   benchmarking (Module 4).
-4. **Inventory & Planning** — Rebrickable integration, coverage, dashboard (Modules 6,
-   7, 10).
-5. **Diverter Upgrade** — Larger diverter for 18+ bins (Module 5).
-6. **Packet Generation** — Step mapping, pick lists, bag-filling (Module 8).
-7. **Polish & Scale** — 2,000+ parts, community docs.
+Phase plan is maintained in the project README. This appendix only
+records the historical sequencing for reference; the canonical order is
+in `README.md`.
 
-## D. Jetson Notes (Future Alternative Stack)
+## D. Edge-accelerator notes (future alternative stack)
 
-The primary embedded compute platform is iPhone + CoreML (see Module 4). An
-NVIDIA Jetson-based stack is a viable future alternative for builders who prefer
-a Linux-native deployment or need higher throughput than the Neural Engine provides.
+The current application host is a Mac (see [Module 4](m04-classification-engine.md)
+and [Module 9](m09-control-orchestration.md)). For builders who want to
+run the system standalone without a Mac, two viable edge paths exist:
 
-**Relevant Jetson options:**
+**Coral USB on a Raspberry Pi (~$80 total).** Compile the trained
+ConvNeXt V2 Tiny model to TFLite + Edge TPU. The Pi runs the
+orchestrator + image preprocessing and dispatches inference to the
+Coral. Throughput is comparable to a low-end Mac for this model size.
 
-- Jetson Nano (discontinued but widely available secondhand, ~$50–80) — marginal
-  for serious models; roughly Pi-class for inference
-- Jetson Orin Nano (~$150) — meaningfully faster; suitable for ResNet-50 class models
-- Jetson Orin NX / AGX Orin — high-end, not needed for this application
+**NVIDIA Jetson Orin Nano (~$150).** Export PyTorch → TensorRT via
+`torch2trt` or ONNX. Linux-native, higher throughput headroom than
+Coral, but more power-hungry and more expensive.
 
-**Integration:** The HTTP interface between compute node and Arduino (Module 9) is
-platform-agnostic. A Jetson running the same inference server exposes the same
-`route_to_bin(N)` API. No Arduino code changes required.
-
-**Model format:** PyTorch models export to TensorRT on Jetson via `torch2trt` or
-ONNX. This is a separate export path from CoreML but uses the same trained weights.
-
-```
-
-```
+**Integration cost is zero on the embedded side.** The HTTP contracts
+in [Module 9](m09-control-orchestration.md) (commands to the ESP32
+bridge, captures from `cameraN.local`) are platform-agnostic. Switching
+hosts only changes the device that runs the orchestrator; the Arduino
+and the four ESP32-CAM nodes don't know the difference.

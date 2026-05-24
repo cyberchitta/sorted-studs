@@ -4,74 +4,124 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**sorted-studs** is an AI-powered LEGO brick sorting system. It mechanically singulates bricks, scans each one with a multi-view camera station (four cameras at the vertices of a regular tetrahedron around the brick), classifies part ID + color via ML, catalogs the inventory synced to Rebrickable, and generates "build packets" — bagged brick groups for instruction steps.
+**sorted-studs** is an AI-powered LEGO brick sorting system. It mechanically singulates bricks, scans each one with a multi-view camera station (four ESP32-CAM nodes at the vertices of a regular tetrahedron around the brick), classifies part ID + color via ML on a Mac host, catalogs the inventory synced to Rebrickable, and generates "build packets" — bagged brick groups for instruction steps.
 
-The repository is currently in the **specification/design phase** — it contains only documentation (`docs/`) and no source code yet.
+The repository is in a **second CAD pass** — three modules (singulator, scanner, diverter) have detailed Build123d / cad-khana assemblies under `cad/`, a build-in-public subsite publishes rendered exhibits, and the application/firmware code is still pending. Nothing has been fabricated yet.
 
 ## Repository Structure
 
-- `docs/` — Module specifications (hardware and software)
-- `README.md` — System overview, physical/data flow diagrams, module table, development phases
+- `README.md` — System overview, modules table, dev phases (public-facing).
+- `docs/` — Module specifications (source of design intent).
+- `cad/` — Build123d / cad-khana assemblies. One directory per module under
+  active CAD (`m02_c_channel_singulator`, `m03_scanner`, `m05_diverter`).
+  Each has its own `NEXT_STEPS.md` tracking the live design state.
+  Top-level `cad/assembly.py` runs cross-module assertions.
+  `cad/CLAUDE.md` documents the assembly decomposition conventions.
+- `subsite/` — Build-in-public eleventy site (bun-managed). Edits stay
+  uncommitted until the user signals a publish.
+- `pyproject.toml` + `uv.lock` + `.venv/` — uv-managed Python environment.
+  `cad-khana` and `chitra-cad` are installed editable from sibling repos.
+- `AGENTS.md` — Cross-tool agent guidance (Claude Code, Codex CLI).
 
 ## Architecture
 
-The system has three physical compute layers:
+The system has three physical compute layers connected over local WiFi:
 
-- **Arduino/ESP32** — real-time motor control, sensor reading, beam-break detection,
-  diverter positioning (deterministic timing).
-- **ESP32-CAM nodes (×4)** — one per camera; each runs stock CameraWebServer
-  firmware exposing an HTTP `/capture` endpoint over WiFi. Pure capture devices,
-  no inference on-board.
-- **Mac** — capture host (fans 4 parallel HTTP GETs to `cameraN.local/capture`
-  during each IMAGE-station dwell), image preprocessing, ML inference, model
-  training, and dataset pipeline. Communicates with the Arduino over local WiFi
-  using a simple HTTP protocol.
+- **Arduino + ESP32 bridge** — real-time motor control, sensor reading,
+  beam-break detection, diverter positioning (deterministic timing). The
+  ESP32 translates the Arduino's serial interface to HTTP for the Mac.
+- **ESP32-CAM nodes (×4)** — one per tetrahedral vertex; each runs stock
+  CameraWebServer firmware exposing an HTTP `/capture` endpoint over
+  WiFi as `cameraN.local`. Pure capture devices, no inference on-board.
+- **Mac** — application host. Fans 4 parallel HTTP GETs to
+  `cameraN.local/capture` during each IMAGE-station dwell, runs image
+  preprocessing, ML inference (PyTorch), inventory updates, and the UI.
+  Communicates with the Arduino/ESP32 over HTTP.
 
-Communication between Arduino and Mac: WiFi HTTP. Arduino POSTs sensor events
-("brick in position"), Mac responds with actions ("route to bin 7"). An iPhone
-inference path was considered earlier and is deferred indefinitely; the Mac is
-the live capture + inference host.
+An earlier iPhone-as-host path was considered (capture-only in dev,
+capture+inference via CoreML/ANE in deployment) and is deferred
+indefinitely. Future swap path is an edge accelerator (Coral / Jetson)
+taking the Mac's role without changing the cameras.
 
 ### Module Map
 
-| #   | Module                       | Status                 |
-| --- | ---------------------------- | ---------------------- |
-| 1   | Drum Feeder                  | Build from base design |
-| 2   | Vibratory Singulation        | Build from base design |
-| 3   | Multi-View Scanning Station  | Original design        |
-| 4   | Brick Classification Engine  | Original design        |
-| 5   | Diverter & Bin Output        | TBD                    |
-| 6   | Inventory & Rebrickable Sync | To build               |
-| 7   | Set Coverage & Build Planner | To build               |
-| 8   | Packet Generator             | To build               |
-| 9   | Control & Orchestration      | To build               |
-| 10  | User Interface               | To build               |
+Status tiers: **Spec** = `docs/` only; **CAD** = `cad/mNN_*/` assembly in
+progress; **Built** = physically fabricated.
+
+| #   | Module                       | Status |
+| --- | ---------------------------- | ------ |
+| 2   | C-Channel Singulator         | CAD    |
+| 3   | Multi-View Scanning Station  | CAD    |
+| 4   | Brick Classification Engine  | Spec   |
+| 5   | Hex Tower Diverter           | CAD    |
+| 6   | Inventory & Rebrickable Sync | Spec   |
+| 7   | Set Coverage & Build Planner | Spec   |
+| 8   | Packet Generator             | Spec   |
+| 9   | Control & Orchestration      | Spec   |
+| 10  | User Interface               | Spec   |
+
+The C-channel singulator integrates the bulk-input hopper into its own
+extended-wall lid; separate hopper variants (drum feeder, vibrating hopper)
+are kept under `docs/` as design archive only.
 
 ### Key Design Decisions
 
-**Classification (Module 4):** Two-stage model — separate part shape (~3,000 classes)
-from color (~60 classes) to avoid a combinatorial explosion. Multi-view fusion
-preferred over per-view ensemble. Brickognize API (`api.brickognize.com`) used as
-reference oracle during bootstrapping. Synthetic training data rendered from LDraw
-models via Blender/BlenderProc. Models trained and run on Mac (CoreML or
-PyTorch); an edge accelerator (Coral / Jetson) is the future path if standalone
-operation without a Mac is wanted.
+**Scanner (Module 3):** Four ESP32-CAM nodes (AI-Thinker, M12 lens variant)
+at the vertices of a regular tetrahedron centred on the brick — 1 front-low,
+1 back-upper, 2 below (looking up through a transparent platform aperture).
+Pairwise lens-axis separation is 109.47° — provably the most informative
+4-view configuration. Multi-view fusion is the core innovation over existing
+sorters that rely on a single top-down view. An earlier mirrors-and-one-camera
+topology at the same four vertex positions was abandoned in 2026-05-04 for
+cost, optical-tolerancing, and host-agnosticism reasons; see
+`cad/m03_scanner/cameras_design_notes.md`.
 
-**Scanner (Module 3):** Four ESP32-CAM nodes at the vertices of a regular tetrahedron centred on the brick capture top, two profiles, and one underside view simultaneously. Multi-view fusion is the core innovation over existing sorters that rely on single-view top-down only. An earlier mirrors-and-one-camera topology at the same four vertex positions was abandoned in 2026-05-04 for cost, optical-tolerancing, and host-agnosticism reasons; see `cad/m03_scanner/cameras_design_notes.md`.
+**Singulator (Module 2):** Cylindrical C-channel (spinning faceted rotor
+inside a fixed V-trough) with bricks riding the outer wall and falling off
+an exit arc. Geometry from the Basically/Nexus sorter; replaces RobG's
+flat V-channel. Extended-wall variant integrates the bulk-input hopper.
 
-**Orchestration (Module 9):** Decoupled Python services communicating via TCP sockets (modeled after BrickSortingMachine project). Pi relays messages between services; allows independent restart/update of modules.
+**Diverter (Module 5):** Hex tower cascade — 4-floor stack of hexagonal
+basket rings around a central rotating column with per-floor ramp + trap.
+6 through-columns at inner + outer hex vertices, off-axis motor driving a
+ring gear on the base column's bottom collar. Compact vertical footprint;
+scales by stacking floors. Architecture committed; per-sub-assembly state
+in `cad/m05_diverter/NEXT_STEPS.md`.
 
-**Inventory (Module 6):** Local SQLite-style store with Rebrickable REST API sync. Data model: `Inventory { part_id, color_id, quantity, bin_location, collection_id }`, `ScanEvent { event_id, part_id, color_id, confidence, image_ref, timestamp }`.
+**Classification (Module 4):** Two-stage model — separate part shape from
+color to avoid combinatorial explosion. ConvNeXt V2 Tiny backbone; metric
+learning (à la Brickognize) preferred over standard classifier for the
+70k-part scaling case. Brickognize API used as reference oracle during
+bootstrapping. Synthetic training data rendered from LDraw models via
+Blender/BlenderProc.
+
+**Orchestration (Module 9):** Single application host (Mac) talks to the
+Arduino/ESP32 bridge over HTTP. The ESP32 is a transport bridge only — no
+application logic on the embedded side.
+
+**Inventory (Module 6):** Local SQLite-style store with Rebrickable REST
+API sync. Data model: `Inventory { part_id, color_id, quantity, bin_location,
+collection_id }`, `ScanEvent { event_id, part_id, color_id, confidence,
+image_ref, timestamp }`.
 
 ### Confidence Threshold
 
-Any brick the classifier can't confidently identify routes to an "uncertain" bin for manual review — fail-safe default throughout the design.
+Any brick the classifier can't confidently identify routes to an "uncertain"
+bin for manual review — fail-safe default throughout the design.
 
 ### External APIs
 
 - **Rebrickable REST API** (`rebrickable.com/api/`) — inventory sync, set/MOC part lists
 - **Brickognize API** (`api.brickognize.com`) — reference oracle for classification bootstrapping
 
-### Base Mechanical Platform
+## Working in this repo
 
-Derived from the [Colour Sorting Machine for Lego](https://hackaday.io/project/194170-colour-sorting-machine-for-lego) (RobG, Hackaday.io). sorted-studs reuses the drum feeder → vibratory singulation → gravity slide → diverter mechanical flow and replaces the TCS34725 colour sensor + Arduino HSL classifier with the multi-view camera station + ML pipeline.
+- **CAD changes.** Read `cad/CLAUDE.md` before editing any assembly. Run
+  `.venv/bin/khana check <path>/assembly.py` on the touched sub-assembly and
+  the enclosing top-level after any geometry change. Each module's
+  `NEXT_STEPS.md` is the live design state — update it in the same slice
+  as the geometry change.
+- **Subsite changes.** Edits stay uncommitted until the user signals
+  "ready to publish."
+- **Commit drafts.** Save to `.commit-msg` at the project root; the user
+  runs the actual `git commit`.

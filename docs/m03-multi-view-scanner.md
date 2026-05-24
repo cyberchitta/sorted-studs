@@ -1,8 +1,8 @@
 # Module 3: Multi-View Scanning Station
 
 **Status:** Original design (sorted-studs innovation)
-**Dependencies:** [Module 2 — Vibratory Singulation](module-02-vibratory-singulation.md) (input)
-**Feeds into:** [Module 4 — Classification Engine](module-04-classification-engine.md) (image data), [Module 5 — Diverter](module-05-diverter.md) (physical brick)
+**Dependencies:** [Module 2 — C-Channel Singulator](m02-c-channel-singulator.md) (input)
+**Feeds into:** [Module 4 — Classification Engine](m04-classification-engine.md) (image data), [Module 5 — Hex Tower Diverter](m05-diverter.md) (physical brick)
 
 ---
 

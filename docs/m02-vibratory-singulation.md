@@ -1,10 +1,10 @@
-# Module 2: Two-Stage Singulation
+# Module 2: Two-Stage Vibratory Singulation
 
-**Status:** Stage 1 from base design, Stage 2 original design (sorted-studs, adapted
-from base project v2 feeder)
-**Alternative:** [Module 2 — C-Channel Singulator](m02-c-channel-singulator.md)
-**Dependencies:** [Module 1 — Vibrating Hopper](m01-vibrating-hopper.md) (input)
-**Feeds into:** [Module 3 — Multi-View Scanner](m03-multi-view-scanner.md)
+> **Status:** Alternative considered; not pursued for the current build.
+> The chosen singulator is the
+> [C-Channel Singulator](m02-c-channel-singulator.md), which uses
+> rotation instead of resonance and integrates the bulk hopper into
+> its own lid. This document is retained as design archive.
 
 ---
 

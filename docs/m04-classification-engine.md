@@ -21,90 +21,48 @@ Rebrickable part ID, color ID, and confidence score.
 
 ## Compute Platforms
 
-The system supports two operating modes with identical HTTP interfaces. Development
-mode runs all intelligence on a Mac; deployment mode runs it on-device on an iPhone.
-The Arduino/ESP32 hardware layer is unchanged between modes — it talks to whichever
-host is running the application layer.
+The Mac is the application host for the vision pipeline. The four
+ESP32-CAM nodes at the tetrahedral vertices are pure capture devices —
+they serve JPEG frames over HTTP and run no inference. The
+Arduino/ESP32 hardware layer talks to the Mac over HTTP via the
+ESP32 bridge.
 
-Both platforms use the same model architecture (ConvNeXt V2 Tiny). The iPhone's
-Neural Engine (35 TOPS on A18 Pro) is comparable to the Mac's (38 TOPS on M4) —
-the same 16-core ANE design. There is no need for a separate mobile-optimized
-architecture or model distillation.
+### Capture: ESP32-CAM ×4
 
-### Development Mode: Mac + iPhone-as-Camera
+Each ESP32-CAM (AI-Thinker board, M12 lens variant) runs stock
+`CameraWebServer` firmware and is reachable as `cameraN.local` via mDNS.
+The Mac fans 4 parallel HTTP GETs to `cameraN.local/capture` during the
+scanner's IMAGE-station dwell, receives JPEGs, and decodes them locally.
+Per-camera capture spec lives in [Module 3](m03-multi-view-scanner.md).
 
-During development, the Mac is the sole compute node for the vision pipeline.
-The iPhone acts only as a camera, streaming frames to the Mac over local WiFi.
+### Inference: Mac
 
-- **iPhone role:** capture frames on trigger, serve them via HTTP. No on-device
-  inference.
-- **Mac role:** receive frames, run classification (PyTorch), send
-  `route_to_bin(N)` to ESP32, update inventory, serve UI.
 - **Model format:** PyTorch (`.pt`). Full debugging tools — breakpoints,
   profiling, TensorBoard, fast iteration on architecture and training.
+- **Hardware:** any modern Mac with a Neural Engine accelerates inference
+  via PyTorch's MPS backend; an Intel Mac or a non-ANE Mac still works
+  via CPU at lower throughput.
+- **Throughput target:** ≤2s end-to-end per brick (capture round-trip +
+  preprocessing + inference + diverter command).
 
-#### Camera Capture Interface
+### Future: Edge Accelerator (optional)
 
-The iPhone runs a minimal capture app that exposes an HTTP endpoint:
-
-- `POST /capture` — triggers a frame capture, returns the image as JPEG
-- `GET /status` — returns camera readiness
-
-The Mac polls or triggers this endpoint as part of the scan cycle. Latency
-budget for the WiFi round-trip is ~50–100ms, well within the ≤2 second
-inference window.
-
-### Deployment Mode: iPhone (via CoreML → ANE)
-
-For standalone deployment, the iPhone handles both image capture and inference,
-making it the sole compute node for the vision pipeline. No Mac required.
-
-- **iPhone role:** capture frames, run CoreML inference on Neural Engine, send
-  `route_to_bin(N)` to ESP32, update inventory.
-- **Model format:** CoreML (`.mlpackage`), exported from PyTorch via
-  `coremltools`.
-- **iPhone model selection:** any iPhone with a Neural Engine (iPhone XS or
-  later). iPhone 12 or later recommended for the 16-core ANE.
-- **Neural Engine performance:** ConvNeXt V2 Tiny inference is expected in
-  low double-digit milliseconds, well within the ≤2 second budget.
-
-The iPhone acts as a local HTTP server. The ESP32 POSTs sensor events
-("brick in position"); the iPhone captures, infers, and responds with a
-routing command. See [Module 9](m09-control-orchestration.md) for protocol
-details.
-
-#### ANE Export Constraints
-
-The Orion project (see [References](reference-projects.md)) catalogs 20
-constraints on MIL IR programs that affect CoreML→ANE compilation:
-
-- **GELU activation** must be replaced with its tanh approximation. ConvNeXt
-  uses GELU natively; this is a one-line substitution during `coremltools`
-  export.
-- **`concat` operations** cause ANE compilation failure — multi-tensor
-  operations must be decomposed.
-- **Tensor layout restrictions** on input/output buffer sizes and ordering.
-
-These are export-time concerns, not architecture constraints. The PyTorch
-model is unchanged; only the CoreML conversion handles these adaptations.
-
-#### Deployment Tier 2: Direct ANE Dispatch (Stretch Goal)
-
-Recent reverse-engineering of Apple's private `_ANEClient` and `_ANECompiler`
-APIs has demonstrated 2–4× throughput over CoreML by bypassing its scheduling
-overhead. This path is relevant if higher bricks-per-minute throughput is
-needed, but carries risk: private APIs can break on any iOS/macOS update.
-
-For current throughput targets, CoreML→ANE (Tier 1) is sufficient. Direct
-dispatch is tracked as a future optimization. See maderix/ANE and Orion in
-[References](reference-projects.md).
-
-### Future: Jetson (optional)
-
-An NVIDIA Jetson-based stack is a viable alternative for builders who prefer
-Linux-native deployment or need higher throughput. The HTTP interface is
-platform-agnostic — switching compute platforms is a drop-in replacement.
+For standalone operation without a Mac, the application host can move
+to a Coral USB stick on a Pi, an NVIDIA Jetson, or similar. The
+ESP32-CAM HTTP interface is platform-agnostic — switching hosts is a
+drop-in replacement on the capture side; the model needs re-export to
+the accelerator's target format (TFLite for Coral, TensorRT for Jetson).
 See [Appendix D](appendices.md#d-jetson-notes-future-alternative-stack).
+
+### Considered & not pursued: iPhone on-device
+
+An earlier design ran capture + inference (via CoreML → Neural Engine)
+on an iPhone, with the Mac involved only during development. The
+constraints driving toward edge inference (no Mac, single device) are
+better served by ESP32-CAM + a small Linux SBC + edge accelerator,
+which is host-agnostic, much cheaper at the 4-camera scale, and
+doesn't require an Apple device in the loop. The iPhone path is
+deferred indefinitely.
 
 ## Design Approach
 
@@ -194,10 +152,12 @@ both development and deployment. This is the same model on both platforms
 - **Global Response Normalization (GRN).** Prevents feature collapse by
   scaling channels based on relative magnitude. Better feature utilization
   means better fine-grained discrimination between visually similar parts.
-- **ANE compatible.** Pure CNN — no attention mechanisms or variable-length
-  sequences. The ANE was designed for exactly this class of model. ConvNeXt
-  uses LayerNorm (ANE-compatible) and GELU (requires tanh approximation
-  substitution at export — one-line fix).
+- **Edge-accelerator friendly.** Pure CNN — no attention mechanisms or
+  variable-length sequences. Coral's Edge TPU, Apple's ANE, and similar
+  accelerators were all designed for exactly this class of model, so a
+  later move from Mac/MPS to an edge target stays within the model's
+  supported operator set (GELU may need a tanh approximation at export
+  on some targets; one-line fix).
 - **Size variants available.** If deployment constraints change, ConvNeXt V2
   has smaller variants (Atto 3.7M, Femto 5.2M, Pico 9.1M, Nano 15.6M)
   that use the same architecture, enabling drop-in scaling without
@@ -206,18 +166,20 @@ both development and deployment. This is the same model on both platforms
 **Superseded candidates** (retained for reference):
 
 - EfficientNet-B0 / MobileNetV3: a generation behind in fine-tuning
-  accuracy. MobileNetV3 remains viable as an emergency fallback if ANE
-  compatibility issues prove insurmountable with ConvNeXt.
+  accuracy. MobileNetV3 remains viable as an emergency fallback if
+  ConvNeXt runs into edge-accelerator export issues on a future
+  standalone target.
 - ResNet-50: solid baseline but outperformed by ConvNeXt V2 in every
   tested domain.
 - Swin-Tiny: transformer overhead, worse than ConvNeXt in low-data
-  fine-tuning, and more complex ANE export path.
+  fine-tuning, and more complex export path to most edge accelerators.
 
 ### Multi-View Fusion
 
-The multi-mirror scanning station produces multiple views per brick in a
-single frame. The classification engine processes each view through a
-shared feature extractor and combines features before final classification.
+The four-camera tetrahedral scanning station produces four separate views
+per brick (one JPEG per ESP32-CAM node). The classification engine processes
+each view through a shared feature extractor and combines features before
+final classification.
 
 **Recommended approach: late fusion by feature concatenation.**
 
@@ -393,28 +355,27 @@ part) via Blender and BlenderProc. Key references:
 - **Existing rendering pipelines:** BrickRenderer, Lego Rendering Pipeline,
   BrickRegistration (all in awesome-lego-machine-learning repo)
 
-Training images can be rendered from camera angles matching the specific
-mirror geometry, so the model sees exactly the views it will encounter in
-production.
+Training images can be rendered from the four tetrahedral viewpoints
+matching the scanner geometry, so the model sees exactly the views it
+will encounter in production.
 
 For the metric learning approach, synthetic renders also populate the
 initial reference database — each part gets reference embeddings from
 rendered views, then these are progressively supplemented and replaced
 with real-world embeddings from production scanning.
 
-### CoreML Export
+### Inference Runtime on Mac
 
-Models are trained in PyTorch on Mac, then exported to CoreML format
-(`.mlpackage`) via `coremltools`. This export is part of the regular CI/test
-cycle, not a one-time late-stage step — we validate ANE compatibility
-continuously to catch operator issues early.
+Models are trained and served in PyTorch. On Apple Silicon Macs the MPS
+backend accelerates inference; on Intel Macs the CPU path is the
+fallback. No format conversion is required for the live target — the
+training artifact (`.pt` or `.safetensors`) is the deployment artifact.
 
-Export checklist:
-
-- Substitute GELU with tanh approximation
-- Verify all operations compile to ANE (no silent CPU/GPU fallback)
-- Benchmark inference time on target iPhone hardware
-- Validate classification accuracy matches PyTorch within tolerance
+Export to a non-Mac runtime (TFLite for Coral, TensorRT for Jetson,
+CoreML for a future Apple-edge target) is the responsibility of the
+relevant edge-accelerator slice when that path is opened. Standard
+gotcha to watch: GELU activation often needs the tanh-approximation
+substitution at export.
 
 ## Open Questions
 
@@ -426,9 +387,11 @@ Export checklist:
 - How to handle decorated/printed parts — same mold but different prints?
 - Training strategy for the color classifier — synthetic data, or real-world
   calibration under actual scanner lighting?
-- Which iPhone lens performs best at working distance (~150mm)?
-- Does the anti-stud (bottom) view from Module 3 add enough metric learning
-  discrimination to justify the transparent section complexity?
+- Which M12 lens focal length on the ESP32-CAM gives the best
+  brick-fills-frame margin at the 250 mm camera-to-brick working distance?
+- Do the two below-vertex views from Module 3 (looking up through the
+  acrylic platform) add enough metric-learning discrimination to justify
+  the transparent-aperture complexity?
 - ConvNeXt V2 masked autoencoder pretraining — can we pretrain on raw LDraw
   renders (no labels) to bootstrap the feature encoder before supervised
   fine-tuning?

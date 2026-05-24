@@ -21,10 +21,11 @@ and packet generation features.
 
 ## Design Approach
 
-Web-based dashboard served from the Mac (or any networked machine) and accessible
-from any device on the local network. No platform-specific development needed. The
-iPhone handles capture and inference; the Mac hosts the web app alongside inventory
-and orchestration services during development.
+Web-based dashboard served from the Mac and accessible from any device on the
+local network. No platform-specific development needed. The Mac hosts the web
+app alongside the classification, inventory, and orchestration services — all
+the application-layer responsibilities (see [Module 9](m09-control-orchestration.md))
+run in one place.
 
 ## Design Reference
 
