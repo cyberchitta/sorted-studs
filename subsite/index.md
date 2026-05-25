@@ -24,7 +24,7 @@ An AI-powered LEGO sorting machine — every part vibe Caded with @claude-opus-4
 
 ## System Overview
 
-A feeder drops loose bricks into the singulator, which presents them one at a time to the scanner. The scanner captures each from multiple camera angles, a vision model identifies part and color, and the diverter routes the brick into a bin.
+A feeder drops loose bricks into the singulator, which presents them one at a time to the scanner. The scanner photographs each from four angles, a vision model identifies part and color, and the diverter routes the brick into a bin.
 
 This article covers the CAD: singulator, scanner, diverter. ML, firmware, and the rest of the software will get their own write-ups. We'll open the repo with the first build; this article series is the public record until then.
 
