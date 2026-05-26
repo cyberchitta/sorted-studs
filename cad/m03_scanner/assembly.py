@@ -382,23 +382,7 @@ def add_m03(a: Assembly) -> Assembly:
 # pairs to `assert_interference(reason=...)` so they self-fail when
 # the underlying design fix lands and the overlap goes away.
 
-_KNOWN_OVERLAPS_STATIC: tuple[tuple[str, str, str], ...] = (
-    (
-        "hub_housing",
-        "homing_flag",
-        "homing flag's c4-era Z=-100 was orphaned by c5's housing-top "
-        "rise to -80 (and c7's to -58); the flag now sits inside the "
-        "housing volume. Redesign queued: relocate flag/sensor pair "
-        "out of the now-closed housing-pulley airspace.",
-    ),
-    (
-        "hub_housing",
-        "homing_sensor",
-        "homing sensor's c4-era Z=-100 was orphaned by c5+c7 housing "
-        "rise; sensor body now sits inside the housing volume. Pairs "
-        "with the homing_flag overlap above; same redesign clears both.",
-    ),
-)
+_KNOWN_OVERLAPS_STATIC: tuple[tuple[str, str, str], ...] = ()
 
 # Backwards-compatible alias (kept for module-level callers that took
 # the previous symbol name).

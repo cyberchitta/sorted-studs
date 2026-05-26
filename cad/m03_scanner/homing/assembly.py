@@ -10,14 +10,25 @@ step-counts thereafter; without this, the stepper has no absolute
 reference and a power cycle disagrees with the indexed station
 positions.
 
-Layout: flag disc + sensor live in the 20 mm of clear airspace between
-the slice (b) housing top (z = -110) and the slice (g) driven pulley
-bottom (z = -90). The bracket bolts to the slice (a) cross-rail's top
-T-slot at -X side, in the gap between the hub housing (x_max = +30)
-and the dump_servo bracket footprint (well outboard at X ∈ [-92, -68]
-on the cross-rail top, 2026-05-23 onward). Sensor azimuth at
-heading 180° (-X direction); detect feature on the disc at the same
-azimuth at home.
+Layout: flag disc + sensor live in the 8 mm of clear airspace between
+the slice (g) driven pulley top (z = -51) and the slice (d) platform
+extension drop-block bottom (z = -43, dynamic — the IDLE-pose
+platform's drop block sweeps through this azimuth during rotor
+transit). This slot opened up when the 2026-05-23 dump_servo retrofit
+retired the shaft-mounted dump cam (which used to sit at z ∈ [-50,
+-38] right between the pulley and the spider bottom at z = -35).
+The original homing slice (h, 2026) placed the parts one slot down in
+the housing-pulley airspace; floor-rise slices c5+c7 closed that
+20-mm slot to 1 mm and orphaned them. The upper slot is tighter than
+the original (8 mm vs 20 mm) because the platform drop-block sweep
+caps it from above, so SENSOR_BODY_Z shrinks 8 → 6 mm to fit (slim
+slot-type opto-interrupters like the Sharp GP1A57 / Omron EE-SX1041
+are 5-7 mm in the slot dimension, well within reality). The bracket
+bolts to the slice (a) cross-rail's top T-slot at -X side, in the
+gap between the hub housing (x_max = +30) and the dump_servo bracket
+footprint (well outboard at X ∈ [-92, -68] on the cross-rail top,
+2026-05-23 onward). Sensor azimuth at heading 180° (-X direction);
+detect feature on the disc at the same azimuth at home.
 
 Members (3 functional + 2 stubs):
   * homing_flag       — printed disc (Ø32 × 3 mm thick, Ø8.4 shaft
@@ -26,8 +37,9 @@ Members (3 functional + 2 stubs):
                         shaft via M3 set screw on a flat (real part);
                         modeled as clearance bore so
                         assert_no_interference reads tangent contact.
-                        Z-center -100 (mid-airspace; 8.5 mm clear of
-                        both housing top and pulley bottom).
+                        Z-center -47 (mid-airspace; 2.5 mm clear of
+                        pulley top, 2.5 mm clear of platform drop-block
+                        bottom).
   * homing_sensor     — slotted opto-interrupter stub (bought part).
                         Modeled as a body with two prongs above + below
                         the disc plane and a 3-mm-tall slot between
@@ -103,45 +115,31 @@ from materials import material_of  # noqa: E402
 # --- Cross-rail interface (private mirror of slice a) ------------------
 
 MEMBER = 20.0                                              # 2020 extrusion
-RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2             # = -170
+RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2             # = -120 after c7
 
 
 # --- Adjacent-slice mirrors (private; bound assertions reference these) -
-#
-# QUEUED-FOR-REDESIGN: slice c5 (2026-05-05) raised the housing top
-# from -110 to -80, and slice c7 (2026-05-05) raised it again to -60;
-# the driven pulley bottom moved from -90 → -79 → -59 in the same two
-# slices. The housing-top → pulley-bottom airspace that this homing
-# slice was designed to live in (originally 20 mm) closed to 1 mm,
-# leaving no room for the 3 mm flag disc or the 8 mm sensor body.
-# The flag at FLAG_Z_CENTER=-100 and the sensor at the same Z now
-# sit *inside* the post-c7 housing volume (housing Z [-120, -60]).
-# This is documented at the turret/assembly.py-integrate level via
-# `assert_interference(hub_housing, homing_flag, ...)` and
-# `assert_interference(hub_housing, homing_sensor, ...)` — those
-# alarms fire (failing) when a redesign moves the homing geometry
-# out of the housing volume, which is the marker for the redesign
-# slice.
-#
-# The mirrors below are intentionally NOT updated to current values:
-# the standalone's flag/sensor-vs-airspace clearance assertions would
-# otherwise fail at import time. The standalone's job is to verify
-# the homing parts' internal consistency (flag/sensor/bracket pairwise
-# clearances + bolt-hole walls); the cross-slice neighbour check is
-# now integrate-level only. Update these mirrors when the redesign
-# slice lands.
-
-# Slice (b) housing top face Z. Flag must clear this with ≥ 1 mm gap.
-# (STALE: actual post-c7 value -60. See note above.)
-HOUSING_TOP_Z = -110.0
 
 # Slice (b) housing X half-extent. Bracket foot inner edge must clear
-# this with ≥ WALL_MIN gap.
+# this with ≥ WALL_MIN gap (housing Z [-120, -60] still abuts the
+# foot's Z band [-120, -112] in X; the post rises clear of housing
+# top in Z but the foot does not).
 HOUSING_HALF_X = 30.0
 
-# Slice (g) driven pulley bottom face Z. Flag + sensor must clear this
-# with ≥ 1 mm gap. (STALE: actual post-c7 value -59. See note above.)
-PULLEY_BOTTOM_Z = -90.0
+# Slice (g) driven pulley top face Z. Flag + sensor must clear this
+# above with ≥ 1 mm gap. (Pulley body at z ∈ [-59, -51]; the bracket
+# post passes outboard of the pulley in X — see post X-range below.)
+PULLEY_TOP_Z = -51.0
+
+# Slice (d) platform extension drop-block bottom Z. The IDLE-pose
+# platform sweeps through azimuth 180° (the homing sensor's azimuth)
+# during rotor transit; its drop-block bottom is the lower-Z surface
+# crossing this zone (the stem above is at z ∈ [-15, -4], well above
+# the homing parts). Flag + sensor must clear this below with ≥ 1 mm
+# gap. Mirror of `turret_platform/assembly.py`'s EXTENSION_BOTTOM_Z;
+# itself derived from `TURRET_DUMP_SERVO_LIFTER_TOP_Z + 2` in
+# `params.py`. Update if the platform drop-block geometry changes.
+DROP_BLOCK_BOTTOM_Z = -43.0
 
 # --- Flag disc geometry ------------------------------------------------
 
@@ -153,11 +151,12 @@ FLAG_BORE_D = TURRET_SHAFT_D + 0.4                         # = 8.4
 FLAG_DETECT_HOLE_D = 4.0
 FLAG_DETECT_HOLE_R = 12.0
 
-# Z-center: mid-airspace between housing top (-110) and pulley bottom
-# (-90). 8.5 mm clear of housing top, 8.5 mm clear of pulley bottom.
-FLAG_Z_CENTER = -100.0
-_FLAG_TOP_Z = FLAG_Z_CENTER + FLAG_T / 2                   # = -98.5
-_FLAG_BOTTOM_Z = FLAG_Z_CENTER - FLAG_T / 2                # = -101.5
+# Z-center: mid-airspace between pulley top (-51) and drop-block
+# bottom (-43, dynamic sweep). 2.5 mm clear of pulley top, 2.5 mm
+# clear of drop-block bottom.
+FLAG_Z_CENTER = -47.0
+_FLAG_TOP_Z = FLAG_Z_CENTER + FLAG_T / 2                   # = -45.5
+_FLAG_BOTTOM_Z = FLAG_Z_CENTER - FLAG_T / 2                # = -48.5
 
 
 # --- Sensor body (stub for bought slotted opto-interrupter) ------------
@@ -168,7 +167,7 @@ _FLAG_BOTTOM_Z = FLAG_Z_CENTER - FLAG_T / 2                # = -101.5
 # bottom, modeled as zero-overlap which assert_no_interference accepts).
 SENSOR_MAIN_X = 12.0                                       # body X length
 SENSOR_BODY_Y = 14.0                                       # body Y width (depth)
-SENSOR_BODY_Z = 8.0                                        # body Z total (vertical)
+SENSOR_BODY_Z = 6.0                                        # body Z total (vertical)
 SENSOR_PRONG_X = 18.0                                      # prong X reach
 
 # Sensor outer +X face mounts to bracket post's +X face (on -X side of
@@ -180,14 +179,14 @@ _SENSOR_MAIN_CENTER_X = (SENSOR_OUTER_X + _SENSOR_MAIN_X_MAX) / 2
 _SENSOR_PRONG_CENTER_X = (_SENSOR_MAIN_X_MAX + _SENSOR_PRONG_TIP_X) / 2
 
 # Slot Z = disc plane Z. Top prong above slot, bottom prong below.
-_SLOT_Z_TOP = _FLAG_TOP_Z                                  # = -98.5
-_SLOT_Z_BOT = _FLAG_BOTTOM_Z                               # = -101.5
-_SENSOR_TOP_Z = _SLOT_Z_TOP + (SENSOR_BODY_Z - FLAG_T) / 2  # = -96
-_SENSOR_BOT_Z = _SLOT_Z_BOT - (SENSOR_BODY_Z - FLAG_T) / 2  # = -104
-_SENSOR_BODY_CENTER_Z = (_SENSOR_TOP_Z + _SENSOR_BOT_Z) / 2  # = -100
-_TOP_PRONG_CENTER_Z = (_SENSOR_TOP_Z + _SLOT_Z_TOP) / 2    # = -97.25
-_BOT_PRONG_CENTER_Z = (_SENSOR_BOT_Z + _SLOT_Z_BOT) / 2    # = -102.75
-_PRONG_T = (SENSOR_BODY_Z - FLAG_T) / 2                    # = 2.5
+_SLOT_Z_TOP = _FLAG_TOP_Z                                  # = -45.5
+_SLOT_Z_BOT = _FLAG_BOTTOM_Z                               # = -48.5
+_SENSOR_TOP_Z = _SLOT_Z_TOP + (SENSOR_BODY_Z - FLAG_T) / 2  # = -44
+_SENSOR_BOT_Z = _SLOT_Z_BOT - (SENSOR_BODY_Z - FLAG_T) / 2  # = -50
+_SENSOR_BODY_CENTER_Z = (_SENSOR_TOP_Z + _SENSOR_BOT_Z) / 2  # = -47
+_TOP_PRONG_CENTER_Z = (_SENSOR_TOP_Z + _SLOT_Z_TOP) / 2    # = -44.75
+_BOT_PRONG_CENTER_Z = (_SENSOR_BOT_Z + _SLOT_Z_BOT) / 2    # = -49.25
+_PRONG_T = (SENSOR_BODY_Z - FLAG_T) / 2                    # = 1.5
 
 
 # --- Bracket geometry --------------------------------------------------
@@ -204,8 +203,8 @@ BRACKET_FOOT_Z = 8.0     # vertical
 _BRACKET_FOOT_CENTER_X = -47.0
 _BRACKET_FOOT_X_MIN = _BRACKET_FOOT_CENTER_X - BRACKET_FOOT_X / 2  # = -62.5
 _BRACKET_FOOT_X_MAX = _BRACKET_FOOT_CENTER_X + BRACKET_FOOT_X / 2  # = -31.5
-_BRACKET_FOOT_BOTTOM_Z = RAIL_TOP_Z                        # = -170
-_BRACKET_FOOT_TOP_Z = _BRACKET_FOOT_BOTTOM_Z + BRACKET_FOOT_Z  # = -162
+_BRACKET_FOOT_BOTTOM_Z = RAIL_TOP_Z                        # = -120
+_BRACKET_FOOT_TOP_Z = _BRACKET_FOOT_BOTTOM_Z + BRACKET_FOOT_Z  # = -112
 _BRACKET_FOOT_CENTER_Z = (_BRACKET_FOOT_BOTTOM_Z + _BRACKET_FOOT_TOP_Z) / 2
 
 BRACKET_BOLT_HOLE_D = 5.5                                  # M5 clearance
@@ -221,36 +220,45 @@ BRACKET_POST_Y = BRACKET_FOOT_Y                            # = 14
 _BRACKET_POST_CENTER_X = _BRACKET_FOOT_CENTER_X            # = -47
 _BRACKET_POST_X_MIN = _BRACKET_POST_CENTER_X - BRACKET_POST_X / 2  # = -54
 _BRACKET_POST_X_MAX = _BRACKET_POST_CENTER_X + BRACKET_POST_X / 2  # = -40
-_BRACKET_POST_BOTTOM_Z = _BRACKET_FOOT_TOP_Z               # = -162
-_BRACKET_POST_TOP_Z = _SENSOR_TOP_Z                        # = -96
-BRACKET_POST_Z = _BRACKET_POST_TOP_Z - _BRACKET_POST_BOTTOM_Z  # = 66
+_BRACKET_POST_BOTTOM_Z = _BRACKET_FOOT_TOP_Z               # = -112
+_BRACKET_POST_TOP_Z = _SENSOR_TOP_Z                        # = -44
+BRACKET_POST_Z = _BRACKET_POST_TOP_Z - _BRACKET_POST_BOTTOM_Z  # = 68
 _BRACKET_POST_CENTER_Z = (_BRACKET_POST_BOTTOM_Z + _BRACKET_POST_TOP_Z) / 2
 
 
 # --- Sanity asserts ----------------------------------------------------
 
-# Flag clears housing top + pulley bottom by ≥ 1 mm.
-_flag_to_housing = _FLAG_BOTTOM_Z - HOUSING_TOP_Z
-assert _flag_to_housing >= 1.0, (
-    f"flag bottom ({_FLAG_BOTTOM_Z}) too close to housing top "
-    f"({HOUSING_TOP_Z}); gap {_flag_to_housing:.2f} mm < 1 mm"
-)
-_flag_to_pulley = PULLEY_BOTTOM_Z - _FLAG_TOP_Z
+# Flag clears pulley top (below) + drop-block bottom (above) by ≥ 1 mm.
+_flag_to_pulley = _FLAG_BOTTOM_Z - PULLEY_TOP_Z
 assert _flag_to_pulley >= 1.0, (
-    f"flag top ({_FLAG_TOP_Z}) too close to pulley bottom "
-    f"({PULLEY_BOTTOM_Z}); gap {_flag_to_pulley:.2f} mm < 1 mm"
+    f"flag bottom ({_FLAG_BOTTOM_Z}) too close to pulley top "
+    f"({PULLEY_TOP_Z}); gap {_flag_to_pulley:.2f} mm < 1 mm"
+)
+_flag_to_drop = DROP_BLOCK_BOTTOM_Z - _FLAG_TOP_Z
+assert _flag_to_drop >= 1.0, (
+    f"flag top ({_FLAG_TOP_Z}) too close to drop-block bottom "
+    f"({DROP_BLOCK_BOTTOM_Z}); gap {_flag_to_drop:.2f} mm < 1 mm"
 )
 
-# Sensor clears housing top + pulley bottom by ≥ 1 mm.
-_sensor_to_housing = _SENSOR_BOT_Z - HOUSING_TOP_Z
-assert _sensor_to_housing >= 1.0, (
-    f"sensor bottom ({_SENSOR_BOT_Z}) too close to housing top "
-    f"({HOUSING_TOP_Z}); gap {_sensor_to_housing:.2f} mm < 1 mm"
-)
-_sensor_to_pulley = PULLEY_BOTTOM_Z - _SENSOR_TOP_Z
+# Sensor clears pulley top (below) + drop-block bottom (above) by ≥ 1 mm.
+_sensor_to_pulley = _SENSOR_BOT_Z - PULLEY_TOP_Z
 assert _sensor_to_pulley >= 1.0, (
-    f"sensor top ({_SENSOR_TOP_Z}) too close to pulley bottom "
-    f"({PULLEY_BOTTOM_Z}); gap {_sensor_to_pulley:.2f} mm < 1 mm"
+    f"sensor bottom ({_SENSOR_BOT_Z}) too close to pulley top "
+    f"({PULLEY_TOP_Z}); gap {_sensor_to_pulley:.2f} mm < 1 mm"
+)
+_sensor_to_drop = DROP_BLOCK_BOTTOM_Z - _SENSOR_TOP_Z
+assert _sensor_to_drop >= 1.0, (
+    f"sensor top ({_SENSOR_TOP_Z}) too close to drop-block bottom "
+    f"({DROP_BLOCK_BOTTOM_Z}); gap {_sensor_to_drop:.2f} mm < 1 mm"
+)
+
+# Bracket post top stays below drop-block bottom by ≥ 1 mm so the
+# transit sweep at azimuth 180° clears the post (post X-range
+# [-54, -40] overlaps the drop-block sweep annulus at radius 25-53).
+_post_to_drop = DROP_BLOCK_BOTTOM_Z - _BRACKET_POST_TOP_Z
+assert _post_to_drop >= 1.0, (
+    f"bracket post top ({_BRACKET_POST_TOP_Z}) too close to drop-block "
+    f"bottom ({DROP_BLOCK_BOTTOM_Z}); gap {_post_to_drop:.2f} mm < 1 mm"
 )
 
 # Detect hole sits inside the slot's X range (so the beam aligns with
