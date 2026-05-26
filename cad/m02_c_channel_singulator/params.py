@@ -16,15 +16,26 @@ import math
 # --- Rotor + stator V geometry -----------------------------------------
 
 # Rotor outer diameter at its base (the widest section, closest to the
-# V-bottom). Middle of the reference project's 150–200 mm range
-# (see docs/m02-c-channel-singulator.md Open Questions).
-ROTOR_BASE_DIAMETER = 180.0
+# V-bottom). Sized for the chained-singulator architecture: this m02
+# is the **S1 (LOAD-feeding) stage**, the smallest of a tapered
+# 3-stage chain (S1 = 240, S2 = 300, S3 = 360 mm rotor base). 240 mm
+# gives an exit-arc length at the rim ≈ 75 mm — enough margin under
+# the BRICK_SPHERE_DIA = 80 mm worst case that singulation events
+# don't routinely wedge mid-pass. Bumped from 180 (which gave only
+# 56 mm of exit-arc at the rim; bricks longer than ~55 mm spanned
+# the full arc with no behind-it gap for the next-in-line to
+# declump). See `cad/m02_integration_handoff.md` for the chain
+# rationale.
+ROTOR_BASE_DIAMETER = 240.0
 
 # Rotor top diameter — the flat top platform bricks drop onto. Not
 # zero (would be a bare apex); a truncated top gives the hopper feed
-# somewhere to land. 60 mm is comfortably larger than #brick_sphere_dia
-# would need, but small enough that most bricks shed outward onto the
-# flank rather than stacking on top.
+# somewhere to land. 60 mm is comfortably smaller than
+# #brick_sphere_dia so most bricks shed outward onto the flank rather
+# than stacking on top. Held constant across the chain (S1/S2/S3) so
+# the rotor flank gets steeper (and the rotor gets taller) as
+# diameter grows; this is intentional — bigger upstream stages want
+# more flank-roll distance for clump-breaking.
 ROTOR_TOP_DIAMETER = 60.0
 
 # V half-angle, measured from vertical. Shared by the rotor flank and

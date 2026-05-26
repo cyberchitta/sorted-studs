@@ -1,13 +1,10 @@
 """
 sorted-studs — top-level integration assembly.
 
-Slice (2026-05-05): turret-on-diverter + camera rig at IMAGE
-station. The merged m03 unit (rig + turret, post Phase-1 collapse)
-is placed at world `Pos(0, +250, 1030)` so the rig brick centroid
-lands on the IMAGE-station platform top face. This is a
-visualisation slice — cross-unit assertions are expected to fail
-where the unmodified rig's footprint runs off the deck OD or
-crashes the m05 column. The m02 singulator is still decoupled.
+Slice (2026-05-26): m05 diverter + m03 scanner (rig + turret) + m02
+chain (S1 stage + column extensions + LOAD ramp). The chain delivers
+bricks onto the m03 turret's LOAD station; the turret rotates them
+through IMAGE → IDLE → DUMP over the m05 hub axis.
 
 Constraints landed in this slice:
 
@@ -130,9 +127,11 @@ def _load_unit_namespace(rel_path: str) -> dict:
 
 _M05_NS = _load_unit_namespace("m05_diverter")
 _M03_NS = _load_unit_namespace("m03_scanner")
+_M02_CHAIN_NS = _load_unit_namespace("m02_chain")
 
 _M05_ASSY: Assembly = _M05_NS["assembly"]
 _M03_ASSY: Assembly = _M03_NS["assembly"]
+_M02_CHAIN_ASSY: Assembly = _M02_CHAIN_NS["assembly"]
 
 
 # --- Interface values pulled from the loaded namespaces --------------
@@ -180,12 +179,47 @@ _M05_POSE = Location()
 _TURRET_WORLD_Z = M05_DECK_TOP_Z - _TURRET_FLOOR_BOTTOM_Z   # 890 - (-140) = 1030
 _M03_POSE = Pos(0, 2 * TURRET_ARM_R, _TURRET_WORLD_Z)
 
+# m02 chain placement. The chain owns its own local frame with origin
+# at the LOAD platform top centroid; one transform places it in world.
+# Anchors mirrored inside `m02_chain/params.py` are cross-checked here
+# against the live m05 / m03 values.
+_M02_CHAIN_PARAMS = _M02_CHAIN_NS  # exposes the module dict; pull the
+# mirrored constants the chain hard-codes so we can verify them.
+_CHAIN_WORLD_POSE_XYZ: tuple = _M02_CHAIN_NS["CHAIN_WORLD_POSE_XYZ"]
+_M02_CHAIN_POSE = Pos(*_CHAIN_WORLD_POSE_XYZ)
+
+# Chain mirror cross-checks. The chain hard-codes M05_TOP_VERT_Z,
+# M05_TOP_DECK_T, M03_TURRET_ARM_R, and M03_LOAD_TOP_Z (= turret world
+# z). If any drifts, fail loudly here so the chain's anchors don't
+# silently desync from the rest of the assembly.
+assert _M02_CHAIN_NS["M05_TOP_VERT_Z"] == _M05_TOP_VERT_Z, (
+    f"chain M05_TOP_VERT_Z ({_M02_CHAIN_NS['M05_TOP_VERT_Z']}) != live "
+    f"m05 TOP_VERT_Z ({_M05_TOP_VERT_Z}); update "
+    f"cad/m02_chain/params.py"
+)
+assert _M02_CHAIN_NS["M05_TOP_DECK_T"] == _M05_TOP_DECK_T, (
+    f"chain M05_TOP_DECK_T ({_M02_CHAIN_NS['M05_TOP_DECK_T']}) != live "
+    f"m05 TOP_DECK_T ({_M05_TOP_DECK_T}); update "
+    f"cad/m02_chain/params.py"
+)
+assert _M02_CHAIN_NS["M03_TURRET_ARM_R"] == TURRET_ARM_R, (
+    f"chain M03_TURRET_ARM_R ({_M02_CHAIN_NS['M03_TURRET_ARM_R']}) != "
+    f"live m03 TURRET_ARM_R ({TURRET_ARM_R}); update "
+    f"cad/m02_chain/params.py"
+)
+assert _M02_CHAIN_NS["M03_LOAD_TOP_Z"] == _TURRET_WORLD_Z, (
+    f"chain M03_LOAD_TOP_Z ({_M02_CHAIN_NS['M03_LOAD_TOP_Z']}) != live "
+    f"_TURRET_WORLD_Z ({_TURRET_WORLD_Z}); update "
+    f"cad/m02_chain/params.py"
+)
+
 
 # --- Compose ----------------------------------------------------------
 
 _PREFIX = {
     "m05": "m05__",
     "m03": "m03__",
+    "m02_chain": "m02_chain__",
 }
 
 
@@ -194,8 +228,16 @@ def _splice(top: Assembly, mod: Assembly, base: Location, prefix: str) -> Assemb
     location pre-multiplied by ``base`` and its name prefixed.
     Within-unit assertions are intentionally dropped — each unit's
     own ``khana check`` validates them.
+
+    Walks ``mod.placed_parts`` (not ``mod.parts``) so parts living
+    inside sub-assemblies (e.g. m05's ``rotating_stack``, m03's
+    ``turret_rotor``) come through with their joint/sub-assembly
+    transforms composed into the part's effective location. Splicing
+    flat means the top-level loses the joint hierarchy — currently
+    fine because the top-level static view fixes every joint at 0;
+    animation hooks live inside each unit's standalone assembly.
     """
-    for p in mod.parts:
+    for p in mod.placed_parts:
         top = top.with_part(
             f"{prefix}{p.name}",
             p.part,
@@ -209,20 +251,31 @@ def _splice(top: Assembly, mod: Assembly, base: Location, prefix: str) -> Assemb
 assembly = Assembly()
 assembly = _splice(assembly, _M05_ASSY, _M05_POSE, _PREFIX["m05"])
 assembly = _splice(assembly, _M03_ASSY, _M03_POSE, _PREFIX["m03"])
+assembly = _splice(
+    assembly, _M02_CHAIN_ASSY, _M02_CHAIN_POSE, _PREFIX["m02_chain"]
+)
 
 
 # --- Cross-unit no-interference --------------------------------------
 #
-# Every cross-unit pair (m03-vs-m05). Within-unit pairs (rig×rig,
-# turret×turret, rig×turret) are covered by `m03_scanner/assembly.py`'s
-# standalone check.
+# Every cross-unit pair (m03 × m05, chain × m05, chain × m03). Within-
+# unit pairs are covered by each unit's own standalone `khana check`.
 
-_M03_NAMES = [f"{_PREFIX['m03']}{p.name}" for p in _M03_ASSY.parts]
-_M05_NAMES = [f"{_PREFIX['m05']}{p.name}" for p in _M05_ASSY.parts]
+_M03_NAMES = [f"{_PREFIX['m03']}{p.name}" for p in _M03_ASSY.placed_parts]
+_M05_NAMES = [f"{_PREFIX['m05']}{p.name}" for p in _M05_ASSY.placed_parts]
+_CHAIN_NAMES = [
+    f"{_PREFIX['m02_chain']}{p.name}" for p in _M02_CHAIN_ASSY.placed_parts
+]
 
 for n3 in _M03_NAMES:
     for n5 in _M05_NAMES:
         assembly = assembly.assert_no_interference(n3, n5)
+
+for nc in _CHAIN_NAMES:
+    for n5 in _M05_NAMES:
+        assembly = assembly.assert_no_interference(nc, n5)
+    for n3 in _M03_NAMES:
+        assembly = assembly.assert_no_interference(nc, n3)
 
 
 if __name__ == "__main__":
