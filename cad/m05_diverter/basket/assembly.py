@@ -19,12 +19,17 @@ varied the lip radius from 129.9 mm at N=6 to 147.7 mm at N=18 —
 N=18 sat outboard of the tip and a near-vertical drop fell into
 the gap).
 
-Each basket's radial side walls (and in one case, its center) are
-notched around the through-columns at vertices V_k = (k+0.5)·60°.
+Each basket's radial side walls (and in one case, its center) have
+open radial access channels around the through-columns at vertices
+V_k = (k+0.5)·60°.
 With outer and inner hex aligned, every vertex azimuth carries two
 columns — one at R_VERT_OUTER and one at R_VERT_INNER — so each
-flagged notch cuts the basket twice along that azimuth (once per
-radius). The notch set per basket is declared in `FLOOR_LAYOUT`:
+flagged azimuth cuts the basket twice: from the inner arc out through
+the inner column, and from the outer column out through the outer arc.
+These channels let a basket move horizontally around the continuous
+tower columns during installation and removal; closed column-footprint
+holes would force it to slide the full tower height instead. The notch
+set per basket is declared in `FLOOR_LAYOUT`:
 `left`/`right` for boundary columns, `middle` for the V_1 column
 that sits inside the N=9 MIDDLE basket's interior.
 
@@ -32,7 +37,8 @@ Floor sits on the shared stage datum (z=0); rim at z=+BASKET_DEPTH_Z.
 Basket floor cantilevers past the outer-hex edge but still rests on
 the hex outer extrusion top-face strip plus the radial rails, so
 brick load drops through the supported zone. Open top for drop-in
-delivery, closed bottom; lifts out for emptying. Rack that
+delivery, closed bottom; withdraws horizontally through the open
+column-access channels for emptying. Rack that
 physically carries the bucket load is the hex ring itself — no
 separate shelf.
 
@@ -101,8 +107,9 @@ from params import (
 # spans r ∈ [~301.77, ~321.77] along the vertex azimuth (fully
 # inside the basket envelope at r=330); at R_VERT_INNER it spans
 # r ∈ [~151.66, ~171.66] (just outboard of the basket's inner arc
-# at R_BASKET_INNER=130). `basket()` subtracts a column-footprint
-# cutout at *both* radii on each flagged boundary azimuth.
+# at R_BASKET_INNER=130). `basket()` subtracts an open radial channel
+# at *both* radii on each flagged boundary azimuth. The inner channel
+# reaches the inner arc; the outer channel reaches the outer arc.
 BASKET_HEX_OVERHANG = 60.0
 R_BASKET_OUTER = R_HEX_OUTER + BASKET_HEX_OVERHANG   # 330 = top-deck OD/2
 BASKET_WALL_T = 3.0
@@ -126,32 +133,38 @@ BASKET_RIM_Z = BASKET_FLOOR_Z + BASKET_DEPTH_Z     # 130
 # doesn't host this constant today.
 COLUMN_SIDE = 20.0
 COLUMN_CLEARANCE = 1.0   # gap between notch wall and column face
+CLAMP_ARM_T = 6.0        # vertex-bracket clamp plate thickness
+ACCESS_CHANNEL_W = COLUMN_SIDE + 2 * (CLAMP_ARM_T + COLUMN_CLEARANCE)
 
 WALL_MIN = 1.5
 
 
 # --- Helpers ------------------------------------------------------------
 
-def _column_cutout_at(azimuth_deg: float, radius: float) -> Part:
-    """Rotated 20×20 through-cutout centered on a hex vertex at
-    (`radius`, `azimuth_deg`), spanning the full basket Z range with
-    margin. Removes the column body (and a thin clearance margin)
-    from the basket so the radial side wall wraps around the column
-    instead of passing through it. Called once per column on each
-    flagged boundary azimuth: outer hex vertex at R_VERT_OUTER and
-    inner hex vertex at R_VERT_INNER (both share the azimuth).
+def _radial_access_channel_at(
+    azimuth_deg: float,
+    radius_start: float,
+    radius_end: float,
+) -> Part:
+    """Full-height radial slot between two radii at `azimuth_deg`.
 
-    Rotation matches frame's `Rot(0, 0, v_angle)` on `outer_vert_k`
-    / `inner_vert_k`, so the cutout's faces align with the real
-    column's faces.
+    The slot is wide enough to swallow the 2020 column footprint and
+    either vertex bracket's 6 mm clamp plate. It intentionally reaches
+    a basket arc: the printed walls hand off to the clamp face without
+    trapping a continuous tower column inside an enclosed floor hole.
     """
-    side = COLUMN_SIDE + 2 * COLUMN_CLEARANCE
     z_margin = 10.0
     height = BASKET_DEPTH_Z + 2 * z_margin
-    vx = radius * math.cos(math.radians(azimuth_deg))
-    vy = radius * math.sin(math.radians(azimuth_deg))
+    length = radius_end - radius_start
+    radius_mid = (radius_start + radius_end) / 2.0
+    vx = radius_mid * math.cos(math.radians(azimuth_deg))
+    vy = radius_mid * math.sin(math.radians(azimuth_deg))
     z_center = (BASKET_FLOOR_Z + BASKET_RIM_Z) / 2.0
-    return Pos(vx, vy, z_center) * Rot(0, 0, azimuth_deg) * Box(side, side, height)
+    return (
+        Pos(vx, vy, z_center)
+        * Rot(0, 0, azimuth_deg)
+        * Box(length, ACCESS_CHANNEL_W, height)
+    )
 
 
 def _arc_prism(
@@ -234,8 +247,8 @@ def basket(
       - notch_right  → +half_angle_deg (RIGHT boundary = larger world θ)
       - notch_middle → 0° (basket center — used only where V_k lands
                        inside a basket, i.e. N=9 MIDDLE baskets)
-    Each flagged notch subtracts a rotated column-footprint box (see
-    `_column_cutout_at`) from the wedge shell.
+    Each flagged notch subtracts two open radial access slots (see
+    `_radial_access_channel_at`) from the wedge shell.
     """
     z_bot = BASKET_FLOOR_Z
     z_top = BASKET_RIM_Z
@@ -248,9 +261,10 @@ def basket(
         inset=BASKET_WALL_T,
     )
     body = outer - cavity
-    # Two columns per flagged azimuth: one at the outer-hex vertex,
-    # one at the inner-hex vertex (the hexes are rotation-aligned so
-    # both sit on the same vertex azimuth).
+    # Two columns per flagged azimuth: open the inner one to the inner
+    # arc and the outer one to the outer arc. The channels overlap the
+    # complete column footprints with clearance, so no enclosed floor
+    # holes remain.
     for flagged, az in (
         (notch_right, +half_angle_deg),
         (notch_left, -half_angle_deg),
@@ -258,8 +272,13 @@ def basket(
     ):
         if not flagged:
             continue
-        body = body - _column_cutout_at(az, R_VERT_OUTER)
-        body = body - _column_cutout_at(az, R_VERT_INNER)
+        radial_clearance = COLUMN_SIDE / 2 + COLUMN_CLEARANCE
+        body = body - _radial_access_channel_at(
+            az, R_VERT_OUTER - radial_clearance, R_BASKET_OUTER + 1.0,
+        )
+        body = body - _radial_access_channel_at(
+            az, R_BASKET_INNER - 1.0, R_VERT_INNER + radial_clearance,
+        )
     return body
 
 

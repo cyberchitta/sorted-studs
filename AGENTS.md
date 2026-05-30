@@ -6,7 +6,8 @@ guidance rather than Claude-only notes:
 - Read root `CLAUDE.md` for project context.
 - Read `cad/CLAUDE.md` before changing any CAD module.
 - For CAD files that import `cad_khana` or use `Assembly()`, `check()`, or
-  `inspect()`, read `../cad-khana/SKILL.md` before editing or running checks.
+  `inspect()`, read `.claude/skills/cad-khana/SKILL.md` before editing or
+  running checks.
 
 CAD verification:
 
