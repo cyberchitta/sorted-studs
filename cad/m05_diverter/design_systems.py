@@ -96,10 +96,8 @@ ROLE_OF: dict[str, Role | None] = {
     **{name: Role.CONSUMABLE for name in _basket_basenames()},
     # Base-floor drive train
     "motor": None,                            # NEMA cast body — outside palette
-    # ``drive_shaft`` is obsolete (Lego falls through the column axis;
-    # see NEXT_STEPS.md "Base-floor drive train"). Tag ``None`` until
-    # it's removed from the assembly.
-    "drive_shaft": None,
+    "pinion": None,                           # bought metal pinion — outside palette
+    "ring_gear": Role.MECHANISM,              # printed drive gear
     "motor_mount": Role.SECONDARY_STRUCTURE,
     # Top deck — clear acrylic, outside the palette (renders via material).
     "top_acrylic": None,

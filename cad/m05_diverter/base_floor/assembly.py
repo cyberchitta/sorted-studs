@@ -1,105 +1,226 @@
 """
-M05 hex-tower — base-floor drive train.
+M05 hex-tower — base-floor drive train (off-axis pinion + ring gear).
 
 Stationary structure that drives the rotating column from below.
 Base-floor-only: floors 2-4 use only the column-bottom stack from
 ramp_mechanism (spider / ring bearing / column).
 
-Realizes the "single motor at the base drives the full 4-floor
-column as one rotating shaft" architectural commitment as three
-placeholder parts:
+Realizes the "single motor at the base, off-axis, gear-coupled to a
+ring gear on the base column's bottom collar" architectural commitment.
+The brick fall path runs straight down the column axis (90×90 mm
+interior), so **no central drive shaft can live there** — the obsolete
+coaxial `drive_shaft` from the previous pass is gone. Drive is taken
+to the column's periphery instead:
 
-- motor — NEMA-23-style 60×60×80 box stub. Final NEMA size, gear
-  ratio, and torque budget are open.
-- drive_shaft — D14 cylinder along the column axis from motor top
-  face up into the column collar's interior cavity. The torque-
-  transfer detail (set screws / keyway / bolted hub at the column-
-  collar interface) is open.
-- motor_mount — printed disc that bolts up into the radial-rail
-  bottom faces (T-slot from below). Detailed bolt pattern and
-  motor-flange interface are open.
+- motor — NEMA-17-style 42×42×40 box stub, mounted **off-axis** on a
+  back-side radial-rail azimuth (away from the +X exit/ramp), body
+  hanging below the rail datum with its output shaft pointing up.
+  Final NEMA size + gearbox choice still open.
+- pinion — small gear on the motor output shaft, meshing with the ring
+  gear. Modeled cheap as its pitch cylinder (no teeth); the real
+  involute profile is a detail-layer concern.
+- ring_gear — printed annulus bolted up to the base column's bottom
+  collar face (z = 0), teeth on its OD. Modeled cheap as a pitch
+  annulus with the same square brick-pass-through hole as the collar.
+  The "separate bolted-on ring vs teeth integral to the printed collar
+  OD" choice (see `m05_diverter/NEXT_STEPS.md`) is resolved here as the
+  bolt-on ring: it keeps the gear off the structural column and
+  swappable if the ratio changes, and leaves ramp_mechanism's
+  `column("base")` untouched.
+- motor_mount — printed radial arm at the rail-bottom plane; bolts up
+  into one radial rail's T-slot and carries the motor below via the
+  NEMA face. Detailed bolt pattern + flange interface still open.
 
-The base bearing (axial+radial+motor-reaction-torque) currently
+Gear geometry is the cheap two-fidelity-tier model: pitch cylinders,
+no teeth. Mesh validity is asserted **numerically** (center distance =
+sum of pitch radii + backlash) rather than by a volume check, since
+meshing gears are meant to touch. The pinion-tip-clears-the-rail-ring
+margin is the tight constraint and gets its own numeric guard.
+
+The base bearing (axial + radial + motor-reaction torque) currently
 re-uses the per-floor `ring_bearing` for the base role in
-ramp_mechanism — see `m05_diverter/NEXT_STEPS.md` "Ring-bearing
-type choice" for the open question on whether the base needs a
-heavier thrust+radial unit instead of the radial-only ring.
+ramp_mechanism — see `m05_diverter/NEXT_STEPS.md` for the open question
+on whether the base needs a heavier thrust+radial unit (or a
+commercial turntable) instead of the radial-only printed ring.
 
 Coordinate frame (matches ramp_mechanism / params):
     origin = column axis ∩ rail-top datum (z=0)
     +Z     = up
-    +X     = radial outward toward the exit opening
-    z=0    = rail top face (frame datum)
-    z<0    = below the floor — motor + mount + lower drive shaft sit here
+    +X     = radial outward toward the exit opening (azimuth 0°)
+    z=0    = rail top face (frame datum) = base collar bottom face
+    z<0    = below the floor — ring gear, pinion, mount, motor sit here
 """
 
+import math
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from build123d import Box, Cylinder, Part, Pos
+from build123d import Box, Cylinder, Part, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
-from params import RAIL_INNER_R, RAIL_SIZE
+from params import COL_INTERIOR_SIDE, COLLAR_OD, RAIL_INNER_R, RAIL_SIZE
 
 
-# --- Parameters ---------------------------------------------------------
+# --- Gear train ---------------------------------------------------------
+#
+# Spur pair: a small pinion on the off-axis motor shaft drives a large
+# ring gear bolted to the base column's bottom collar. The ring's pitch
+# diameter tracks the collar OD so the gear stays compact on the collar.
+MODULE = 1.5                          # printable spur module (low torque)
+PRESSURE_ANGLE_DEG = 20.0             # documentation only — cheap model has no teeth
+RING_TEETH = round(COLLAR_OD / MODULE)            # 92 — pitch D ≈ collar OD
+PINION_TEETH = 12                                  # small but printable at 20° PA
+RING_PITCH_D = RING_TEETH * MODULE                 # 138.0
+PINION_PITCH_D = PINION_TEETH * MODULE             # 18.0
+GEAR_RATIO = RING_TEETH / PINION_TEETH             # ≈ 7.67 : 1
+ADDENDUM = MODULE                                  # tip = pitch + module
+MESH_BACKLASH = 0.2                   # extra center distance for FDM mesh play
 
-# Motor stub — NEMA-23 footprint (60 mm body for round numbers; real
-# NEMA-23 is 57 mm, swap when the motor is selected).
-MOTOR_BODY_W = 60.0
-MOTOR_BODY_H = 80.0
-MOTOR_TOP_Z = -25.0                   # output face — matches motor_mount underside
-MOTOR_BOTTOM_Z = MOTOR_TOP_Z - MOTOR_BODY_H
+# Center distance = sum of pitch radii + a touch of backlash. The cheap
+# pitch cylinders then sit MESH_BACKLASH apart (no overlap) so the
+# pinion-vs-ring no-interference is robust; the numeric assert below is
+# the authoritative mesh check.
+CENTER_DIST = (RING_PITCH_D + PINION_PITCH_D) / 2 + MESH_BACKLASH   # 78.2
 
-# Drive shaft — single cylinder from motor top face up into the column
-# collar's interior cavity (the collar has a 90×90 square through-hole;
-# D14 sits well inside). Represents a coupler-extended drive shaft;
-# the actual NEMA-23 8 mm output stub plus a rigid coupler reads
-# geometrically as one D14 cylinder for stub purposes.
-SHAFT_D = 14.0
-SHAFT_Z_BOT = MOTOR_TOP_Z
-SHAFT_Z_TOP = 5.0                     # = COLLAR_T (top of column-base collar)
+# Pitch ≈ collar OD: the ring gear must seat on the collar's bolt face.
+assert abs(RING_PITCH_D - COLLAR_OD) <= 2 * MODULE, (
+    f"Ring-gear pitch D ({RING_PITCH_D:.1f}) strays from the base "
+    f"collar OD ({COLLAR_OD:.1f}) by more than one tooth height; the "
+    f"bolt-on ring no longer seats on the collar face. Re-pick RING_TEETH."
+)
 
-# Motor mount — disc with central shaft pass-through. Top face sits
-# flush with the radial-rail bottom face (z = -RAIL_SIZE = -20); bolts
-# go up from below into the rail T-slots. OD stops 1 mm short of the
-# rail inner ends so the disc fits between the six rail spokes.
+# Tight constraint: the pinion's tip circle must stay inside the radial-
+# rail ring (rails start at RAIL_INNER_R). This is the packaging knife-
+# edge — the pinion is squeezed between the Ø138 collar and the Ø180
+# rail-inner ring. Guarded numerically because the cheap pinion body is
+# a pitch cylinder (no teeth), so the mechanism check wouldn't see the
+# tip reach.
+PINION_TIP_R = PINION_PITCH_D / 2 + ADDENDUM       # 10.5
+PINION_RAIL_GAP = RAIL_INNER_R - (CENTER_DIST + PINION_TIP_R)   # ≈ 1.3 mm
+assert PINION_RAIL_GAP >= 1.0, (
+    f"Pinion tip reaches r = {CENTER_DIST + PINION_TIP_R:.1f}, leaving "
+    f"only {PINION_RAIL_GAP:.1f} mm to the rail-inner ring at "
+    f"{RAIL_INNER_R}. Shrink PINION_TEETH or push the rails out."
+)
+
+
+# --- Z-band layout (top → bottom) ---------------------------------------
+#
+# The gear mesh is dropped BELOW the ramp_mechanism bearing spider. That
+# spider's saddles clamp the radial rails at the same azimuths a
+# rail-mounted motor wants, and they dip to z ≈ -7 reaching in to
+# r ≈ 83.5 — straight through the pinion's tip path. The ring gear
+# itself (r ≤ 69) always clears the saddle radially, but the pinion
+# (tip r ≈ 88.5) does not, so the whole mesh plane sits under the saddle
+# and the ring gear reaches the collar via a short standoff. The
+# top-level `pinion`-vs-`bearing_spider` no-interference assert is the
+# guard that catches any future saddle-depth drift.
+#
+#   z=0    rail top / base collar bottom / ring-gear standoff top
+#   z=-7   spider-saddle bottom (ramp_mechanism) — mesh stays below
+#   z=-9   gear-mesh top (pinion top, ring-gear teeth top)
+#   z=-17  gear-mesh bottom / ring-gear bottom
+#   z=-18  pinion bottom
+#   z=-20  rail bottom / motor-mount top (bolts up into rail T-slot)
+#   z=-25  motor-mount bottom / motor face (NEMA bolts up into the mount)
+#   z=-65  motor body bottom
+GEAR_FACE_W = 8.0                                  # mesh face width
+MESH_Z_TOP = -9.0                                  # below the spider saddle (≈ -7)
+MESH_Z_BOT = MESH_Z_TOP - GEAR_FACE_W              # -17
+
+RING_GEAR_Z_TOP = 0.0                              # standoff bolts to base collar bottom
+RING_GEAR_Z_BOT = MESH_Z_BOT                       # -17 — annulus runs collar → teeth
+
+PINION_Z_TOP = MESH_Z_TOP                          # -9
+PINION_FACE_W = GEAR_FACE_W + 1.0                  # 9 — overhangs the gear face
+PINION_Z_BOT = PINION_Z_TOP - PINION_FACE_W        # -18
+
 MOUNT_T = 5.0
-MOUNT_Z_TOP = -RAIL_SIZE                          # -20 — rail bottom face
-MOUNT_Z_BOT = MOUNT_Z_TOP - MOUNT_T               # -25 — flush with motor top face
-MOUNT_OD = 2 * (RAIL_INNER_R - 1.0)               # 178 — 1 mm clearance off rails
-MOUNT_SHAFT_HOLE_D = SHAFT_D + 4.0                # 18 — 2 mm radial clearance
+MOUNT_Z_TOP = -RAIL_SIZE                           # -20 — rail bottom face
+MOUNT_Z_BOT = MOUNT_Z_TOP - MOUNT_T                # -25
+
+# Motor — NEMA-17 footprint (42.3 mm body), output face flush with the
+# mount underside; body hangs below. Real NEMA-17 is 42.3 mm square.
+MOTOR_BODY_W = 42.3
+MOTOR_BODY_H = 40.0
+MOTOR_TOP_Z = MOUNT_Z_BOT                          # -25 — face bolts up to the mount
+MOTOR_BOTTOM_Z = MOTOR_TOP_Z - MOTOR_BODY_H        # -65
+
+# Off-axis placement: on a back-side radial-rail azimuth (rails sit at
+# (k+0.5)·60°). 210° is two sections back from the +X exit/ramp at 0°,
+# so the motor stays clear of the delivery side. The mount arm runs
+# along this rail; pinion + motor axis sit at CENTER_DIST on it.
+MOTOR_AZIMUTH_DEG = 210.0
+
+# Motor mount — radial arm under the chosen rail. Inner end covers the
+# motor footprint (motor reaches r ≈ CENTER_DIST + MOTOR_BODY_W/2 ≈ 99);
+# outer end overlaps the rail (r ≥ RAIL_INNER_R) to bolt. Central
+# clearance hole passes the bare output shaft (the pinion sits above
+# the mount).
+MOUNT_R_INNER = 52.0
+MOUNT_R_OUTER = 100.0
+MOUNT_R_CENTER = (MOUNT_R_INNER + MOUNT_R_OUTER) / 2   # 76
+MOUNT_L = MOUNT_R_OUTER - MOUNT_R_INNER                # 48
+MOUNT_W = MOTOR_BODY_W + 4.0                           # 46.3 — straddles the motor
+MOUNT_SHAFT_HOLE_D = 12.0                              # clears the bare output shaft
 
 WALL_MIN = 1.5
 
 
 # --- Part functions -----------------------------------------------------
 
+def _on_drive_axis(part: Part, z_center: float) -> Part:
+    """Place a part centered on the off-axis motor/pinion axis at the
+    given z. The drive axis is at radius CENTER_DIST on azimuth
+    MOTOR_AZIMUTH_DEG from the column axis."""
+    return Rot(0, 0, MOTOR_AZIMUTH_DEG) * Pos(CENTER_DIST, 0, z_center) * part
+
+
 def motor() -> Part:
-    """NEMA-23-style stub: square body, output face at MOTOR_TOP_Z."""
+    """NEMA-17-style stub: square body, output face up at MOTOR_TOP_Z,
+    body hanging below. Placed off-axis on the drive axis."""
     z = (MOTOR_TOP_Z + MOTOR_BOTTOM_Z) / 2
-    return Pos(0, 0, z) * Box(MOTOR_BODY_W, MOTOR_BODY_W, MOTOR_BODY_H)
+    return _on_drive_axis(Box(MOTOR_BODY_W, MOTOR_BODY_W, MOTOR_BODY_H), z)
 
 
-def drive_shaft() -> Part:
-    """Rotating drive shaft from motor top face to column-collar interior."""
-    h = SHAFT_Z_TOP - SHAFT_Z_BOT
-    z = (SHAFT_Z_TOP + SHAFT_Z_BOT) / 2
-    return Pos(0, 0, z) * Cylinder(SHAFT_D / 2, h)
+def pinion() -> Part:
+    """Drive pinion on the motor shaft, meshing with the ring gear.
+    Cheap model: pitch cylinder (no teeth). Placed off-axis on the
+    drive axis at CENTER_DIST from the column axis."""
+    z = (PINION_Z_TOP + PINION_Z_BOT) / 2
+    return _on_drive_axis(Cylinder(PINION_PITCH_D / 2, PINION_FACE_W), z)
+
+
+def ring_gear() -> Part:
+    """Ring gear bolted to the base column's bottom collar face. The
+    upper section is a standoff (collar bottom z = 0 down to the saddle-
+    clearing mesh plane); the lower section carries the teeth. Cheap
+    model: a single pitch-diameter annulus with the same square brick-
+    pass hole as the collar (teeth omitted). Centered on the column axis."""
+    h = RING_GEAR_Z_TOP - RING_GEAR_Z_BOT
+    z = (RING_GEAR_Z_TOP + RING_GEAR_Z_BOT) / 2
+    disc = Pos(0, 0, z) * Cylinder(RING_PITCH_D / 2, h)
+    hole = Pos(0, 0, z) * Box(COL_INTERIOR_SIDE, COL_INTERIOR_SIDE, h * 2)
+    return disc - hole
 
 
 def motor_mount() -> Part:
-    """Printed disc that bolts to the radial-rail bottom faces."""
+    """Printed radial arm at the rail-bottom plane. Bolts up into one
+    radial rail's T-slot at its outer end and carries the motor below
+    via the NEMA face; a central hole passes the output shaft up to the
+    pinion."""
     z = (MOUNT_Z_TOP + MOUNT_Z_BOT) / 2
-    body = Pos(0, 0, z) * Cylinder(MOUNT_OD / 2, MOUNT_T)
-    bore = Pos(0, 0, z) * Cylinder(MOUNT_SHAFT_HOLE_D / 2, MOUNT_T * 2)
-    return body - bore
+    arm = Rot(0, 0, MOTOR_AZIMUTH_DEG) * Pos(MOUNT_R_CENTER, 0, z) * Box(
+        MOUNT_L, MOUNT_W, MOUNT_T
+    )
+    bore = _on_drive_axis(Cylinder(MOUNT_SHAFT_HOLE_D / 2, MOUNT_T * 2), z)
+    return arm - bore
 
 
 # --- Assembly -----------------------------------------------------------
@@ -107,20 +228,27 @@ def motor_mount() -> Part:
 def make_assembly() -> Assembly:
     """Standalone base-floor drive-train assembly.
 
-    Three parts meet near `MOTOR_TOP_Z = -25`:
-    - motor body top face at z = -25
-    - drive shaft bottom face at z = -25
-    - motor mount bottom face at z = -25
-    All tangent or radially separated; no overlap.
+    Four parts: ring gear on the column axis (z = -17..0), pinion on the
+    off-axis drive axis (z = -18..-9) meshing with it, motor below the
+    mount (z = -65..-25), and the mount arm bridging the two (z =
+    -25..-20). The pinion ↔ ring *mesh* (the load-bearing relationship)
+    is validated numerically by the center-distance asserts above; the
+    no-interference assert here is a weaker guard that the cheap pitch
+    blanks don't gross-overlap (they sit MESH_BACKLASH apart, so it
+    passes — real teeth interleave within that band).
     """
     return (
         Assembly()
+        .with_part("ring_gear", ring_gear())
+        .with_part("pinion", pinion())
         .with_part("motor", motor())
-        .with_part("drive_shaft", drive_shaft())
         .with_part("motor_mount", motor_mount())
-        .assert_no_interference("motor", "drive_shaft")
+        .assert_no_interference("ring_gear", "pinion")
+        .assert_no_interference("ring_gear", "motor")
+        .assert_no_interference("ring_gear", "motor_mount")
+        .assert_no_interference("pinion", "motor")
+        .assert_no_interference("pinion", "motor_mount")
         .assert_no_interference("motor", "motor_mount")
-        .assert_no_interference("drive_shaft", "motor_mount")
     )
 
 
@@ -130,4 +258,6 @@ assembly = make_assembly()
 if __name__ == "__main__":
     check(assembly, out="outputs")
     method = FDM(wall_min_mm=WALL_MIN, overhang_max_deg=90.0)
+    # pinion is bought (metal, on the motor shaft) — not inspected.
+    inspect(ring_gear(), method=method, out="outputs", name="ring_gear")
     inspect(motor_mount(), method=method, out="outputs", name="motor_mount")

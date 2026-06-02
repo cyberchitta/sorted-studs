@@ -84,6 +84,8 @@ from cad_khana.printability.methods import FDM
 from params import (
     COL_INTERIOR_SIDE,
     COL_OUTER_SIDE,
+    COLLAR_CLEARANCE,
+    COLLAR_OD,
     FLOOR_H,
     MAX_BRICK_DIM,
     N_BASKETS_PER_FLOOR,
@@ -97,11 +99,8 @@ from params import (
 
 # Circular features on the column (rotating collar at mid-height,
 # top flange at the joint plane, optional bottom collar on base).
-# OD ≈ 138 — circumscribes the square section corners (96·√2 ≈ 135.8)
-# with ~1 mm radial overhang so the bearing rolls on a continuous
-# circular surface rather than only touching the four corners.
-COLLAR_CLEARANCE = 1.0
-COLLAR_OD = COL_OUTER_SIDE * math.sqrt(2) + 2 * COLLAR_CLEARANCE  # ≈ 138
+# COLLAR_OD / COLLAR_CLEARANCE live in params (shared with base_floor,
+# whose drive pinion meshes with the base column's bottom collar).
 COLLAR_T = 5.0
 
 # Hinge pin + knuckle

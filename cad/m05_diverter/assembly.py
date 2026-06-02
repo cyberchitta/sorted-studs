@@ -19,11 +19,11 @@ Each floor reuses the same sub-assemblies as `single_floor.py`:
   Each column carries a rotating collar at z_local 220..225 that the
   bearing of the floor *above* grips.
 - basket — `FLOOR_LAYOUT` (mixed N=6/9/12/18) replicated per floor.
-- base_floor — drive train (motor / drive shaft / motor mount) below
-  the rail datum on the base floor only. NOTE: drive_shaft is now
-  obsolete (Lego falls through the column axis); see m05_diverter/
-  NEXT_STEPS.md "Base-floor drive train" for the off-axis-pinion
-  rework.
+- base_floor — off-axis drive train (ring gear / pinion / motor /
+  motor mount) below the rail datum on the base floor only. The ring
+  gear bolts to the base column's bottom collar; an off-axis motor
+  drives it through a pinion. No central drive shaft — Lego falls
+  through the column axis.
 
 Cross-floor checks (the value the tower adds beyond `single_floor.py`):
 
@@ -173,12 +173,14 @@ def _add_baskets(
 
 
 def _add_drive_train(a: Assembly, idx: int, prefix: str) -> Assembly:
-    """Motor + drive shaft + motor mount below the base floor's rail
-    datum. Drive shaft is currently obsolete (see module docstring) —
-    kept in the model until the off-axis-pinion rework lands."""
+    """Off-axis motor + pinion + ring gear + motor mount below the base
+    floor's rail datum. The ring gear bolts to the base column's bottom
+    collar; the pinion on the off-axis motor shaft drives it. No central
+    drive shaft — bricks fall through the column axis."""
     fz_loc = Pos(0, 0, idx * FLOOR_H)
+    a = _add(a, f"{prefix}ring_gear", _base.ring_gear(), location=fz_loc)
+    a = _add(a, f"{prefix}pinion", _base.pinion(), location=fz_loc)
     a = _add(a, f"{prefix}motor", _base.motor(), location=fz_loc)
-    a = _add(a, f"{prefix}drive_shaft", _base.drive_shaft(), location=fz_loc)
     a = _add(a, f"{prefix}motor_mount", _base.motor_mount(), location=fz_loc)
     return a
 
@@ -269,24 +271,44 @@ def _add_top_deck_checks(a: Assembly, top_pre: str) -> Assembly:
 
 
 def _add_drive_train_checks(a: Assembly, base_pre: str) -> Assembly:
-    """Drive shaft / motor / motor mount clearance vs the base floor's
-    column-side stack, ramp_mechanism, and frame radials."""
-    shaft = f"{base_pre}drive_shaft"
+    """Off-axis drive train (ring gear / pinion / motor / mount)
+    clearance vs the base floor's column-side stack, ramp_mechanism, and
+    frame radials. The pinion↔ring-gear mesh is intentional contact —
+    validated numerically in base_floor — so that pair is excluded."""
+    ring = f"{base_pre}ring_gear"
+    pin = f"{base_pre}pinion"
     mtr = f"{base_pre}motor"
     mount = f"{base_pre}motor_mount"
 
-    # Drive shaft passes coaxially up through the column-bottom stack
-    # (spider hub ID ≫ shaft D, ring-bearing ID ≫ shaft D, column collar
-    # square hole ≫ shaft D).
+    # Ring gear bolts up to the base column's bottom collar (tangent at
+    # z = 0) and stacks just under the column-side bearing (z ∈ [0, 5]).
+    # No overlap with the bearing / spider — pure z stacking.
     a = (
         a
-        .assert_no_interference(shaft, f"{base_pre}column")
-        .assert_no_interference(shaft, f"{base_pre}ring_bearing")
-        .assert_no_interference(shaft, f"{base_pre}bearing_spider")
+        .assert_no_interference(ring, f"{base_pre}column")
+        .assert_no_interference(ring, f"{base_pre}ring_bearing")
+        .assert_no_interference(ring, f"{base_pre}bearing_spider")
     )
 
-    # Motor body vs base-floor frame + ramp_mechanism. Motor sits at
-    # z ∈ [-105, -25], well below every other modeled part.
+    # Pinion sits at z ∈ [-11, -1] on the off-axis drive axis, threaded
+    # between the Ø138 collar and the rail-inner ring. It must clear the
+    # radial rails (the tight packaging constraint — guarded numerically
+    # against the tip circle in base_floor) and stay below the bearing.
+    for k in range(6):
+        a = (
+            a
+            .assert_no_interference(pin, f"{base_pre}radial_inner_{k}")
+            .assert_no_interference(pin, f"{base_pre}radial_outer_{k}")
+        )
+    for other in (
+        f"{base_pre}column",
+        f"{base_pre}ring_bearing",
+        f"{base_pre}bearing_spider",
+    ):
+        a = a.assert_no_interference(pin, other)
+
+    # Motor body hangs at z ∈ [-65, -25], below every other modeled part
+    # and inside the rail-inner ring — clears the whole base floor.
     for other in (
         f"{base_pre}column",
         f"{base_pre}ring_bearing",
@@ -296,10 +318,17 @@ def _add_drive_train_checks(a: Assembly, base_pre: str) -> Assembly:
         f"{base_pre}trap_open",
     ):
         a = a.assert_no_interference(mtr, other)
+    for k in range(6):
+        a = (
+            a
+            .assert_no_interference(mtr, f"{base_pre}radial_inner_{k}")
+            .assert_no_interference(mtr, f"{base_pre}radial_outer_{k}")
+            .assert_no_interference(mtr, f"{base_pre}inner_horiz_{k}")
+        )
 
-    # Motor mount vs base-floor frame radials and inner hex (closest
-    # frame members radially). Outer hex / corner columns are ≥ 270 mm
-    # from axis, well outside the mount's 89 mm reach.
+    # Motor mount is a radial arm at z ∈ [-25, -20]; it bolts up into one
+    # rail (tangent at z = -20) and clears the others + the column-side
+    # stack (all at z ≥ 0).
     for k in range(6):
         a = (
             a
@@ -307,10 +336,6 @@ def _add_drive_train_checks(a: Assembly, base_pre: str) -> Assembly:
             .assert_no_interference(mount, f"{base_pre}radial_outer_{k}")
             .assert_no_interference(mount, f"{base_pre}inner_horiz_{k}")
         )
-
-    # Motor mount vs base-floor column-side stack. All ramp_mechanism
-    # base parts sit at z ≥ 0; the mount is at z ∈ [-25, -20]. Tangent
-    # contact nowhere — pure z separation.
     for other in (
         f"{base_pre}column",
         f"{base_pre}ring_bearing",

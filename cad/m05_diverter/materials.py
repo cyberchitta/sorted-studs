@@ -51,11 +51,12 @@ MATERIAL_OF: dict[str, str | None] = {
     "trap_open": "pla_matte",
     "lower_trap_open": "pla_matte",
     "motor_mount": "pla_matte",
+    "ring_gear": "pla_matte",
     **{name: "pla_matte" for name in _basket_basenames()},
     # Hardware
     "hinge_pin": "steel",
     "motor": "cast_aluminium_dark",
-    "drive_shaft": "steel",
+    "pinion": "steel",
     # Top deck
     "top_acrylic": "acrylic_clear",
 }

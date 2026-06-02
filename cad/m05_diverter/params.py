@@ -58,6 +58,18 @@ COL_WALL_T = 3.0
 COL_INTERIOR_SIDE = MAX_BRICK_DIM + 2 * BRICK_SLOP   # 90
 COL_OUTER_SIDE = COL_INTERIOR_SIDE + 2 * COL_WALL_T  # 96
 
+# Column circular-collar OD. Circular features on the column (rotating
+# collar at mid-height, top joint flange, base column's bottom collar)
+# all share this OD — it circumscribes the square section's corners
+# (96·√2 ≈ 135.8) with COLLAR_CLEARANCE radial overhang so a bearing
+# rolls on a continuous circular surface. Lives here (not inside
+# ramp_mechanism) because the base column's bottom collar is the drive
+# ring-gear pitch surface, so the sibling `base_floor` sub-assembly
+# needs it to size the pinion center distance — and sibling imports are
+# forbidden, params is the only shared surface.
+COLLAR_CLEARANCE = 1.0
+COLLAR_OD = COL_OUTER_SIDE * math.sqrt(2) + 2 * COLLAR_CLEARANCE  # ≈ 138
+
 # Hex circumradii (center → vertex). With Phase 1's rotation-aligned
 # layout, inner and outer hex vertices share azimuth (k+0.5)·60° =
 # basket boundaries; radial rails run along these directions and
