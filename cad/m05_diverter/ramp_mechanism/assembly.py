@@ -113,7 +113,12 @@ PIN_LEN = COL_OUTER_SIDE + 4.0
 TRAP_T = 4.0
 TRAP_W = 80.0                                 # ≤ MAX_BRICK_DIM; leaves ±Y for bosses
 TRAP_HINGE_X = COL_INTERIOR_SIDE / 2 - 7.0    # 38 — inset so knuckle clears +X wall
-TRAP_HINGE_Z = 185.0
+# Hinge height sets the fall budget hinge → basket rim (z=130 in the
+# basket sub-assembly): the steeper the ramp, the more of that budget
+# the slope consumes before the tip reaches the basket lip radius.
+# 195 is the ceiling — the trap-open free end + opening top already
+# graze the COL_Z_TOP - 5 assert below.
+TRAP_HINGE_Z = 195.0
 # Free end clears -X wall with 2 mm gap + knuckle radius absorbed
 TRAP_L = COL_INTERIOR_SIDE / 2 + TRAP_HINGE_X - 2.0 - KNUCKLE_OD / 2  # 76
 
@@ -130,18 +135,37 @@ BOSS_X_CENTER = COL_INTERIOR_SIDE / 2 - BOSS_X / 2      # 38.5
 BOSS_H_Z = 12.0
 
 # Ramp — fixed sloped plate, root below hinge knuckle, extends through exit
-RAMP_DEG = 20.0                               # slope below horizontal
+RAMP_DEG = 25.0                               # slope below horizontal
 RAMP_T = 4.0
 RAMP_W = 70.0                                 # ≤ opening width minus side margin
-RAMP_L = 110.0                                # length along slope direction
+RAMP_L = 112.0                                # length along slope direction
 RAMP_DROP_BELOW_HINGE = 10.0                  # Z offset below trap hinge
 RAMP_ROOT_X = COL_INTERIOR_SIDE / 2 - 2.0     # 43 — just inside +X wall
-RAMP_ROOT_Z = TRAP_HINGE_Z - RAMP_DROP_BELOW_HINGE  # 175
+RAMP_ROOT_Z = TRAP_HINGE_Z - RAMP_DROP_BELOW_HINGE  # 185
 
-# Ramp tip (for documentation / targeting sanity)
+# Slide condition: the brick must overcome static friction on the ramp,
+# i.e. tan(RAMP_DEG) > µ_s. ABS brick on a printed-PLA ramp is
+# µ_s ≈ 0.3–0.4; budget 0.45 adds headroom for dirt, wear, and layer
+# texture. 25° (tan = 0.466) clears the budget; 20° (tan = 0.364) sat
+# inside the µ_s range itself — bricks could stall on the ramp.
+MU_STATIC_BUDGET = 0.45
+assert math.tan(math.radians(RAMP_DEG)) >= MU_STATIC_BUDGET, (
+    f"RAMP_DEG ({RAMP_DEG}°, tan = {math.tan(math.radians(RAMP_DEG)):.3f}) "
+    f"below the static-friction budget µ = {MU_STATIC_BUDGET}; bricks "
+    f"may stall on the ramp. Steepen RAMP_DEG."
+)
+
+# Ramp tip — targeting + sweep-clearance interface. The ramp rotates
+# with the column, so every point of it radially outside the basket
+# inner lip must stay ABOVE the basket rim plane at all azimuths
+# (the radial side walls between baskets stand at the rim height).
+# RAMP_TIP_BOTTOM_Z is the lowest swept point (tip end's bottom
+# corner); the cross-boundary assert against BASKET_RIM_Z lives in
+# the top-level ../assembly.py (sibling imports are forbidden here).
 _RAMP_DEG_RAD = math.radians(RAMP_DEG)
 RAMP_TIP_X = RAMP_ROOT_X + RAMP_L * math.cos(_RAMP_DEG_RAD)
 RAMP_TIP_Z = RAMP_ROOT_Z - RAMP_L * math.sin(_RAMP_DEG_RAD)
+RAMP_TIP_BOTTOM_Z = RAMP_TIP_Z - (RAMP_T / 2) * math.cos(_RAMP_DEG_RAD)
 
 # Exit opening in the +X column wall — must pass the ramp plus a brick
 # sliding on top of it. Ramp enters the wall at x = COL_OUTER_SIDE/2.
@@ -242,7 +266,7 @@ assert _BUMP_R_OUTER + JOINT_BUMP_CLEARANCE_R <= COLLAR_OD / 2 - 2.0, (
 # Rotating collar — circular OD on the column at mid-height that the
 # bearing on the floor *above* grips (so this floor's bearing engages
 # the *lower* column's rotating collar). Sits at z_local = 220..225,
-# which falls inside `OPENING_Z_BOT.._TOP = 164..258` — so the collar
+# which falls inside `OPENING_Z_BOT.._TOP ≈ 174..268` — so the collar
 # is split by the +X opening into a ~270° partial ring. Mechanically
 # fine for low RPM / low load.
 ROT_COLLAR_T = COLLAR_T                              # 5.0
@@ -265,7 +289,7 @@ BEARING_Z_TOP = BEARING_Z_BOT + BEARING_T            # 5
 # Lower-floor trap intrusion. Floor below's trap at max-open (60°)
 # reaches up into this floor's frame to the Z below. With the bearing
 # at 0..5 and this floor's column-bottom at 53, the trap envelope
-# (~36 mm) sits in the open volume between them — the assertion is
+# (~46 mm) sits in the open volume between them — the assertion is
 # that it doesn't punch into either.
 LOWER_TRAP_OPEN_Z_MAX = (
     TRAP_HINGE_Z
@@ -485,7 +509,7 @@ def column(role: str = "middle") -> Part:
         )
 
     # Exit opening on +X wall — cuts the tube AND any circular feature
-    # that overlaps its z range (rotating collar at 220..225 ⊂ 164..258).
+    # that overlaps its z range (rotating collar at 220..225 ⊂ ≈174..268).
     cut_z_center = (OPENING_Z_TOP + OPENING_Z_BOT) / 2
     cut_h = OPENING_Z_TOP - OPENING_Z_BOT
     cut = Pos(COL_OUTER_SIDE, 0, cut_z_center) * Box(
@@ -562,7 +586,7 @@ ramp_loc = (
 # Lower-floor stand-ins (middle/top roles only; base has no floor below).
 # Both are mapped into this floor's frame via -FLOOR_H.
 # - lower_trap_open: the floor below's trap at max-open (60°). Reaches
-#   z ≈ 36 — must clear bearing/spider (z ≤ 5) and this floor's column
+#   z ≈ 46 — must clear bearing/spider (z ≤ 5) and this floor's column
 #   (z ≥ 53), with the open volume in between.
 # - lower_column: the floor below's column body. Its top reaches
 #   z = LOWER_COL_TOP_Z_MAX (= 53) and its rotating collar sits inside

@@ -33,7 +33,7 @@ Cross-floor checks (the value the tower adds beyond `single_floor.py`):
 - Lower column top (z = 273 in lower local) vs upper column bottom
   (z = 53 in upper local) tangent at the joint plane. The two flanges
   meet face-to-face; assert_no_interference allows that contact.
-- Lower floor's open-trap envelope (max-open free end at z ≈ 36 mm
+- Lower floor's open-trap envelope (max-open free end at z ≈ 46 mm
   above the upper floor's bracket) vs upper floor's column-bottom
   stack — the trap-open zone must thread cleanly between the bearing
   (z ≤ 5) and this floor's column-bottom (z ≥ 53).
@@ -66,6 +66,23 @@ from materials import material_of
 from frame import assembly as _frame
 from params import FLOOR_H, FLOOR_LAYOUT
 from ramp_mechanism import assembly as _ramp
+
+
+# --- Ramp sweep clearance (cross-sub-assembly) ---------------------------
+#
+# The ramp rotates with the column, sweeping over every basket's radial
+# side walls (which stand at BASKET_RIM_Z). Its lowest swept point — the
+# tip end's bottom corner — must clear the rim plane at all azimuths.
+# Parametric, because the geometric ramp-vs-basket check in
+# `single_floor.py` only covers the one basket the static model aims at.
+RAMP_SWEEP_CLEARANCE = 5.0
+assert _ramp.RAMP_TIP_BOTTOM_Z >= _bkt.BASKET_RIM_Z + RAMP_SWEEP_CLEARANCE, (
+    f"Ramp tip bottom (z = {_ramp.RAMP_TIP_BOTTOM_Z:.1f}) dips within "
+    f"{RAMP_SWEEP_CLEARANCE} mm of the basket rim plane "
+    f"(z = {_bkt.BASKET_RIM_Z:.1f}); the rotating ramp would strike "
+    f"basket side walls. Rebalance RAMP_DEG / RAMP_L / "
+    f"RAMP_DROP_BELOW_HINGE / TRAP_HINGE_Z."
+)
 
 
 # --- Top deck ----------------------------------------------------------

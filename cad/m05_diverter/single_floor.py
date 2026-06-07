@@ -146,6 +146,19 @@ for name in basket_names:
 # Ramp tip lands in the N=6 basket that straddles +X.
 assembly = assembly.assert_no_interference("basket_000_06", "ramp")
 
+# Sweep clearance: the ramp rotates with the column over every basket's
+# radial side walls (standing at BASKET_RIM_Z), but the static model
+# only aims it at basket_000_06 — so the geometric check above can't
+# catch a tip that dips below the rim plane at other azimuths.
+# Parametric guard, mirrored from the top-level `assembly.py`.
+RAMP_SWEEP_CLEARANCE = 5.0
+assert _ramp.RAMP_TIP_BOTTOM_Z >= _bkt.BASKET_RIM_Z + RAMP_SWEEP_CLEARANCE, (
+    f"Ramp tip bottom (z = {_ramp.RAMP_TIP_BOTTOM_Z:.1f}) dips within "
+    f"{RAMP_SWEEP_CLEARANCE} mm of the basket rim plane "
+    f"(z = {_bkt.BASKET_RIM_Z:.1f}); the rotating ramp would strike "
+    f"basket side walls."
+)
+
 # Every basket vs every frame copy of each part type. The frame has
 # 6-fold rotational symmetry but the mixed basket layout doesn't, so
 # every basket is checked against all six frame copies. This is also

@@ -18,7 +18,7 @@ R_BASKET_INNER = 130.0          # radial distance column axis → basket lip (mm
                                 # wall is a cylindrical arc at this radius
                                 # at every azimuth, so the lip overhangs
                                 # the ramp tip by `r_tip - R_BASKET_INNER`
-                                # = 16.4 mm uniformly across all basket
+                                # = 14.5 mm uniformly across all basket
                                 # sizes (N=6 / 9 / 12 / 18). The earlier
                                 # straight-chord inner wall let lip radius
                                 # vary 129.9 (N=6) → 147.7 (N=18); N=18
