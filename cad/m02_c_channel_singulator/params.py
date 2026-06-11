@@ -24,7 +24,7 @@ import math
 # don't routinely wedge mid-pass. Bumped from 180 (which gave only
 # 56 mm of exit-arc at the rim; bricks longer than ~55 mm spanned
 # the full arc with no behind-it gap for the next-in-line to
-# declump). See `cad/m02_integration_handoff.md` for the chain
+# declump). See `cad/m02_chain_design_rationale.md` for the chain
 # rationale.
 ROTOR_BASE_DIAMETER = 240.0
 
