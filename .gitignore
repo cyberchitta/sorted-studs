@@ -12,6 +12,10 @@ uv.lock
 # cad-khana build outputs
 cad/**/outputs/
 
+# Downloaded HDRI environment maps (Poly Haven). Third-party binaries,
+# re-downloadable, referenced by cad/m03_scanner/render.py. ~10 MB.
+cad/m03_scanner/assets/
+
 .DS_Store
 .commit-msg
 
