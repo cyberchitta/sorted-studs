@@ -14,7 +14,8 @@ The repository is in a **second CAD pass** — three modules (singulator, scanne
 - `docs/` — Module specifications (source of design intent).
 - `cad/` — Build123d / cad-khana assemblies. One directory per module under
   active CAD (`m02_c_channel_singulator`, `m03_scanner`, `m05_diverter`).
-  Each has its own `NEXT_STEPS.md` tracking the live design state.
+  Each has its own `_notes/cad/<module>/NEXT_STEPS.md` tracking the live
+  design state — see `_notes/` below.
   Top-level `cad/assembly.py` runs cross-module assertions.
   `cad/CLAUDE.md` documents the assembly decomposition conventions.
 - `subsite/` — Build-in-public eleventy site (bun-managed). Edits stay
@@ -74,7 +75,7 @@ Pairwise lens-axis separation is 109.47° — provably the most informative
 sorters that rely on a single top-down view. An earlier mirrors-and-one-camera
 topology at the same four vertex positions was abandoned in 2026-05-04 for
 cost, optical-tolerancing, and host-agnosticism reasons; see
-`cad/m03_scanner/cameras_design_notes.md`.
+`_notes/cad/m03_scanner/cameras_design_notes.md`.
 
 **Singulator (Module 2):** Cylindrical C-channel (spinning faceted rotor
 inside a fixed V-trough) with bricks riding the outer wall and falling off
@@ -86,7 +87,7 @@ basket rings around a central rotating column with per-floor ramp + trap.
 6 through-columns at inner + outer hex vertices, off-axis motor driving a
 ring gear on the base column's bottom collar. Compact vertical footprint;
 scales by stacking floors. Architecture committed; per-sub-assembly state
-in `cad/m05_diverter/NEXT_STEPS.md`.
+in `_notes/cad/m05_diverter/NEXT_STEPS.md`.
 
 **Classification (Module 4):** Two-stage model — separate part shape from
 color to avoid combinatorial explosion. ConvNeXt V2 Tiny backbone; metric
@@ -116,11 +117,26 @@ bin for manual review — fail-safe default throughout the design.
 
 ## Working in this repo
 
+- **Working notes — `_notes/`.** A symlink to a private `working-notes` repo,
+  gitignored here. Its layout mirrors the source tree, so a note sits at the
+  same relative path as the code it describes:
+
+  - `_notes/cad/m03_scanner/NEXT_STEPS.md` — per-module live design state
+  - `_notes/cad/m03_scanner/cameras_design_notes.md` — module design rationale
+  - `_notes/cad/m05_diverter/ramp_mechanism/NEXT_STEPS.md` — sub-assembly state
+  - `_notes/cad/archived/` — retired notes, folder layout mirroring `cad/`
+  - `_notes/subsite/NEXT_STEPS.md` — subsite state
+
+  **`Grep` and `Glob` cannot see through a symlink to a gitignored path**, so
+  these files are invisible to search — `Read` them by path, and `ls _notes/…`
+  to discover what is there. Write new notes into `_notes/`, never beside the
+  source.
+
 - **CAD changes.** Read `cad/CLAUDE.md` before editing any assembly. Run
   `.venv/bin/khana check <path>/assembly.py` on the touched sub-assembly and
   the enclosing top-level after any geometry change. Each module's
-  `NEXT_STEPS.md` is the live design state — update it in the same slice
-  as the geometry change.
+  `_notes/cad/<module>/NEXT_STEPS.md` is the live design state — update it in
+  the same slice as the geometry change.
 - **Subsite changes.** Edits stay uncommitted until the user signals
   "ready to publish."
 - **Commit drafts.** Save to `.commit-msg` at the project root; the user

@@ -34,8 +34,6 @@ export default function (eleventyConfig) {
 
   eleventyConfig.ignores.add('README.md');
   eleventyConfig.ignores.add('CLAUDE.md');
-  eleventyConfig.ignores.add('diverter_exhibit.md');
-  eleventyConfig.ignores.add('NEXT_STEPS.md');
 
   return {
     dir: { input: '.', output: '_site', includes: '_includes', data: '_data' },

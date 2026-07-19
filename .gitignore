@@ -16,3 +16,9 @@ cad/**/outputs/
 .commit-msg
 
 *.md
+
+# Working notes live in _notes/, a symlink to the private working-notes repo.
+# No trailing slash: git treats a symlink as a file, so `_notes/` would not
+# match it. The filename-pattern backstop DESIGN.md prescribes for this repo
+# (NEXT_STEPS.md, *_handoff.md, ...) is already subsumed by `*.md` above.
+_notes

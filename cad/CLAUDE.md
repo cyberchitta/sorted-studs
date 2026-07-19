@@ -106,10 +106,14 @@ done — exit 0 means assertions and printability inspects all passed.
 
 ## Commit message draft
 
-Whenever a CAD slice updates a module's `NEXT_STEPS.md` (or
-equivalent live progress doc), also save the corresponding commit
-message draft to `.commit-msg` at the project root in the same edit
-batch. The two updates pair: NEXT_STEPS records what landed in the
+Whenever a CAD slice updates a module's
+`_notes/cad/<module>/NEXT_STEPS.md` (or equivalent live progress doc),
+also save the corresponding commit message draft to `.commit-msg` at
+the project root in the same edit batch. The two updates pair —
+NEXT_STEPS is a working note in the private `working-notes` repo and
+`.commit-msg` is the public commit that will carry the geometry, so
+they land in two different repos. Don't leave one updated and the
+other stale. NEXT_STEPS records what landed in the
 sub-assembly tree, `.commit-msg` records the commit that will carry
 it. Don't leave one updated and the other stale.
 
@@ -127,13 +131,14 @@ every session here as an opportunity to improve `cad-khana` itself.
   cad-khana's `SKILL.md` — CWD-relative `outputs/`, coordinate-frame
   docstrings, where constants live, helper naming, assertion
   placement, etc. — log a one-liner observation in
-  `../cad-khana/field-notes.md` (uncommitted; see that file's
-  header). Include the concrete example (part name, symptom) so
+  `../cad-khana/_notes/field-notes.md` (a symlink into the private
+  `working-notes` repo; see that file's header). Include the concrete
+  example (part name, symptom) so
   future agents can judge whether the pattern repeats.
 - **Once 2–3 observations point at the same pattern, promote it
   into cad-khana** (SKILL.md description, SKILL.md body, or
-  `NOTES.md` as appropriate) and remove the matched field-notes
-  entries. Don't promote earlier — one-off accidents aren't
+  `../cad-khana/_notes/NOTES.md` as appropriate) and remove the
+  matched field-notes entries. Don't promote earlier — one-off accidents aren't
   patterns.
 - The threshold exists because SKILL.md is part of every future
   agent's system prompt; every line there costs context, and

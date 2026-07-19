@@ -114,7 +114,8 @@ azimuth. Both are compatible with the rest of the architecture.
 The live design state, open mechanical detail (column-to-column joint
 sub-options, base drive-train interface choice, trap actuator), and
 per-sub-assembly progress are tracked in
-[`../cad/m05_diverter/NEXT_STEPS.md`](../cad/m05_diverter/NEXT_STEPS.md).
+`../_notes/cad/m05_diverter/NEXT_STEPS.md` — a working note, not tracked in
+this repo.
 Full earlier-design narrative is in
 [`../cad/m05_diverter/hex-cascade.md`](../cad/m05_diverter/hex-cascade.md).
 
