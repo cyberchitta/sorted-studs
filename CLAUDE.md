@@ -127,10 +127,9 @@ bin for manual review — fail-safe default throughout the design.
   - `_notes/cad/archived/` — retired notes, folder layout mirroring `cad/`
   - `_notes/subsite/NEXT_STEPS.md` — subsite state
 
-  **`Grep` and `Glob` cannot see through a symlink to a gitignored path**, so
-  these files are invisible to search — `Read` them by path, and `ls _notes/…`
-  to discover what is there. Write new notes into `_notes/`, never beside the
-  source.
+  Invisible to the `Grep`/`Glob` tools (global `CLAUDE.md` has the `rg` forms).
+  `ls _notes/…` to discover what is there. Write new notes into `_notes/`,
+  never beside the source.
 
 - **CAD changes.** Read `cad/CLAUDE.md` before editing any assembly. Run
   `.venv/bin/khana check <path>/assembly.py` on the touched sub-assembly and
