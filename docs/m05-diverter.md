@@ -116,8 +116,8 @@ sub-options, base drive-train interface choice, trap actuator), and
 per-sub-assembly progress are tracked in
 `../_notes/state/m05-diverter.md` — a working note, not tracked in
 this repo.
-Full earlier-design narrative is in `../_notes/archive/m05-session-history.md`
-and `../_notes/archive/m05-ramp-session-history.md` — also working notes.
+The hex-tower concept, structure and parameter derivations are in
+`../_notes/decisions/m05-hex-cascade.md` — also a working note.
 
 ## Alternatives considered
 
