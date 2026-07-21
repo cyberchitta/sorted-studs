@@ -13,6 +13,15 @@ Guidance for organizing Build123d / cad-khana assemblies in this repo.
    module-local `params.py`; sibling-to-sibling imports are not
    allowed.
 
+   **A standalone green is a weaker claim than a top-level green.** The
+   module-local mirrors this principle requires go stale silently. The
+   turret's c5/c6 slices both reported `khana check` passing while the
+   kicker lever overlapped the cross rail by 216 mm³ and the kicker
+   mount foot by 1904 mm³ — the standalones were reading stale local
+   copies of constants their neighbours had already moved. Re-run the
+   enclosing top-level before calling a slice done; that is what the
+   mirrors cannot tell you.
+
 3. **Top-level assemblies hold cross-sub-assembly checks.** When an
    interference check spans two sub-systems (e.g. ramp tip vs basket
    lip), put it in a top-level `assembly.py` that sits alongside its
@@ -71,6 +80,13 @@ assertion suspect, and the rotation helpers (`rotation_for_normal`
 and friends) silently produce wrong placements when fed normals
 from the wrong frame.
 
+A wrong frame is not the only way to get a silently wrong placement.
+**build123d's `Rot(a, b, c)` composes as `Rx·Ry·Rz`, not `Rz·Ry·Rx`.**
+An early `rotation_for_normal` assumed the latter and placed *every*
+rev-1 mirror mount with an incorrect outward normal — with no
+assertion failure anywhere, because a wrong normal is not an overlap.
+See "What a green `khana check` does not mean" below.
+
 ## Directory layout example
 
 ```
@@ -104,6 +120,67 @@ workarounds.
 top-level `assembly.py` that includes it before claiming the slice is
 done — exit 0 means assertions and printability inspects all passed.
 
+## What a green `khana check` does not mean
+
+Exit 0 means *no interference and printability passed, at the poses you
+built*. Five classes of real defect have shipped past a green check in
+this repo, each costing a redesign slice. When a slice depends on one of
+these, the check is not your evidence — find the one that is.
+
+- **Orientation.** A wrong outward normal is not an overlap. Every rev-1
+  mirror mount was placed facing the wrong way with all assertions
+  passing; it surfaced only when a floor bracket tried to tangent-contact
+  the mount plate's back face. When a part's *facing* carries function,
+  assert a tangent contact against the surface it must face.
+- **Direction of motion.** Static REST geometry says nothing about which
+  way a mechanism travels. The dump kicker pushed the platform
+  outer-**up** — brick slides inward, backwards — for several slices,
+  while its docstring asserted the opposite throughout. Check the sign at
+  a non-REST pose; a docstring claiming kinematics is not evidence.
+- **Visibility.** Nothing in `check()` sees a camera frustum. The kicker
+  tab cleared every part geometrically and sat plainly visible in the
+  scan frame; the photoreal render is what caught it. Render before
+  trusting any optical or dataset-quality claim.
+- **Physical reality across units.** Two independently floor-standing
+  assemblies at different local floor heights pass cross-unit checks
+  while being unbuildable — they share one bench. A shared datum must be
+  asserted; the check cannot infer it.
+- **The poses you did not sample.** A single-pose assertion carries an
+  implicit worst-case claim. `lower_trap_open` is asserted at 60° alone
+  because 60° bounds the upward-intrusion envelope *at the current*
+  `TRAP_L` / `TRAP_OPEN_DEG`. Write that claim beside the assert, or it
+  expires silently when the parameter moves.
+
+Two habits that keep the check honest:
+
+- **Turn every fixed interference into a named regression assert**, and
+  write a known-bad overlap as `assert_interference(reason=…)` rather
+  than skipping it. A positive assertion self-fails the moment the
+  redesign lands, so it cannot rot into folklore.
+- **Verification expires when its substrate changes.** The ramp sweep
+  results were derived on pre-rail basket geometry and were quietly
+  invalid afterwards. Re-run it; don't cite it.
+
+## Right-size the plan to the change
+
+A multi-slice plan is a commitment device. Writing one before the
+topology is verified is what led the dump-mechanism work to commit to a
+cam topology across five slices and then roll back — the difficulty was
+topology-specific, not intrinsic, and one page of first-principles
+re-derivation found the servo answer that made the whole cascade moot.
+
+- When interference volumes get *large* (~16 600 mm³ of forced overlaps,
+  in that case), read it as a signal the **topology** is wrong, not that
+  the numbers need tuning. Swapping one conflicted topology for another
+  trades a kinematic conflict for a geometric one.
+- **Re-price a prior rejection rather than inheriting it.** A
+  one-paragraph dismissal in an earlier handoff is not evidence; the
+  rejected path was re-opened and the objection was wrong on three
+  counts.
+- **Question the constraint before optimising inside it.** "Is 'no
+  electronics for dumping' actually hard?" collapsed an entire design
+  document to "use a servo."
+
 ## Commit message draft
 
 Whenever a CAD slice updates a module's
@@ -112,10 +189,9 @@ also save the corresponding commit message draft to `.commit-msg` at
 the project root in the same edit batch. The two updates pair —
 NEXT_STEPS is a working note in the private `working-notes` repo and
 `.commit-msg` is the public commit that will carry the geometry, so
-they land in two different repos. Don't leave one updated and the
-other stale. NEXT_STEPS records what landed in the
-sub-assembly tree, `.commit-msg` records the commit that will carry
-it. Don't leave one updated and the other stale.
+they land in two different repos. NEXT_STEPS records what landed in
+the sub-assembly tree, `.commit-msg` records the commit that will
+carry it. Don't leave one updated and the other stale.
 
 Follow the global commit-message convention from `~/.claude/CLAUDE.md`
 (single-line conventional subject, co-author trailer, body only when
