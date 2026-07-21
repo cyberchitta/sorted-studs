@@ -89,7 +89,7 @@ from params import (  # noqa: E402
 
 # --- AI-Thinker ESP32-CAM PCB geometry (private) ------------------------
 
-# PCB outline (rectangular). Source: cameras_design_notes.md, pending
+# PCB outline (rectangular). Source: _notes/decisions/m03-cameras.md, pending
 # caliper measurement on a real board.
 PCB_W = 40.5                      # along the long edge
 PCB_H = 27.0                      # along the short edge

@@ -130,7 +130,7 @@ OUTER_VERT_0_LOCAL_XY = (
 
 # --- S1 stage placement ------------------------------------------------
 
-# S1 m02 axis world location (see `cad/m02_chain_design_rationale.md`).
+# S1 m02 axis world location (see `_notes/decisions/m02-chain.md`).
 # The +360 in X comes from the chute-exit X (+205) + stator outer
 # radius at the V-cone top (R_STATOR_OUTER_KINK ≈ 155); +125 in Y
 # matches the LOAD centroid.

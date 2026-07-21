@@ -224,7 +224,7 @@ assert COL_Z_TOP >= max(OPENING_Z_TOP, _TRAP_FREE_Z_OPEN) + 5.0, (
 # Joint flange thickness at the column top. Top 5 mm of the column
 # carries a circular face flange (OD = COLLAR_OD) for end-to-end
 # coupling with the column above. Bas-relief interlock (Option A;
-# see m05_diverter/NEXT_STEPS.md "Column-to-column joint") — bumps on
+# see _notes/state/m05-diverter.md "Column-to-column joint") — bumps on
 # this flange's top face slot into matching depressions on the upper
 # column's bottom-flange face for tangential torque lock.
 JOINT_FLANGE_T = COLLAR_T                            # 5.0

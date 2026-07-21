@@ -19,7 +19,7 @@ The earlier sorted-studs design used a single physical camera plus three
 first-surface mirrors at the same four tetrahedral positions. That topology
 was abandoned in the 2026-05-04 rev-5 pivot for cost, optical-tolerancing,
 and host-agnosticism reasons; the rationale is captured in
-`_notes/cad/m03_scanner/cameras_design_notes.md`. **The four world-space viewpoint
+`_notes/decisions/m03-cameras.md`. **The four world-space viewpoint
 positions did not change** across the pivot (they were already a verified
 regular tetrahedron); only the device at each vertex changed from
 "mirror reflecting one shared camera" to "independent capture node".
@@ -168,7 +168,7 @@ table.
 - **Cost:** ~$12 each (~$48 for four).
 
 The full hardware-comparison rationale (vs. UVC, Pi GS, Pi HQ, ESP32-S3,
-Freenove) is in `_notes/cad/m03_scanner/cameras_design_notes.md`.
+Freenove) is in `_notes/decisions/m03-cameras.md`.
 
 ### Field of view
 
@@ -209,7 +209,7 @@ inference flexibility lives with whatever box runs the model.
   mirror/camera mounts used; clamps to the existing rev-3 sparse T-frame
   unchanged.
 - One physical-board validation print is required before printing four for
-  installation — see `_notes/cad/m03_scanner/cameras_design_notes.md`.
+  installation — see `_notes/decisions/m03-cameras.md`.
 
 ## Lighting
 
@@ -274,7 +274,7 @@ the platform at DUMP to drop the brick into the Module 5 diverter inlet.
 Calibration is fixed to the IMAGE world coordinates; the indexer's stop
 position must hold ±0.2 mm in X/Y and ±0.1° in tilt or the four platforms
 will produce slightly different images of the same brick. See
-`_notes/cad/m03_scanner/turret_design_brief.md` for the full turret design.
+`_notes/decisions/m03-turret.md` for the full turret design.
 
 ### Load cells (deferred)
 
@@ -436,5 +436,5 @@ shroud draped over the camera rig. The shroud carries no load.
 Tetrahedral viewpoint optimisation derived in
 [klods-syn `nbs/200_viewpoints.md`](../../klods-syn/nbs/200_viewpoints.md).
 Mirrors → cameras pivot rationale in
-`_notes/cad/m03_scanner/cameras_design_notes.md`. Hardware comparison and the
+`_notes/decisions/m03-cameras.md`. Hardware comparison and the
 full ESP32-CAM-vs-alternatives decision trail are in the same doc.

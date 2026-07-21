@@ -2,7 +2,7 @@
 M03 scanner — rev-3 turret arm spider (slice c of the 4-station turret).
 
 Standalone printed "spider" body that clamps to the slice (b) shaft top
-and carries the platform-side hinge for all 4 stations. NEXT_STEPS.md
+and carries the platform-side hinge for all 4 stations. _notes/state/m03-scanner.md
 originally read "4 instances ... single printed body parameterised by
 station index" — that turned out to be the wrong topology (4 separate
 arms stacked vertically on the shaft would force each platform to a

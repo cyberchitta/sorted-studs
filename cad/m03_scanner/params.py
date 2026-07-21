@@ -26,11 +26,11 @@ Tetrahedral verification (2026-05-05): all four camera vertices sit
 at exactly r = 160 mm from origin, and every pairwise dot product of
 unit-vectors-from-origin is −1/3 — the regular-tetrahedron signature
 (109.47° between every pair). Slice c2 shrunk r 250 → 160 (the
-3.6 mm M12 lens choice from ``rig_shrink_handoff.md``); rail anchors
+3.6 mm M12 lens choice from ``_notes/archive/m03-rig-shrink-handoff.md``); rail anchors
 follow from ``sizing.compute_geometry()``'s conservative envelope
 (mount_offset = plate_t + half_side = 30, rail_clear =
-mount_offset + RAIL/2 + GAP = 40.3). See ``cameras_design_notes.md``
-for the rev-5 pivot rationale and ``rig_shrink_handoff.md`` for the
+mount_offset + RAIL/2 + GAP = 40.3). See ``_notes/decisions/m03-cameras.md``
+for the rev-5 pivot rationale and ``_notes/archive/m03-rig-shrink-handoff.md`` for the
 shrink rationale.
 """
 
@@ -319,7 +319,7 @@ T_FRAME_RAIL_D_Y_BACK = +150.0                           # carries back-upper cl
 #      y = +55 keeps post -Y face at +45, ~3 mm clear of plate +Y
 #      reach plus CORNER_GAP. (Computed in `arch/assembly.py`'s
 #      sweep+plate clearance asserts; see also the 2026-05-07
-#      Progress entry in NEXT_STEPS.md for the diagnostic.)
+#      Progress entry in _notes/state/m03-scanner.md for the diagnostic.)
 #   3. FOV intrusion. Pushing the post farther in +Y moves it deeper
 #      into the back-upper camera's blind hemisphere and farther off
 #      every below-* lens axis — both strict improvements over the
@@ -447,7 +447,7 @@ RAIL_PAD_CLAMP_FRONT_LOW_CLAMP_ROT = Rot(-90, -90, 0)
 # --- Turret geometry ----------------------------------------------------
 #
 # 4-station rotary indexed turret described in
-# `turret_design_brief.md`. Hub axis at the turret-internal origin (the
+# `_notes/decisions/m03-turret.md`. Hub axis at the turret-internal origin (the
 # turret is placed at world ``Pos(0, +TURRET_ARM_R, 0)`` by
 # ``assembly.py``, so turret-internal origin maps to world
 # ``(0, +TURRET_ARM_R, *)``). Stations sit at distance TURRET_ARM_R
@@ -537,7 +537,7 @@ TURRET_FRAME_FLOOR_Z = -130.0                                # turret floor
 # follow-up slice that adds sightline-rod stub parts.
 #
 # Slice 2026-05-23 retired the shaft-mounted dump cam and bench
-# kicker (see `dump_servo_handoff.md`) — neither is on the shaft
+# kicker (see `_notes/archive/m03-dump-servo-handoff.md`) — neither is on the shaft
 # stack any more, so the compression budget no longer hinges on
 # cam-spider clearance. The dump now fires from a bench-mounted
 # hobby servo (`dump_servo/`); housing/pulley clearances are still
@@ -649,7 +649,7 @@ TURRET_HINGE_PIN_D = 5.0
 # heading, driving a short lifter arm that pushes up on the DUMP-pose
 # platform extension's drop block from below. Replaces the retired
 # shaft cam + bench kicker pair (`dump_cam/`, `dump_kicker/`) — see
-# `dump_servo_handoff.md` for the rationale and `turret_design_brief.md`
+# `_notes/archive/m03-dump-servo-handoff.md` for the rationale and `_notes/decisions/m03-turret.md`
 # §6.1 for the brief.
 #
 # Why a servo instead of a cam: the M3 control board already runs an

@@ -3,7 +3,7 @@
 Imports the composed top-level assembly (already module-level in
 ``assembly.py``) and hands it to chitra-cad. No detail-geometry or
 material override layers yet — both are deferred to a later slice
-(see ``NEXT_STEPS.md`` "Detailed geometry for rendering"). When the
+(see ``_notes/state/m02-singulator.md`` "Detailed geometry for rendering"). When the
 cad-khana ``Assembly.with_detailed_geometry`` API lands and m02
 grows a ``detail_variations.py``, fold it in here mirroring the m03
 ``render.py`` pattern.

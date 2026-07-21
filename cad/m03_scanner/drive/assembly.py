@@ -12,8 +12,8 @@ hanging from a printed L-bracket bolted to the slice (a) cross-rail's
 top T-slot.
 
 Drive direction was decided over Geneva and worm alternatives in the
-2026-04-30 turret discussion (see `turret_alternatives.md` and
-`turret_design_brief.md` §6.5): GT2 belt is the maker-default low-risk
+2026-04-30 turret discussion (see `_notes/archive/m03-turret-alternatives.md` and
+`_notes/decisions/m03-turret.md` §6.5): GT2 belt is the maker-default low-risk
 path. Worm gives self-locking dwell (no holding current) but tighter
 mounting constraints on aligning a 90° gearhead with the vertical
 shaft; Geneva gives mechanical phase-locking with the existing dump

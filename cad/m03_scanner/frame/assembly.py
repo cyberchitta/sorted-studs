@@ -4,7 +4,7 @@ M03 scanner — turret floor frame (Phase-2 integrated topology).
 Standalone freestanding 2020 floor frame on the m05 deck top face
 (world z = +890; turret-local z = -130 after the c7 floor rise), the
 mechanical interface for the 4-station turret described in
-`../turret_design_brief.md` *and* the rig-side anchor for the
+`_notes/decisions/m03-turret.md` *and* the rig-side anchor for the
 camera-rig below-* clamps + arch posts after the Phase-2 integrate
 (see `../integrated_frame_handoff.md`).
 

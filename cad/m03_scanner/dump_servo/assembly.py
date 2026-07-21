@@ -6,7 +6,7 @@ Bench-mounted hobby servo (SG90 class) at the DUMP heading drives a
 short lifter arm that lands a pad under the IMAGE-pose drop block at
 the DUMP station. The MCU fires the servo on the rotor index pulse;
 mechanical timing isn't coupled to the shaft. See
-`turret_design_brief.md` §6.1.
+`_notes/decisions/m03-turret.md` §6.1.
 
 Members (1 stock + 2 printed):
   * servo_body    — stock SG90-class hobby servo, modelled as a single

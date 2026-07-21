@@ -186,7 +186,7 @@ re-derivation found the servo answer that made the whole cascade moot.
 A slice lands in **two repos**, and neither is optional:
 
 - the geometry, committed to `sorted-studs`;
-- the module's `_notes/cad/<module>/NEXT_STEPS.md` (or equivalent live
+- the module's `_notes/state/<module>.md` (or equivalent live
   progress doc), which records what landed — a working note in the
   private `working-notes` repo.
 

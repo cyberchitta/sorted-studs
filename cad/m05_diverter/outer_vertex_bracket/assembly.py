@@ -6,7 +6,7 @@ at every outer-hex vertex: two outer-hex ring edges meeting at 120°
 interior angle, one **radial** 2020 extrusion running inward from
 the vertex along the bisector toward the inner hex, and one
 **through-column** vertical 2020 extrusion that passes continuously
-through every floor (see `hex-cascade.md`). The bracket does not
+through every floor (see `_notes/state/m05-diverter.md`). The bracket does not
 support the column's bottom; it clamps the column's side via a
 T-slot connection at this floor's Z.
 

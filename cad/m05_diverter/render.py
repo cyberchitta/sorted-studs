@@ -8,7 +8,7 @@ handing it to chitra-cad:
     20×20×L Box stub for a real V-slot profile from ``bd_warehouse``.
     Same pose, same material/color; only the underlying shape
     changes. Fasteners / joint hardware are deferred to a follow-up
-    slice (see ``NEXT_STEPS.md``).
+    slice (see ``_notes/state/m05-diverter.md``).
 
 Lighting and camera framing come from chitra-cad's defaults; do not
 author them here.

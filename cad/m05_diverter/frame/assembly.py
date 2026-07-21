@@ -34,7 +34,7 @@ Vertical corner columns are modeled as **through-columns**: they
 extend *below* the floor datum too so the (now-flipped) outer-vertex
 bracket can clamp the column at z < 0 as well as above. In the real
 tower each column is a single extrusion spanning all floors (see
-`hex-cascade.md`); this per-floor model represents that by giving
+`_notes/state/m05-diverter.md`); this per-floor model represents that by giving
 each column an extra VERT_EXT_BELOW mm below z=0. The same span
 applies to the inner-hex through-columns added alongside the outer
 set.

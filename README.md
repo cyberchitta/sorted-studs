@@ -171,8 +171,8 @@ Kept as design archive — not part of the current build path.
 ```
 docs/           Module specifications (the source of design intent).
 cad/            Build123d / cad-khana assemblies — one directory per module
-                under active CAD. Each has its own NEXT_STEPS.md tracking
-                live design state. Top-level cad/assembly.py composes the
+                under active CAD. Live design state is tracked in private
+                working notes. Top-level cad/assembly.py composes the
                 modules that have integrated cross-checks (currently m05
                 diverter + m03 turret unit).
 subsite/        Build-in-public eleventy site (bun-managed). Published

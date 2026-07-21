@@ -14,7 +14,7 @@ The repository is in a **second CAD pass** — three modules (singulator, scanne
 - `docs/` — Module specifications (source of design intent).
 - `cad/` — Build123d / cad-khana assemblies. One directory per module under
   active CAD (`m02_c_channel_singulator`, `m03_scanner`, `m05_diverter`).
-  Each has its own `_notes/cad/<module>/NEXT_STEPS.md` tracking the live
+  Each has its own `_notes/state/<module>.md` tracking the live
   design state — see `_notes/` below.
   Top-level `cad/assembly.py` runs cross-module assertions.
   `cad/CLAUDE.md` documents the assembly decomposition conventions.
@@ -75,7 +75,7 @@ Pairwise lens-axis separation is 109.47° — provably the most informative
 sorters that rely on a single top-down view. An earlier mirrors-and-one-camera
 topology at the same four vertex positions was abandoned in 2026-05-04 for
 cost, optical-tolerancing, and host-agnosticism reasons; see
-`_notes/cad/m03_scanner/cameras_design_notes.md`.
+`_notes/decisions/m03-cameras.md`.
 
 **Singulator (Module 2):** Cylindrical C-channel (spinning faceted rotor
 inside a fixed V-trough) with bricks riding the outer wall and falling off
@@ -87,7 +87,7 @@ basket rings around a central rotating column with per-floor ramp + trap.
 6 through-columns at inner + outer hex vertices, off-axis motor driving a
 ring gear on the base column's bottom collar. Compact vertical footprint;
 scales by stacking floors. Architecture committed; per-sub-assembly state
-in `_notes/cad/m05_diverter/NEXT_STEPS.md`.
+in `_notes/state/m05-diverter.md`.
 
 **Classification (Module 4):** Two-stage model — separate part shape from
 color to avoid combinatorial explosion. ConvNeXt V2 Tiny backbone; metric
@@ -118,23 +118,29 @@ bin for manual review — fail-safe default throughout the design.
 ## Working in this repo
 
 - **Working notes — `_notes/`.** A symlink to a private `working-notes` repo,
-  gitignored here. Its layout mirrors the source tree, so a note sits at the
-  same relative path as the code it describes:
+  gitignored here. Organised by **genre, not by source path** — one folder per
+  kind, module as a filename prefix, depth 2 (flattened 2026-07-21 from a
+  source-tree mirror):
 
-  - `_notes/cad/m03_scanner/NEXT_STEPS.md` — per-module live design state
-  - `_notes/cad/m03_scanner/cameras_design_notes.md` — module design rationale
-  - `_notes/cad/m05_diverter/ramp_mechanism/NEXT_STEPS.md` — sub-assembly state
-  - `_notes/cad/archived/` — retired notes, folder layout mirroring `cad/`
-  - `_notes/subsite/NEXT_STEPS.md` — subsite state
+  - `_notes/worklist.md` — index; says which file to open, holds no work itself
+  - `_notes/state/<module>.md` — per-module live design state (`m03-scanner`,
+    `m05-ramp-mechanism`, `cad-top-level`, `subsite`, …)
+  - `_notes/decisions/<module>-<topic>.md` — durable rationale; stable paths,
+    cited from `docs/` and from `params.py` docstrings
+  - `_notes/backlog/<module>.md` — prospective features
+  - `_notes/handoff/<topic>.md` — active task state
+  - `_notes/archive/<module>-<topic>.md` — closed; `archive/README.md` has the gate
+  - `_notes/lessons.md` — staging; drains to `cad/CLAUDE.md`, then to cad-khana
+  - `_notes/explorers/*.html` — standalone three.js geometry explorers
 
   Invisible to the `Grep`/`Glob` tools (global `CLAUDE.md` has the `rg` forms).
-  `ls _notes/…` to discover what is there. Write new notes into `_notes/`,
-  never beside the source.
+  Start at `_notes/worklist.md`. Write new notes into `_notes/`, never beside
+  the source.
 
 - **CAD changes.** Read `cad/CLAUDE.md` before editing any assembly. Run
   `.venv/bin/khana check <path>/assembly.py` on the touched sub-assembly and
   the enclosing top-level after any geometry change. Each module's
-  `_notes/cad/<module>/NEXT_STEPS.md` is the live design state — update it in
+  `_notes/state/<module>.md` is the live design state — update it in
   the same slice as the geometry change.
 - **Subsite changes.** Edits stay uncommitted until the user signals
   "ready to publish."

@@ -19,7 +19,7 @@ tower-global and carry no prefix. ``basename_of(...)`` strips the prefix so the
 target match is one set of basenames regardless of floor count.
 
 Fasteners (vertex-bracket bolts, motor mount bolts, joint hardware)
-are deferred to a follow-up slice — see ``NEXT_STEPS.md``.
+are deferred to a follow-up slice — see ``_notes/state/m05-diverter.md``.
 
 The bbox-derived V-slot helper is intentionally duplicated from
 m03's ``detail_variations.py``. When a third module needs detailed

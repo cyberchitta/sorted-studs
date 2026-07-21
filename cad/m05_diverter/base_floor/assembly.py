@@ -23,7 +23,7 @@ to the column's periphery instead:
   collar face (z = 0), teeth on its OD. Modeled cheap as a pitch
   annulus with the same square brick-pass-through hole as the collar.
   The "separate bolted-on ring vs teeth integral to the printed collar
-  OD" choice (see `m05_diverter/NEXT_STEPS.md`) is resolved here as the
+  OD" choice (see `_notes/state/m05-diverter.md`) is resolved here as the
   bolt-on ring: it keeps the gear off the structural column and
   swappable if the ratio changes, and leaves ramp_mechanism's
   `column("base")` untouched.
@@ -39,7 +39,7 @@ margin is the tight constraint and gets its own numeric guard.
 
 The base bearing (axial + radial + motor-reaction torque) currently
 re-uses the per-floor `ring_bearing` for the base role in
-ramp_mechanism — see `m05_diverter/NEXT_STEPS.md` for the open question
+ramp_mechanism — see `_notes/state/m05-diverter.md` for the open question
 on whether the base needs a heavier thrust+radial unit (or a
 commercial turntable) instead of the radial-only printed ring.
 

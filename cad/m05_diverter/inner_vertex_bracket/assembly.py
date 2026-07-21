@@ -8,7 +8,7 @@ to the outer-hex vertex, and one **inboard** 2020 radial extrusion
 running from the vertex in toward the spider hub (both rails sit
 with top face at z=0). A vertical 2020 through-column passes
 through the bracket at the vertex axis (see
-`../inner_columns_handoff.md`); the hub plate carries a square
+`_notes/archive/m05-inner-columns-handoff.md`); the hub plate carries a square
 cutout that clears the column footprint and a vertical clamp arm
 on the column's bracket-local -Y face grips it via two M5 bolts
 firing in +Y into the column's T-slot at z = 10 and z = 30.

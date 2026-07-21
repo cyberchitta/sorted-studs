@@ -32,7 +32,7 @@ does ``parts[name]`` and KeyErrors when an asserted part isn't present
 applied (cheap path), so the fastener doesn't exist there. We pair
 the assertions with the override application here instead so they
 fire only when the fastener is actually in the assembly. See
-``NEXT_STEPS.md`` for the open design point on this.
+``_notes/state/m03-scanner.md`` for the open design point on this.
 """
 
 from __future__ import annotations
