@@ -113,63 +113,56 @@ ended up at a singulator + diverter architecture much closer to
 LegoSpencer and team. The classification approach (multi-view tetrahedral
 camera station + ML) remains the sorted-studs original innovation.
 
-| What changed                     | sorted-studs choice                                                                        |
-| -------------------------------- | ------------------------------------------------------------------------------------------ |
-| TCS34725 colour sensor           | 4-camera tetrahedral scanning station ([Module 3](docs/m03-multi-view-scanner.md))         |
-| Arduino HSL classifier           | Mac + ConvNeXt V2 + 4× ESP32-CAM ([Module 4](docs/m04-classification-engine.md))           |
-| Flat V-channel singulator        | Cylindrical C-channel with faceted rotor ([Module 2](docs/m02-c-channel-singulator.md))    |
-| Small rotary diverter            | Hex tower cascade ([Module 5](docs/m05-diverter.md))                                       |
+| What changed                     | sorted-studs choice                                        |
+| -------------------------------- | ---------------------------------------------------------- |
+| TCS34725 colour sensor           | 4-camera tetrahedral scanning station (Module 3)           |
+| Arduino HSL classifier           | Mac + ConvNeXt V2 + 4× ESP32-CAM (Module 4)                |
+| Flat V-channel singulator        | Cylindrical C-channel with faceted rotor (Module 2)        |
+| Small rotary diverter            | Hex tower cascade (Module 5)                               |
 
 ---
 
 ## Modules
 
-Status tiers: **Spec** = `docs/mNN-*.md` only; **CAD** = `cad/mNN_*/` Build123d
-assembly in progress; **Built** = physically fabricated and tested.
+Status tiers: **Design** = worked out but no CAD yet; **CAD** = `cad/mNN_*/`
+Build123d assembly in progress; **Built** = physically fabricated and tested.
+
+> **On specifications.** Earlier drafts of the module specs were aspirational
+> rather than descriptive — they changed faster than the design did, and were
+> working notes wearing a spec's clothes. They have been pulled out of this
+> repo rather than left to mislead. Accurate specs will be written back, per
+> module, as each design actually settles.
 
 ### Hardware
 
-| #   | Module                                                        | Status | Spec |
-| --- | ------------------------------------------------------------- | ------ | ---- |
-| 2   | [C-Channel Singulator](docs/m02-c-channel-singulator.md)      | CAD    | 📄   |
-| 3   | [Multi-View Scanning Station](docs/m03-multi-view-scanner.md) | CAD    | 📄   |
-| 5   | [Hex Tower Diverter](docs/m05-diverter.md)                    | CAD    | 📄   |
+| #   | Module                      | Status |
+| --- | --------------------------- | ------ |
+| 2   | C-Channel Singulator        | CAD    |
+| 3   | Multi-View Scanning Station | CAD    |
+| 5   | Hex Tower Diverter          | CAD    |
 
 The C-channel singulator integrates the bulk-input hopper into its own
 extended-wall lid (the "Module 1" hopper / drum feeder is no longer a
-separate stage). Earlier hopper and singulation variants are kept as
-design archive under "Alternatives considered" below.
+separate stage). Earlier hopper and singulation variants — drum feeder,
+vibrating hopper, two-stage vibratory singulation — were explored and
+dropped; they are not part of the current build path.
 
 ### Software
 
-| #   | Module                                                            | Status | Spec |
-| --- | ----------------------------------------------------------------- | ------ | ---- |
-| 4   | [Brick Classification Engine](docs/m04-classification-engine.md)  | Spec   | 📄   |
-| 6   | [Inventory & Rebrickable Sync](docs/m06-inventory-rebrickable.md) | Spec   | 📄   |
-| 7   | [Set Coverage & Build Planner](docs/m07-set-coverage-planner.md)  | Spec   | 📄   |
-| 8   | [Packet Generator](docs/m08-packet-generator.md)                  | Spec   | 📄   |
-| 9   | [Control & Orchestration](docs/m09-control-orchestration.md)      | Spec   | 📄   |
-| 10  | [User Interface](docs/m10-user-interface.md)                      | Spec   | 📄   |
-
-### Alternatives considered
-
-Kept as design archive — not part of the current build path.
-
-- [Module 1 — Drum Feeder](docs/m01-drum-feeder.md) (from RobG's base design)
-- [Module 1 — Vibrating Hopper](docs/m01-vibrating-hopper.md)
-- [Module 2 — Two-Stage Vibratory Singulation](docs/m02-vibratory-singulation.md)
-
-### Reference
-
-- [Reference Projects & Prior Art](docs/reference-projects.md)
-- [Appendices (terminology, BOM, dev phases)](docs/appendices.md)
+| #   | Module                       | Status |
+| --- | ---------------------------- | ------ |
+| 4   | Brick Classification Engine  | Design |
+| 6   | Inventory & Rebrickable Sync | Design |
+| 7   | Set Coverage & Build Planner | Design |
+| 8   | Packet Generator             | Design |
+| 9   | Control & Orchestration      | Design |
+| 10  | User Interface               | Design |
 
 ---
 
 ## Repository Layout
 
 ```
-docs/           Module specifications (the source of design intent).
 cad/            Build123d / cad-khana assemblies — one directory per module
                 under active CAD. Live design state is tracked in private
                 working notes. Top-level cad/assembly.py composes the

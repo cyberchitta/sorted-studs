@@ -17,12 +17,14 @@ cad/**/outputs/
 cad/m03_scanner/assets/
 
 .DS_Store
-.commit-msg
-
-*.md
 
 # Working notes live in _notes/, a symlink to the private working-notes repo.
 # No trailing slash: git treats a symlink as a file, so `_notes/` would not
-# match it. The filename-pattern backstop DESIGN.md prescribes for this repo
-# (NEXT_STEPS.md, *_handoff.md, ...) is already subsumed by `*.md` above.
+# match it.
+#
+# NOTE: a blanket `*.md` used to sit above this, which incidentally served as
+# the filename-pattern backstop DESIGN.md prescribes (NEXT_STEPS.md,
+# *_handoff.md, ...). It was removed 2026-07-21 so tracked specs can live in
+# the repo again — so that backstop is now ABSENT. A working note written
+# beside the source instead of into _notes/ will no longer be ignored.
 _notes

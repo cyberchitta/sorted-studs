@@ -11,7 +11,8 @@ The repository is in a **second CAD pass** — three modules (singulator, scanne
 ## Repository Structure
 
 - `README.md` — System overview, modules table, dev phases (public-facing).
-- `docs/` — Module specifications (source of design intent).
+  (No `docs/` — the aspirational module specs moved to `_notes/specs/`
+  on 2026-07-21; accurate ones get written back per module as designs settle.)
 - `cad/` — Build123d / cad-khana assemblies. One directory per module under
   active CAD (`m02_c_channel_singulator`, `m03_scanner`, `m05_diverter`).
   Each has its own `_notes/state/<module>.md` tracking the live
@@ -46,24 +47,25 @@ taking the Mac's role without changing the cameras.
 
 ### Module Map
 
-Status tiers: **Spec** = `docs/` only; **CAD** = `cad/mNN_*/` assembly in
-progress; **Built** = physically fabricated.
+Status tiers: **Design** = `_notes/specs/` draft only; **CAD** = `cad/mNN_*/`
+assembly in progress; **Built** = physically fabricated. Treat everything in
+`_notes/specs/` as aspirational until rewritten — that is why it left `docs/`.
 
 | #   | Module                       | Status |
 | --- | ---------------------------- | ------ |
 | 2   | C-Channel Singulator         | CAD    |
 | 3   | Multi-View Scanning Station  | CAD    |
-| 4   | Brick Classification Engine  | Spec   |
+| 4   | Brick Classification Engine  | Design |
 | 5   | Hex Tower Diverter           | CAD    |
-| 6   | Inventory & Rebrickable Sync | Spec   |
-| 7   | Set Coverage & Build Planner | Spec   |
-| 8   | Packet Generator             | Spec   |
-| 9   | Control & Orchestration      | Spec   |
-| 10  | User Interface               | Spec   |
+| 6   | Inventory & Rebrickable Sync | Design |
+| 7   | Set Coverage & Build Planner | Design |
+| 8   | Packet Generator             | Design |
+| 9   | Control & Orchestration      | Design |
+| 10  | User Interface               | Design |
 
 The C-channel singulator integrates the bulk-input hopper into its own
 extended-wall lid; separate hopper variants (drum feeder, vibrating hopper)
-are kept under `docs/` as design archive only.
+are kept in `_notes/specs/` as design archive only.
 
 ### Key Design Decisions
 
@@ -126,7 +128,10 @@ bin for manual review — fail-safe default throughout the design.
   - `_notes/state/<module>.md` — per-module live design state (`m03-scanner`,
     `m05-ramp-mechanism`, `cad-top-level`, `subsite`, …)
   - `_notes/decisions/<module>-<topic>.md` — durable rationale; stable paths,
-    cited from `docs/` and from `params.py` docstrings
+    cited from `params.py` docstrings
+  - `_notes/specs/<module>-<name>.md` — the former `docs/` module specs.
+    **Aspirational, not descriptive** — they changed faster than the design
+    and are not a source of truth; check against `state/` and the CAD
   - `_notes/backlog/<module>.md` — prospective features
   - `_notes/handoff/<topic>.md` — active task state
   - `_notes/archive/<module>-<topic>.md` — closed; `archive/README.md` has the gate

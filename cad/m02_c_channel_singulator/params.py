@@ -5,7 +5,7 @@ exit_sensor) must agree on. Sub-assembly-internal details stay in that
 sub-assembly's file.
 
 Cross-module inputs:
-- #channel_v_angle (docs/parameters.md) → V_HALF_ANGLE_DEG
+- #channel_v_angle (_notes/specs/parameters.md) → V_HALF_ANGLE_DEG
 - #channel_wall_height                  → STATOR_WALL_H
 - #print_clearance                      → MOTOR_SHAFT_BORE_CLEARANCE
 """
