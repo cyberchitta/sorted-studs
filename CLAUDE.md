@@ -138,5 +138,6 @@ bin for manual review — fail-safe default throughout the design.
   the same slice as the geometry change.
 - **Subsite changes.** Edits stay uncommitted until the user signals
   "ready to publish."
-- **Commit drafts.** Save to `.commit-msg` at the project root; the user
-  runs the actual `git commit`.
+- **Commits.** Write the message straight into git (heredoc on stdin),
+  with a pathspec on `git commit`. See the global `CLAUDE.md` — this repo
+  has no local exception.

@@ -181,21 +181,24 @@ re-derivation found the servo answer that made the whole cascade moot.
   electronics for dumping' actually hard?" collapsed an entire design
   document to "use a servo."
 
-## Commit message draft
+## Landing a CAD slice
 
-Whenever a CAD slice updates a module's
-`_notes/cad/<module>/NEXT_STEPS.md` (or equivalent live progress doc),
-also save the corresponding commit message draft to `.commit-msg` at
-the project root in the same edit batch. The two updates pair —
-NEXT_STEPS is a working note in the private `working-notes` repo and
-`.commit-msg` is the public commit that will carry the geometry, so
-they land in two different repos. NEXT_STEPS records what landed in
-the sub-assembly tree, `.commit-msg` records the commit that will
-carry it. Don't leave one updated and the other stale.
+A slice lands in **two repos**, and neither is optional:
 
-Follow the global commit-message convention from `~/.claude/CLAUDE.md`
-(single-line conventional subject, co-author trailer, body only when
-it earns its place).
+- the geometry, committed to `sorted-studs`;
+- the module's `_notes/cad/<module>/NEXT_STEPS.md` (or equivalent live
+  progress doc), which records what landed — a working note in the
+  private `working-notes` repo.
+
+Update both in the same edit batch. Don't leave one current and the
+other stale. They cannot land atomically (different repos), and that
+drift is accepted — but only when both sides are actually written.
+
+Commit message convention, pathspec discipline and the notes commit
+cadence all come from the global `~/.claude/CLAUDE.md` and the
+`working-notes` skill; this repo has no local exception. In
+particular the message goes **straight into git**, never through a
+`.commit-msg` file.
 
 ## Feeding observations back to cad-khana
 
