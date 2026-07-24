@@ -203,42 +203,33 @@ def add_camera_rig(a: Assembly) -> Assembly:
     return a
 
 
-# --- Kinematic joint table (turret-local) ------------------------------
+# --- Kinematic hinge pin (cartridge-local) -----------------------------
 #
-# Each station's pin geometry, expressed in turret-local. Positive
-# joint angle tips the radially-outward edge DOWN regardless of
-# station — the axis direction is chosen by the right-hand rule on
-# (pin_axis × outer_radial) so the four platforms share one driver
-# signal. Pin axes are X- or Y-aligned because the platforms sit on
-# cardinal headings; this keeps the rotation a plain axis-angle
-# (no arbitrary-axis math).
-#
-#   station   outer dir   pin axis along   joint axis direction
-#   image     +Y          ±X               (-1,  0, 0)
-#   load      +X          ±Y               ( 0, +1, 0)
-#   idle      -X          ±Y               ( 0, -1, 0)
-#   dump      -Y          ±X               (+1,  0, 0)
-#
-# Pin position = (radial-X, radial-Y, TURRET_HINGE_PIN_Z) where
-# (radial-X, radial-Y) points from hub to the station's hinge edge.
+# One axis for all four stations. The cartridge is built with outward
+# along +Y and the pin along ±X (see turret_platform), so in
+# cartridge-local the hinge pin sits inboard of the centroid at
+# y = PIN_RADIAL - ARM_R with direction (-1, 0, 0) — positive joint
+# angle tips the outward (+Y) edge DOWN by the right-hand rule. The
+# joint is declared ``frame="local"``: each station's ``location=``
+# (centroid + Rz) rotates the axis with the cartridge, which is what
+# previously required a per-station parent-frame axis table here.
 
-_PLATFORM_PIN_TURRET = {
-    "image": ((0.0, +TURRET_HINGE_PIN_RADIAL, TURRET_HINGE_PIN_Z),
-              (-1.0, 0.0, 0.0)),
-    "load":  ((+TURRET_HINGE_PIN_RADIAL, 0.0, TURRET_HINGE_PIN_Z),
-              (0.0, +1.0, 0.0)),
-    "idle":  ((-TURRET_HINGE_PIN_RADIAL, 0.0, TURRET_HINGE_PIN_Z),
-              (0.0, -1.0, 0.0)),
-    "dump":  ((0.0, -TURRET_HINGE_PIN_RADIAL, TURRET_HINGE_PIN_Z),
-              (+1.0, 0.0, 0.0)),
-}
+_PLATFORM_PIN_LOCAL = RevoluteJoint(
+    axis=Axis(
+        (0.0, TURRET_HINGE_PIN_RADIAL - TURRET_ARM_R, TURRET_HINGE_PIN_Z),
+        (-1.0, 0.0, 0.0),
+    ),
+    angle_deg=0.0,
+    frame="local",
+)
 
 
 def _build_platform_subassembly(station: str) -> Assembly:
     """Cartridge-local platform sub-assembly. Parts are placed at
     cartridge identity; the station's centroid + Rz are folded into
-    ``location=`` at ``with_subassembly`` time, and the per-station
-    pin axis lives in the sub-assembly's ``joint``."""
+    ``location=`` at ``with_subassembly`` time, and the shared
+    cartridge-local pin axis (``_PLATFORM_PIN_LOCAL``) rides along as
+    the sub-assembly's ``joint``."""
     sub = Assembly()
     for sub_name, image_loc in _turret_platform._IMAGE_LOCS:
         full_name = f"platform_{station}_{sub_name}"
@@ -275,7 +266,6 @@ def _build_turret_rotor() -> Assembly:
     rotor = _drive.add_turret_drive_rotor(rotor)
     rotor = _homing.add_turret_homing_rotor(rotor)
     for station in TURRET_STATIONS:
-        pin_pos, pin_dir = _PLATFORM_PIN_TURRET[station]
         rotor = rotor.with_subassembly(
             f"platform_{station}",
             _build_platform_subassembly(station),
@@ -283,7 +273,7 @@ def _build_turret_rotor() -> Assembly:
                 _turret_platform._STATION_CENTROIDS[station]
                 * Rot(0, 0, _turret_platform.STATION_ANGLES[station])
             ),
-            joint=RevoluteJoint(axis=Axis(pin_pos, pin_dir), angle_deg=0.0),
+            joint=_PLATFORM_PIN_LOCAL,
         )
     return rotor
 
@@ -307,19 +297,20 @@ def add_turret(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
         + motor pulley, homing sensor + bracket, servo bracket + body)
         sit flat on ``a``, lifted by ``base`` to m03-local.
       * ``turret_rotor`` is a sub-assembly whose ``RevoluteJoint``
-        about the m03-local Z axis through the hub drives the spider
-        rotation. Inside the rotor live four ``platform_<station>``
-        sub-sub-assemblies, each with its own pin-axis joint in
-        turret-local — only the platform parked at DUMP tilts during
-        a dwell, but the same axis table covers any station.
-      * ``servo_arm`` is a sub-assembly with its servo-shaft joint
-        in m03-local; the bracket + body remain static.
+        about the turret-local Z axis through the hub drives the
+        spider rotation. Inside the rotor live four
+        ``platform_<station>`` sub-sub-assemblies sharing one
+        cartridge-local pin joint (``_PLATFORM_PIN_LOCAL``) — only the
+        platform parked at DUMP tilts during a dwell, but the same
+        axis covers any station.
+      * ``servo_arm`` is a sub-assembly with its servo-shaft joint on
+        the same terms; the bracket + body remain static.
 
-    Joint axes attached to a sub-assembly are interpreted in the
-    parent's frame. The rotor and the arm live in the m03 root, so
-    their axes use m03-local coordinates (= ``base * turret-local``);
-    the platforms live inside the rotor, so their axes stay in
-    turret-local (= the rotor's parts' frame)."""
+    All three joints are ``frame="local"``: each axis is written in
+    the jointed sub-assembly's own frame (turret-local for the rotor
+    and the arm, cartridge-local for the platforms), and the
+    ``location=`` placement carries it to the parent — no
+    ``base``-composed axis math at this level."""
     # Static frame (in m03-local via `base`).
     a = _frame.add_turret_frame(a, base=base)
     a = _hub.add_turret_hub_static(a, base=base)
@@ -327,43 +318,40 @@ def add_turret(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
     a = _homing.add_turret_homing_static(a, base=base)
     a = _dump_servo.add_turret_dump_servo_static(a, base=base)
 
-    # Rotor — placed at `base`, joint about the m03-local Z axis
+    # Rotor — placed at `base`; joint about the turret-local Z axis
     # through the hub. (Z is parallel to itself everywhere, so the
     # pivot's Z value is irrelevant; pick 0 for clarity.)
-    hub_m03 = base * Pos(TURRET_HUB_X, TURRET_HUB_Y, 0.0)
     a = a.with_subassembly(
         "turret_rotor",
         _build_turret_rotor(),
         location=base,
         joint=RevoluteJoint(
-            axis=Axis(
-                (hub_m03.position.X, hub_m03.position.Y, hub_m03.position.Z),
-                (0.0, 0.0, 1.0),
-            ),
+            axis=Axis((TURRET_HUB_X, TURRET_HUB_Y, 0.0), (0.0, 0.0, 1.0)),
             angle_deg=0.0,
+            frame="local",
         ),
     )
 
-    # Servo arm — bench-mounted at `base`, joint about the servo
-    # output shaft (m03-local axis along -Y so positive joint angle =
-    # lifter pad up; same sign convention as the retired kicker_lever
-    # so animated_assembly.py can drive it from the same tilt_schedule
-    # without changing the schedule's sign).
-    pivot_m03 = base * Pos(
-        TURRET_DUMP_SERVO_PIVOT_X,
-        TURRET_DUMP_SERVO_PIVOT_Y,
-        TURRET_DUMP_SERVO_PIVOT_Z,
-    )
+    # Servo arm — bench-mounted at `base`; joint about the servo
+    # output shaft (turret-local axis along -Y so positive joint
+    # angle = lifter pad up; same sign convention as the retired
+    # kicker_lever so animated_assembly.py can drive it from the same
+    # tilt_schedule without changing the schedule's sign).
     a = a.with_subassembly(
         "servo_arm",
         _build_servo_arm_subassembly(),
         location=base,
         joint=RevoluteJoint(
             axis=Axis(
-                (pivot_m03.position.X, pivot_m03.position.Y, pivot_m03.position.Z),
+                (
+                    TURRET_DUMP_SERVO_PIVOT_X,
+                    TURRET_DUMP_SERVO_PIVOT_Y,
+                    TURRET_DUMP_SERVO_PIVOT_Z,
+                ),
                 (0.0, -1.0, 0.0),
             ),
             angle_deg=0.0,
+            frame="local",
         ),
     )
     return a
