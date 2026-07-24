@@ -209,11 +209,16 @@ def rotor(
 
 # --- Assembly ----------------------------------------------------------
 
-ROTOR_PART_NAMES = ("rotor",)
+def build_rotor() -> Assembly:
+    """Rotor sub-assembly in rotor-local frame (= m02-local: origin on
+    the rotation axis at the base plane). Single part; the parent
+    composes it as the ``rotor`` subtree and owns the spin DOF."""
+    return Assembly().with_part(
+        "rotor", rotor(), material=material_of("rotor"), color=color_of("rotor"),
+    )
 
-assembly = Assembly().with_part(
-    "rotor", rotor(), material=material_of("rotor"), color=color_of("rotor"),
-)
+
+assembly = build_rotor()
 
 
 if __name__ == "__main__":

@@ -205,11 +205,15 @@ def stator(
 
 # --- Assembly ----------------------------------------------------------
 
-STATOR_PART_NAMES = ("stator",)
+def build_stator() -> Assembly:
+    """Stator sub-assembly in stator-local frame (= m02-local: origin
+    on the rotor axis at the V-bottom). Single fixed part."""
+    return Assembly().with_part(
+        "stator", stator(), material=material_of("stator"), color=color_of("stator"),
+    )
 
-assembly = Assembly().with_part(
-    "stator", stator(), material=material_of("stator"), color=color_of("stator"),
-)
+
+assembly = build_stator()
 
 
 if __name__ == "__main__":

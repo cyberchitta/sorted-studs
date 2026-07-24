@@ -3,11 +3,12 @@ m02 chain — top-level standalone assembly.
 
 Composes the chain's structural skeleton — two column extensions
 (`col1_ext`, `col2_ext`) rising from the m05 top deck plane, and an
-S1 yoke crossbar (`s1__yoke`) spanning between them at the S1 m02
-V-bottom plane — plus the LOAD ramp (`s1__load_ramp`) and the
-spliced S1 m02 singulator (parts prefixed `s1__`). Coordinate frame,
-anchors, and the deferred stator-mounting interface are documented
-in `params.py`.
+S1 yoke crossbar (`yoke`) spanning between them at the S1 m02
+V-bottom plane — plus the LOAD ramp (`load_ramp`) and the S1 m02
+singulator as the `s1` subtree (part identity is the tree path:
+`s1.rotor.rotor`, `s1.drive.stem`, ...). Coordinate frame, anchors,
+and the deferred stator-mounting interface are documented in
+`params.py`.
 
 Cross-boundary checks (within the chain):
 
@@ -28,15 +29,18 @@ The m02 stator-mounting interface (handoff sub-task 2) is DEFERRED;
 the stator sits at its geometric S1 position with no plate / clamp /
 cradle modeled. See `params.py` module docstring.
 
-Composition strategy mirrors `cad/assembly.py`:
+Composition strategy:
 
 The m02 unit's `assembly.py` imports its own sub-modules via bare
 names (`from rotor import ...`) after a `sys.path.insert`, which
 collide with the chain's identically-named modules. We load it via
 `runpy.run_path` with the colliding cached modules evicted before
-and after, snapshot/restore `sys.path`, then re-add every part of
-the m02 assembly into the chain with a chain-local pose and `s1__`
-prefix.
+and after, snapshot/restore `sys.path`, then compose the loaded
+assembly as the `s1` subtree at its chain-local pose. The subtree
+keeps m02's own color/material bindings (no re-skin — the values
+come from the same shared palette machinery); m02's within-unit
+assertions ride along nested and are not evaluated by the chain's
+`check()` — the m02 standalone `khana check` validates them.
 """
 
 from __future__ import annotations
@@ -45,7 +49,7 @@ import runpy
 import sys
 from pathlib import Path
 
-from build123d import Box, Color, Location, Part, Pos, Rot
+from build123d import Box, Part, Pos, Rot
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -194,50 +198,6 @@ _M02_NS = _load_m02_namespace()
 _M02_ASSY: Assembly = _M02_NS["assembly"]
 
 
-# --- Splice helper -----------------------------------------------------
-
-def _splice_m02(
-    top: Assembly,
-    mod: Assembly,
-    base: Location,
-    prefix: str,
-) -> Assembly:
-    """Re-add every placed part from ``mod`` into ``top`` with its
-    location pre-multiplied by ``base``, name prefixed, and color /
-    material re-resolved through the chain's design system. Within-
-    unit assertions are dropped — the m02 standalone `khana check`
-    validates them.
-    """
-    for p in mod.parts:
-        full_name = f"{prefix}{p.name}"
-        top = top.with_part(
-            full_name,
-            p.part,
-            location=base * p.location,
-            color=color_of(full_name),
-            material=material_of(full_name),
-        )
-    return top
-
-
-# --- Design-system coverage --------------------------------------------
-
-# Every named chain part (chain-own + spliced m02) must appear in the
-# active design system. Mirrors the m02 / m05 coverage check pattern.
-
-_S1_PREFIX = "s1__"
-_CHAIN_OWN_NAMES = ("col1_ext", "col2_ext", f"{_S1_PREFIX}yoke", f"{_S1_PREFIX}load_ramp")
-_M02_PART_NAMES_LOCAL = tuple(p.name for p in _M02_ASSY.parts)
-_S1_M02_NAMES = tuple(f"{_S1_PREFIX}{n}" for n in _M02_PART_NAMES_LOCAL)
-_ALL_CHAIN_NAMES = _CHAIN_OWN_NAMES + _S1_M02_NAMES
-
-_untagged = [n for n in _ALL_CHAIN_NAMES if n not in DESIGN_SYSTEM.tag_of]
-assert not _untagged, (
-    f"{len(_untagged)} chain part(s) missing a tag for design system "
-    f"'{DESIGN_SYSTEM.name}' in design_systems.py: {_untagged}"
-)
-
-
 # --- Compose -----------------------------------------------------------
 
 def _kw(name: str) -> dict:
@@ -273,10 +233,10 @@ _RAMP_LOC = (
     * Rot(0, -RAMP_PITCH_DEG, 0)
 )
 
-# m02 splice base. Translate to S1 axis at the V-bottom plane, then
+# S1 m02 pose. Translate to S1 axis at the V-bottom plane, then
 # rotate by S1_M02_HEADING_DEG about Z so the chute fires in chain-local
 # -X (toward LOAD).
-_M02_SPLICE_BASE = (
+_S1_POSE = (
     Pos(S1_AXIS_LOCAL_XY[0], S1_AXIS_LOCAL_XY[1], S1_VBOT_Z_LOCAL)
     * Rot(0, 0, S1_M02_HEADING_DEG)
 )
@@ -286,47 +246,39 @@ assembly = (
     Assembly()
     .with_part("col1_ext", _column_ext(), location=_COL1_LOC, **_kw("col1_ext"))
     .with_part("col2_ext", _column_ext(), location=_COL2_LOC, **_kw("col2_ext"))
-    .with_part(
-        f"{_S1_PREFIX}yoke", _yoke_crossbar(),
-        location=_YOKE_LOC, **_kw(f"{_S1_PREFIX}yoke"),
-    )
-    .with_part(
-        f"{_S1_PREFIX}load_ramp", _load_ramp(),
-        location=_RAMP_LOC, **_kw(f"{_S1_PREFIX}load_ramp"),
-    )
+    .with_part("yoke", _yoke_crossbar(), location=_YOKE_LOC, **_kw("yoke"))
+    .with_part("load_ramp", _load_ramp(), location=_RAMP_LOC, **_kw("load_ramp"))
+    .with_subassembly("s1", _M02_ASSY, location=_S1_POSE)
 )
 
-assembly = _splice_m02(assembly, _M02_ASSY, _M02_SPLICE_BASE, _S1_PREFIX)
+
+# --- Design-system coverage --------------------------------------------
+#
+# Chain-own parts only: the s1 subtree carries m02's own bindings, and
+# m02's module-level coverage assert already ran during the runpy load.
+
+_untagged = [
+    p.name
+    for p in assembly.placed_parts
+    if not p.name.startswith("s1.") and p.name not in DESIGN_SYSTEM.tag_of
+]
+assert not _untagged, (
+    f"{len(_untagged)} chain part(s) missing a tag for design system "
+    f"'{DESIGN_SYSTEM.name}' in design_systems.py: {_untagged}"
+)
 
 
 # --- Intra-chain interference asserts ----------------------------------
 #
-# Chain skeleton parts vs m02 internals at S1. m02's standalone
-# `khana check` covers m02's internal pairs (rotor↔stator, rotor↔stem,
-# etc.); the chain only needs the cross-pair asserts.
+# Chain skeleton parts vs m02 internals at S1, plus skeleton
+# self-pairs. m02's internal pairs (rotor↔stator, rotor↔stem, etc.)
+# are covered by m02's standalone `khana check` — its assertions ride
+# along nested and are not evaluated here.
 
-_CHAIN_SKELETON = ("col1_ext", "col2_ext", f"{_S1_PREFIX}yoke", f"{_S1_PREFIX}load_ramp")
-_S1_M02_TARGETS = (
-    f"{_S1_PREFIX}rotor",
-    f"{_S1_PREFIX}stator",
-    f"{_S1_PREFIX}stem",
-    f"{_S1_PREFIX}motor",
-)
+_CHAIN_SKELETON = ("col1_ext", "col2_ext", "yoke", "load_ramp")
 
-for s in _CHAIN_SKELETON:
-    for m in _S1_M02_TARGETS:
-        assembly = assembly.assert_no_interference(s, m)
-
-# Chain skeleton self-pairs (columns vs yoke, ramp vs columns).
-for a, b in (
-    ("col1_ext", f"{_S1_PREFIX}yoke"),
-    ("col2_ext", f"{_S1_PREFIX}yoke"),
-    ("col1_ext", "col2_ext"),
-    (f"{_S1_PREFIX}load_ramp", "col1_ext"),
-    (f"{_S1_PREFIX}load_ramp", "col2_ext"),
-    (f"{_S1_PREFIX}load_ramp", f"{_S1_PREFIX}yoke"),
-):
-    assembly = assembly.assert_no_interference(a, b)
+assembly = assembly.assert_no_interference_between(_CHAIN_SKELETON, "s1")
+assembly = assembly.assert_no_interference_within(_CHAIN_SKELETON)
 
 
 if __name__ == "__main__":

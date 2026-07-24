@@ -1,28 +1,20 @@
 """m02 chain — per-part materials.
 
-Column extensions and yokes are 2020 aluminum extrusion. The stator
-support plate and the LOAD ramp are FDM-printed. Spliced m02 parts
-inherit m02's materials (PLA matte for printed parts, cast aluminum
-for the NEMA-17 motor body).
+Chain-own parts only: column extensions and yokes are 2020 aluminum
+extrusion; the stator support plate and the LOAD ramp are
+FDM-printed. The `s1` m02 subtree carries m02's own materials
+(bound in `cad/m02_c_channel_singulator/materials.py`).
 """
 
 from __future__ import annotations
 
 
-_S1_PREFIX = "s1__"
-
-
 MATERIAL_OF: dict[str, str | None] = {
-    "col1_ext":                    "aluminium_anodized",
-    "col2_ext":                    "aluminium_anodized",
-    f"{_S1_PREFIX}yoke":           "aluminium_anodized",
-    f"{_S1_PREFIX}stator_plate":   "pla_matte",
-    f"{_S1_PREFIX}load_ramp":      "pla_matte",
-    # Spliced m02 parts — mirror cad/m02_c_channel_singulator/materials.py.
-    f"{_S1_PREFIX}rotor":          "pla_matte",
-    f"{_S1_PREFIX}stator":         "pla_matte",
-    f"{_S1_PREFIX}stem":           "pla_matte",
-    f"{_S1_PREFIX}motor":          "cast_aluminium_dark",
+    "col1_ext":     "aluminium_anodized",
+    "col2_ext":     "aluminium_anodized",
+    "yoke":         "aluminium_anodized",
+    "stator_plate": "pla_matte",
+    "load_ramp":    "pla_matte",
 }
 
 

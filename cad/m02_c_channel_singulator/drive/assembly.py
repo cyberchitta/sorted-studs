@@ -122,27 +122,31 @@ def motor() -> Part:
 
 # --- Assembly ----------------------------------------------------------
 
-DRIVE_PART_NAMES = ("stem", "motor")
+def build_drive() -> Assembly:
+    """Drive sub-assembly in drive-local frame (= m02-local). Parts
+    only — the stem/motor contact assert is declared at whichever
+    root runs ``check()`` (nested assertions are not evaluated)."""
+    return (
+        Assembly()
+        .with_part(
+            "stem", stem(),
+            material=material_of("stem"), color=color_of("stem"),
+        )
+        .with_part(
+            "motor", motor(),
+            # `motor` is tagged None in the design system (NEMA-17 cast
+            # body — outside palette); falls through to the material's
+            # intrinsic color.
+            material=material_of("motor"),
+        )
+    )
+
 
 # Sanity: the motor's front face sits on the stem flange's top face.
 # These two faces are coincident (tangent contact), not overlapping;
 # assert_no_interference is the right check — tangent contact reads
 # as zero clearance but zero overlap volume.
-assembly = (
-    Assembly()
-    .with_part(
-        "stem", stem(),
-        material=material_of("stem"), color=color_of("stem"),
-    )
-    .with_part(
-        "motor", motor(),
-        # `motor` is tagged None in the design system (NEMA-17 cast
-        # body — outside palette); falls through to the material's
-        # intrinsic color.
-        material=material_of("motor"),
-    )
-    .assert_no_interference("stem", "motor")
-)
+assembly = build_drive().assert_no_interference("stem", "motor")
 
 
 if __name__ == "__main__":
