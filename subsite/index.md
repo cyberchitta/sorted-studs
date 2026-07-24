@@ -1,0 +1,73 @@
+---
+layout: layouts/article
+title: Letting Claude Build Our LEGO Sorter
+ogDescription: Most LEGO sorters use one top-down camera. Ours uses four, at the vertices of a tetrahedron — and an AI drew every part.
+publishedAt: "2026-05-25"
+group: practice
+showrunner: "@restlessronin"
+writers:
+  - "@claude-opus-4.7"
+tags:
+  - sorted-studs
+  - lego
+  - cad
+  - multi-view
+---
+
+# sorted-studs
+
+> **Work in progress — nothing here has been built yet.** This is the second CAD pass; the first never reached fabrication, but plenty of design thinking carried forward into this one. Enough has been done to validate the premises; not yet enough to build.
+
+An AI-powered LEGO sorting machine — every part vibe Caded with @claude-opus-4.7 using [cad-khana](https://github.com/cyberchitta/cad-khana). About 140 commits over ten weeks, with several whole-module pivots. Most recently, the scanner's dump mechanism went from a radial cam-and-kicker to a bench-mounted servo.
+
+@restlessronin reads engineering drawings and CAD models but has never drafted a part himself; he sets the concept, flags what's wrong, asks for changes, calls the geometry pivots. The expertise is thin. The output isn't.
+
+## System Overview
+
+A feeder drops loose bricks into the singulator, which presents them one at a time to the scanner. The scanner photographs each from four angles, a vision model identifies part and color, and the diverter routes the brick into a bin.
+
+This article covers the CAD: singulator, scanner, diverter. ML, firmware, and the rest of the software will get their own write-ups. We'll open the repo with the first build; this article series is the public record until then.
+
+## Singulator
+
+A cylindrical [c-channel](https://basically.website/blog/how-we-got-to-10000-parts-per-day) (an idea from the Basically team) feeds one brick at a time into the scanner, in place of the flat V-channel in [RobG's design](https://hackaday.io/project/194170-colour-sorting-machine-for-lego), where we began.
+
+<style>
+  .pane-multiview svg { width: 100%; height: auto; display: block; }
+  .pane-multiview svg :is(polyline, path) { vector-effect: non-scaling-stroke; }
+  .pane-multiview .cad-visible { stroke: var(--color-base-content); stroke-width: 1; }
+  .pane-multiview .cad-hidden  { stroke: var(--color-base-content); stroke-opacity: 0.35; stroke-width: 0.5; }
+</style>
+
+<figure class="pane pane-multiview my-6" data-asset-root="/assets/exhibits/">
+  <div class="grid grid-cols-2 gap-2">
+    <%- helpers.inlineSvg('assets/exhibits/singulator-top-260520.svg') %>
+    <%- helpers.inlineSvg('assets/exhibits/singulator-iso-260520.svg') %>
+    <%- helpers.inlineSvg('assets/exhibits/singulator-front-260520.svg') %>
+    <%- helpers.inlineSvg('assets/exhibits/singulator-right-260520.svg') %>
+  </div>
+</figure>
+
+## Scanner
+
+Four cameras sit at the vertices of a regular tetrahedron[^tetra-original] around the brick, every pair of lens axes 109.47° apart. A 2x2 brick and a 2x2 plate look identical from above; from any other angle, they don't. A central turret indexes bricks one at a time into the scanned volume, then tilts each platform to drop the brick into the diverter below.
+
+<glb-pane src="/assets/exhibits/scanner-260523.glb" orbit="-85deg 45deg auto" alt="Scanner rig — tetrahedral four-camera scanning station, turret rotating through its four stations" />
+
+## Diverter
+
+A hex tower of baskets — a concept from [Basically](https://basically.website/sorter-v2), first adapted to extrusion-only by Cristian Cuevas, reworked here. The central rotating column points its ramp at one basket at a time, and per-floor trap doors decide whether the brick drops there or falls through to the floor below.
+
+<glb-pane src="/assets/exhibits/diverter-260523-00.glb" orbit="0deg 75deg auto" alt="Diverter mechanism — hex tower with central rotating ramp and per-floor trap doors" />
+
+## Credits
+
+Concept by @restlessronin. Written by @claude-opus-4.7, who also created the display artifacts.
+
+Thanks to [RobG](https://hackaday.io/AntennaRob) for several DM conversations. Lukas Weick surfaced prior builds we'd missed and championed alternate singulators. Cristian Cuevas gave detailed fabrication advice.
+
+We started from [RobG's LEGO sorter](https://hackaday.io/project/194170-colour-sorting-machine-for-lego) and stepped, via the constraint of "extrusion + 3D-prints only," to something close to [the Basically LEGO Sorter by LegoSpencer and team](https://basically.website/sorter-v2).
+
+LEGO® is a trademark of the LEGO Group of companies, which does not sponsor, authorize, or endorse this site.
+
+[^tetra-original]: The tetrahedral arrangement is original to this build. The singulator and diverter stand on community shoulders.
