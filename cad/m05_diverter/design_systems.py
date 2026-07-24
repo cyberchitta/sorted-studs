@@ -120,13 +120,16 @@ DESIGN_SYSTEM: DesignSystem = bind_all(ROLE_OF, MODULE_OF)[resolve_name("M05")]
 # --- Instance-name → basename helpers ---------------------------------
 
 def basename_of(part_name: str) -> str:
-    """Strip the ``f{idx}_{role}__`` floor prefix from a m05 instance
-    name. Tower-global parts (``outer_vert_k`` / ``inner_vert_k``)
-    and stand-ins used by ``single_floor.py`` carry no prefix and
-    pass through unchanged.
+    """Map a m05 part identity (qualified tree path or bare instance
+    name) to its attribute-lookup basename: take the leaf segment of
+    a dotted path, then strip the ``f{idx}_{role}__`` floor prefix.
+    Tower-global parts (``outer_vert_k`` / ``inner_vert_k``) and
+    stand-ins used by ``single_floor.py`` carry no prefix and pass
+    through unchanged.
     """
+    leaf = part_name.rsplit(".", 1)[-1]
     sep = "__"
-    return part_name.split(sep, 1)[1] if sep in part_name else part_name
+    return leaf.split(sep, 1)[1] if sep in leaf else leaf
 
 
 # --- Basket size ramp -------------------------------------------------

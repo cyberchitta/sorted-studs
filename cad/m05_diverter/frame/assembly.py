@@ -154,31 +154,31 @@ def _horiz_ext(length: float) -> Part:
 # outer-vertex bracket's below-floor body (hub bottom at
 # BRACKET_Z_TOP - PLATE_T = -26) with a small clearance. In the real
 # tower each column is one continuous 2020 spanning all floors; in
-# the single-floor wrapper, `add_through_columns` defaults to a span
+# the single-floor wrapper, `build_through_columns` defaults to a span
 # of [-VERT_EXT_BELOW, FLOOR_H] for the visible per-floor slice.
 VERT_EXT_BELOW = -(BRACKET_Z_TOP - OUTER_BRACKET_PLATE_T) + 10.0  # 36
 
 
 # --- Assembly builders --------------------------------------------------
 
-def add_floor_horizontals(
-    a: Assembly,
-    z: float = 0.0,
+def build_floor_horizontals(
     prefix: str = "",
     color_fn: Callable[[str], Color | None] | None = None,
     material_fn: Callable[[str], str | None] | None = None,
 ) -> Assembly:
-    """Add one floor's worth of horizontal frame members + brackets at
-    the given world z (= rail-top datum for that floor).
+    """One floor's worth of horizontal frame members + brackets as a
+    sub-`Assembly` in the floor-local frame (rail-top datum at z=0).
+    The parent places the whole floor with one transform
+    (`Pos(0, 0, idx * FLOOR_H)` in the tower).
 
-    Adds: outer hex (`{prefix}outer_horiz_k`), inner hex
+    Contains: outer hex (`{prefix}outer_horiz_k`), inner hex
     (`{prefix}inner_horiz_k`), radial rails split at the inner-hex
     vertex (`{prefix}radial_inner_k` / `{prefix}radial_outer_k`),
     outer-vertex brackets (`{prefix}outer_vertex_bracket_k`), and
     inner-vertex brackets (`{prefix}inner_vertex_bracket_k`).
 
-    Through-columns are NOT added here — they span all floors and live
-    in `add_through_columns`.
+    Through-columns are NOT built here — they span all floors and live
+    in `build_through_columns`.
 
     `color_fn` / `material_fn` are optional callables mapping each full
     instance name (with prefix) to a `Color` / material string. Default
@@ -192,7 +192,7 @@ def add_floor_horizontals(
     def _mt(name: str) -> str | None:
         return material_fn(name) if material_fn is not None else None
 
-    z_loc = Pos(0, 0, z)
+    a = Assembly()
     for k in range(6):
         # Shared vertex azimuth for outer and inner hex.
         v_angle = (k + 0.5) * 60.0
@@ -206,7 +206,7 @@ def add_floor_horizontals(
         a = a.with_part(
             n_ovb,
             outer_bracket(),
-            location=z_loc * Pos(vx_out, vy_out, 0.0) * Rot(0, 0, v_angle + 180.0),
+            location=Pos(vx_out, vy_out, 0.0) * Rot(0, 0, v_angle + 180.0),
             color=_co(n_ovb),
             material=_mt(n_ovb),
         )
@@ -216,7 +216,7 @@ def add_floor_horizontals(
         a = a.with_part(
             n_ivb,
             inner_bracket(),
-            location=z_loc * Pos(vx_in, vy_in, 0.0) * Rot(0, 0, v_angle + 180.0),
+            location=Pos(vx_in, vy_in, 0.0) * Rot(0, 0, v_angle + 180.0),
             color=_co(n_ivb),
             material=_mt(n_ivb),
         )
@@ -230,7 +230,7 @@ def add_floor_horizontals(
         a = a.with_part(
             n_oh,
             _horiz_ext(OUTER_HORIZ_LEN),
-            location=z_loc * Pos(oex, oey, 0.0) * Rot(0, 0, oe_angle + 90.0),
+            location=Pos(oex, oey, 0.0) * Rot(0, 0, oe_angle + 90.0),
             color=_co(n_oh),
             material=_mt(n_oh),
         )
@@ -244,7 +244,7 @@ def add_floor_horizontals(
         a = a.with_part(
             n_ih,
             _horiz_ext(INNER_HORIZ_LEN),
-            location=z_loc * Pos(iex, iey, 0.0) * Rot(0, 0, ie_angle + 90.0),
+            location=Pos(iex, iey, 0.0) * Rot(0, 0, ie_angle + 90.0),
             color=_co(n_ih),
             material=_mt(n_ih),
         )
@@ -270,7 +270,7 @@ def add_floor_horizontals(
             a = a.with_part(
                 n_r,
                 _horiz_ext(seg_len),
-                location=z_loc * Pos(rx, ry, 0.0) * Rot(0, 0, r_angle),
+                location=Pos(rx, ry, 0.0) * Rot(0, 0, r_angle),
                 color=_co(n_r),
                 material=_mt(n_r),
             )
@@ -278,19 +278,19 @@ def add_floor_horizontals(
     return a
 
 
-def add_through_columns(
-    a: Assembly,
+def build_through_columns(
     z_bot: float = -VERT_EXT_BELOW,
     z_top: float = FLOOR_H,
     color_fn: Callable[[str], Color | None] | None = None,
     material_fn: Callable[[str], str | None] | None = None,
 ) -> Assembly:
-    """Add the twelve vertical 2020 corner columns spanning
-    [z_bot, z_top]: six at the outer-hex vertices and six at the
+    """The twelve vertical 2020 corner columns spanning [z_bot, z_top]
+    as a sub-`Assembly`: six at the outer-hex vertices and six at the
     inner-hex vertices (same azimuths since outer and inner hex are
-    rotation-aligned). Single-floor default matches the historical
-    behavior; a multi-floor tower passes the full-tower span here so
-    one continuous extrusion replaces per-floor stacks.
+    rotation-aligned). The z span is tower-global, so the parent
+    places this subtree at identity. Single-floor default matches the
+    historical behavior; a multi-floor tower passes the full-tower
+    span here so one continuous extrusion replaces per-floor stacks.
 
     The inner verticals back the inner-hex ring against per-floor
     basket load (~20 kg/floor → 60–80 kg cumulative across 3–4
@@ -303,6 +303,7 @@ def add_through_columns(
     Names: `outer_vert_k` and `inner_vert_k` for k in 0..5 (no floor
     prefix — these are global to the tower).
     """
+    a = Assembly()
     length = z_top - z_bot
     z_center = (z_bot + z_top) / 2.0
     column = Pos(0, 0, z_center) * Box(EXT_SIZE, EXT_SIZE, length)
@@ -328,85 +329,73 @@ def add_through_columns(
     return a
 
 
-def add_frame(
-    a: Assembly,
-    color_fn: Callable[[str], Color | None] | None = None,
-    material_fn: Callable[[str], str | None] | None = None,
-) -> Assembly:
-    """Single-floor convenience wrapper: one floor's horizontals at
-    z=0 plus through-columns spanning [-VERT_EXT_BELOW, FLOOR_H].
-    Multi-floor consumers should call `add_floor_horizontals` per
-    floor and `add_through_columns` once for the full tower span.
-    """
-    a = add_floor_horizontals(
-        a, z=0.0, prefix="", color_fn=color_fn, material_fn=material_fn,
-    )
-    a = add_through_columns(
-        a, z_bot=-VERT_EXT_BELOW, z_top=FLOOR_H,
-        color_fn=color_fn, material_fn=material_fn,
-    )
-    return a
-
-
 # --- Standalone assembly ------------------------------------------------
+#
+# Same subtree names as every consumer: one floor's horizontals under
+# `rails` (floor-local at z=0) and the through-columns under `columns`
+# (single-floor span). Assertions address the qualified paths.
 
-assembly = add_frame(Assembly())
+assembly = (
+    Assembly()
+    .with_subassembly("rails", build_floor_horizontals())
+    .with_subassembly("columns", build_through_columns())
+)
 
 assembly = (
     assembly
     # Outer-vertex consistency at V_0 (6-fold rotational symmetry ⇒
     # other 5 vertices follow). V_0 is endpoint of edges 0 and 5
     # (edge 0 between V_0→V_1, edge 5 between V_5→V_0).
-    .assert_no_interference("outer_vertex_bracket_0", "outer_vert_0")
-    .assert_no_interference("outer_vertex_bracket_0", "outer_horiz_0")
-    .assert_no_interference("outer_vertex_bracket_0", "outer_horiz_5")
-    .assert_no_interference("outer_vertex_bracket_0", "radial_outer_0")
-    .assert_no_interference("outer_vert_0", "outer_horiz_0")
-    .assert_no_interference("outer_vert_0", "outer_horiz_5")
-    .assert_no_interference("outer_vert_0", "radial_outer_0")
+    .assert_no_interference("rails.outer_vertex_bracket_0", "columns.outer_vert_0")
+    .assert_no_interference("rails.outer_vertex_bracket_0", "rails.outer_horiz_0")
+    .assert_no_interference("rails.outer_vertex_bracket_0", "rails.outer_horiz_5")
+    .assert_no_interference("rails.outer_vertex_bracket_0", "rails.radial_outer_0")
+    .assert_no_interference("columns.outer_vert_0", "rails.outer_horiz_0")
+    .assert_no_interference("columns.outer_vert_0", "rails.outer_horiz_5")
+    .assert_no_interference("columns.outer_vert_0", "rails.radial_outer_0")
     # Adjacent outer edges meeting at V_1.
-    .assert_no_interference("outer_horiz_0", "outer_horiz_1")
+    .assert_no_interference("rails.outer_horiz_0", "rails.outer_horiz_1")
     # Far-apart outer edges (sanity — trivial pass).
-    .assert_no_interference("outer_horiz_0", "outer_horiz_3")
+    .assert_no_interference("rails.outer_horiz_0", "rails.outer_horiz_3")
     # Inner-vertex consistency at inner V_0. Inner edges 0 and 5 meet
     # at inner V_0, the inner through-column passes through it, and
     # both radial segments butt against the inner-vertex bracket
     # here.
-    .assert_no_interference("inner_vertex_bracket_0", "inner_horiz_0")
-    .assert_no_interference("inner_vertex_bracket_0", "inner_horiz_5")
-    .assert_no_interference("inner_vertex_bracket_0", "radial_inner_0")
-    .assert_no_interference("inner_vertex_bracket_0", "radial_outer_0")
-    .assert_no_interference("inner_vertex_bracket_0", "inner_vert_0")
-    .assert_no_interference("inner_vert_0", "inner_horiz_0")
-    .assert_no_interference("inner_vert_0", "inner_horiz_5")
-    .assert_no_interference("inner_vert_0", "radial_inner_0")
-    .assert_no_interference("inner_vert_0", "radial_outer_0")
+    .assert_no_interference("rails.inner_vertex_bracket_0", "rails.inner_horiz_0")
+    .assert_no_interference("rails.inner_vertex_bracket_0", "rails.inner_horiz_5")
+    .assert_no_interference("rails.inner_vertex_bracket_0", "rails.radial_inner_0")
+    .assert_no_interference("rails.inner_vertex_bracket_0", "rails.radial_outer_0")
+    .assert_no_interference("rails.inner_vertex_bracket_0", "columns.inner_vert_0")
+    .assert_no_interference("columns.inner_vert_0", "rails.inner_horiz_0")
+    .assert_no_interference("columns.inner_vert_0", "rails.inner_horiz_5")
+    .assert_no_interference("columns.inner_vert_0", "rails.radial_inner_0")
+    .assert_no_interference("columns.inner_vert_0", "rails.radial_outer_0")
     # Adjacent inner edges meeting at inner V_1.
-    .assert_no_interference("inner_horiz_0", "inner_horiz_1")
+    .assert_no_interference("rails.inner_horiz_0", "rails.inner_horiz_1")
     # Inner vs outer separation — same azimuth with aligned hexes but
     # ≫ 100 mm radial gap, so this should trivially pass.
-    .assert_no_interference("inner_horiz_0", "outer_horiz_0")
-    .assert_no_interference("inner_horiz_0", "outer_vert_0")
-    .assert_no_interference("inner_horiz_0", "outer_vertex_bracket_0")
-    .assert_no_interference("inner_vertex_bracket_0", "outer_vertex_bracket_0")
-    .assert_no_interference("inner_vert_0", "outer_vert_0")
-    .assert_no_interference("inner_vert_0", "outer_horiz_0")
-    .assert_no_interference("inner_vert_0", "outer_vertex_bracket_0")
+    .assert_no_interference("rails.inner_horiz_0", "rails.outer_horiz_0")
+    .assert_no_interference("rails.inner_horiz_0", "columns.outer_vert_0")
+    .assert_no_interference("rails.inner_horiz_0", "rails.outer_vertex_bracket_0")
+    .assert_no_interference("rails.inner_vertex_bracket_0", "rails.outer_vertex_bracket_0")
+    .assert_no_interference("columns.inner_vert_0", "columns.outer_vert_0")
+    .assert_no_interference("columns.inner_vert_0", "rails.outer_horiz_0")
+    .assert_no_interference("columns.inner_vert_0", "rails.outer_vertex_bracket_0")
     # Both radial segments clear the adjacent inner-hex edges they
     # pass between at the inner vertex (edges 0 and 5 both terminate
     # at inner V_0).
-    .assert_no_interference("radial_inner_0", "inner_horiz_0")
-    .assert_no_interference("radial_inner_0", "inner_horiz_5")
-    .assert_no_interference("radial_outer_0", "inner_horiz_0")
-    .assert_no_interference("radial_outer_0", "inner_horiz_5")
+    .assert_no_interference("rails.radial_inner_0", "rails.inner_horiz_0")
+    .assert_no_interference("rails.radial_inner_0", "rails.inner_horiz_5")
+    .assert_no_interference("rails.radial_outer_0", "rails.inner_horiz_0")
+    .assert_no_interference("rails.radial_outer_0", "rails.inner_horiz_5")
     # Outer segment sits well clear of the outer hex edges adjacent
     # to its outer-vertex landing (edges 0 and 5).
-    .assert_no_interference("radial_outer_0", "outer_horiz_0")
-    .assert_no_interference("radial_outer_0", "outer_horiz_5")
+    .assert_no_interference("rails.radial_outer_0", "rails.outer_horiz_0")
+    .assert_no_interference("rails.radial_outer_0", "rails.outer_horiz_5")
     # Outer-segment clearance from non-adjoining verticals / brackets
     # (sanity).
-    .assert_no_interference("radial_outer_0", "outer_vert_1")
-    .assert_no_interference("radial_outer_0", "outer_vertex_bracket_1")
+    .assert_no_interference("rails.radial_outer_0", "columns.outer_vert_1")
+    .assert_no_interference("rails.radial_outer_0", "rails.outer_vertex_bracket_1")
 )
 
 

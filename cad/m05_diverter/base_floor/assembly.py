@@ -54,10 +54,11 @@ Coordinate frame (matches ramp_mechanism / params):
 import math
 import sys
 from pathlib import Path
+from typing import Callable
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from build123d import Box, Cylinder, Part, Pos, Rot
+from build123d import Box, Color, Cylinder, Part, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
@@ -225,6 +226,36 @@ def motor_mount() -> Part:
 
 # --- Assembly -----------------------------------------------------------
 
+def build_drive_train(
+    prefix: str = "",
+    color_fn: Callable[[str], Color | None] | None = None,
+    material_fn: Callable[[str], str | None] | None = None,
+) -> Assembly:
+    """Off-axis drive train — ring gear + pinion + motor + motor mount
+    — as a sub-`Assembly` in the base-floor-local frame (rail-top
+    datum at z=0; every part hangs below it). The part functions carry
+    their own off-axis placement, so all four are placed at identity.
+    ``prefix`` / ``color_fn`` / ``material_fn`` follow the same
+    contract as the frame builders.
+    """
+    def _co(name: str) -> Color | None:
+        return color_fn(name) if color_fn is not None else None
+
+    def _mt(name: str) -> str | None:
+        return material_fn(name) if material_fn is not None else None
+
+    a = Assembly()
+    for base_name, part in (
+        ("ring_gear", ring_gear()),
+        ("pinion", pinion()),
+        ("motor", motor()),
+        ("motor_mount", motor_mount()),
+    ):
+        n = f"{prefix}{base_name}"
+        a = a.with_part(n, part, color=_co(n), material=_mt(n))
+    return a
+
+
 def make_assembly() -> Assembly:
     """Standalone base-floor drive-train assembly.
 
@@ -238,11 +269,7 @@ def make_assembly() -> Assembly:
     passes — real teeth interleave within that band).
     """
     return (
-        Assembly()
-        .with_part("ring_gear", ring_gear())
-        .with_part("pinion", pinion())
-        .with_part("motor", motor())
-        .with_part("motor_mount", motor_mount())
+        build_drive_train()
         .assert_no_interference("ring_gear", "pinion")
         .assert_no_interference("ring_gear", "motor")
         .assert_no_interference("ring_gear", "motor_mount")

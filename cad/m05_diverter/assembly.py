@@ -6,24 +6,38 @@ at world z = `[0, FLOOR_H, 2·FLOOR_H, 3·FLOOR_H]`. Bricks enter above
 the top floor and fall down through per-floor traps that divert them
 into the floor's baskets (or release them through to the floor below).
 
-Each floor reuses the same sub-assemblies as `single_floor.py`:
+The tree is rigid-body-major: everything stationary hangs off the
+root, and the one degree of freedom — the column stack that revolves
+as a single rigid body — is the `rotating_stack` subtree with a
+revolute joint about world Z. Floors are instanced from shared
+builders (role differences are builder parameters) and placed by one
+`Pos(0, 0, idx·FLOOR_H)` transform each:
 
-- frame — through-columns span all floors as one continuous 2020;
-  hex rings, brackets, and radial rails repeat per floor (suffixed by
-  floor index).
-- ramp_mechanism — top-bearing architecture: bearing+spider geometry
-  is uniform across roles (short ring at z_local 0..5). Roles differ
-  only at the column bottom: base has a bottom collar (motor + ring-
-  gear interface); middle/top have a bottom face flange that mates
-  with the column below at the joint plane (z_world = N·220 + 273).
-  Each column carries a rotating collar at z_local 220..225 that the
+- `columns` — the twelve through-columns spanning all floors as
+  continuous 2020s (`frame.build_through_columns`).
+- `f{idx}` — one static floor: `rails` (hex rings, radials, vertex
+  brackets; `frame.build_floor_horizontals`), `baskets`
+  (`basket.build_basket_ring` per the floor's layout), and `bearing`
+  (spider + ring bearing; `ramp_mechanism.build_column_side_static`).
+- `rotating_stack.f{idx}` — the floor's revolving parts: column +
+  hinge pin + ramp + trap(s)
+  (`ramp_mechanism.build_column_side_rotating`). Roles differ only at
+  the column bottom: base has a bottom collar (motor + ring-gear
+  interface); middle/top have a bottom face flange that mates with
+  the column below at the joint plane (z_world = N·220 + 273). Each
+  column carries a rotating collar at z_local 220..225 that the
   bearing of the floor *above* grips.
-- basket — `FLOOR_LAYOUT` (mixed N=6/9/12/18) replicated per floor.
-- base_floor — off-axis drive train (ring gear / pinion / motor /
-  motor mount) below the rail datum on the base floor only. The ring
-  gear bolts to the base column's bottom collar; an off-axis motor
-  drives it through a pinion. No central drive shaft — Lego falls
-  through the column axis.
+- `drive_train` — off-axis ring gear / pinion / motor / motor mount
+  below the base floor's rail datum (`base_floor.build_drive_train`).
+  The ring gear bolts to the base column's bottom collar; no central
+  drive shaft — Lego falls through the column axis.
+- `top_acrylic` — clear disc capping the tower (root part).
+
+Part identity is the dotted tree path
+(`rotating_stack.f0.f0_base__column`); leaf names still carry the
+`f{idx}_{role}__` floor prefix pending the naming migration, and
+attribute maps (colors, materials, detail targets) key on the
+basename via `design_systems.basename_of`.
 
 Cross-floor checks (the value the tower adds beyond `single_floor.py`):
 
@@ -54,14 +68,19 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from build123d import Axis, Color, Cylinder, Pos, Rot
+from build123d import Axis, Color, Cylinder, Pos
 
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 from cad_khana.mechanism.check import check
 
 from base_floor import assembly as _base
 from basket import assembly as _bkt
-from design_systems import DESIGN_SYSTEM, basename_of, basket_color_of, color_of
+from design_systems import (
+    DESIGN_SYSTEM,
+    basename_of,
+    basket_color_of,
+    color_of,
+)
 from materials import material_of
 from frame import assembly as _frame
 from params import FLOOR_H, FLOOR_LAYOUT
@@ -115,116 +134,38 @@ def _floor_prefix(idx: int, role: str) -> str:
     return f"f{idx}_{role}__"
 
 
-# --- Per-part add helpers ----------------------------------------------
+# --- Per-floor builders ------------------------------------------------
 
-def _add(a: Assembly, name: str, part, **kwargs) -> Assembly:
-    """Wrap ``.with_part(...)`` so every column-side / basket / base-floor
-    call site picks up the active design system's color + material
-    without repeating the boilerplate. ``color_of`` / ``material_of``
-    strip the floor prefix internally before lookup."""
-    return a.with_part(
-        name, part, color=color_of(name), material=material_of(name), **kwargs,
-    )
-
-
-def _add_column_side_static(
-    a: Assembly, idx: int, role: str, prefix: str,
-) -> Assembly:
-    """Static column-side parts: bearing spider + ring bearing. These
-    stay with the frame regardless of the rotating-stack DOF."""
-    fz_loc = Pos(0, 0, idx * FLOOR_H)
-    a = _add(a, f"{prefix}bearing_spider", _ramp.bearing_spider(role),
-             location=fz_loc)
-    a = _add(a, f"{prefix}ring_bearing", _ramp.ring_bearing(role),
-             location=fz_loc)
-    return a
-
-
-def _add_column_side_rotating(
-    rotating: Assembly, idx: int, role: str, prefix: str, *,
-    with_trap_open: bool,
-) -> Assembly:
-    """Rotating column-side parts: column + hinge pin + ramp +
-    trap-closed (+ trap-open if this floor has an upper neighbour).
-    Added to the rotating sub-assembly; the revolute joint in
-    ``build_tower`` carries the per-frame azimuth."""
-    fz_loc = Pos(0, 0, idx * FLOOR_H)
-    rotating = _add(rotating, f"{prefix}column", _ramp.column(role),
-                    location=fz_loc)
-    rotating = _add(rotating, f"{prefix}hinge_pin", _ramp.hinge_pin(),
-                    location=fz_loc * _ramp.hinge_pin_loc)
-    rotating = _add(rotating, f"{prefix}ramp", _ramp.ramp(),
-                    location=fz_loc * _ramp.ramp_loc)
-    rotating = _add(rotating, f"{prefix}trap_closed", _ramp.trap(),
-                    location=fz_loc * _ramp.hinge_loc * Rot(0, _ramp.TRAP_CLOSED_DEG, 0))
-    if with_trap_open:
-        rotating = _add(rotating, f"{prefix}trap_open", _ramp.trap(),
-                        location=fz_loc * _ramp.hinge_loc * Rot(0, _ramp.TRAP_OPEN_DEG, 0))
-    return rotating
-
-
-def _add_baskets(
-    a: Assembly, idx: int, prefix: str, basket_layout,
-) -> Assembly:
-    """Baskets per the supplied layout at floor `idx`. Color is a
-    size-keyed luminance shift off the palette's CONSUMABLE base
-    (see ``basket_color_of``), so basket sizes are immediately
-    distinguishable in renders. Bypasses ``_add`` to pass the
-    per-instance color explicitly."""
-    fz_loc = Pos(0, 0, idx * FLOOR_H)
-    for center_deg, n_size, notches in basket_layout:
-        bname = f"{prefix}basket_{int(round(center_deg)):03d}_{n_size:02d}"
-        a = a.with_part(
-            bname,
-            _bkt.basket(
-                half_angle_deg=180.0 / n_size,
-                notch_left="left" in notches,
-                notch_right="right" in notches,
-                notch_middle="middle" in notches,
+def _build_floor_static(role: str, prefix: str, basket_layout) -> Assembly:
+    """One floor's static side as a sub-`Assembly` in the floor-local
+    frame (rail-top datum at z=0): `rails` (hex rings + radials +
+    vertex brackets), `baskets` (per the supplied layout, colored by
+    the size-keyed luminance ramp — see ``basket_color_of``), and
+    `bearing` (spider + ring bearing). The caller places the whole
+    floor at `Pos(0, 0, idx·FLOOR_H)`."""
+    return (
+        Assembly()
+        .with_subassembly(
+            "rails",
+            _frame.build_floor_horizontals(
+                prefix=prefix, color_fn=color_of, material_fn=material_of,
             ),
-            location=fz_loc * Rot(0, 0, center_deg),
-            color=basket_color_of(n_size),
-            material=material_of(bname),
         )
-    return a
-
-
-def _add_drive_train(a: Assembly, idx: int, prefix: str) -> Assembly:
-    """Off-axis motor + pinion + ring gear + motor mount below the base
-    floor's rail datum. The ring gear bolts to the base column's bottom
-    collar; the pinion on the off-axis motor shaft drives it. No central
-    drive shaft — bricks fall through the column axis."""
-    fz_loc = Pos(0, 0, idx * FLOOR_H)
-    a = _add(a, f"{prefix}ring_gear", _base.ring_gear(), location=fz_loc)
-    a = _add(a, f"{prefix}pinion", _base.pinion(), location=fz_loc)
-    a = _add(a, f"{prefix}motor", _base.motor(), location=fz_loc)
-    a = _add(a, f"{prefix}motor_mount", _base.motor_mount(), location=fz_loc)
-    return a
-
-
-def _add_floor(
-    a: Assembly, rotating: Assembly, idx: int, role: str, *,
-    basket_layout,
-    with_trap_open: bool,
-    with_drive_train: bool,
-) -> tuple[str, Assembly, Assembly]:
-    """One full floor: frame horizontals + static column-side parts +
-    baskets + (drive train if requested) into ``a``; column / hinge pin
-    / ramp / trap parts into ``rotating``. Returns
-    ``(prefix, a, rotating)``."""
-    pre = _floor_prefix(idx, role)
-    a = _frame.add_floor_horizontals(
-        a, z=idx * FLOOR_H, prefix=pre,
-        color_fn=color_of, material_fn=material_of,
+        .with_subassembly(
+            "baskets",
+            _bkt.build_basket_ring(
+                basket_layout, prefix=prefix,
+                size_color_fn=basket_color_of, material_fn=material_of,
+            ),
+        )
+        .with_subassembly(
+            "bearing",
+            _ramp.build_column_side_static(
+                role, prefix=prefix,
+                color_fn=color_of, material_fn=material_of,
+            ),
+        )
     )
-    a = _add_column_side_static(a, idx, role, pre)
-    rotating = _add_column_side_rotating(
-        rotating, idx, role, pre, with_trap_open=with_trap_open,
-    )
-    a = _add_baskets(a, idx, pre, basket_layout)
-    if with_drive_train:
-        a = _add_drive_train(a, idx, pre)
-    return pre, a, rotating
 
 
 # Top-deck shape-truth color — faint blue-white at α=0.25 to render as
@@ -252,68 +193,82 @@ def _add_top_deck(a: Assembly, *, top_z: float) -> Assembly:
 
 
 # --- Cross-check helpers -----------------------------------------------
+#
+# Assertions address qualified tree paths from the tower root. Each
+# helper takes `(idx, prefix)` floor descriptors so the path and the
+# (still prefix-carrying) leaf name stay in sync.
 
-def _rot(name: str) -> str:
-    """Tree path of a rotating-stack part as seen from the tower root.
-    Column / hinge pin / ramp / trap parts live inside the
-    ``rotating_stack`` sub-assembly, so assertions (which address
-    qualified paths) reach them through its prefix; static parts keep
-    their bare root-level names."""
-    return f"rotating_stack.{name}"
+def _rot(idx: int, pre: str, name: str) -> str:
+    """Path of a rotating part on floor `idx` (inside `rotating_stack`)."""
+    return f"rotating_stack.f{idx}.{pre}{name}"
+
+
+def _brg(idx: int, pre: str, name: str) -> str:
+    """Path of a floor's bearing-side static part (spider / ring)."""
+    return f"f{idx}.bearing.{pre}{name}"
+
+
+def _rail(idx: int, pre: str, name: str) -> str:
+    """Path of a floor's frame-horizontal part (rails subtree)."""
+    return f"f{idx}.rails.{pre}{name}"
 
 
 def _add_floor_pair_checks(
-    a: Assembly, lower_pre: str, upper_pre: str,
+    a: Assembly, lower: tuple[int, str], upper: tuple[int, str],
 ) -> Assembly:
     """Adjacent-floor cross-checks: upper floor's column-bottom stack
     must clear the lower floor's open-trap envelope and column-top."""
+    l_idx, l_pre = lower
+    u_idx, u_pre = upper
     upper_stack = [
-        _rot(f"{upper_pre}column"),
-        f"{upper_pre}ring_bearing",
-        f"{upper_pre}bearing_spider",
+        _rot(u_idx, u_pre, "column"),
+        _brg(u_idx, u_pre, "ring_bearing"),
+        _brg(u_idx, u_pre, "bearing_spider"),
     ]
     for u in upper_stack:
         a = (
             a
-            .assert_no_interference(_rot(f"{lower_pre}trap_open"), u)
-            .assert_no_interference(_rot(f"{lower_pre}column"), u)
+            .assert_no_interference(_rot(l_idx, l_pre, "trap_open"), u)
+            .assert_no_interference(_rot(l_idx, l_pre, "column"), u)
         )
     return a
 
 
-def _add_top_deck_checks(a: Assembly, top_pre: str) -> Assembly:
+def _add_top_deck_checks(a: Assembly, top: tuple[int, str]) -> Assembly:
     """Disc rests on the through-column tops (tangent contact at
     z = top_z) and clears the top floor's central column body +
     rotating collar through its central aperture. Inner-hex
     through-columns sit at r ≈ 162, well inside the disc OD/2=330 and
     well outside the aperture R=75."""
+    t_idx, t_pre = top
     for k in range(6):
         a = (
             a
-            .assert_no_interference("top_acrylic", f"outer_vert_{k}")
-            .assert_no_interference("top_acrylic", f"inner_vert_{k}")
+            .assert_no_interference("top_acrylic", f"columns.outer_vert_{k}")
+            .assert_no_interference("top_acrylic", f"columns.inner_vert_{k}")
         )
-    return a.assert_no_interference("top_acrylic", _rot(f"{top_pre}column"))
+    return a.assert_no_interference("top_acrylic", _rot(t_idx, t_pre, "column"))
 
 
-def _add_drive_train_checks(a: Assembly, base_pre: str) -> Assembly:
+def _add_drive_train_checks(a: Assembly, base: tuple[int, str]) -> Assembly:
     """Off-axis drive train (ring gear / pinion / motor / mount)
     clearance vs the base floor's column-side stack, ramp_mechanism, and
     frame radials. The pinion↔ring-gear mesh is intentional contact —
     validated numerically in base_floor — so that pair is excluded."""
-    ring = f"{base_pre}ring_gear"
-    pin = f"{base_pre}pinion"
-    mtr = f"{base_pre}motor"
-    mount = f"{base_pre}motor_mount"
+    b_idx, b_pre = base
+    ring = f"drive_train.{b_pre}ring_gear"
+    pin = f"drive_train.{b_pre}pinion"
+    mtr = f"drive_train.{b_pre}motor"
+    mount = f"drive_train.{b_pre}motor_mount"
 
     # Ring gear bolts up to the base column's bottom collar (tangent at
     # z = 0) and stacks just under the column-side bearing (z ∈ [0, 5]).
     # No overlap with the bearing / spider — pure z stacking.
     a = (
         a
-        .assert_no_interference(ring, _rot(f"{base_pre}column"))
-        .assert_no_interference(ring, f"{base_pre}ring_bearing")
-        .assert_no_interference(ring, f"{base_pre}bearing_spider")
+        .assert_no_interference(ring, _rot(b_idx, b_pre, "column"))
+        .assert_no_interference(ring, _brg(b_idx, b_pre, "ring_bearing"))
+        .assert_no_interference(ring, _brg(b_idx, b_pre, "bearing_spider"))
     )
 
     # Pinion sits at z ∈ [-11, -1] on the off-axis drive axis, threaded
@@ -323,33 +278,33 @@ def _add_drive_train_checks(a: Assembly, base_pre: str) -> Assembly:
     for k in range(6):
         a = (
             a
-            .assert_no_interference(pin, f"{base_pre}radial_inner_{k}")
-            .assert_no_interference(pin, f"{base_pre}radial_outer_{k}")
+            .assert_no_interference(pin, _rail(b_idx, b_pre, f"radial_inner_{k}"))
+            .assert_no_interference(pin, _rail(b_idx, b_pre, f"radial_outer_{k}"))
         )
     for other in (
-        _rot(f"{base_pre}column"),
-        f"{base_pre}ring_bearing",
-        f"{base_pre}bearing_spider",
+        _rot(b_idx, b_pre, "column"),
+        _brg(b_idx, b_pre, "ring_bearing"),
+        _brg(b_idx, b_pre, "bearing_spider"),
     ):
         a = a.assert_no_interference(pin, other)
 
     # Motor body hangs at z ∈ [-65, -25], below every other modeled part
     # and inside the rail-inner ring — clears the whole base floor.
     for other in (
-        _rot(f"{base_pre}column"),
-        f"{base_pre}ring_bearing",
-        f"{base_pre}bearing_spider",
-        _rot(f"{base_pre}ramp"),
-        _rot(f"{base_pre}trap_closed"),
-        _rot(f"{base_pre}trap_open"),
+        _rot(b_idx, b_pre, "column"),
+        _brg(b_idx, b_pre, "ring_bearing"),
+        _brg(b_idx, b_pre, "bearing_spider"),
+        _rot(b_idx, b_pre, "ramp"),
+        _rot(b_idx, b_pre, "trap_closed"),
+        _rot(b_idx, b_pre, "trap_open"),
     ):
         a = a.assert_no_interference(mtr, other)
     for k in range(6):
         a = (
             a
-            .assert_no_interference(mtr, f"{base_pre}radial_inner_{k}")
-            .assert_no_interference(mtr, f"{base_pre}radial_outer_{k}")
-            .assert_no_interference(mtr, f"{base_pre}inner_horiz_{k}")
+            .assert_no_interference(mtr, _rail(b_idx, b_pre, f"radial_inner_{k}"))
+            .assert_no_interference(mtr, _rail(b_idx, b_pre, f"radial_outer_{k}"))
+            .assert_no_interference(mtr, _rail(b_idx, b_pre, f"inner_horiz_{k}"))
         )
 
     # Motor mount is a radial arm at z ∈ [-25, -20]; it bolts up into one
@@ -358,14 +313,14 @@ def _add_drive_train_checks(a: Assembly, base_pre: str) -> Assembly:
     for k in range(6):
         a = (
             a
-            .assert_no_interference(mount, f"{base_pre}radial_inner_{k}")
-            .assert_no_interference(mount, f"{base_pre}radial_outer_{k}")
-            .assert_no_interference(mount, f"{base_pre}inner_horiz_{k}")
+            .assert_no_interference(mount, _rail(b_idx, b_pre, f"radial_inner_{k}"))
+            .assert_no_interference(mount, _rail(b_idx, b_pre, f"radial_outer_{k}"))
+            .assert_no_interference(mount, _rail(b_idx, b_pre, f"inner_horiz_{k}"))
         )
     for other in (
-        _rot(f"{base_pre}column"),
-        f"{base_pre}ring_bearing",
-        f"{base_pre}bearing_spider",
+        _rot(b_idx, b_pre, "column"),
+        _brg(b_idx, b_pre, "ring_bearing"),
+        _brg(b_idx, b_pre, "bearing_spider"),
     ):
         a = a.assert_no_interference(mount, other)
 
@@ -427,23 +382,35 @@ def build_tower(
 
     top_z = (max(idx for idx, _ in floor_plan) + 1) * FLOOR_H
 
-    a = Assembly()
-    rotating = Assembly()
-    a = _frame.add_through_columns(
-        a, z_bot=-_frame.VERT_EXT_BELOW, z_top=top_z,
-        color_fn=color_of, material_fn=material_of,
+    a = Assembly().with_subassembly(
+        "columns",
+        _frame.build_through_columns(
+            z_bot=-_frame.VERT_EXT_BELOW, z_top=top_z,
+            color_fn=color_of, material_fn=material_of,
+        ),
     )
 
     n = len(floor_plan)
+    rotating = Assembly()
     prefixes: list[str] = []
     for i, (idx, role) in enumerate(floor_plan):
-        pre, a, rotating = _add_floor(
-            a, rotating, idx, role,
-            basket_layout=_layout_for(idx),
-            # Trap-open envelope only needs to exist on floors that
-            # have an upper neighbour to check against.
-            with_trap_open=(i < n - 1),
-            with_drive_train=(role == "base" and with_drive_train),
+        pre = _floor_prefix(idx, role)
+        fz_loc = Pos(0, 0, idx * FLOOR_H)
+        a = a.with_subassembly(
+            f"f{idx}",
+            _build_floor_static(role, pre, _layout_for(idx)),
+            location=fz_loc,
+        )
+        rotating = rotating.with_subassembly(
+            f"f{idx}",
+            _ramp.build_column_side_rotating(
+                role, pre,
+                # Trap-open envelope only needs to exist on floors that
+                # have an upper neighbour to check against.
+                with_trap_open=(i < n - 1),
+                color_fn=color_of, material_fn=material_of,
+            ),
+            location=fz_loc,
         )
         prefixes.append(pre)
 
@@ -462,23 +429,35 @@ def build_tower(
         joint=RevoluteJoint(axis=Axis.Z, angle_deg=0.0),
     )
 
+    if with_drive_train:
+        base_idx, base_pre = next(
+            (idx, p)
+            for (idx, role), p in zip(floor_plan, prefixes)
+            if role == "base"
+        )
+        a = a.with_subassembly(
+            "drive_train",
+            _base.build_drive_train(
+                prefix=base_pre, color_fn=color_of, material_fn=material_of,
+            ),
+            location=Pos(0, 0, base_idx * FLOOR_H),
+        )
+
     _assert_design_system_coverage(a)
 
     # Adjacent-floor pairs only. Non-adjacent floors are >1·FLOOR_H
     # apart and the trap-open envelope reaches at most ~70 mm above
     # its hinge, so floor i+2 is comfortably out of range. Cross-subassembly
     # references resolve through ``placed_parts`` at evaluation time.
+    floors = [(idx, pre) for (idx, _), pre in zip(floor_plan, prefixes)]
     for i in range(n - 1):
-        a = _add_floor_pair_checks(a, prefixes[i], prefixes[i + 1])
+        a = _add_floor_pair_checks(a, floors[i], floors[i + 1])
 
     if with_top_deck:
-        a = _add_top_deck_checks(a, prefixes[-1])
+        a = _add_top_deck_checks(a, floors[-1])
 
     if with_drive_train:
-        base_pre = next(
-            p for (idx, role), p in zip(floor_plan, prefixes) if role == "base"
-        )
-        a = _add_drive_train_checks(a, base_pre)
+        a = _add_drive_train_checks(a, (base_idx, base_pre))
 
     return a, prefixes
 

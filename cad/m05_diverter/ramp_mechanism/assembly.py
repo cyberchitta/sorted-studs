@@ -71,10 +71,11 @@ is stable without active force.
 import math
 import sys
 from pathlib import Path
+from typing import Callable
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from build123d import Box, Cylinder, Location, Part, Pos, Rot
+from build123d import Box, Color, Cylinder, Location, Part, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
@@ -597,6 +598,73 @@ lower_trap_loc = Location(
 lower_column_loc = Location((0, 0, -FLOOR_H))
 
 
+# --- Sub-assembly builders ----------------------------------------------
+
+def build_column_side_static(
+    role: str = "middle",
+    prefix: str = "",
+    color_fn: Callable[[str], Color | None] | None = None,
+    material_fn: Callable[[str], str | None] | None = None,
+) -> Assembly:
+    """Stationary column-side parts — bearing spider + ring bearing —
+    as a sub-`Assembly` in the floor-local frame (bearing base at
+    z=0). The parent places the whole floor with one transform. Names
+    carry the caller's instance ``prefix``; ``color_fn`` /
+    ``material_fn`` follow the same contract as the frame builders
+    (full instance name in, attribute out; ``None`` leaves the
+    attribute unset).
+    """
+    def _co(name: str) -> Color | None:
+        return color_fn(name) if color_fn is not None else None
+
+    def _mt(name: str) -> str | None:
+        return material_fn(name) if material_fn is not None else None
+
+    n_sp = f"{prefix}bearing_spider"
+    n_rb = f"{prefix}ring_bearing"
+    return (
+        Assembly()
+        .with_part(n_sp, bearing_spider(role), color=_co(n_sp), material=_mt(n_sp))
+        .with_part(n_rb, ring_bearing(role), color=_co(n_rb), material=_mt(n_rb))
+    )
+
+
+def build_column_side_rotating(
+    role: str = "middle",
+    prefix: str = "",
+    *,
+    with_trap_open: bool = True,
+    color_fn: Callable[[str], Color | None] | None = None,
+    material_fn: Callable[[str], str | None] | None = None,
+) -> Assembly:
+    """Rotating column-side parts — column + hinge pin + ramp +
+    trap-closed (+ trap-open envelope when this floor has an upper
+    neighbour to check against) — as a sub-`Assembly` in the
+    floor-local frame. These parts revolve together with the column
+    stack; the revolute joint that carries the azimuth lives on the
+    consumer's rotating-stack subtree, not here.
+    """
+    def _co(name: str) -> Color | None:
+        return color_fn(name) if color_fn is not None else None
+
+    def _mt(name: str) -> str | None:
+        return material_fn(name) if material_fn is not None else None
+
+    def _add(a: Assembly, name: str, part, **kwargs) -> Assembly:
+        return a.with_part(name, part, color=_co(name), material=_mt(name), **kwargs)
+
+    a = Assembly()
+    a = _add(a, f"{prefix}column", column(role))
+    a = _add(a, f"{prefix}hinge_pin", hinge_pin(), location=hinge_pin_loc)
+    a = _add(a, f"{prefix}ramp", ramp(), location=ramp_loc)
+    a = _add(a, f"{prefix}trap_closed", trap(),
+             location=hinge_loc * Rot(0, TRAP_CLOSED_DEG, 0))
+    if with_trap_open:
+        a = _add(a, f"{prefix}trap_open", trap(),
+                 location=hinge_loc * Rot(0, TRAP_OPEN_DEG, 0))
+    return a
+
+
 def make_assembly(role: str = "middle") -> Assembly:
     """Build the standalone single-floor assembly for the given role.
 
@@ -604,17 +672,15 @@ def make_assembly(role: str = "middle") -> Assembly:
     here (both experience the same upward-intruding lower-floor
     column + trap-open envelope); base omits the lower-floor stand-ins
     and includes its bottom collar instead.
+
+    Composes the same builders the tower consumes: static parts at
+    the root (``build_column_side_static``), the revolving parts as
+    the ``rotating`` subtree (``build_column_side_rotating``), plus
+    standalone-only stand-ins and trap sweep samples at the root.
     """
-    a = Assembly()
-    a = (
-        a
-        .with_part("bearing_spider", bearing_spider(role))
-        .with_part("ring_bearing", ring_bearing(role))
-        .with_part("column", column(role))
-        .with_part("hinge_pin", hinge_pin(), location=hinge_pin_loc)
-        .with_part("ramp", ramp(), location=ramp_loc)
-        .with_part("trap_closed", trap(), location=hinge_loc * Rot(0, TRAP_CLOSED_DEG, 0))
-        .with_part("trap_open", trap(), location=hinge_loc * Rot(0, TRAP_OPEN_DEG, 0))
+    a = build_column_side_static(role)
+    a = a.with_subassembly(
+        "rotating", build_column_side_rotating(role, with_trap_open=True)
     )
     if role != "base":
         # Lower floor's column placed at -FLOOR_H. Modeled as `column("middle")`
@@ -639,23 +705,23 @@ def make_assembly(role: str = "middle") -> Assembly:
         a
         # Fixed parts don't interfere with each other
         .assert_no_interference("bearing_spider", "ring_bearing")
-        .assert_no_interference("bearing_spider", "column")
-        .assert_no_interference("ring_bearing", "column")
-        .assert_no_interference("hinge_pin", "column")
-        .assert_no_interference("ramp", "column")
-        .assert_no_interference("ramp", "bearing_spider")
-        .assert_no_interference("ramp", "ring_bearing")
-        .assert_no_interference("ramp", "hinge_pin")
+        .assert_no_interference("bearing_spider", "rotating.column")
+        .assert_no_interference("ring_bearing", "rotating.column")
+        .assert_no_interference("rotating.hinge_pin", "rotating.column")
+        .assert_no_interference("rotating.ramp", "rotating.column")
+        .assert_no_interference("rotating.ramp", "bearing_spider")
+        .assert_no_interference("rotating.ramp", "ring_bearing")
+        .assert_no_interference("rotating.ramp", "rotating.hinge_pin")
         # Trap closed — horizontal plate inside column, above ramp
-        .assert_no_interference("trap_closed", "column")
-        .assert_no_interference("trap_closed", "bearing_spider")
-        .assert_no_interference("trap_closed", "ring_bearing")
-        .assert_no_interference("trap_closed", "ramp")
+        .assert_no_interference("rotating.trap_closed", "rotating.column")
+        .assert_no_interference("rotating.trap_closed", "bearing_spider")
+        .assert_no_interference("rotating.trap_closed", "ring_bearing")
+        .assert_no_interference("rotating.trap_closed", "rotating.ramp")
         # Trap open — free end up, still inside column
-        .assert_no_interference("trap_open", "column")
-        .assert_no_interference("trap_open", "bearing_spider")
-        .assert_no_interference("trap_open", "ring_bearing")
-        .assert_no_interference("trap_open", "ramp")
+        .assert_no_interference("rotating.trap_open", "rotating.column")
+        .assert_no_interference("rotating.trap_open", "bearing_spider")
+        .assert_no_interference("rotating.trap_open", "ring_bearing")
+        .assert_no_interference("rotating.trap_open", "rotating.ramp")
     )
     if role != "base":
         a = (
@@ -669,28 +735,28 @@ def make_assembly(role: str = "middle") -> Assembly:
             # This floor's column tangent-meets the lower column at
             # z=53 (joint plane). assert_no_interference allows
             # face-to-face contact.
-            .assert_no_interference("column", "lower_column")
+            .assert_no_interference("rotating.column", "lower_column")
             # Ramp / trap / hinge live well above the joint plane,
             # so they're clear of the lower column entirely.
-            .assert_no_interference("ramp", "lower_column")
-            .assert_no_interference("hinge_pin", "lower_column")
-            .assert_no_interference("trap_closed", "lower_column")
-            .assert_no_interference("trap_open", "lower_column")
+            .assert_no_interference("rotating.ramp", "lower_column")
+            .assert_no_interference("rotating.hinge_pin", "lower_column")
+            .assert_no_interference("rotating.trap_closed", "lower_column")
+            .assert_no_interference("rotating.trap_open", "lower_column")
             # Lower-floor trap-open intrusion — must clear THIS floor's
             # column-bottom stack (bearing / spider / column / ramp).
-            .assert_no_interference("lower_trap_open", "column")
+            .assert_no_interference("lower_trap_open", "rotating.column")
             .assert_no_interference("lower_trap_open", "bearing_spider")
             .assert_no_interference("lower_trap_open", "ring_bearing")
-            .assert_no_interference("lower_trap_open", "ramp")
+            .assert_no_interference("lower_trap_open", "rotating.ramp")
         )
     for angle in TRAP_SAMPLES:
         name = f"trap_at_{int(angle)}"
         a = (
             a
-            .assert_no_interference(name, "column")
+            .assert_no_interference(name, "rotating.column")
             .assert_no_interference(name, "bearing_spider")
             .assert_no_interference(name, "ring_bearing")
-            .assert_no_interference(name, "ramp")
+            .assert_no_interference(name, "rotating.ramp")
         )
     return a
 

@@ -58,10 +58,11 @@ Coordinate frame:
 import math
 import sys
 from pathlib import Path
+from typing import Callable
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from build123d import Box, Cylinder, Part, Polygon, Pos, Rot, extrude
+from build123d import Box, Color, Cylinder, Part, Polygon, Pos, Rot, extrude
 
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
@@ -297,24 +298,48 @@ def col_stub() -> Part:
     )
 
 
-# --- Assembly -----------------------------------------------------------
+# --- Assembly builders ---------------------------------------------------
 
-assembly = Assembly().with_part("col_stub", col_stub())
+def build_basket_ring(
+    layout,
+    prefix: str = "",
+    size_color_fn: Callable[[int], Color | None] | None = None,
+    material_fn: Callable[[str], str | None] | None = None,
+) -> Assembly:
+    """Basket ring per ``layout`` as a sub-`Assembly` in the
+    floor-local frame (floor datum at z=0). ``layout`` is a list of
+    ``(center_deg, n_size, notches)`` tuples (``params.FLOOR_LAYOUT``
+    shape). ``size_color_fn`` maps a basket's N-size to its color —
+    the tower threads ``design_systems.basket_color_of``, a size-keyed
+    luminance ramp rather than a name-keyed lookup. ``prefix`` /
+    ``material_fn`` follow the frame builders' instance-name contract.
+    """
+    a = Assembly()
+    for center_deg, n_size, notches in layout:
+        name = f"{prefix}basket_{int(round(center_deg)):03d}_{n_size:02d}"
+        a = a.with_part(
+            name,
+            basket(
+                half_angle_deg=180.0 / n_size,
+                notch_left="left" in notches,
+                notch_right="right" in notches,
+                notch_middle="middle" in notches,
+            ),
+            location=Rot(0, 0, center_deg),
+            color=size_color_fn(n_size) if size_color_fn is not None else None,
+            material=material_fn(name) if material_fn is not None else None,
+        )
+    return a
 
-basket_names = []
-for center_deg, n_size, notches in FLOOR_LAYOUT:
-    name = f"basket_{int(round(center_deg)):03d}_{n_size:02d}"
-    basket_names.append(name)
-    assembly = assembly.with_part(
-        name,
-        basket(
-            half_angle_deg=180.0 / n_size,
-            notch_left="left" in notches,
-            notch_right="right" in notches,
-            notch_middle="middle" in notches,
-        ),
-        location=Rot(0, 0, center_deg),
-    )
+
+# --- Standalone assembly -------------------------------------------------
+
+assembly = build_basket_ring(FLOOR_LAYOUT).with_part("col_stub", col_stub())
+
+basket_names = [
+    f"basket_{int(round(center_deg)):03d}_{n_size:02d}"
+    for center_deg, n_size, _notches in FLOOR_LAYOUT
+]
 
 for name in basket_names:
     assembly = assembly.assert_no_interference(name, "col_stub")
