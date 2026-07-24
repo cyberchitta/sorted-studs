@@ -80,13 +80,36 @@ Guidance for organizing Build123d / cad-khana assemblies in this repo.
    units the same way (`with_subassembly("m05", …)`); it never
    re-adds parts flat, so every unit's joints survive to the top.
    Assertions address subtrees with the group forms
-   (`assert_no_interference_between("m03", "m05")`) and are evaluated
-   **only at the root that runs `check()`** — assertions declared
-   inside a nested sub-assembly are silently ignored by the parent,
-   so declare cross-subtree checks at the composing root, after
-   composition. The parent itself runs standalone (principle 2
-   applies recursively); cross-unit checks live in the enclosing
-   top-level.
+   (`assert_no_interference_between("m03", "m05")`). Sub-assembly
+   assertions **propagate**: the root that runs `check()` evaluates
+   every nested assertion with paths, names, and datum-plane targets
+   qualified through each level's placement + joint. So declare each
+   claim once, at the level where the knowledge lives — a claim
+   internal to one builder's parts goes in that builder (the ramp's
+   rim-plane sweep clearance); a claim spanning sibling subtrees goes
+   at the level that composes both (the pulley's Z corridor at the
+   turret; cross-unit checks in the enclosing top-level). Don't
+   mirror a claim at two levels — it just evaluates twice under two
+   names. Assertions referencing parts absent from a run (detail-only
+   fasteners, an optional trap_open) skip as `passed: null`; an
+   assertion that is *always* skipped usually means a typo'd path.
+   Group-form expansion is still a macro over current contents, so
+   group asserts come after composition. The parent itself runs
+   standalone (principle 2 applies recursively).
+
+   Two corollaries for scalar claims. (1) Don't hand-derive from
+   constants what the geometry already knows: `assert_distance` /
+   `assert_scalar` record a named, diffable measured value, where a
+   bare `assert` crashes the import (`status: "error"`) and measures
+   nothing. Bare asserts stay only for parameter sanity with no
+   geometric content (a deliberately loose upper bound, a cut
+   feature's extent). (2) When geometry is *constructed from* the
+   same constant as the bound (gear blanks placed at exactly
+   backlash, a bracket sized off the same 1 mm air gap), measured ==
+   bound, and the strict comparison flips on solver noise (~1e-14
+   distance, ~1e-7 bbox extents) — set the bound a small explicit
+   measurement tolerance below the constructed value and say so in a
+   comment.
 
 ## World axes: Z is up
 

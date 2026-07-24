@@ -32,10 +32,11 @@ to the column's periphery instead:
   NEMA face. Detailed bolt pattern + flange interface still open.
 
 Gear geometry is the cheap two-fidelity-tier model: pitch cylinders,
-no teeth. Mesh validity is asserted **numerically** (center distance =
-sum of pitch radii + backlash) rather than by a volume check, since
-meshing gears are meant to touch. The pinion-tip-clears-the-rail-ring
-margin is the tight constraint and gets its own numeric guard.
+no teeth. Mesh validity is a min+max `assert_distance` band ("close
+but not touching") rather than a volume check, since meshing gears
+are meant to touch. The pinion-tip-clears-the-rail-ring margin is the
+tight constraint; it needs the rails, so it lives at the tower root
+as a tip-circle (`grow_a_mm`) assert_distance.
 
 The base bearing (axial + radial + motor-reaction torque) currently
 re-uses the per-floor `ring_bearing` for the base role in
@@ -82,8 +83,9 @@ MESH_BACKLASH = 0.2                   # extra center distance for FDM mesh play
 
 # Center distance = sum of pitch radii + a touch of backlash. The cheap
 # pitch cylinders then sit MESH_BACKLASH apart (no overlap) so the
-# pinion-vs-ring no-interference is robust; the numeric assert below is
-# the authoritative mesh check.
+# pinion-vs-ring no-interference is robust; the `gear_mesh_backlash`
+# assert_distance in `build_drive_train` measures the placed gap and
+# is the authoritative mesh check.
 CENTER_DIST = (RING_PITCH_D + PINION_PITCH_D) / 2 + MESH_BACKLASH   # 78.2
 
 # Pitch ≈ collar OD: the ring gear must seat on the collar's bolt face.
@@ -96,16 +98,11 @@ assert abs(RING_PITCH_D - COLLAR_OD) <= 2 * MODULE, (
 # Tight constraint: the pinion's tip circle must stay inside the radial-
 # rail ring (rails start at RAIL_INNER_R). This is the packaging knife-
 # edge — the pinion is squeezed between the Ø138 collar and the Ø180
-# rail-inner ring. Guarded numerically because the cheap pinion body is
-# a pitch cylinder (no teeth), so the mechanism check wouldn't see the
-# tip reach.
-PINION_TIP_R = PINION_PITCH_D / 2 + ADDENDUM       # 10.5
-PINION_RAIL_GAP = RAIL_INNER_R - (CENTER_DIST + PINION_TIP_R)   # ≈ 1.3 mm
-assert PINION_RAIL_GAP >= 1.0, (
-    f"Pinion tip reaches r = {CENTER_DIST + PINION_TIP_R:.1f}, leaving "
-    f"only {PINION_RAIL_GAP:.1f} mm to the rail-inner ring at "
-    f"{RAIL_INNER_R}. Shrink PINION_TEETH or push the rails out."
-)
+# rail-inner ring. The rails are not parts of this sub-assembly, so
+# the claim lives at the tower root (`.._add_drive_train_checks`) as a
+# `grow_a_mm=ADDENDUM` assert_distance measuring from the tip circle
+# while the modeled body stays a pitch cylinder. If it fails: shrink
+# PINION_TEETH or push the rails out.
 
 
 # --- Z-band layout (top → bottom) ---------------------------------------
@@ -248,6 +245,21 @@ def build_drive_train(
         ("motor_mount", motor_mount()),
     ):
         a = a.with_part(n, part, color=_co(n), material=_mt(n))
+    # Mesh validity — close but not touching: the cheap pitch blanks
+    # must sit in the [MESH_BACKLASH, MESH_BACKLASH + 0.1] band (too
+    # far = no mesh, too close = jam; real teeth interleave within
+    # it). Declared here, where both gears live, so every composed
+    # run evaluates the propagated form. Authoritative over the
+    # CENTER_DIST derivation above: this measures the placed geometry.
+    # The placed gap equals MESH_BACKLASH *by construction*, so the
+    # lower bound sits a measurement tolerance below it — OCCT's
+    # distance solver returns the exact value ± ~1e-14, and the bound
+    # comparison is strict.
+    a = a.assert_distance(
+        "ring_gear", "pinion",
+        min_mm=MESH_BACKLASH - 0.01, max_mm=MESH_BACKLASH + 0.1,
+        name="gear_mesh_backlash",
+    )
     return a
 
 
@@ -258,10 +270,9 @@ def make_assembly() -> Assembly:
     off-axis drive axis (z = -18..-9) meshing with it, motor below the
     mount (z = -65..-25), and the mount arm bridging the two (z =
     -25..-20). The pinion ↔ ring *mesh* (the load-bearing relationship)
-    is validated numerically by the center-distance asserts above; the
-    no-interference assert here is a weaker guard that the cheap pitch
-    blanks don't gross-overlap (they sit MESH_BACKLASH apart, so it
-    passes — real teeth interleave within that band).
+    is the `gear_mesh_backlash` assert_distance declared in
+    `build_drive_train`; the no-interference assert here is a weaker
+    guard that the cheap pitch blanks don't gross-overlap.
     """
     return (
         build_drive_train()

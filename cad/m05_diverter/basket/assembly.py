@@ -68,6 +68,9 @@ from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
 from ..params import (
+    BASKET_DEPTH_Z,
+    BASKET_FLOOR_Z,
+    BASKET_RIM_Z,
     COL_OUTER_SIDE,
     FLOOR_LAYOUT,
     R_BASKET_INNER,
@@ -122,9 +125,9 @@ BASKET_WALL_T = 3.0
 # themselves sit tangent to the basket floor (no volume overlap),
 # so each basket can take the whole sector.
 
-BASKET_DEPTH_Z = 130.0
-BASKET_FLOOR_Z = 0.0                               # shared floor datum
-BASKET_RIM_Z = BASKET_FLOOR_Z + BASKET_DEPTH_Z     # 130
+# BASKET_FLOOR_Z / BASKET_DEPTH_Z / BASKET_RIM_Z moved to ..params —
+# the rim plane is the basket↔ramp sweep interface and ramp_mechanism
+# asserts against it.
 
 # Outer-hex through-column cross-section. Must match frame's
 # `EXT_SIZE` (2020 aluminum extrusion). Duplicated locally for the

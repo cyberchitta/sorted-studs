@@ -54,6 +54,16 @@ R_HEX_INNER = 140.0             # inner-hex apothem (mm). With both
 FLOOR_H = 220.0                 # vertical corner-column height spanning one
                                 # floor (top face z=0 → base z=-FLOOR_H)
 
+# Basket vertical envelope, floor-local. The rim plane is the sweep
+# interface between basket and ramp_mechanism: the rotating ramp's
+# lowest point must clear z = BASKET_RIM_Z at every azimuth (the
+# radial side walls between baskets stand at rim height), and
+# ramp_mechanism owns that assertion — so the datum lives here, on the
+# shared params surface, not inside basket/.
+BASKET_FLOOR_Z = 0.0            # shared floor datum
+BASKET_DEPTH_Z = 130.0
+BASKET_RIM_Z = BASKET_FLOOR_Z + BASKET_DEPTH_Z     # 130
+
 COL_WALL_T = 3.0
 COL_INTERIOR_SIDE = MAX_BRICK_DIM + 2 * BRICK_SLOP   # 90
 COL_OUTER_SIDE = COL_INTERIOR_SIDE + 2 * COL_WALL_T  # 96

@@ -15,9 +15,11 @@ Composes the integrated camera rig + turret in m03-local coordinates
     (option a', 2026-05-05).
 
 Part identity is the dotted tree path (`turret.rotor.arm.spider`,
-`rig.cam_front_low_pcb`); checks are declared at the m03 root against
-those paths — mostly via subtree group selectors (assertions inside
-nested assemblies are NOT evaluated by the root `check()`). Attributes
+`rig.cam_front_low_pcb`); cross-subtree checks are declared at the
+m03 root against those paths — mostly via subtree group selectors —
+while claims owned by a lower level (the turret's pulley Z corridor,
+each builder's internal distance/scalar claims) are declared there
+and propagate into this root's `check()` qualified. Attributes
 (role tags, materials) key on the leaf name — a builder binds them in
 its own frame without knowing where it will be placed.
 
@@ -305,6 +307,25 @@ def build_turret() -> Assembly:
             angle_deg=0.0,
             frame="local",
         ),
+    )
+
+    # Driven-pulley Z corridor — the pulley threads the gap between the
+    # hub housing top (below) and the spider bottom (above), with ≥1 mm
+    # air each side (grub-screw wrench swing / spin clearance). Declared
+    # here, where the drive, hub, and arm subtrees meet — this retires
+    # drive/assembly.py's `_SPIDER_BOTTOM_Z` / `HOUSING_TOP_Z` private
+    # mirrors and their hand-derived Z arithmetic. The housing gap is
+    # exactly 1 mm by construction (BRACKET_PLATE_AIRGAP_BELOW_PULLEY
+    # sizes the bracket off the same corridor), so the bound sits a
+    # measurement tolerance below it — extents carry ~1e-7 of bbox
+    # slop and the bound comparison is strict.
+    t = t.assert_distance(
+        "rotor.drive.drive_pulley_shaft", "hub.hub_housing",
+        along="-Z", min_mm=0.95, name="pulley_housing_gap",
+    )
+    t = t.assert_distance(
+        "rotor.drive.drive_pulley_shaft", "rotor.arm.spider",
+        along="Z", min_mm=1.0, name="pulley_spider_gap",
     )
     return t
 

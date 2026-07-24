@@ -86,21 +86,10 @@ from .params import FLOOR_H, FLOOR_LAYOUT, R_VERT_OUTER
 from .ramp_mechanism import assembly as _ramp
 
 
-# --- Ramp sweep clearance (cross-sub-assembly) ---------------------------
-#
-# The ramp rotates with the column, sweeping over every basket's radial
-# side walls (which stand at BASKET_RIM_Z). Its lowest swept point — the
-# tip end's bottom corner — must clear the rim plane at all azimuths.
-# Parametric, because the geometric ramp-vs-basket check in
-# `single_floor.py` only covers the one basket the static model aims at.
-RAMP_SWEEP_CLEARANCE = 5.0
-assert _ramp.RAMP_TIP_BOTTOM_Z >= _bkt.BASKET_RIM_Z + RAMP_SWEEP_CLEARANCE, (
-    f"Ramp tip bottom (z = {_ramp.RAMP_TIP_BOTTOM_Z:.1f}) dips within "
-    f"{RAMP_SWEEP_CLEARANCE} mm of the basket rim plane "
-    f"(z = {_bkt.BASKET_RIM_Z:.1f}); the rotating ramp would strike "
-    f"basket side walls. Rebalance RAMP_DEG / RAMP_L / "
-    f"RAMP_DROP_BELOW_HINGE / TRAP_HINGE_Z."
-)
+# Ramp sweep clearance over the basket rim plane is declared once in
+# `ramp_mechanism.build_column_side_rotating` (`ramp_sweep_over_basket_rim`,
+# a Z-invariant datum-plane assert_distance) and propagates here
+# qualified per floor — no mirrored parametric assert needed.
 
 
 # --- Top deck ----------------------------------------------------------
@@ -261,8 +250,18 @@ def _add_drive_train_checks(a: Assembly, base: int) -> Assembly:
 
     # Pinion sits at z ∈ [-11, -1] on the off-axis drive axis, threaded
     # between the Ø138 collar and the rail-inner ring. It must clear the
-    # radial rails (the tight packaging constraint — guarded numerically
-    # against the tip circle in base_floor) and stay below the bearing.
+    # radial rails and stay below the bearing. The packaging knife-edge
+    # is the tip circle vs the rail the drive axis sits under (rails at
+    # (k+0.5)·60° ⇒ k from MOTOR_AZIMUTH_DEG): measured from the tip
+    # circle via grow_a_mm while the modeled body stays a pitch
+    # cylinder — the modeled-body no-interference checks below can't
+    # see the tooth reach.
+    drive_rail_k = round(_base.MOTOR_AZIMUTH_DEG / 60.0 - 0.5) % 6
+    a = a.assert_distance(
+        pin, _rail(base, f"radial_inner_{drive_rail_k}"),
+        min_mm=1.0, grow_a_mm=_base.ADDENDUM,
+        name="pinion_tip_rail_gap",
+    )
     for k in range(6):
         a = (
             a

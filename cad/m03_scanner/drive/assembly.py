@@ -114,10 +114,6 @@ from ..params import (  # noqa: E402
     WALL_MIN,
 )
 
-# Slice (c) spider bottom Z — private mirror so the pulley-to-spider
-# clearance below doesn't import the spider sub-assembly directly.
-# Update if the spider's HEIGHT or top-Z anchor moves.
-_SPIDER_BOTTOM_Z = -35.0
 from ..design_systems import color_of  # noqa: E402
 from ..materials import material_of  # noqa: E402
 
@@ -127,15 +123,11 @@ from ..materials import material_of  # noqa: E402
 MEMBER = 20.0                                              # 2020 extrusion
 RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2             # = -120 after c7
 
-# Slice (b) housing top (private mirror; bound assertions reference it).
-# Slice c5 (2026-05-05) raised this 30 mm (-110 → -80) along with the
-# floor; housing height itself unchanged (60 mm). Pulley raised
-# 11 mm in lockstep (-86 → -75 center) so housing-top → pulley-bottom
-# closes from 20 mm to 1 mm and pulley-top → cam-bottom stays at 1 mm.
-# Slice c7 (2026-05-05) raised this another 20 mm (-80 → -60) with a
-# matching 20 mm pulley + cam climb; the housing-pulley and
-# pulley-cam gaps both stay at 1 mm.
-HOUSING_TOP_Z = -60.0
+# The pulley's Z corridor between the slice (b) housing top and the
+# slice (c) spider bottom is asserted at the m03 root
+# (`pulley_housing_gap` / `pulley_spider_gap` in `build_turret`),
+# measured on the real neighbours — no private mirrors of their Z
+# extents live here anymore.
 
 
 # --- GT2 pulley sizing (60T driven, 20T driver) ------------------------
@@ -168,7 +160,6 @@ PULLEY_HEIGHT = 8.0
 # (2026-05-05) raised it another 20 mm (-75 → -55) in lockstep with
 # the housing rise; both gaps stay at 1 mm.
 PULLEY_Z_CENTER = -55.0
-_PULLEY_TOP_Z = PULLEY_Z_CENTER + PULLEY_HEIGHT / 2        # = -51
 _PULLEY_BOTTOM_Z = PULLEY_Z_CENTER - PULLEY_HEIGHT / 2     # = -59
 
 
@@ -299,17 +290,8 @@ assert _belt_err < 0.5, (
     f"(stock). Adjust DRIVE_CENTER_DIST or pick a different stock length."
 )
 
-# Pulley Z span clears housing top + cam bottom by ≥ 1 mm.
-_pulley_to_housing = _PULLEY_BOTTOM_Z - HOUSING_TOP_Z
-assert _pulley_to_housing >= 1.0, (
-    f"driven pulley bottom ({_PULLEY_BOTTOM_Z}) too close to housing "
-    f"top ({HOUSING_TOP_Z}); gap {_pulley_to_housing:.2f} mm < 1 mm"
-)
-_pulley_to_spider = _SPIDER_BOTTOM_Z - _PULLEY_TOP_Z
-assert _pulley_to_spider >= 1.0, (
-    f"driven pulley top ({_PULLEY_TOP_Z}) too close to spider bottom "
-    f"({_SPIDER_BOTTOM_Z}); gap {_pulley_to_spider:.2f} mm < 1 mm"
-)
+# (Pulley-to-housing / pulley-to-spider Z gaps are asserted at the
+# m03 root against the real neighbour parts — see the header note.)
 
 # Driven pulley OD doesn't crash motor body in X.
 _pulley_to_motor_body_x = (

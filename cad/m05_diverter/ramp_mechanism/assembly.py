@@ -73,7 +73,7 @@ import sys
 from typing import Callable
 
 
-from build123d import Box, Color, Cylinder, Location, Part, Pos, Rot
+from build123d import Box, Color, Cylinder, Location, Part, Plane, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
@@ -81,6 +81,7 @@ from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
 from ..params import (
+    BASKET_RIM_Z,
     COL_INTERIOR_SIDE,
     COL_OUTER_SIDE,
     COLLAR_CLEARANCE,
@@ -147,24 +148,20 @@ RAMP_ROOT_Z = TRAP_HINGE_Z - RAMP_DROP_BELOW_HINGE  # 185
 # µ_s ≈ 0.3–0.4; budget 0.45 adds headroom for dirt, wear, and layer
 # texture. 25° (tan = 0.466) clears the budget; 20° (tan = 0.364) sat
 # inside the µ_s range itself — bricks could stall on the ramp.
+# Asserted as `ramp_slide_margin` in `build_column_side_rotating`.
 MU_STATIC_BUDGET = 0.45
-assert math.tan(math.radians(RAMP_DEG)) >= MU_STATIC_BUDGET, (
-    f"RAMP_DEG ({RAMP_DEG}°, tan = {math.tan(math.radians(RAMP_DEG)):.3f}) "
-    f"below the static-friction budget µ = {MU_STATIC_BUDGET}; bricks "
-    f"may stall on the ramp. Steepen RAMP_DEG."
-)
 
-# Ramp tip — targeting + sweep-clearance interface. The ramp rotates
-# with the column, so every point of it radially outside the basket
-# inner lip must stay ABOVE the basket rim plane at all azimuths
-# (the radial side walls between baskets stand at the rim height).
-# RAMP_TIP_BOTTOM_Z is the lowest swept point (tip end's bottom
-# corner); the cross-boundary assert against BASKET_RIM_Z lives in
-# the top-level ../assembly.py (sibling imports are forbidden here).
+# Ramp tip — targeting interface. The sweep-clearance claim (every
+# point of the rotating ramp stays ≥ RAMP_SWEEP_CLEARANCE above the
+# basket rim plane at all azimuths — rotation about the column axis is
+# Z-invariant, so the plane form covers every azimuth with no sweep)
+# is the `ramp` → `Plane.XY.offset(BASKET_RIM_Z)` assert_distance in
+# `build_column_side_rotating`; if it fails, rebalance RAMP_DEG /
+# RAMP_L / RAMP_DROP_BELOW_HINGE / TRAP_HINGE_Z.
+RAMP_SWEEP_CLEARANCE = 5.0
 _RAMP_DEG_RAD = math.radians(RAMP_DEG)
 RAMP_TIP_X = RAMP_ROOT_X + RAMP_L * math.cos(_RAMP_DEG_RAD)
 RAMP_TIP_Z = RAMP_ROOT_Z - RAMP_L * math.sin(_RAMP_DEG_RAD)
-RAMP_TIP_BOTTOM_Z = RAMP_TIP_Z - (RAMP_T / 2) * math.cos(_RAMP_DEG_RAD)
 
 # Exit opening in the +X column wall — must pass the ramp plus a brick
 # sliding on top of it. Ramp enters the wall at x = COL_OUTER_SIDE/2.
@@ -213,11 +210,14 @@ RAIL_TOP_Z = 0.0                                     # frame datum (rail top fac
 COL_Z_TOP = 273.0                                    # joint plane in this floor's frame
 
 _TRAP_OPEN_RAD = math.radians(TRAP_OPEN_DEG)
-_TRAP_FREE_Z_OPEN = TRAP_HINGE_Z + TRAP_L * math.sin(_TRAP_OPEN_RAD) + TRAP_T / 2
-assert COL_Z_TOP >= max(OPENING_Z_TOP, _TRAP_FREE_Z_OPEN) + 5.0, (
-    f"COL_Z_TOP ({COL_Z_TOP}) too low — trap-open free Z "
-    f"({_TRAP_FREE_Z_OPEN:.1f}) or opening top ({OPENING_Z_TOP:.1f}) "
-    f"reaches inside the joint zone."
+# The trap-open half of this joint-zone claim is geometric — the
+# `trap_open` → `Plane.XY.offset(COL_Z_TOP)` assert_distance in
+# `build_column_side_rotating`. The opening top stays a parametric
+# check: the opening is a cut feature, not a part.
+JOINT_ZONE_CLEARANCE = 5.0
+assert COL_Z_TOP >= OPENING_Z_TOP + JOINT_ZONE_CLEARANCE, (
+    f"COL_Z_TOP ({COL_Z_TOP}) too low — opening top "
+    f"({OPENING_Z_TOP:.1f}) reaches inside the joint zone."
 )
 
 # Joint flange thickness at the column top. Top 5 mm of the column
@@ -658,6 +658,32 @@ def build_column_side_rotating(
     if with_trap_open:
         a = _add(a, "trap_open", trap(),
                  location=hinge_loc * Rot(0, TRAP_OPEN_DEG, 0))
+
+    # Declared once here, where the ramp lives; standalone runs
+    # evaluate directly and composed runs (single_floor, tower, cad
+    # top-level) evaluate the propagated, placement-qualified form.
+    #
+    # Sweep clearance: the ramp rotates with the column over every
+    # basket's radial side walls (standing at BASKET_RIM_Z). The datum
+    # plane is Z-invariant under column rotation, so this one directed
+    # distance covers all azimuths with no sweep — and it measures the
+    # real lowest point of the ramp body, not a hand-derived corner Z.
+    a = a.assert_distance(
+        "ramp", Plane.XY.offset(BASKET_RIM_Z), along="-Z",
+        min_mm=RAMP_SWEEP_CLEARANCE, name="ramp_sweep_over_basket_rim",
+    )
+    # Joint zone: the trap-open envelope must stay below the
+    # column-to-column joint plane at COL_Z_TOP. Skips (passed: null)
+    # when this instance carries no trap_open part.
+    a = a.assert_distance(
+        "trap_open", Plane.XY.offset(COL_Z_TOP), along="Z",
+        min_mm=JOINT_ZONE_CLEARANCE, name="trap_open_below_joint_zone",
+    )
+    # Slide condition — recorded scalar claim (see MU_STATIC_BUDGET).
+    a = a.assert_scalar(
+        "ramp_slide_margin", math.tan(_RAMP_DEG_RAD),
+        ge=MU_STATIC_BUDGET, detail="µ_s budget, ABS brick on PLA ramp",
+    )
     return a
 
 
