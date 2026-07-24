@@ -267,15 +267,9 @@ _CHAIN_NAMES = [
     f"{_PREFIX['m02_chain']}{p.name}" for p in _M02_CHAIN_ASSY.placed_parts
 ]
 
-for n3 in _M03_NAMES:
-    for n5 in _M05_NAMES:
-        assembly = assembly.assert_no_interference(n3, n5)
-
-for nc in _CHAIN_NAMES:
-    for n5 in _M05_NAMES:
-        assembly = assembly.assert_no_interference(nc, n5)
-    for n3 in _M03_NAMES:
-        assembly = assembly.assert_no_interference(nc, n3)
+assembly = assembly.assert_no_interference_between(_M03_NAMES, _M05_NAMES)
+assembly = assembly.assert_no_interference_between(_CHAIN_NAMES, _M05_NAMES)
+assembly = assembly.assert_no_interference_between(_CHAIN_NAMES, _M03_NAMES)
 
 
 if __name__ == "__main__":

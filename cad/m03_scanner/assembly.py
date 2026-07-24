@@ -418,35 +418,24 @@ def add_m03_internal_checks(
     block in the IDLE arm corridor — overlap present at some frames,
     absent at others, no clean per-frame predicate).
     """
-    suppressed = {tuple(sorted(p)) for p in suppressed_pairs}
-
-    # 1. Rig-internal.
+    # 1. Rig-internal — camera mounts vs every arch member (no
+    #    suppressions apply within the rig).
     non_arch = [n for n in CAMERA_RIG_PART_NAMES if n not in ARCH_NAMES]
-    for internal in non_arch:
-        for member in ARCH_NAMES:
-            a = a.assert_no_interference(internal, member)
+    a = a.assert_no_interference_between(non_arch, ARCH_NAMES)
 
-    # 2. Turret-internal.
-    known = {(p, q) for p, q, _ in known_overlaps}
-    known |= {(q, p) for p, q, _ in known_overlaps}
-    reasons = {(p, q): r for p, q, r in known_overlaps}
-    reasons |= {(q, p): r for p, q, r in known_overlaps}
-    for i in range(len(TURRET_PART_NAMES)):
-        for j in range(i + 1, len(TURRET_PART_NAMES)):
-            pair = (TURRET_PART_NAMES[i], TURRET_PART_NAMES[j])
-            if tuple(sorted(pair)) in suppressed:
-                continue
-            if pair in known:
-                a = a.assert_interference(*pair, reason=reasons[pair])
-            else:
-                a = a.assert_no_interference(*pair)
+    # 2. Turret-internal — every pair.
+    a = a.assert_no_interference_within(
+        TURRET_PART_NAMES,
+        known_overlaps=known_overlaps,
+        suppressed=suppressed_pairs,
+    )
 
     # 3. Cross — turret × rig.
-    for tp in TURRET_PART_NAMES:
-        for rp in CAMERA_RIG_PART_NAMES:
-            if tuple(sorted((tp, rp))) in suppressed:
-                continue
-            a = a.assert_no_interference(tp, rp)
+    a = a.assert_no_interference_between(
+        TURRET_PART_NAMES,
+        CAMERA_RIG_PART_NAMES,
+        suppressed=suppressed_pairs,
+    )
 
     return a
 
@@ -566,18 +555,17 @@ def add_sightline_cone_checks(a: Assembly) -> Assembly:
     documented frame-graze pairs downgraded to `assert_interference`
     regression alarms. Apply to a copy consumed only by `check()` —
     never to the rendered/exported `assembly`."""
+    opaque = [n for n in M03_PART_NAMES if "acrylic" not in n]
     for cone_name, vertex_pos in SIGHTLINE_CONE_SPECS.items():
         a = a.with_part(cone_name, sightline_cone(vertex_pos))
-        for other in M03_PART_NAMES:
-            if "acrylic" in other:
-                continue
-            if other in _SIGHTLINE_KNOWN_OVERLAPS:
-                a = a.assert_interference(
-                    cone_name, other,
-                    reason=_SIGHTLINE_KNOWN_OVERLAP_REASON,
-                )
-            else:
-                a = a.assert_no_interference(cone_name, other)
+        a = a.assert_no_interference_between(
+            (cone_name,),
+            opaque,
+            known_overlaps=tuple(
+                (cone_name, other, _SIGHTLINE_KNOWN_OVERLAP_REASON)
+                for other in _SIGHTLINE_KNOWN_OVERLAPS
+            ),
+        )
     return a
 
 
