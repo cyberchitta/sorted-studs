@@ -159,7 +159,11 @@ def _load_module_detailed(module_dirname: str) -> tuple[Assembly, dict[str, str]
 def _splice(
     top: Assembly, mod: Assembly, base: Location, prefix: str
 ) -> Assembly:
-    for p in mod.parts:
+    # ``placed_parts`` (never ``.parts``): parts inside sub-assemblies
+    # (m03's rotor/platforms/servo arm) only appear in the flat walk,
+    # with joint + placement composed. A ``.parts`` walk here silently
+    # dropped all 17 rotor parts from the integrated render.
+    for p in mod.placed_parts:
         top = top.with_part(
             f"{prefix}{p.name}",
             p.part,

@@ -117,7 +117,7 @@ def default_detail(assembly: Assembly) -> dict[str, Part]:
     member.
     """
     overrides: dict[str, Part] = {}
-    parts_by_name = {p.name: p for p in assembly.parts}
+    parts_by_name = {p.name: p for p in assembly.placed_parts}
     for name, placed in parts_by_name.items():
         if name in _STRAIGHT_EXTRUSION_TARGETS:
             overrides[name] = _vslot_for_axis_aligned_box(placed.part)
@@ -181,7 +181,7 @@ def apply_default_detail(assembly: Assembly) -> Assembly:
     joint-clearance checks. Cheap-geometry consumers
     (``assembly.py``'s ``check()``) ignore this entirely.
     """
-    parts_by_name = {p.name: p for p in assembly.parts}
+    parts_by_name = {p.name: p for p in assembly.placed_parts}
     overrides: dict[str, object] = dict(default_detail(assembly))
     fastener_names: list[str] = []
 
