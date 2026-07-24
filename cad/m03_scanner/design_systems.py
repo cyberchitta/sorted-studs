@@ -1,7 +1,7 @@
 """m03 scanner — per-module design-system tags.
 
 Schema (``Role``, ``Module``, ``DesignSystem``, palettes,
-``DESIGN_SYSTEM_NAME`` switch, ``compose`` helper) lives in
+``DESIGN_SYSTEM_NAME`` switch) lives in
 ``cad/design_systems.py``; this file holds only m03's tag dicts and
 binds the module-local ``DESIGN_SYSTEM`` + ``color_of`` shim that
 m03 sub-assemblies import.

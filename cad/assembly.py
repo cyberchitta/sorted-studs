@@ -39,12 +39,13 @@ names. The bare names collide across units (every unit owns a
 `assembly.py` through `runpy.run_path` with the colliding cached
 modules evicted before/after every load.
 
-m03 then composes as a true subtree — `with_subassembly("m03", …,
-location=world_pose)` — so its parts keep their tree paths under the
-`m03.` root and its joints survive to the top level. m05 and the m02
-chain are still spliced flat (every part re-added with its location
-pre-multiplied by the unit's world pose and the name prefixed with
-the unit tag); they migrate to subtrees in later slices.
+Each unit then composes as a true subtree — `with_subassembly(name,
+…, location=world_pose)` — so parts keep their tree paths under the
+unit root (`m05.…`, `m03.…`, `m02_chain.…`) and every unit's joints
+survive to the top level: the whole machine can animate from here.
+Within-unit assertions ride along nested and are intentionally not
+evaluated by this root's `check()` (root-only evaluate) — each unit's
+own `khana check` validates them.
 """
 
 from __future__ import annotations
@@ -220,62 +221,24 @@ assert _M02_CHAIN_NS["M03_LOAD_TOP_Z"] == _TURRET_WORLD_Z, (
 
 # --- Compose ----------------------------------------------------------
 
-_PREFIX = {
-    "m05": "m05__",
-    "m02_chain": "m02_chain__",
-}
-
-
-def _splice(top: Assembly, mod: Assembly, base: Location, prefix: str) -> Assembly:
-    """Re-add every placed part from ``mod`` into ``top`` with its
-    location pre-multiplied by ``base`` and its name prefixed.
-    Within-unit assertions are intentionally dropped — each unit's
-    own ``khana check`` validates them. (The same holds for the
-    ``with_subassembly`` path: assertions inside a nested ``Assembly``
-    are root-only and not evaluated by the parent's ``check()``.)
-
-    Walks ``mod.placed_parts`` (not ``mod.parts``) so parts living
-    inside sub-assemblies (e.g. m05's ``rotating_stack``) come
-    through with their joint/sub-assembly transforms composed into
-    the part's effective location. Splicing flat means the top-level
-    loses the joint hierarchy — currently fine because the top-level
-    static view fixes every joint at 0; animation hooks live inside
-    each unit's standalone assembly.
-    """
-    for p in mod.placed_parts:
-        top = top.with_part(
-            f"{prefix}{p.name}",
-            p.part,
-            location=base * p.location,
-            color=p.color,
-            material=p.material,
-        )
-    return top
-
-
-assembly = Assembly()
-assembly = _splice(assembly, _M05_ASSY, _M05_POSE, _PREFIX["m05"])
-assembly = assembly.with_subassembly("m03", _M03_ASSY, location=_M03_POSE)
-assembly = _splice(
-    assembly, _M02_CHAIN_ASSY, _M02_CHAIN_POSE, _PREFIX["m02_chain"]
+assembly = (
+    Assembly()
+    .with_subassembly("m05", _M05_ASSY, location=_M05_POSE)
+    .with_subassembly("m03", _M03_ASSY, location=_M03_POSE)
+    .with_subassembly("m02_chain", _M02_CHAIN_ASSY, location=_M02_CHAIN_POSE)
 )
 
 
 # --- Cross-unit no-interference --------------------------------------
 #
-# Every cross-unit pair (m03 × m05, chain × m05, chain × m03). Within-
-# unit pairs are covered by each unit's own standalone `khana check`.
-# m03 is addressed by its subtree path ("m03" expands to every
-# `m03.…` part path); the still-spliced units by explicit name lists.
+# Every cross-unit pair (m03 × m05, chain × m05, chain × m03), each
+# unit addressed by its subtree path. Within-unit pairs are covered by
+# each unit's own standalone `khana check` (nested assertions are
+# root-only and not evaluated here).
 
-_M05_NAMES = [f"{_PREFIX['m05']}{p.name}" for p in _M05_ASSY.placed_parts]
-_CHAIN_NAMES = [
-    f"{_PREFIX['m02_chain']}{p.name}" for p in _M02_CHAIN_ASSY.placed_parts
-]
-
-assembly = assembly.assert_no_interference_between("m03", _M05_NAMES)
-assembly = assembly.assert_no_interference_between(_CHAIN_NAMES, _M05_NAMES)
-assembly = assembly.assert_no_interference_between(_CHAIN_NAMES, "m03")
+assembly = assembly.assert_no_interference_between("m03", "m05")
+assembly = assembly.assert_no_interference_between("m02_chain", "m05")
+assembly = assembly.assert_no_interference_between("m02_chain", "m03")
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 """m02 c-channel singulator — per-module design-system tags.
 
 Schema (``Role``, ``Module``, ``DesignSystem``, palettes,
-``DESIGN_SYSTEM_NAME`` switch, ``compose`` helper) lives in
+``DESIGN_SYSTEM_NAME`` switch) lives in
 ``cad/design_systems.py``; this file holds only m02's tag dicts and
 binds the module-local ``DESIGN_SYSTEM`` + ``color_of`` shim that
 m02 sub-assemblies and the top-level assembly import. Material is a

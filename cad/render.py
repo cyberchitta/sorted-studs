@@ -16,8 +16,9 @@ Layers applied before rendering (per module):
     the slice).
   * ``material_variations.DEFAULT_OVERRIDES`` — render-only material
     overrides for parts whose real-world material isn't yet in
-    chitra-cad's table (m03 only). Names are prefixed at the
-    splice site to match the composed assembly's part names.
+    chitra-cad's table (m03 only). Keys are module-local tree paths;
+    composition qualifies them under the unit's subtree name
+    (``rig.cam_front_low_pcb`` → ``m03.rig.cam_front_low_pcb``).
 
 Schema switch is a *mutation* of ``cad.design_systems.DESIGN_SYSTEM_NAME``
 between renders. Each module's per-module ``design_systems.py`` reads
@@ -81,13 +82,6 @@ _M02_POSE = Pos(
     _M03_PLATFORM_TOP_Z + SINGULATOR_DROP_OVER_LOAD,
 )
 
-_PREFIX = {
-    "m02": "m02__",
-    "m03": "m03__",
-    "m05": "m05__",
-}
-
-
 # --- Module-load helpers ---------------------------------------------
 
 _MODULE_LOCAL_HEADS = frozenset(
@@ -133,9 +127,9 @@ def _load_module_detailed(module_dirname: str) -> tuple[Assembly, dict[str, str]
     """Load a module's assembly + apply its detail variations.
 
     Returns ``(detailed_assembly, material_overrides)``. Material
-    overrides are render-time-only and are kept un-prefixed here;
-    the splice site adds the module prefix before they hit the
-    chitra-cad scene.
+    overrides are render-time-only and stay module-local here;
+    ``_build_top_level`` qualifies them under the unit's subtree
+    name before they hit the chitra-cad scene.
     """
     mod_dir = THIS_DIR / module_dirname
     ns_assy = _runpy_isolated(mod_dir / "assembly.py", f"<{module_dirname}>")
@@ -156,46 +150,27 @@ def _load_module_detailed(module_dirname: str) -> tuple[Assembly, dict[str, str]
     return assembly, material_overrides
 
 
-def _splice(
-    top: Assembly, mod: Assembly, base: Location, prefix: str
-) -> Assembly:
-    # ``placed_parts`` (never ``.parts``): parts inside sub-assemblies
-    # (m03's rotor/platforms/servo arm) only appear in the flat walk,
-    # with joint + placement composed. A ``.parts`` walk here silently
-    # dropped all 17 rotor parts from the integrated render.
-    for p in mod.placed_parts:
-        top = top.with_part(
-            f"{prefix}{p.name}",
-            p.part,
-            location=base * p.location,
-            color=p.color,
-            material=p.material,
-        )
-    return top
-
-
 def _build_top_level() -> tuple[Assembly, dict[str, str]]:
     """Compose the three-module top-level assembly with detail
-    variations applied. Returns ``(assembly, prefixed_material_overrides)``.
+    variations applied. Returns ``(assembly, material_overrides)``
+    with the override keys qualified as full tree paths.
     """
     assy_m05, mat_m05 = _load_module_detailed("m05_diverter")
     assy_m03, mat_m03 = _load_module_detailed("m03_scanner")
     assy_m02, mat_m02 = _load_module_detailed("m02_c_channel_singulator")
 
-    top = Assembly()
-    top = _splice(top, assy_m05, _M05_POSE, _PREFIX["m05"])
-    top = _splice(top, assy_m03, _M03_POSE, _PREFIX["m03"])
-    top = _splice(top, assy_m02, _M02_POSE, _PREFIX["m02"])
+    top = (
+        Assembly()
+        .with_subassembly("m05", assy_m05, location=_M05_POSE)
+        .with_subassembly("m03", assy_m03, location=_M03_POSE)
+        .with_subassembly("m02", assy_m02, location=_M02_POSE)
+    )
 
-    prefixed_mat: dict[str, str] = {}
-    for prefix, mat in (
-        (_PREFIX["m02"], mat_m02),
-        (_PREFIX["m03"], mat_m03),
-        (_PREFIX["m05"], mat_m05),
-    ):
-        for name, token in mat.items():
-            prefixed_mat[f"{prefix}{name}"] = token
-    return top, prefixed_mat
+    qualified_mat: dict[str, str] = {}
+    for unit, mat in (("m02", mat_m02), ("m03", mat_m03), ("m05", mat_m05)):
+        for path, token in mat.items():
+            qualified_mat[f"{unit}.{path}"] = token
+    return top, qualified_mat
 
 
 # --- Render driver ---------------------------------------------------

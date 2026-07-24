@@ -21,11 +21,13 @@ Two are wired up:
     Saturated primary-color wayfinding: m02 yellow, m03 red, m05 blue.
 
 This file holds only the axis-agnostic machinery — enums, palettes,
-the dataclass, the active-selection switch, and the ``compose``
-helper. **Per-module tag dicts live in each module's own
-``cad/m0X_*/design_systems.py``** so that a rename in a module's
-assembly tree edits the same module's tag dict — no cross-directory
-drift.
+the dataclass, and the active-selection switch. **Per-module tag
+dicts live in each module's own ``cad/m0X_*/design_systems.py``** so
+that a rename in a module's assembly tree edits the same module's tag
+dict — no cross-directory drift. Cross-module composition needs no
+tag-dict merging: the top level composes units as subtrees, and each
+part's color/material is already baked at its own module's
+``with_part`` site.
 
 Active selection: edit ``DESIGN_SYSTEM_NAME`` below to swap the whole
 repo's palette. Each module's ``DESIGN_SYSTEM`` reads this switch on
@@ -301,41 +303,3 @@ def fill_palette_neutrals(assembly: Assembly, neutral: Color) -> Assembly:
         for s in assembly.subassemblies
     )
     return replace(assembly, parts=new_parts, subassemblies=new_subs)
-
-
-# --- compose helper ---------------------------------------------------
-
-def compose(
-    *pairs: dict[str, Enum | None] | tuple[str, dict[str, Enum | None]],
-) -> dict[str, Enum | None]:
-    """Merge per-module tag dicts into one. Each arg is either a bare
-    dict (no prefix) or a ``(prefix, dict)`` tuple. Raises ``KeyError``
-    on collision after prefixing — collisions are bugs.
-
-    Used by a future full-machine render driver:
-
-        merged = compose(
-            ("m02__", M02_ROLES),
-            ("m03__", M03_ROLES),
-            ("m05__", M05_ROLES),
-        )
-        DesignSystem("workshop", merged, WORKSHOP_COLORS)
-
-    For module-local renders, per-module files don't go through
-    ``compose`` — they bind their tag dict directly.
-    """
-    merged: dict[str, Enum | None] = {}
-    for entry in pairs:
-        if isinstance(entry, tuple):
-            prefix, tag_dict = entry
-        else:
-            prefix, tag_dict = "", entry
-        for name, tag in tag_dict.items():
-            full = f"{prefix}{name}"
-            if full in merged:
-                raise KeyError(
-                    f"design-system tag collision: '{full}' appears in "
-                    f"more than one input dict"
-                )
-            merged[full] = tag
-    return merged
