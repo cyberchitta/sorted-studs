@@ -17,13 +17,16 @@ Guidance for organizing Build123d / cad-khana assemblies in this repo.
    sibling-to-sibling imports are not allowed.
 
    **A standalone green is a weaker claim than a top-level green.** The
-   module-local mirrors this principle requires go stale silently. The
    turret's c5/c6 slices both reported `khana check` passing while the
    kicker lever overlapped the cross rail by 216 mm³ and the kicker
    mount foot by 1904 mm³ — the standalones were reading stale local
-   copies of constants their neighbours had already moved. Re-run the
-   enclosing top-level before calling a slice done; that is what the
-   mirrors cannot tell you.
+   copies of constants their neighbours had already moved. Local
+   copies of a peer's numbers are now the exception (principle 5:
+   interfaces are anchors), and a unit that must keep one to build
+   standalone exports a belief anchor from it so the parent's
+   `check()` catches the drift — but cross-unit assertions still run
+   only at the top. Re-run the enclosing top-level before calling a
+   slice done.
 
 3. **Top-level assemblies hold cross-sub-assembly checks.** When an
    interference check spans two sub-systems (e.g. ramp tip vs basket
@@ -39,25 +42,51 @@ Guidance for organizing Build123d / cad-khana assemblies in this repo.
    as a stub inside the sub-assembly that constrains it, not as its
    own directory.
 
-5. **Parameters live at their owning scope.** A `params.py` at any
-   level holds only that frame's anchors and the explicit interface
-   mirrors shared with peers (the `MIRROR_MOUNT_PLATE_T`-style cross-
-   boundary duplicates with assertions). Sub-assembly internals —
-   housing dimensions, bearing types, bolt patterns — stay inside the
-   sub-assembly that owns them. Constants leaking upward force future
-   readers to disentangle genuinely-shared values from private details
-   that happened to be visible.
+5. **Parameters live at their owning scope; interfaces are anchors.**
+   A `params.py` at any level holds only that frame's anchors.
+   Sub-assembly internals — housing dimensions, bearing types, bolt
+   patterns — stay inside the sub-assembly that owns them. Constants
+   leaking upward force future readers to disentangle genuinely-shared
+   values from private details that happened to be visible.
 
-6. **Group sub-assemblies that share a natural local frame.** When a
-   set of sub-assemblies forms a relocatable unit with its own local
-   frame (e.g. a turret about a vertical hub axis, a camera rig about
-   an optical origin), give them a parent directory whose
+   A value a *peer* needs is not shared by copying it: the unit
+   exports the datum as a named anchor (`with_anchor("deck_top", …)`
+   in its own frame) and the composing parent derives placements from
+   `anchor(path)` readings and asserts the interface with
+   `assert_anchors_coincident`. A unit that must mirror a peer's
+   constant to build standalone (the m02 chain) keeps the local copy
+   but exports a *belief anchor* computed from it, so drift fails
+   loudly at the parent's `check()` instead of silently desyncing the
+   machine. (This retired the `MIRROR_MOUNT_PLATE_T`-style
+   cross-boundary duplicate + hand-written drift-assert idiom.)
+
+6. **The assembly is a tree; boundaries are rigid units and DOFs.**
+   When a set of sub-assemblies forms a relocatable unit with its own
+   local frame (e.g. a turret about a vertical hub axis, a camera rig
+   about an optical origin), give them a parent directory whose
    `assembly.py` composes them in unit-local coordinates and whose
-   `params.py` owns the unit's anchors. The top-level then places the
-   unit in world via one transform — so "where does this unit go?"
-   is a single-number decision instead of a constant-by-constant
-   rewrite. The parent itself runs standalone (principle 2 applies
-   recursively); cross-unit checks live in the enclosing top-level.
+   `params.py` owns the unit's anchors — and give them the same
+   boundary in the in-memory assembly: every relocatable unit, and
+   every joint, is a `with_subassembly` node, declared from the start
+   (a joint at angle 0 is fine), never bolted on later when animation
+   needs it. Sub-modules expose `build_<name>() -> Assembly` in their
+   own canonical local frame; the parent places the subtree via one
+   `location=` — so "where does this unit go?" is a single-number
+   decision instead of a constant-by-constant rewrite. Part identity
+   is the dotted tree path (`m03.turret.rotor.arm.spider`) — no
+   name-prefix conventions, no hand-maintained part-name tuples;
+   attribute maps (color, material, detail) key on the leaf, because a
+   builder can't know its placement path. The top level composes
+   units the same way (`with_subassembly("m05", …)`); it never
+   re-adds parts flat, so every unit's joints survive to the top.
+   Assertions address subtrees with the group forms
+   (`assert_no_interference_between("m03", "m05")`) and are evaluated
+   **only at the root that runs `check()`** — assertions declared
+   inside a nested sub-assembly are silently ignored by the parent,
+   so declare cross-subtree checks at the composing root, after
+   composition. The parent itself runs standalone (principle 2
+   applies recursively); cross-unit checks live in the enclosing
+   top-level.
 
 ## World axes: Z is up
 
@@ -93,18 +122,27 @@ See "What a green `khana check` does not mean" below.
 ## Directory layout example
 
 ```
-cad/m05_diverter/
-    assembly.py            # top-level, cross-sub-assembly checks
-    params.py              # shared inputs + derived interface constants
-    basket/
-        assembly.py        # basket sub-assembly (standalone)
-    ramp_mechanism/
-        assembly.py        # column + trap + ramp (standalone)
+cad/
+    __init__.py            # cad/ is a package — marker at every level
+    assembly.py            # whole machine: with_subassembly per unit,
+                           #   cross-unit group asserts + anchor checks
+    m05_diverter/
+        __init__.py
+        assembly.py        # unit root: composes basket/ramp/… subtrees,
+                           #   exports interface anchors, within-unit checks
+        params.py          # unit-shared inputs + derived constants
+        basket/
+            __init__.py
+            assembly.py    # build_basket_ring() -> Assembly (+ standalone check)
+        ramp_mechanism/
+            __init__.py
+            assembly.py    # build_* builders (+ standalone check)
 ```
 
-Use underscores in directory names so Python can import them
-normally; hyphens block package imports and force `importlib`
-workarounds.
+Imports are relative (`.params` at unit level, `..params` in
+sub-modules); no `sys.path` manipulation anywhere. Use underscores in
+directory names so Python can import them normally; hyphens block
+package imports and force `importlib` workarounds.
 
 ## Running checks
 
@@ -147,7 +185,8 @@ these, the check is not your evidence — find the one that is.
 - **Physical reality across units.** Two independently floor-standing
   assemblies at different local floor heights pass cross-unit checks
   while being unbuildable — they share one bench. A shared datum must be
-  asserted; the check cannot infer it.
+  asserted; the check cannot infer it. Export it as an anchor and
+  `assert_anchors_coincident` at the top level (principle 5).
 - **The poses you did not sample.** A single-pose assertion carries an
   implicit worst-case claim. `lower_trap_open` is asserted at 60° alone
   because 60° bounds the upward-intrusion envelope *at the current*
