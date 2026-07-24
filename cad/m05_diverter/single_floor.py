@@ -6,8 +6,8 @@ with the floor-below trap-open as a stand-in stub. The full 4-floor
 tower lives in `assembly.py`; use this file when iterating on a single
 floor's geometry without paying the multi-floor check cost.
 
-Rides the same sub-module builders as the tower, with no floor prefix
-and every subtree at identity (floor-local == world here):
+Rides the same sub-module builders as the tower, with every subtree
+at identity (floor-local == world here):
 
 - `rails` / `columns` — frame horizontals + through-columns
 - `bearing` — bearing spider + ring bearing
@@ -125,7 +125,7 @@ basket_names = [
 # Every named part this single-floor view adds must appear in the
 # active design system's tag dict (``None`` allowed for hardware —
 # kept at material's intrinsic color). Attributes key on the basename
-# (leaf segment, floor prefix stripped); identity stays the full path.
+# (leaf segment of the qualified path); identity stays the full path.
 # A part added without a tag fails here instead of silently rendering
 # off-palette. Swapping ``DESIGN_SYSTEM_NAME`` (in
 # ``cad/design_systems.py``) to a palette missing a tag also fails

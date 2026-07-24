@@ -302,7 +302,6 @@ def col_stub() -> Part:
 
 def build_basket_ring(
     layout,
-    prefix: str = "",
     size_color_fn: Callable[[int], Color | None] | None = None,
     material_fn: Callable[[str], str | None] | None = None,
 ) -> Assembly:
@@ -311,12 +310,13 @@ def build_basket_ring(
     ``(center_deg, n_size, notches)`` tuples (``params.FLOOR_LAYOUT``
     shape). ``size_color_fn`` maps a basket's N-size to its color —
     the tower threads ``design_systems.basket_color_of``, a size-keyed
-    luminance ramp rather than a name-keyed lookup. ``prefix`` /
-    ``material_fn`` follow the frame builders' instance-name contract.
+    luminance ramp rather than a name-keyed lookup. ``material_fn``
+    follows the frame builders' leaf-name contract; floor identity
+    lives in the parent's subtree path.
     """
     a = Assembly()
     for center_deg, n_size, notches in layout:
-        name = f"{prefix}basket_{int(round(center_deg)):03d}_{n_size:02d}"
+        name = f"basket_{int(round(center_deg)):03d}_{n_size:02d}"
         a = a.with_part(
             name,
             basket(

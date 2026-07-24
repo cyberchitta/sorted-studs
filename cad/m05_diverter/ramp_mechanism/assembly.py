@@ -602,17 +602,16 @@ lower_column_loc = Location((0, 0, -FLOOR_H))
 
 def build_column_side_static(
     role: str = "middle",
-    prefix: str = "",
     color_fn: Callable[[str], Color | None] | None = None,
     material_fn: Callable[[str], str | None] | None = None,
 ) -> Assembly:
     """Stationary column-side parts — bearing spider + ring bearing —
     as a sub-`Assembly` in the floor-local frame (bearing base at
-    z=0). The parent places the whole floor with one transform. Names
-    carry the caller's instance ``prefix``; ``color_fn`` /
-    ``material_fn`` follow the same contract as the frame builders
-    (full instance name in, attribute out; ``None`` leaves the
-    attribute unset).
+    z=0). The parent places the whole floor with one transform; floor
+    identity lives in the parent's subtree path, so the leaf names
+    here are plain. ``color_fn`` / ``material_fn`` follow the same
+    contract as the frame builders (leaf name in, attribute out;
+    ``None`` leaves the attribute unset).
     """
     def _co(name: str) -> Color | None:
         return color_fn(name) if color_fn is not None else None
@@ -620,8 +619,8 @@ def build_column_side_static(
     def _mt(name: str) -> str | None:
         return material_fn(name) if material_fn is not None else None
 
-    n_sp = f"{prefix}bearing_spider"
-    n_rb = f"{prefix}ring_bearing"
+    n_sp = "bearing_spider"
+    n_rb = "ring_bearing"
     return (
         Assembly()
         .with_part(n_sp, bearing_spider(role), color=_co(n_sp), material=_mt(n_sp))
@@ -631,7 +630,6 @@ def build_column_side_static(
 
 def build_column_side_rotating(
     role: str = "middle",
-    prefix: str = "",
     *,
     with_trap_open: bool = True,
     color_fn: Callable[[str], Color | None] | None = None,
@@ -654,13 +652,13 @@ def build_column_side_rotating(
         return a.with_part(name, part, color=_co(name), material=_mt(name), **kwargs)
 
     a = Assembly()
-    a = _add(a, f"{prefix}column", column(role))
-    a = _add(a, f"{prefix}hinge_pin", hinge_pin(), location=hinge_pin_loc)
-    a = _add(a, f"{prefix}ramp", ramp(), location=ramp_loc)
-    a = _add(a, f"{prefix}trap_closed", trap(),
+    a = _add(a, "column", column(role))
+    a = _add(a, "hinge_pin", hinge_pin(), location=hinge_pin_loc)
+    a = _add(a, "ramp", ramp(), location=ramp_loc)
+    a = _add(a, "trap_closed", trap(),
              location=hinge_loc * Rot(0, TRAP_CLOSED_DEG, 0))
     if with_trap_open:
-        a = _add(a, f"{prefix}trap_open", trap(),
+        a = _add(a, "trap_open", trap(),
                  location=hinge_loc * Rot(0, TRAP_OPEN_DEG, 0))
     return a
 

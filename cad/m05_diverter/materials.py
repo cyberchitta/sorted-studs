@@ -5,10 +5,11 @@ WORKSHOP/BAUHAUS render-axis swap in ``design_systems.py``.
 Centralised here so a material change is one edit; every
 ``.with_part(...)`` site reads ``material_of(name)``.
 
-Keys are *basenames* — the part names sub-assembly builders use,
-without any per-floor prefix. ``material_of(...)`` accepts either a
-basename or a floor-prefixed instance name and uses
-``design_systems.basename_of`` to strip the prefix before lookup.
+Keys are *basenames* — the leaf part names the sub-assembly builders
+use. ``material_of(...)`` accepts either a basename or a qualified
+tree path and uses ``design_systems.basename_of`` to take the leaf
+segment before lookup; instance identity (which floor) lives in the
+subtree path, not the name.
 """
 
 from __future__ import annotations

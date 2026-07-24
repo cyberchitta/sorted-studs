@@ -9,16 +9,11 @@ site. Material is a physical property, not a render axis — see
 ``materials.py``.
 
 ``basename_of`` lives here because both ``color_of`` and
-``materials.material_of`` need it to invert the floor-prefix naming
-convention; ``materials.py`` imports it from this file.
+``materials.material_of`` need it to map a qualified tree path to
+its attribute-lookup leaf; ``materials.py`` imports it from this
+file.
 
-Two complications relative to m02 / m03:
-
-* **Floor-prefixed instance names.** ``assembly.py`` adds parts as
-  ``f{idx}_{role}__<basename>`` so the four-floor stack stays
-  collision-free. ``basename_of(...)`` strips that prefix; tower-
-  global parts (``outer_vert_k`` / ``inner_vert_k``) carry no
-  prefix and pass through.
+One complication relative to m02 / m03:
 
 * **Stand-in names in ``single_floor.py``.** ``lower_trap_open`` is
   a stand-in for the floor below — same geometry as ``trap_open``,
@@ -62,12 +57,13 @@ def _basket_basenames() -> list[str]:
 
 # --- m05 role tags ----------------------------------------------------
 #
-# Keys are *basenames* — the part names sub-assembly builders use,
-# without any per-floor prefix. ``basename_of(...)`` below maps an
-# instance name back to a basename for lookup.
+# Keys are *basenames* — the leaf part names the sub-assembly builders
+# use. ``basename_of(...)`` below maps a qualified tree path to its
+# leaf for lookup; instance identity (which floor) lives in the
+# ``f{idx}`` subtree path, not the name.
 
 ROLE_OF: dict[str, Role | None] = {
-    # Frame — through-columns (tower-global, no floor prefix)
+    # Frame — through-columns (tower-global)
     **{f"outer_vert_{k}": Role.PRIMARY_STRUCTURE for k in range(6)},
     **{f"inner_vert_{k}": Role.PRIMARY_STRUCTURE for k in range(6)},
     # Frame — per-floor horizontals
@@ -120,16 +116,12 @@ DESIGN_SYSTEM: DesignSystem = bind_all(ROLE_OF, MODULE_OF)[resolve_name("M05")]
 # --- Instance-name → basename helpers ---------------------------------
 
 def basename_of(part_name: str) -> str:
-    """Map a m05 part identity (qualified tree path or bare instance
-    name) to its attribute-lookup basename: take the leaf segment of
-    a dotted path, then strip the ``f{idx}_{role}__`` floor prefix.
-    Tower-global parts (``outer_vert_k`` / ``inner_vert_k``) and
-    stand-ins used by ``single_floor.py`` carry no prefix and pass
-    through unchanged.
+    """Map a m05 part identity (qualified tree path or bare leaf
+    name) to its attribute-lookup basename: the leaf segment of a
+    dotted path. Root-level parts (``top_acrylic``, the
+    ``single_floor.py`` stand-ins) pass through unchanged.
     """
-    leaf = part_name.rsplit(".", 1)[-1]
-    sep = "__"
-    return leaf.split(sep, 1)[1] if sep in leaf else leaf
+    return part_name.rsplit(".", 1)[-1]
 
 
 # --- Basket size ramp -------------------------------------------------
@@ -184,7 +176,7 @@ def basket_color_of(n_size: int) -> Color:
 def color_of(part_name: str) -> Color | None:
     """Active design system's color for a m05 part instance.
 
-    Accepts either a basename or a floor-prefixed instance name. Falls
+    Accepts either a basename or a qualified tree path. Falls
     through to ``DESIGN_SYSTEM.color_of(...)``, which raises
     ``KeyError`` for an unknown basename — module-level coverage
     assertions in ``assembly.py`` / ``single_floor.py`` catch that

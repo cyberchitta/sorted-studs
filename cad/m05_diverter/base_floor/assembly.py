@@ -227,7 +227,6 @@ def motor_mount() -> Part:
 # --- Assembly -----------------------------------------------------------
 
 def build_drive_train(
-    prefix: str = "",
     color_fn: Callable[[str], Color | None] | None = None,
     material_fn: Callable[[str], str | None] | None = None,
 ) -> Assembly:
@@ -235,8 +234,8 @@ def build_drive_train(
     — as a sub-`Assembly` in the base-floor-local frame (rail-top
     datum at z=0; every part hangs below it). The part functions carry
     their own off-axis placement, so all four are placed at identity.
-    ``prefix`` / ``color_fn`` / ``material_fn`` follow the same
-    contract as the frame builders.
+    ``color_fn`` / ``material_fn`` follow the same leaf-name contract
+    as the frame builders.
     """
     def _co(name: str) -> Color | None:
         return color_fn(name) if color_fn is not None else None
@@ -245,13 +244,12 @@ def build_drive_train(
         return material_fn(name) if material_fn is not None else None
 
     a = Assembly()
-    for base_name, part in (
+    for n, part in (
         ("ring_gear", ring_gear()),
         ("pinion", pinion()),
         ("motor", motor()),
         ("motor_mount", motor_mount()),
     ):
-        n = f"{prefix}{base_name}"
         a = a.with_part(n, part, color=_co(n), material=_mt(n))
     return a
 

@@ -162,29 +162,29 @@ VERT_EXT_BELOW = -(BRACKET_Z_TOP - OUTER_BRACKET_PLATE_T) + 10.0  # 36
 # --- Assembly builders --------------------------------------------------
 
 def build_floor_horizontals(
-    prefix: str = "",
     color_fn: Callable[[str], Color | None] | None = None,
     material_fn: Callable[[str], str | None] | None = None,
 ) -> Assembly:
     """One floor's worth of horizontal frame members + brackets as a
     sub-`Assembly` in the floor-local frame (rail-top datum at z=0).
     The parent places the whole floor with one transform
-    (`Pos(0, 0, idx * FLOOR_H)` in the tower).
+    (`Pos(0, 0, idx * FLOOR_H)` in the tower); floor identity lives in
+    the parent's subtree path, so the leaf names here are plain.
 
-    Contains: outer hex (`{prefix}outer_horiz_k`), inner hex
-    (`{prefix}inner_horiz_k`), radial rails split at the inner-hex
-    vertex (`{prefix}radial_inner_k` / `{prefix}radial_outer_k`),
-    outer-vertex brackets (`{prefix}outer_vertex_bracket_k`), and
-    inner-vertex brackets (`{prefix}inner_vertex_bracket_k`).
+    Contains: outer hex (`outer_horiz_k`), inner hex (`inner_horiz_k`),
+    radial rails split at the inner-hex vertex (`radial_inner_k` /
+    `radial_outer_k`), outer-vertex brackets
+    (`outer_vertex_bracket_k`), and inner-vertex brackets
+    (`inner_vertex_bracket_k`).
 
     Through-columns are NOT built here — they span all floors and live
     in `build_through_columns`.
 
-    `color_fn` / `material_fn` are optional callables mapping each full
-    instance name (with prefix) to a `Color` / material string. Default
-    `None` keeps the standalone behavior (no color/material set);
-    multi-floor consumers thread `color_of` / `material_of` from the
-    module-level `design_systems.py`.
+    `color_fn` / `material_fn` are optional callables mapping each leaf
+    name to a `Color` / material string. Default `None` keeps the
+    standalone behavior (no color/material set); multi-floor consumers
+    thread `color_of` / `material_of` from the module-level
+    `design_systems.py`.
     """
     def _co(name: str) -> Color | None:
         return color_fn(name) if color_fn is not None else None
@@ -202,7 +202,7 @@ def build_floor_horizontals(
         vy_in = R_VERT_INNER * math.sin(math.radians(v_angle))
 
         # Outer-vertex bracket: local +X points INWARD toward hex center.
-        n_ovb = f"{prefix}outer_vertex_bracket_{k}"
+        n_ovb = f"outer_vertex_bracket_{k}"
         a = a.with_part(
             n_ovb,
             outer_bracket(),
@@ -212,7 +212,7 @@ def build_floor_horizontals(
         )
 
         # Inner-vertex bracket: same orientation convention as outer.
-        n_ivb = f"{prefix}inner_vertex_bracket_{k}"
+        n_ivb = f"inner_vertex_bracket_{k}"
         a = a.with_part(
             n_ivb,
             inner_bracket(),
@@ -226,7 +226,7 @@ def build_floor_horizontals(
         oe_angle = (k + 1) * 60.0
         oex = R_HEX_OUTER * math.cos(math.radians(oe_angle))
         oey = R_HEX_OUTER * math.sin(math.radians(oe_angle))
-        n_oh = f"{prefix}outer_horiz_{k}"
+        n_oh = f"outer_horiz_{k}"
         a = a.with_part(
             n_oh,
             _horiz_ext(OUTER_HORIZ_LEN),
@@ -240,7 +240,7 @@ def build_floor_horizontals(
         ie_angle = (k + 1) * 60.0
         iex = R_HEX_INNER * math.cos(math.radians(ie_angle))
         iey = R_HEX_INNER * math.sin(math.radians(ie_angle))
-        n_ih = f"{prefix}inner_horiz_{k}"
+        n_ih = f"inner_horiz_{k}"
         a = a.with_part(
             n_ih,
             _horiz_ext(INNER_HORIZ_LEN),
@@ -266,7 +266,7 @@ def build_floor_horizontals(
         ):
             rx = seg_mid * cos_r
             ry = seg_mid * sin_r
-            n_r = f"{prefix}{seg_name}_{k}"
+            n_r = f"{seg_name}_{k}"
             a = a.with_part(
                 n_r,
                 _horiz_ext(seg_len),
@@ -301,7 +301,7 @@ def build_through_columns(
     convention.
 
     Names: `outer_vert_k` and `inner_vert_k` for k in 0..5 (no floor
-    prefix — these are global to the tower).
+    subtree — these are global to the tower).
     """
     a = Assembly()
     length = z_top - z_bot
@@ -315,10 +315,10 @@ def build_through_columns(
         # the outer bracket's vert-arm plate (bracket local -X = world
         # +X rotated by v_angle at V_k). The 2020's 4-fold cross-
         # section makes v_angle mod 90° the only thing that matters.
-        for r_vert, prefix in ((R_VERT_OUTER, "outer"), (R_VERT_INNER, "inner")):
+        for r_vert, ring in ((R_VERT_OUTER, "outer"), (R_VERT_INNER, "inner")):
             vx = r_vert * cos_v
             vy = r_vert * sin_v
-            n = f"{prefix}_vert_{k}"
+            n = f"{ring}_vert_{k}"
             a = a.with_part(
                 n,
                 column,

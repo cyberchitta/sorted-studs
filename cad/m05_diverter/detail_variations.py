@@ -13,10 +13,10 @@ One layer for now:
     carries the per-floor + per-azimuth rotation) flows through
     untouched.
 
-The 4-floor tower instances every horizontal/radial under a
-``f{idx}_{role}__`` floor prefix; through-columns at both radii are
-tower-global and carry no prefix. ``basename_of(...)`` strips the prefix so the
-target match is one set of basenames regardless of floor count.
+The 4-floor tower instances every horizontal/radial inside per-floor
+``f{idx}`` subtrees; through-columns at both radii are tower-global.
+``basename_of(...)`` takes the leaf segment of the qualified path so
+the target match is one set of basenames regardless of floor count.
 
 Fasteners (vertex-bracket bolts, motor mount bolts, joint hardware)
 are deferred to a follow-up slice — see ``_notes/state/m05-diverter.md``.
@@ -92,10 +92,11 @@ def _vslot_for_axis_aligned_box(part: Part) -> Part:
 
 def default_detail(assembly: Assembly) -> dict[str, Part]:
     """Swap-only override map for every 2020 extrusion in the supplied
-    assembly. Names are matched by basename (floor prefix stripped),
-    so the same bundle covers ``single_floor.py`` (no prefix) and the
-    4-floor tower (``f{idx}_{role}__`` prefix) without enumeration.
-    Names whose basename is absent from the target set pass through.
+    assembly. Names are matched by basename (leaf segment of the
+    qualified path), so the same bundle covers ``single_floor.py``
+    (flat subtrees) and the 4-floor tower (per-floor ``f{idx}``
+    subtrees) without enumeration. Names whose basename is absent
+    from the target set pass through.
     """
     overrides: dict[str, Part] = {}
     # placed_parts, not .parts — a .parts walk is nesting-blind and

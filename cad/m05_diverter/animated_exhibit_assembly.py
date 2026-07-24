@@ -107,7 +107,7 @@ def build_exhibit_at(t: float) -> Assembly:
     into basket interiors, which is the mechanism's whole point and
     would fail static interference checks.
     """
-    a, _ = build_tower(
+    a = build_tower(
         EXHIBIT_FLOOR_PLAN,
         basket_layout=EXHIBIT_BASKETS_BY_FLOOR,
         with_top_deck=True,
