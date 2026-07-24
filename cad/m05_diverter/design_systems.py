@@ -116,9 +116,14 @@ def basename_of(part_name: str) -> str:
 
 # --- Basket size ramp -------------------------------------------------
 #
-# All baskets are tagged ``Role.CONSUMABLE``, which is a single palette
-# color. To make basket sizes (N = sides per polygon) visually
-# distinguishable, ramp luminance off the CONSUMABLE base.
+# All baskets share one tag on every axis (``Role.CONSUMABLE`` on the
+# role axis, ``Module.DIVERTER`` on the module axis), so they resolve
+# to a single palette color. To make basket sizes (N = sides per
+# polygon) visually distinguishable, ramp luminance off that shared
+# base — looked up through the design system's own axis-agnostic
+# ``color_of`` path, never by indexing the palette with a hardcoded
+# axis key (a ``palette[Role.…]`` reach crashes under the
+# module-keyed bauhaus palette).
 #
 # The ramp is anchored to the page: smaller baskets blend *toward* the
 # page background (less contrast), larger baskets shift *away* (more
@@ -149,17 +154,18 @@ def _page_shift_sign() -> int:
 
 
 def basket_color_of(n_size: int) -> Color:
-    """Per-size basket color: CONSUMABLE base with a luminance shift
-    keyed to ``n_size`` and the active palette's page direction.
-    Raises ``KeyError`` for an unknown size so a new basket variant
-    surfaces loudly instead of silently inheriting the base color.
+    """Per-size basket color: the baskets' shared base color under the
+    active design system, with a luminance shift keyed to ``n_size``
+    and the active palette's page direction. Raises ``KeyError`` for
+    an unknown size so a new basket variant surfaces loudly instead of
+    silently inheriting the base color.
     """
     if n_size not in _BASKET_TINT_BY_N:
         raise KeyError(
             f"no basket-size tint for N={n_size} — add an entry to "
             f"_BASKET_TINT_BY_N in cad/m05_diverter/design_systems.py"
         )
-    base = DESIGN_SYSTEM.palette[Role.CONSUMABLE]
+    base = DESIGN_SYSTEM.color_of(_basket_basenames()[0])
     return blend(base, _BASKET_TINT_BY_N[n_size] * _page_shift_sign())
 
 
