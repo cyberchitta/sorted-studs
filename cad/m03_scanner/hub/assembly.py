@@ -314,14 +314,18 @@ def build_turret_hub_rotor() -> Assembly:
 # --- Standalone assembly -----------------------------------------------
 
 # All four turret-hub parts (housing + shaft + 2 bearings). All
-# pairwise no-interference. Bearings press-fit into the housing bore
-# (tangent contact, passes assert_no_interference at zero overlap)
-# and onto the shaft (same).
+# pairwise no-interference, addressed by path under the two local
+# subtrees. Bearings press-fit into the housing bore (tangent contact,
+# passes assert_no_interference at zero overlap) and onto the shaft
+# (same).
 assembly = (
     Assembly()
     .with_subassembly("static", build_turret_hub_static())
     .with_subassembly("rotor", build_turret_hub_rotor())
-    .assert_no_interference_within(HUB_PART_NAMES)
+)
+assembly = assembly.assert_no_interference_within(
+    tuple(f"static.{n}" for n in HUB_STATIC_PART_NAMES)
+    + tuple(f"rotor.{n}" for n in HUB_ROTOR_PART_NAMES)
 )
 
 

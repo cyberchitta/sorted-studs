@@ -582,7 +582,11 @@ assembly = assembly.with_part(
 # cross-rail top, bracket plate tangent on motor flange — also zero-
 # overlap. Pulleys vs each other are clear in X (center distance 58.6,
 # OD radii 19.1 + 6.4 = 25.5, gap 33.1 mm).
-_ALL = list(DRIVE_PART_NAMES) + ["hub_shaft_stub", "cross_rail_stub"]
+_ALL = (
+    [f"rotor.{n}" for n in DRIVE_ROTOR_PART_NAMES]
+    + [f"static.{n}" for n in DRIVE_STATIC_PART_NAMES]
+    + ["hub_shaft_stub", "cross_rail_stub"]
+)
 assembly = assembly.assert_no_interference_within(_ALL)
 
 

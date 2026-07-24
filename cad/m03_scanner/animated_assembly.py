@@ -154,7 +154,7 @@ def _station_at_dump(q: int) -> str:
 # pad against drop / pad above drop) is noisier than the value.
 
 _DYNAMIC_CONFLICT_PAIRS: frozenset[tuple[str, str]] = frozenset({
-    ("platform_dump_frame", "servo_arm"),
+    ("turret.rotor.platform_dump.frame", "turret.servo_arm.servo_arm"),
 })
 
 
@@ -179,14 +179,14 @@ def build_m03_at(t: float) -> Assembly:
     Three joints are animated:
       * ``turret.rotor`` — rotor azimuth.
       * ``turret.rotor.platform_<dump_station>`` — the one platform
-        currently at DUMP. Per-station axis direction (set in
-        ``assembly.py``'s ``_PLATFORM_PIN_TURRET``) makes positive
+        currently at DUMP. The shared cartridge-local pin axis
+        (``assembly.py``'s ``_PLATFORM_PIN_LOCAL``) makes positive
         joint angle ↔ outer-DOWN tilt, so the same ``tilt_deg`` value
         drives whichever station happens to be at DUMP.
       * ``turret.servo_arm`` — bench-mounted lifter, co-tilts.
 
-    Internal checks survive intact — they're name-based; nested joint
-    composition leaves part names unchanged."""
+    Internal checks survive intact — they address tree paths, which
+    joint angles don't change."""
     theta_rotor_deg = rotor_schedule(t)
     tilt_deg = tilt_schedule(t)
     q, _ = _quarter(t)

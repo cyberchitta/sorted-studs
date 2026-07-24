@@ -50,15 +50,10 @@ MATERIAL_OF: dict[str, str | None] = {
     "pin_load": "steel",
     "pin_idle": "steel",
     "pin_dump": "steel",
-    # turret.turret_platform — 4 stations × {acrylic, frame}
-    **{
-        f"platform_{station}_{sub}": mat
-        for station in ("image", "load", "idle", "dump")
-        for sub, mat in (
-            ("acrylic", "acrylic_clear"),
-            ("frame", "pla_matte"),
-        )
-    },
+    # turret.rotor.platform_<station> — shared cartridge leaves.
+    # Station identity is the subtree path; attributes key on the leaf.
+    "acrylic": "acrylic_clear",
+    "frame": "pla_matte",
     # turret.dump_servo
     "servo_bracket": "pla_matte",
     "servo_arm": "pla_matte",

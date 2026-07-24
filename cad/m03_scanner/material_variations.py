@@ -19,18 +19,20 @@ when sweeping for comparison renders or future FEA.
 
 from __future__ import annotations
 
+# Keys are full tree paths — these overrides address specific placed
+# parts, unlike the leaf-keyed attribute maps in materials.py.
 DEFAULT_OVERRIDES: dict[str, str] = {
     # Camera mounts: PCB (FR4) and lens (glass) for each of the four
     # tetrahedral cameras — chitra-cad has neither material yet.
-    "cam_front_low_pcb": "pla_matte",
-    "cam_back_upper_pcb": "pla_matte",
-    "cam_below_left_pcb": "pla_matte",
-    "cam_below_right_pcb": "pla_matte",
-    "cam_front_low_lens": "pla_matte",
-    "cam_back_upper_lens": "pla_matte",
-    "cam_below_left_lens": "pla_matte",
-    "cam_below_right_lens": "pla_matte",
+    "rig.cam_front_low_pcb": "pla_matte",
+    "rig.cam_back_upper_pcb": "pla_matte",
+    "rig.cam_below_left_pcb": "pla_matte",
+    "rig.cam_below_right_pcb": "pla_matte",
+    "rig.cam_front_low_lens": "pla_matte",
+    "rig.cam_back_upper_lens": "pla_matte",
+    "rig.cam_below_left_lens": "pla_matte",
+    "rig.cam_below_right_lens": "pla_matte",
     # Slotted opto-interrupter housing — black plastic vs generic
     # pla_matte not committed.
-    "homing_sensor": "pla_matte",
+    "turret.homing.homing_sensor": "pla_matte",
 }

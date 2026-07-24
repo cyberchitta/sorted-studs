@@ -14,9 +14,12 @@ Composes the integrated camera rig + turret in m03-local coordinates
     world placement in `cad/assembly.py` maps onto the m05 hub axis
     (option a', 2026-05-05).
 
-Part names are globally unique and unchanged by the nesting; checks
-are declared at the m03 root against those flat names (assertions
-inside nested assemblies are NOT evaluated by the root `check()`).
+Part identity is the dotted tree path (`turret.rotor.arm.spider`,
+`rig.cam_front_low_pcb`); checks are declared at the m03 root against
+those paths — mostly via subtree group selectors (assertions inside
+nested assemblies are NOT evaluated by the root `check()`). Attributes
+(role tags, materials) key on the leaf name — a builder binds them in
+its own frame without knowing where it will be placed.
 
 Within-unit checks at this level are the union of arch-internal +
 turret-internal + arch×turret pairs. After Phase 2 (2026-05-06), the
@@ -45,7 +48,7 @@ prefix on; the m05 collisions on `frame`/`drive` are handled by
 import sys
 from pathlib import Path
 
-from build123d import Axis, Circle, Pos, Rectangle, Rot, loft
+from build123d import Axis, Circle, Pos, Rectangle, loft
 
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 from cad_khana.mechanism.check import check
@@ -125,41 +128,19 @@ _CAMERA_INSTANCES = {
 
 
 # --- Naming -----------------------------------------------------------
+#
+# Identity is the tree path; there are no hand-maintained name tuples.
+# The only explicit list is the rig's camera parts (direct children of
+# `rig`, needed to split them from the `rig.arch` subtree in the
+# rig-internal check).
 
-# Rig.
-ARCH_NAMES = _arch.ARCH_PART_NAMES
-CAMERA_PART_NAMES = tuple(
-    name
-    for prefix in _CAMERA_INSTANCES
-    for name in (f"{prefix}_clamp_mount", f"{prefix}_pcb", f"{prefix}_lens")
-)
-CAMERA_RIG_PART_NAMES = list(ARCH_NAMES) + list(CAMERA_PART_NAMES)
-
-# Turret.
-TURRET_FRAME_NAMES = _frame.TURRET_FRAME_PART_NAMES
-TURRET_HUB_NAMES = _hub.HUB_PART_NAMES
-TURRET_ARM_NAMES = _arm.ARM_PART_NAMES
 TURRET_STATIONS = ("image", "load", "idle", "dump")
-TURRET_PLATFORM_NAMES = tuple(
-    f"platform_{station}_{sub_name}"
-    for station in TURRET_STATIONS
-    for sub_name, _ in _turret_platform._IMAGE_LOCS
-)
-TURRET_DUMP_SERVO_NAMES = _dump_servo.SERVO_PART_NAMES
-TURRET_DRIVE_NAMES = _drive.DRIVE_PART_NAMES
-TURRET_HOMING_NAMES = _homing.HOMING_PART_NAMES
 
-TURRET_PART_NAMES = (
-    list(TURRET_FRAME_NAMES)
-    + list(TURRET_HUB_NAMES)
-    + list(TURRET_ARM_NAMES)
-    + list(TURRET_PLATFORM_NAMES)
-    + list(TURRET_DUMP_SERVO_NAMES)
-    + list(TURRET_DRIVE_NAMES)
-    + list(TURRET_HOMING_NAMES)
+CAMERA_PART_PATHS = tuple(
+    f"rig.{prefix}_{suffix}"
+    for prefix in _CAMERA_INSTANCES
+    for suffix in ("clamp_mount", "pcb", "lens")
 )
-
-M03_PART_NAMES = list(CAMERA_RIG_PART_NAMES) + list(TURRET_PART_NAMES)
 
 
 # --- Composition builders --------------------------------------------
@@ -227,33 +208,6 @@ _PLATFORM_PIN_LOCAL = RevoluteJoint(
 )
 
 
-def _build_platform_subassembly(station: str) -> Assembly:
-    """Cartridge-local platform sub-assembly. Parts are placed at
-    cartridge identity; the station's centroid + Rz are folded into
-    ``location=`` at ``with_subassembly`` time, and the shared
-    cartridge-local pin axis (``_PLATFORM_PIN_LOCAL``) rides along as
-    the sub-assembly's ``joint``."""
-    sub = Assembly()
-    for sub_name, image_loc in _turret_platform._IMAGE_LOCS:
-        full_name = f"platform_{station}_{sub_name}"
-        # Mirror add_turret_platform's color/material rule — the
-        # acrylic insert carries a translucent intrinsic baseColor;
-        # everything else looks up via design_systems.
-        color = (
-            _turret_platform.ACRYLIC_INSERT_COLOR
-            if sub_name == "acrylic"
-            else color_of(full_name)
-        )
-        sub = sub.with_part(
-            full_name,
-            _turret_platform._PART_BUILDERS[sub_name](),
-            location=image_loc,
-            material=material_of(full_name),
-            color=color,
-        )
-    return sub
-
-
 def _build_turret_rotor() -> Assembly:
     """Rotor sub-assembly in turret-local: the rigid body that revolves
     about the hub Z axis. Includes the spider + hinge pins + every
@@ -273,11 +227,8 @@ def _build_turret_rotor() -> Assembly:
     for station in TURRET_STATIONS:
         rotor = rotor.with_subassembly(
             f"platform_{station}",
-            _build_platform_subassembly(station),
-            location=(
-                _turret_platform._STATION_CENTROIDS[station]
-                * Rot(0, 0, _turret_platform.STATION_ANGLES[station])
-            ),
+            _turret_platform.build_platform_cartridge(),
+            location=_turret_platform.STATION_LOCATIONS[station],
             joint=_PLATFORM_PIN_LOCAL,
         )
     return rotor
@@ -363,12 +314,13 @@ def build_turret() -> Assembly:
 
 def add_m03(a: Assembly) -> Assembly:
     """Compose m03 as two unit subtrees: the camera rig at m03
-    identity and the turret unit placed by ``TURRET_BASE``. Part
-    names are unchanged by nesting (``placed_parts`` flattens), so
-    all name-keyed consumers — checks, design systems, materials,
-    renders, GLB nodes — see the same flat namespace as before.
-    Joint paths are tree paths: ``turret.rotor``,
-    ``turret.rotor.platform_<station>``, ``turret.servo_arm``."""
+    identity and the turret unit placed by ``TURRET_BASE``. Identity
+    is the tree path (``placed_parts`` qualifies names as it
+    flattens): checks, renders, GLB nodes, and diff all address
+    ``turret.rotor.arm.spider``-style paths, while attribute maps
+    (role tags, materials) key on the leaf name. Joint paths:
+    ``turret.rotor``, ``turret.rotor.platform_<station>``,
+    ``turret.servo_arm``."""
     a = a.with_subassembly("rig", build_camera_rig())
     a = a.with_subassembly("turret", build_turret(), location=TURRET_BASE)
     return a
@@ -408,7 +360,7 @@ def add_m03_internal_checks(
     ``animated_assembly.py`` swap in a different set when the lever /
     a platform is mid-lift.
 
-    ``suppressed_pairs`` (frozenset of ``(name_a, name_b)`` — order
+    ``suppressed_pairs`` (frozenset of ``(path_a, path_b)`` — order
     independent) skips both the ``assert_no_interference`` and any
     ``assert_interference`` for those pairs. Use for dynamic-conflict
     pairs whose overlap state changes throughout the animation but is
@@ -418,40 +370,23 @@ def add_m03_internal_checks(
     """
     # 1. Rig-internal — camera mounts vs every arch member (no
     #    suppressions apply within the rig).
-    non_arch = [n for n in CAMERA_RIG_PART_NAMES if n not in ARCH_NAMES]
-    a = a.assert_no_interference_between(non_arch, ARCH_NAMES)
+    a = a.assert_no_interference_between(CAMERA_PART_PATHS, "rig.arch")
 
-    # 2. Turret-internal — every pair.
+    # 2. Turret-internal — every pair under the turret subtree.
     a = a.assert_no_interference_within(
-        TURRET_PART_NAMES,
+        "turret",
         known_overlaps=known_overlaps,
         suppressed=suppressed_pairs,
     )
 
     # 3. Cross — turret × rig.
     a = a.assert_no_interference_between(
-        TURRET_PART_NAMES,
-        CAMERA_RIG_PART_NAMES,
+        "turret",
+        "rig",
         suppressed=suppressed_pairs,
     )
 
     return a
-
-
-# --- Design-system coverage ------------------------------------------
-#
-# Every named m03 part must appear in the active design system's
-# tagging dict (`None` allowed for hardware / optical glass / acrylic
-# — those keep their material's intrinsic color). A part added without
-# a tag fails here instead of silently rendering off-palette. Swapping
-# `DESIGN_SYSTEM` to a palette with missing tags also fails here, so
-# the swap surface is loud.
-
-_untagged = [n for n in M03_PART_NAMES if n not in DESIGN_SYSTEM.tag_of]
-assert not _untagged, (
-    f"{len(_untagged)} m03 part(s) missing a tag for design system "
-    f"'{DESIGN_SYSTEM.name}' in design_systems.py: {_untagged}"
-)
 
 
 # --- Sightline cones (silhouette assertion, was c7-c) -----------------
@@ -544,7 +479,7 @@ _SIGHTLINE_KNOWN_OVERLAP_REASON = (
     "graze the IMAGE frame wall + corner lips below z=0; bottom-sliver "
     "vignetting covered by the opposite below camera"
 )
-_SIGHTLINE_KNOWN_OVERLAPS = frozenset({"platform_image_frame"})
+_SIGHTLINE_KNOWN_OVERLAPS = frozenset({"turret.rotor.platform_image.frame"})
 
 
 def add_sightline_cone_checks(a: Assembly) -> Assembly:
@@ -553,7 +488,9 @@ def add_sightline_cone_checks(a: Assembly) -> Assembly:
     documented frame-graze pairs downgraded to `assert_interference`
     regression alarms. Apply to a copy consumed only by `check()` —
     never to the rendered/exported `assembly`."""
-    opaque = [n for n in M03_PART_NAMES if "acrylic" not in n]
+    # Opaque set fixed at entry — the cones added below must not land
+    # in each other's check groups.
+    opaque = [p.name for p in a.placed_parts if "acrylic" not in p.name]
     for cone_name, vertex_pos in SIGHTLINE_CONE_SPECS.items():
         a = a.with_part(cone_name, sightline_cone(vertex_pos))
         a = a.assert_no_interference_between(
@@ -570,6 +507,30 @@ def add_sightline_cone_checks(a: Assembly) -> Assembly:
 # --- Standalone assembly ---------------------------------------------
 
 assembly = add_m03_internal_checks(add_m03(Assembly()))
+
+
+# --- Design-system coverage ------------------------------------------
+#
+# Every m03 part's leaf name must appear in the active design system's
+# tagging dict (`None` allowed for hardware / optical glass / acrylic
+# — those keep their material's intrinsic color). Attributes key on
+# the leaf (a builder binds them without knowing its placement path);
+# identity stays the full path. A part added without a tag fails here
+# instead of silently rendering off-palette. Swapping `DESIGN_SYSTEM`
+# to a palette with missing tags also fails here, so the swap surface
+# is loud.
+
+_untagged = sorted(
+    {
+        leaf
+        for p in assembly.placed_parts
+        if (leaf := p.name.rsplit(".", 1)[-1]) not in DESIGN_SYSTEM.tag_of
+    }
+)
+assert not _untagged, (
+    f"{len(_untagged)} m03 part leaf name(s) missing a tag for design "
+    f"system '{DESIGN_SYSTEM.name}' in design_systems.py: {_untagged}"
+)
 
 
 if __name__ == "__main__":

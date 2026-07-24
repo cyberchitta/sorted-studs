@@ -53,8 +53,11 @@ Coordinate frame = cartridge-local IMAGE pose:
     +Y     = radial outward from hub
     +Z     = up
 
-`add_turret_platform(a, station)` translates and rotates this
-cartridge to each station in turret-local (option a' rename,
+`build_platform_cartridge()` returns the two-part cartridge as a
+station-independent sub-assembly (leaves "acrylic" and "frame");
+station identity lives in the subtree path the caller places it
+under (`turret.rotor.platform_<station>`). `STATION_LOCATIONS`
+maps each station to its turret-local placement (option a' rename,
 2026-05-05): IMAGE at (0, +R, 0) with no rotation, LOAD at (+R, 0,
 0) with Rz(-90), IDLE at (-R, 0, 0) with Rz(+90), DUMP at (0, -R,
 0) with Rz(+180). Same shape, four poses. The new DUMP rotation
@@ -494,7 +497,7 @@ def frame():
     return body
 
 
-# --- Per-station placement helper --------------------------------------
+# --- Per-station placement --------------------------------------------
 
 # Rotation that maps the cartridge-local IMAGE pose onto each station's
 # turret-local pose. The cartridge is built in cartridge-local with the
@@ -529,76 +532,58 @@ _STATION_CENTROIDS = {
     "dump":  Pos(0, -TURRET_ARM_R, 0),
 }
 
-# Cartridge-local part placements. Used by both the standalone
-# (cartridge in isolation) and the per-station builder below
-# (translated + rotated to its turret-local pose).
-#
-# Acrylic gets an explicit ``Pos(0, 0, -ACRYLIC_INSERT_T/2)`` shift so
-# its top face lands at cartridge-local ``z = 0`` — the part itself
-# stays at identity intrinsic (canonical local frame), required for
-# the animated GLB exporter to track its rigid-body trajectory
-# without losing the part-internal offset.
-_IMAGE_LOCS = (
-    ("acrylic", Pos(0, 0, -ACRYLIC_INSERT_T / 2)),
-    ("frame", Pos(0, 0, 0)),
-)
-
-_PART_BUILDERS = {
-    "acrylic": acrylic_insert,
-    "frame": frame,
+# Turret-local placement per station: centroid translate × heading
+# rotation. The parent composes one cartridge sub-assembly per station
+# at these locations (`turret.rotor.platform_<station>`).
+STATION_LOCATIONS = {
+    station: _STATION_CENTROIDS[station] * Rot(0, 0, STATION_ANGLES[station])
+    for station in STATION_ANGLES
 }
 
-def add_turret_platform(
-    a: Assembly, station: str, base=Pos(0, 0, 0)
-) -> Assembly:
-    """Place one cartridge at the named station ('image', 'load',
-    'idle', 'dump'). Cartridge geometry is built in cartridge-local
-    IMAGE pose; this helper applies a per-station rotation around the
-    hub axis (turret-local origin) and translates to the station's
-    centroid. `base` (default: identity) is pre-multiplied to lift the
-    result into a parent frame. Part names are prefixed with the
-    station to avoid collisions across instances
-    ("platform_load_acrylic", etc.)."""
-    angle = STATION_ANGLES[station]
-    centroid = _STATION_CENTROIDS[station]
-    rotation = Rot(0, 0, angle)
-    for sub_name, image_loc in _IMAGE_LOCS:
-        full_name = f"platform_{station}_{sub_name}"
-        # The acrylic insert carries an intrinsic translucent baseColor
-        # — design-system ``color_of`` returns None for it (intrinsic
-        # material colour), but the shape-truth GLB needs an alpha
-        # channel to render through. Faint blue-white at α=0.25 reads
-        # as clear PMMA in <model-viewer>'s flat-shaded path; the
-        # photo-real Cycles path (chitra-cad) uses the full
-        # transmission/IOR material instead and ignores this color.
-        color = (
-            ACRYLIC_INSERT_COLOR
-            if sub_name == "acrylic"
-            else color_of(full_name)
+
+def build_platform_cartridge() -> Assembly:
+    """Cartridge sub-assembly in cartridge-local IMAGE pose — the two
+    station-independent leaves "acrylic" and "frame". Station identity
+    lives in the subtree path the caller places this under
+    (`turret.rotor.platform_<station>`); attributes (color, material,
+    role tags) key on the leaf names.
+
+    Acrylic gets an explicit ``Pos(0, 0, -ACRYLIC_INSERT_T/2)`` shift so
+    its top face lands at cartridge-local ``z = 0`` — the part itself
+    stays at identity intrinsic (canonical local frame), required for
+    the animated GLB exporter to track its rigid-body trajectory
+    without losing the part-internal offset.
+
+    The acrylic insert carries an intrinsic translucent baseColor —
+    design-system ``color_of`` returns None for it (intrinsic material
+    colour), but the shape-truth GLB needs an alpha channel to render
+    through (see ``ACRYLIC_INSERT_COLOR``)."""
+    return (
+        Assembly()
+        .with_part(
+            "acrylic",
+            acrylic_insert(),
+            location=Pos(0, 0, -ACRYLIC_INSERT_T / 2),
+            material=material_of("acrylic"),
+            color=ACRYLIC_INSERT_COLOR,
         )
-        a = a.with_part(
-            full_name,
-            _PART_BUILDERS[sub_name](),
-            location=base * centroid * rotation * image_loc,
-            material=material_of(full_name),
-            color=color,
+        .with_part(
+            "frame",
+            frame(),
+            material=material_of("frame"),
+            color=color_of("frame"),
         )
-    return a
+    )
 
 
 # --- Standalone assembly (cartridge-local, no station placement) ------
 
-# Build the cartridge in cartridge-local with no station rotation /
-# translation. Pairwise no-interference checks are invariant under
-# rigid motion; this verifies the cartridge geometry alone.
-assembly = Assembly()
-_STANDALONE_NAMES = tuple(f"cartridge_{sub_name}" for sub_name, _ in _IMAGE_LOCS)
-for (sub_name, image_loc), full_name in zip(_IMAGE_LOCS, _STANDALONE_NAMES):
-    assembly = assembly.with_part(full_name, _PART_BUILDERS[sub_name](), location=image_loc)
-
-for _i, _a in enumerate(_STANDALONE_NAMES):
-    for _b in _STANDALONE_NAMES[_i + 1:]:
-        assembly = assembly.assert_no_interference(_a, _b)
+# The cartridge in isolation. Pairwise no-interference checks are
+# invariant under rigid motion; this verifies the cartridge geometry
+# alone.
+assembly = build_platform_cartridge().assert_no_interference(
+    "acrylic", "frame"
+)
 
 
 if __name__ == "__main__":

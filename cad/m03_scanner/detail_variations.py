@@ -111,16 +111,16 @@ def _vslot_for_axis_aligned_box(part: Part) -> Part:
 
 def default_detail(assembly: Assembly) -> dict[str, Part]:
     """Swap-only override map for every 2020 extrusion in the supplied
-    assembly. Straight rails are detected by name (axis-aligned, bbox-
-    derived); names absent from the assembly are silently skipped, so
-    the bundle stays robust to slice changes that drop or rename a
-    member.
+    assembly. Straight rails are matched by leaf name (the target set
+    is placement-agnostic) but keyed by full path — the form
+    ``with_detailed_geometry`` addresses. Leaves absent from the
+    assembly are silently skipped, so the bundle stays robust to slice
+    changes that drop or rename a member.
     """
     overrides: dict[str, Part] = {}
-    parts_by_name = {p.name: p for p in assembly.placed_parts}
-    for name, placed in parts_by_name.items():
-        if name in _STRAIGHT_EXTRUSION_TARGETS:
-            overrides[name] = _vslot_for_axis_aligned_box(placed.part)
+    for placed in assembly.placed_parts:
+        if placed.name.rsplit(".", 1)[-1] in _STRAIGHT_EXTRUSION_TARGETS:
+            overrides[placed.name] = _vslot_for_axis_aligned_box(placed.part)
     return overrides
 
 
@@ -181,15 +181,21 @@ def apply_default_detail(assembly: Assembly) -> Assembly:
     joint-clearance checks. Cheap-geometry consumers
     (``assembly.py``'s ``check()``) ignore this entirely.
     """
-    parts_by_name = {p.name: p for p in assembly.placed_parts}
+    # Leaf-keyed lookup: both leaves are unique across the m03 tree,
+    # and matching by leaf keeps this helper placement-agnostic.
+    parts_by_leaf = {
+        p.name.rsplit(".", 1)[-1]: p for p in assembly.placed_parts
+    }
     overrides: dict[str, object] = dict(default_detail(assembly))
     fastener_names: list[str] = []
 
     # Drive-bracket foot bolts — only emitted if the bracket itself is
     # in the assembly (lets a sub-assembly slice that omits the drive
     # use the same helper without a missing-key crash).
-    if "drive_bracket" in parts_by_name:
-        foot_overrides = _drive_foot_bolts(parts_by_name["drive_bracket"].location)
+    if "drive_bracket" in parts_by_leaf:
+        foot_overrides = _drive_foot_bolts(
+            parts_by_leaf["drive_bracket"].location
+        )
         overrides.update(foot_overrides)
         fastener_names.extend(foot_overrides.keys())
 
@@ -197,12 +203,16 @@ def apply_default_detail(assembly: Assembly) -> Assembly:
     for fastener in fastener_names:
         # Bolt shank passes through the foot's M5 clearance hole — zero
         # overlap with the bracket (the hole is bored out of the foot).
-        if "drive_bracket" in parts_by_name:
-            out = out.assert_no_interference(fastener, "drive_bracket")
+        if "drive_bracket" in parts_by_leaf:
+            out = out.assert_no_interference(
+                fastener, parts_by_leaf["drive_bracket"].name
+            )
         # Bolt shank dips 6 mm past the rail top face into the V-slot's
         # opening — clear of the rail's actual material (the slot is
         # hollow at that depth). Tightening the bolt length any further
         # would start to graze the rib region.
-        if "floor_cross_x" in parts_by_name:
-            out = out.assert_no_interference(fastener, "floor_cross_x")
+        if "floor_cross_x" in parts_by_leaf:
+            out = out.assert_no_interference(
+                fastener, parts_by_leaf["floor_cross_x"].name
+            )
     return out

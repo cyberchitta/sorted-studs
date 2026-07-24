@@ -98,7 +98,10 @@ def default_detail(assembly: Assembly) -> dict[str, Part]:
     Names whose basename is absent from the target set pass through.
     """
     overrides: dict[str, Part] = {}
-    for placed in assembly.parts:
+    # placed_parts, not .parts — a .parts walk is nesting-blind and
+    # would skip anything moved into a sub-assembly (all current
+    # extrusion targets are root-level, but don't rely on it).
+    for placed in assembly.placed_parts:
         if basename_of(placed.name) in _STRAIGHT_EXTRUSION_BASENAMES:
             overrides[placed.name] = _vslot_for_axis_aligned_box(placed.part)
     return overrides

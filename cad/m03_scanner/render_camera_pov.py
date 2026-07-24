@@ -82,7 +82,11 @@ def _scene_excluding(prefix: str) -> Scene:
     housing."""
     from dataclasses import replace
     excluded = frozenset(
-        {f"{prefix}_clamp_mount", f"{prefix}_pcb", f"{prefix}_lens"}
+        {
+            f"rig.{prefix}_clamp_mount",
+            f"rig.{prefix}_pcb",
+            f"rig.{prefix}_lens",
+        }
     )
     return replace(
         base_scene,

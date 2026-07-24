@@ -70,17 +70,12 @@ ROLE_OF: dict[str, Role | None] = {
     "pin_load": None,
     "pin_idle": None,
     "pin_dump": None,
-    # --- turret.turret_platform × 4 stations × 2 sub-parts ------------
+    # --- turret.rotor.platform_<station> — shared cartridge leaves ----
+    # Station identity is the subtree path; tags key on the leaf name.
     # Acrylic insert stays None (clear); the integrated printed frame
     # tilts with the platform during dump → MECHANISM.
-    **{
-        f"platform_{station}_{sub}": role
-        for station in ("image", "load", "idle", "dump")
-        for sub, role in (
-            ("acrylic", None),
-            ("frame", Role.MECHANISM),
-        )
-    },
+    "acrylic": None,
+    "frame": Role.MECHANISM,
     # --- turret.dump_servo --------------------------------------------
     "servo_bracket": Role.SECONDARY_STRUCTURE,
     "servo_arm": Role.MECHANISM,

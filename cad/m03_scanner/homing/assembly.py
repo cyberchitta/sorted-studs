@@ -495,7 +495,11 @@ assembly = assembly.with_part(
 # Z faces are tangent to disc Z faces (zero overlap). Bracket foot
 # tangent on cross-rail top, sensor outer face tangent on bracket post
 # +X face — also zero-overlap.
-_ALL = list(HOMING_PART_NAMES) + ["hub_shaft_stub", "cross_rail_stub"]
+_ALL = (
+    [f"rotor.{n}" for n in HOMING_ROTOR_PART_NAMES]
+    + [f"static.{n}" for n in HOMING_STATIC_PART_NAMES]
+    + ["hub_shaft_stub", "cross_rail_stub"]
+)
 assembly = assembly.assert_no_interference_within(_ALL)
 
 

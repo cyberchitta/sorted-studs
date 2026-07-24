@@ -253,21 +253,30 @@ def _add_top_deck(a: Assembly, *, top_z: float) -> Assembly:
 
 # --- Cross-check helpers -----------------------------------------------
 
+def _rot(name: str) -> str:
+    """Tree path of a rotating-stack part as seen from the tower root.
+    Column / hinge pin / ramp / trap parts live inside the
+    ``rotating_stack`` sub-assembly, so assertions (which address
+    qualified paths) reach them through its prefix; static parts keep
+    their bare root-level names."""
+    return f"rotating_stack.{name}"
+
+
 def _add_floor_pair_checks(
     a: Assembly, lower_pre: str, upper_pre: str,
 ) -> Assembly:
     """Adjacent-floor cross-checks: upper floor's column-bottom stack
     must clear the lower floor's open-trap envelope and column-top."""
     upper_stack = [
-        f"{upper_pre}column",
+        _rot(f"{upper_pre}column"),
         f"{upper_pre}ring_bearing",
         f"{upper_pre}bearing_spider",
     ]
     for u in upper_stack:
         a = (
             a
-            .assert_no_interference(f"{lower_pre}trap_open", u)
-            .assert_no_interference(f"{lower_pre}column", u)
+            .assert_no_interference(_rot(f"{lower_pre}trap_open"), u)
+            .assert_no_interference(_rot(f"{lower_pre}column"), u)
         )
     return a
 
@@ -284,7 +293,7 @@ def _add_top_deck_checks(a: Assembly, top_pre: str) -> Assembly:
             .assert_no_interference("top_acrylic", f"outer_vert_{k}")
             .assert_no_interference("top_acrylic", f"inner_vert_{k}")
         )
-    return a.assert_no_interference("top_acrylic", f"{top_pre}column")
+    return a.assert_no_interference("top_acrylic", _rot(f"{top_pre}column"))
 
 
 def _add_drive_train_checks(a: Assembly, base_pre: str) -> Assembly:
@@ -302,7 +311,7 @@ def _add_drive_train_checks(a: Assembly, base_pre: str) -> Assembly:
     # No overlap with the bearing / spider — pure z stacking.
     a = (
         a
-        .assert_no_interference(ring, f"{base_pre}column")
+        .assert_no_interference(ring, _rot(f"{base_pre}column"))
         .assert_no_interference(ring, f"{base_pre}ring_bearing")
         .assert_no_interference(ring, f"{base_pre}bearing_spider")
     )
@@ -318,7 +327,7 @@ def _add_drive_train_checks(a: Assembly, base_pre: str) -> Assembly:
             .assert_no_interference(pin, f"{base_pre}radial_outer_{k}")
         )
     for other in (
-        f"{base_pre}column",
+        _rot(f"{base_pre}column"),
         f"{base_pre}ring_bearing",
         f"{base_pre}bearing_spider",
     ):
@@ -327,12 +336,12 @@ def _add_drive_train_checks(a: Assembly, base_pre: str) -> Assembly:
     # Motor body hangs at z ∈ [-65, -25], below every other modeled part
     # and inside the rail-inner ring — clears the whole base floor.
     for other in (
-        f"{base_pre}column",
+        _rot(f"{base_pre}column"),
         f"{base_pre}ring_bearing",
         f"{base_pre}bearing_spider",
-        f"{base_pre}ramp",
-        f"{base_pre}trap_closed",
-        f"{base_pre}trap_open",
+        _rot(f"{base_pre}ramp"),
+        _rot(f"{base_pre}trap_closed"),
+        _rot(f"{base_pre}trap_open"),
     ):
         a = a.assert_no_interference(mtr, other)
     for k in range(6):
@@ -354,7 +363,7 @@ def _add_drive_train_checks(a: Assembly, base_pre: str) -> Assembly:
             .assert_no_interference(mount, f"{base_pre}inner_horiz_{k}")
         )
     for other in (
-        f"{base_pre}column",
+        _rot(f"{base_pre}column"),
         f"{base_pre}ring_bearing",
         f"{base_pre}bearing_spider",
     ):
