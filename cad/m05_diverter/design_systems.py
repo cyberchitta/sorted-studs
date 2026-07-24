@@ -23,15 +23,9 @@ One complication relative to m02 / m03:
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
 from build123d import Color
 
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-
-from cad.design_systems import (  # noqa: E402
+from ..design_systems import (
     DesignSystem,
     Module,
     Role,
@@ -39,11 +33,7 @@ from cad.design_systems import (  # noqa: E402
     blend,
     resolve_name,
 )
-from build123d import Color  # noqa: E402
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-from params import FLOOR_LAYOUT  # noqa: E402
+from .params import FLOOR_LAYOUT
 
 
 # --- Basket name expansion --------------------------------------------

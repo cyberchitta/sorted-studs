@@ -24,17 +24,13 @@ free of trajectory inference and chord-vs-arc drift.
 
 from __future__ import annotations
 
-import sys
 from dataclasses import replace
-from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
 
-from cad_khana.mechanism.assembly import Assembly  # noqa: E402
+from cad_khana.mechanism.assembly import Assembly
 
-from assembly import build_tower  # noqa: E402
-from exhibit_assembly import (  # noqa: E402
+from .assembly import build_tower
+from .exhibit_assembly import (
     EXHIBIT_BASKETS_BY_FLOOR,
     EXHIBIT_FLOOR_PLAN,
 )

@@ -52,11 +52,8 @@ Coordinate frame (matches ramp_mechanism / params):
 """
 
 import math
-import sys
-from pathlib import Path
 from typing import Callable
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from build123d import Box, Color, Cylinder, Part, Pos, Rot
 
@@ -65,7 +62,7 @@ from cad_khana.mechanism.check import check
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
-from params import COL_INTERIOR_SIDE, COLLAR_OD, RAIL_INNER_R, RAIL_SIZE
+from ..params import COL_INTERIOR_SIDE, COLLAR_OD, RAIL_INNER_R, RAIL_SIZE
 
 
 # --- Gear train ---------------------------------------------------------

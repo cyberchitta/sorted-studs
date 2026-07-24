@@ -57,8 +57,6 @@ Print orientation:
 """
 
 import math
-import sys
-from pathlib import Path
 
 from build123d import Box, Cylinder, Pos, Rot
 
@@ -67,9 +65,8 @@ from cad_khana.mechanism.check import check
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from params import (  # noqa: E402
+from ..params import (
     TURRET_DUMP_SERVO_LIFTER_TOP_Z,
     TURRET_DUMP_SERVO_LIFTER_TURRET_X,
     TURRET_DUMP_SERVO_LIFTER_TURRET_Y,
@@ -80,8 +77,8 @@ from params import (  # noqa: E402
     TURRET_FRAME_FLOOR_Z,
     WALL_MIN,
 )
-from design_systems import color_of  # noqa: E402
-from materials import material_of  # noqa: E402
+from ..design_systems import color_of
+from ..materials import material_of
 
 
 # --- Cross-rail interface (private mirror of slice a) ------------------

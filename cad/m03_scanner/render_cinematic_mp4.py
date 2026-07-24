@@ -73,17 +73,15 @@ from __future__ import annotations
 import dataclasses
 import math
 import os
-import sys
 from collections.abc import Callable
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
 
-from animated_assembly import build_m03_at  # noqa: E402
-from detail_variations import apply_default_detail  # noqa: E402
-from hdri_framing import lookup as hdri_override_lookup  # noqa: E402
-from material_variations import DEFAULT_OVERRIDES  # noqa: E402
+from .animated_assembly import build_m03_at  # noqa: E402
+from .detail_variations import apply_default_detail  # noqa: E402
+from .hdri_framing import lookup as hdri_override_lookup  # noqa: E402
+from .material_variations import DEFAULT_OVERRIDES  # noqa: E402
 
 from chitra_cad import lighting  # noqa: E402
 from chitra_cad.animation import (  # noqa: E402

@@ -59,8 +59,6 @@ gate before printing four for installation. M2 holes are oversized to
 """
 
 import math
-import sys
-from pathlib import Path
 
 from build123d import Box, Cylinder, Location, Part, Pos, Rot
 
@@ -69,9 +67,8 @@ from cad_khana.mechanism.check import check
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from params import (  # noqa: E402
+from ..params import (
     CAMERA_MOUNT_PLATE_T,
     RAIL_PAD_CLAMP_BACK_UPPER_CLAMP_ROT,
     RAIL_PAD_CLAMP_BACK_UPPER_POS,

@@ -7,22 +7,19 @@ production 4-floor tower. The model-viewer in
 non-animated diverter pane; an animated variant is deferred.
 """
 
-import sys
 from datetime import date
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
 
-from exhibit_assembly import assembly  # noqa: E402
-from detail_variations import apply_default_detail  # noqa: E402
+from .exhibit_assembly import assembly  # noqa: E402
+from .detail_variations import apply_default_detail  # noqa: E402
 
 from cad_khana.export import export_glb  # noqa: E402
 
-sys.path.insert(0, str(HERE.parent.parent))
-from cad.design_systems import Role, fill_palette_neutrals, resolve_name  # noqa: E402
+from ..design_systems import Role, fill_palette_neutrals, resolve_name  # noqa: E402
 
-from design_systems import DESIGN_SYSTEM  # noqa: E402
+from .design_systems import DESIGN_SYSTEM  # noqa: E402
 
 OUT_DIR = HERE.parent.parent / "subsite" / "assets" / "exhibits"
 

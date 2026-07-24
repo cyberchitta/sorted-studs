@@ -70,10 +70,8 @@ is stable without active force.
 
 import math
 import sys
-from pathlib import Path
 from typing import Callable
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from build123d import Box, Color, Cylinder, Location, Part, Pos, Rot
 
@@ -82,7 +80,7 @@ from cad_khana.mechanism.check import check
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
-from params import (
+from ..params import (
     COL_INTERIOR_SIDE,
     COL_OUTER_SIDE,
     COLLAR_CLEARANCE,

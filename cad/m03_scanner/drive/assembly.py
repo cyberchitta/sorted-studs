@@ -95,8 +95,6 @@ inspect call.
 """
 
 import math
-import sys
-from pathlib import Path
 
 from build123d import Box, Cylinder, Pos
 
@@ -105,9 +103,8 @@ from cad_khana.mechanism.check import check
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from params import (  # noqa: E402
+from ..params import (  # noqa: E402
     TURRET_FRAME_CROSS_Y,
     TURRET_FRAME_FLOOR_Z,
     TURRET_HUB_X,
@@ -121,8 +118,8 @@ from params import (  # noqa: E402
 # clearance below doesn't import the spider sub-assembly directly.
 # Update if the spider's HEIGHT or top-Z anchor moves.
 _SPIDER_BOTTOM_Z = -35.0
-from design_systems import color_of  # noqa: E402
-from materials import material_of  # noqa: E402
+from ..design_systems import color_of  # noqa: E402
+from ..materials import material_of  # noqa: E402
 
 
 # --- Cross-rail interface (private mirror of slice a) ------------------

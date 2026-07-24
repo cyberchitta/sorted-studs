@@ -70,8 +70,6 @@ as platform_hinge_bearing).
 """
 
 import math
-import sys
-from pathlib import Path
 
 from build123d import Box, Cylinder, Pos, Rot
 
@@ -80,9 +78,8 @@ from cad_khana.mechanism.check import check
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from params import (  # noqa: E402
+from ..params import (
     TURRET_HINGE_PIN_D,
     TURRET_HINGE_PIN_RADIAL,
     TURRET_HINGE_PIN_Z,
@@ -92,8 +89,8 @@ from params import (  # noqa: E402
     TURRET_SHAFT_TOP_Z,
     WALL_MIN,
 )
-from design_systems import color_of  # noqa: E402
-from materials import material_of  # noqa: E402
+from ..design_systems import color_of
+from ..materials import material_of
 
 
 # --- Spider Z geometry (private to this sub-assembly) -------------------

@@ -14,14 +14,9 @@ subtree path, not the name.
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-from design_systems import basename_of  # noqa: E402
-from params import FLOOR_LAYOUT  # noqa: E402
+from .design_systems import basename_of
+from .params import FLOOR_LAYOUT
 
 
 # --- Basket name expansion --------------------------------------------

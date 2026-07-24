@@ -78,8 +78,6 @@ for clean underside finish.
 """
 
 import math
-import sys
-from pathlib import Path
 
 from build123d import Box, Color, Cylinder, Pos, Rot
 
@@ -88,9 +86,8 @@ from cad_khana.mechanism.check import check
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from params import (  # noqa: E402
+from ..params import (
     PLATFORM_ACRYLIC_SIZE,
     PLATFORM_ACRYLIC_T,
     TURRET_ARM_R,
@@ -102,8 +99,8 @@ from params import (  # noqa: E402
     TURRET_HINGE_PIN_Z,
     WALL_MIN,
 )
-from design_systems import color_of  # noqa: E402
-from materials import material_of  # noqa: E402
+from ..design_systems import color_of
+from ..materials import material_of
 
 
 # --- Cartridge-local IMAGE-pose references -----------------------------

@@ -9,15 +9,11 @@ m03 sub-assemblies import.
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 
 from build123d import Color
 
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-
-from cad.design_systems import (  # noqa: E402
+from ..design_systems import (
     DesignSystem,
     Module,
     Role,

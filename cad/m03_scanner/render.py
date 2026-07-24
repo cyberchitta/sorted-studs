@@ -19,19 +19,17 @@ author them here.
 
 import dataclasses
 import os
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from assembly import assembly  # noqa: E402
-from detail_variations import apply_default_detail  # noqa: E402
-from material_variations import DEFAULT_OVERRIDES  # noqa: E402
+from .assembly import assembly
+from .detail_variations import apply_default_detail
+from .material_variations import DEFAULT_OVERRIDES
 
-from chitra_cad import lighting  # noqa: E402
-from chitra_cad.framing import HERO_3Q  # noqa: E402
-from chitra_cad.render import render  # noqa: E402
-from chitra_cad.scene import Scene  # noqa: E402
+from chitra_cad import lighting
+from chitra_cad.framing import HERO_3Q
+from chitra_cad.render import render
+from chitra_cad.scene import Scene
 
 
 detailed = apply_default_detail(assembly)

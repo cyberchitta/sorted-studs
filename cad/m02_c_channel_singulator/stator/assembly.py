@@ -37,9 +37,7 @@ Cross-boundary rotor↔stator clearance runs in ../assembly.py.
 
 import math
 import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from build123d import Axis, Box, Part, Plane, Polygon, Pos, Rot, extrude, revolve
 
@@ -48,9 +46,9 @@ from cad_khana.mechanism.check import check
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
-from design_systems import color_of
-from materials import material_of
-from params import (
+from ..design_systems import color_of
+from ..materials import material_of
+from ..params import (
     EXIT_ARC_DEG,
     ROTOR_BASE_DIAMETER,
     ROTOR_STATOR_GAP,

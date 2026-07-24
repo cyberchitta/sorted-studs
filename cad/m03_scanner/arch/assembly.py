@@ -81,17 +81,14 @@ no `inspect()` calls.
 """
 
 import math
-import sys
-from pathlib import Path
 
 from build123d import Box, Part, Pos
 
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from params import (  # noqa: E402
+from ..params import (
     ARCH_CROSSBAR_Y,
     ARCH_CROSSBAR_Z,
     ARCH_POST_X,
@@ -112,8 +109,8 @@ from params import (  # noqa: E402
     VERTEX_FRONT_LOW_POS,
     lens_axis_unit,
 )
-from design_systems import color_of  # noqa: E402
-from materials import material_of  # noqa: E402
+from ..design_systems import color_of
+from ..materials import material_of
 
 # Plate edge-grip half-extent — half the bonded mount plate's longest
 # in-plane dimension. The plate is square at PLATE_SIZE = 50 (private

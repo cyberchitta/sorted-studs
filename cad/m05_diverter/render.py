@@ -14,17 +14,13 @@ Lighting and camera framing come from chitra-cad's defaults; do not
 author them here.
 """
 
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+from .assembly import assembly
+from .detail_variations import apply_default_detail
 
-from assembly import assembly  # noqa: E402
-from detail_variations import apply_default_detail  # noqa: E402
-
-from chitra_cad.framing import HERO_3Q  # noqa: E402
-from chitra_cad.render import render  # noqa: E402
-from chitra_cad.scene import Scene  # noqa: E402
+from chitra_cad.framing import HERO_3Q
+from chitra_cad.render import render
+from chitra_cad.scene import Scene
 
 
 detailed = apply_default_detail(assembly)

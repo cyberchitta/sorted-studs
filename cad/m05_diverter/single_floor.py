@@ -41,27 +41,23 @@ trap stays inside the column envelope, and the column itself is
 already checked against the frame.
 """
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from build123d import Location, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
 
-from basket import assembly as _bkt
-from design_systems import (
+from .basket import assembly as _bkt
+from .design_systems import (
     DESIGN_SYSTEM,
     basename_of,
     basket_color_of,
     color_of,
 )
-from materials import material_of
-from frame import assembly as _frame
-from params import FLOOR_H, FLOOR_LAYOUT
-from ramp_mechanism import assembly as _ramp
+from .materials import material_of
+from .frame import assembly as _frame
+from .params import FLOOR_H, FLOOR_LAYOUT
+from .ramp_mechanism import assembly as _ramp
 
 
 # --- Assembly -----------------------------------------------------------

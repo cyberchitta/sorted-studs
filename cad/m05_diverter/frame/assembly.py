@@ -64,26 +64,23 @@ the inner vertex outward (along local -X) toward the outer hex.
 """
 
 import math
-import sys
-from pathlib import Path
 from typing import Callable
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from build123d import Box, Color, Part, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
 
-from inner_vertex_bracket.assembly import bracket as inner_bracket
-from outer_vertex_bracket.assembly import (
+from ..inner_vertex_bracket.assembly import bracket as inner_bracket
+from ..outer_vertex_bracket.assembly import (
     BRACKET_Z_TOP,
     EXT_SIZE,
     HOR_INNER_OFFSET,
     PLATE_T as OUTER_BRACKET_PLATE_T,
     bracket as outer_bracket,
 )
-from params import (
+from ..params import (
     BRACKET_HOR_OFFSET,
     FLOOR_H,
     RAIL_INNER_OUTER_END_R,

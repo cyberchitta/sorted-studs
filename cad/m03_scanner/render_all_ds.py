@@ -14,7 +14,6 @@ doesn't bleed between renders.
 
 import os
 import subprocess
-import sys
 import tempfile
 from pathlib import Path
 
@@ -23,10 +22,8 @@ _RENDER_SCRIPT = _HERE / "render.py"
 _CHITRA = Path(__file__).resolve().parents[2] / ".venv" / "bin" / "chitra"
 _OUT_DIR = _HERE / "outputs" / "renders"
 
-sys.path.insert(0, str(_HERE))
-sys.path.insert(0, str(_HERE.parents[1]))
-from cad.design_systems import bind_all  # noqa: E402
-from design_systems import MODULE_OF, ROLE_OF  # noqa: E402
+from ..design_systems import bind_all  # noqa: E402
+from .design_systems import MODULE_OF, ROLE_OF  # noqa: E402
 
 # Derived from the canonical bind_all registry so adding a palette in
 # cad/design_systems.py automatically picks up here too.

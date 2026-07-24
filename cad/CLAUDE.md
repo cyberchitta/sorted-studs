@@ -8,10 +8,13 @@ Guidance for organizing Build123d / cad-khana assemblies in this repo.
    coherent physical sub-system. Don't mix unrelated parts or checks
    in a single assembly just because they share a module.
 
-2. **Sub-assemblies run standalone.** `python <dir>/assembly.py` must
-   work without any sibling sub-assembly. Shared inputs live in a
-   module-local `params.py`; sibling-to-sibling imports are not
-   allowed.
+2. **Sub-assemblies run standalone.** `khana check <dir>/assembly.py`
+   (or `python -m cad.<unit>.<sub>.assembly` from the repo root) must
+   work without any sibling sub-assembly. `cad/` is a package —
+   `khana` runs a package-member script with `python -m` semantics, so
+   its relative imports resolve; plain `python <path>` does not.
+   Shared inputs live in a module-local `params.py`;
+   sibling-to-sibling imports are not allowed.
 
    **A standalone green is a weaker claim than a top-level green.** The
    module-local mirrors this principle requires go stale silently. The

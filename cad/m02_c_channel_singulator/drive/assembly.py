@@ -35,19 +35,15 @@ inside the mount flange. Rotor-vs-drive and stator-vs-drive checks
 live in the top-level ../assembly.py.
 """
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from build123d import Box, Cylinder, Part, Pos
 
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
 
-from design_systems import color_of
-from materials import material_of
-from params import (
+from ..design_systems import color_of
+from ..materials import material_of
+from ..params import (
     MOTOR_BASE_Z,
     MOUNT_Z,
     NEMA17_BODY_LEN,

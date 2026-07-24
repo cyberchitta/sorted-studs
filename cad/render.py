@@ -21,20 +21,20 @@ Layers applied before rendering (per module):
     (``rig.cam_front_low_pcb`` → ``m03.rig.cam_front_low_pcb``).
 
 Schema switch is a *mutation* of ``cad.design_systems.DESIGN_SYSTEM_NAME``
-between renders. Each module's per-module ``design_systems.py`` reads
-the cad-level switch at import time, so we evict module-local names
-between schema passes and re-load each module via ``runpy``. The
-shared ``cad.design_systems`` module stays in ``sys.modules`` with
-its mutated attribute, so the next reload sees the new schema.
+between renders. Each unit's per-module ``design_systems.py`` reads
+the cad-level switch at import time, so between schema passes we
+evict the unit subtrees from ``sys.modules`` and re-import them. The
+shared ``cad.design_systems`` module is never evicted — it keeps its
+mutated attribute, so the re-import sees the new schema.
 
 Lighting and camera framing come from chitra-cad's defaults.
 """
 
 from __future__ import annotations
 
-import runpy
+import importlib
+import importlib.util
 import sys
-from pathlib import Path
 
 from build123d import Pos
 
@@ -43,12 +43,7 @@ from chitra_cad.framing import HERO_3Q
 from chitra_cad.render import render
 from chitra_cad.scene import Scene
 
-
-THIS_DIR = Path(__file__).resolve().parent
-
-# Make ``cad`` importable so we can mutate the schema switch.
-sys.path.insert(0, str(THIS_DIR.parent))
-import cad.design_systems as _ds  # noqa: E402
+from . import design_systems as _ds
 
 
 # --- Placement --------------------------------------------------------
@@ -67,43 +62,22 @@ SINGULATOR_DROP_OVER_LOAD = 100.0
 
 # --- Module-load helpers ---------------------------------------------
 
-_MODULE_LOCAL_HEADS = frozenset(
-    {
-        "params",
-        "design_systems",
-        "materials",
-        "detail_variations",
-        "material_variations",
-        "drive",
-        "rotor",
-        "stator",
-        "camera_rig",
-        "turret",
-        "frame",
-        "basket",
-        "ramp_mechanism",
-        "base_floor",
-        "inner_vertex_bracket",
-        "outer_vertex_bracket",
-    }
-)
+# Unit subtrees evicted between schema passes so their import-time
+# palette bindings re-read the mutated switch. ``cad.design_systems``
+# itself deliberately doesn't match — it carries the switch.
+_UNIT_MODULE_PREFIXES = ("cad.m02_", "cad.m03_", "cad.m05_")
 
 
-def _evict_module_locals() -> None:
+def _evict_unit_modules() -> None:
     for name in list(sys.modules):
-        head = name.split(".", 1)[0]
-        if head in _MODULE_LOCAL_HEADS:
+        if name.startswith(_UNIT_MODULE_PREFIXES):
             del sys.modules[name]
 
 
-def _runpy_isolated(path: Path, run_name: str) -> dict:
-    saved_path = sys.path.copy()
-    _evict_module_locals()
-    try:
-        return runpy.run_path(str(path), run_name=run_name)
-    finally:
-        sys.path[:] = saved_path
-        _evict_module_locals()
+def _optional_import(dotted: str):
+    if importlib.util.find_spec(dotted) is None:
+        return None
+    return importlib.import_module(dotted)
 
 
 def _load_module_detailed(module_dirname: str) -> tuple[Assembly, dict[str, str]]:
@@ -114,21 +88,17 @@ def _load_module_detailed(module_dirname: str) -> tuple[Assembly, dict[str, str]
     ``_build_top_level`` qualifies them under the unit's subtree
     name before they hit the chitra-cad scene.
     """
-    mod_dir = THIS_DIR / module_dirname
-    ns_assy = _runpy_isolated(mod_dir / "assembly.py", f"<{module_dirname}>")
-    assembly: Assembly = ns_assy["assembly"]
+    unit = f"cad.{module_dirname}"
+    assembly: Assembly = importlib.import_module(f"{unit}.assembly").assembly
 
-    detail_path = mod_dir / "detail_variations.py"
-    if detail_path.exists():
-        ns_det = _runpy_isolated(detail_path, f"<{module_dirname}.detail>")
-        if "apply_default_detail" in ns_det:
-            assembly = ns_det["apply_default_detail"](assembly)
+    detail = _optional_import(f"{unit}.detail_variations")
+    if detail is not None and hasattr(detail, "apply_default_detail"):
+        assembly = detail.apply_default_detail(assembly)
 
     material_overrides: dict[str, str] = {}
-    mat_path = mod_dir / "material_variations.py"
-    if mat_path.exists():
-        ns_mat = _runpy_isolated(mat_path, f"<{module_dirname}.material>")
-        material_overrides = dict(ns_mat.get("DEFAULT_OVERRIDES", {}))
+    mat = _optional_import(f"{unit}.material_variations")
+    if mat is not None:
+        material_overrides = dict(getattr(mat, "DEFAULT_OVERRIDES", {}))
 
     return assembly, material_overrides
 
@@ -172,6 +142,7 @@ SCHEMAS = ("workshop", "bauhaus")
 
 def render_schema(schema: str) -> None:
     _ds.DESIGN_SYSTEM_NAME = schema
+    _evict_unit_modules()
     top, mat = _build_top_level()
     scene = Scene.from_assembly(top).with_materials(mat)
     render(

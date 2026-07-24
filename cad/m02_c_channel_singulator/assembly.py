@@ -35,21 +35,17 @@ Deferred:
 - frame mount ↔ stator / stem
 """
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from build123d import Axis
 
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 from cad_khana.mechanism.check import check
 
-from design_systems import DESIGN_SYSTEM
-from drive import assembly as _drive
-from params import ROTOR_STATOR_GAP
-from rotor import assembly as _rotor
-from stator import assembly as _stator
+from .design_systems import DESIGN_SYSTEM
+from .drive import assembly as _drive
+from .params import ROTOR_STATOR_GAP
+from .rotor import assembly as _rotor
+from .stator import assembly as _stator
 
 
 GAP_CLEARANCE_TOLERANCE = 0.5   # mm — catches a shrunk V-gap early

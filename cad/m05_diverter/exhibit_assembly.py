@@ -18,14 +18,10 @@ resolves every name; ``build_tower`` accepts a
 ``dict[floor_idx, layout]`` for per-floor overrides.
 """
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from cad_khana.mechanism.check import check
 
-from assembly import build_tower
+from .assembly import build_tower
 
 
 # Three floors: base + middle + top. Enough vertical extent to show

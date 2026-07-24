@@ -18,25 +18,23 @@ Coordinate frame: world Z-up. Vertex positions come from the
 module-level ``params.py`` (the manual `sizing.py` mirror).
 """
 
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from assembly import assembly  # noqa: E402
-from params import (  # noqa: E402
+from .assembly import assembly
+from .params import (
     VERTEX_BACK_UPPER_POS,
     VERTEX_BELOW_LEFT_POS,
     VERTEX_BELOW_RIGHT_POS,
     VERTEX_FRONT_LOW_POS,
 )
-from detail_variations import apply_default_detail  # noqa: E402
-from material_variations import DEFAULT_OVERRIDES  # noqa: E402
+from .detail_variations import apply_default_detail
+from .material_variations import DEFAULT_OVERRIDES
 
-from build123d import Box, Color  # noqa: E402
-from chitra_cad.framing import FixedPose  # noqa: E402
-from chitra_cad.render import render  # noqa: E402
-from chitra_cad.scene import Scene  # noqa: E402
+from build123d import Box, Color
+from chitra_cad.framing import FixedPose
+from chitra_cad.render import render
+from chitra_cad.scene import Scene
 
 
 BRICK_2X4 = (31.8, 15.8, 9.6)

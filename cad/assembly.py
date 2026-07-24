@@ -32,14 +32,9 @@ Coordinate frame (world):
 
 Composition strategy:
 
-Each unit's `assembly.py` is standalone — it inserts its own
-directory into `sys.path` and imports its sub-assemblies via bare
-names. The bare names collide across units (every unit owns a
-`params`, `materials`, `design_systems`), so we run each unit's
-`assembly.py` through `runpy.run_path` with the colliding cached
-modules evicted before/after every load.
-
-Each unit then composes as a true subtree — `with_subassembly(name,
+`cad/` is a package: each unit is imported as a plain module
+(`cad.m05_diverter.assembly` etc. — no name collisions, no loader
+machinery) and composes as a true subtree — `with_subassembly(name,
 …, location=world_pose)` — so parts keep their tree paths under the
 unit root (`m05.…`, `m03.…`, `m02_chain.…`) and every unit's joints
 survive to the top level: the whole machine can animate from here.
@@ -54,93 +49,14 @@ own `khana check` validates them.
 
 from __future__ import annotations
 
-import runpy
-import sys
-from pathlib import Path
-
 from build123d import Location, Pos
 
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
 
-
-THIS_DIR = Path(__file__).resolve().parent
-
-
-# --- Cross-unit load helper -------------------------------------------
-#
-# Names that every unit's `assembly.py` (and its sub-assembly tree)
-# imports via the bare ``from <name> import …`` pattern after a
-# ``sys.path.insert(0, <unit dir>)``. These collide across units, so
-# we evict them from ``sys.modules`` between loads and restore
-# ``sys.path`` to its pre-load snapshot. Anything imported as a
-# dotted name underneath one of these (e.g. ``params.foo``) is also
-# evicted via the prefix check.
-
-_MODULE_LOCAL_HEADS = frozenset(
-    {
-        # shared across every unit
-        "params",
-        "design_systems",
-        "materials",
-        "detail_variations",
-        "material_variations",
-        # m02 internals (held in reserve — m02 returns in a later slice)
-        "rotor",
-        "stator",
-        # m03 internals (Phase-2 integrated frame, 2026-05-06)
-        "arch",
-        "arm",
-        "camera_mount_esp32cam",
-        "dump_servo",
-        "homing",
-        "hub",
-        "sizing",
-        "turret_platform",
-        # shared between m02 (drive), m03 (drive, frame), m05 (frame)
-        "drive",
-        "frame",
-        # m05 internals
-        "basket",
-        "ramp_mechanism",
-        "base_floor",
-        "inner_vertex_bracket",
-        "outer_vertex_bracket",
-    }
-)
-
-
-def _evict_module_locals() -> None:
-    for name in list(sys.modules):
-        head = name.split(".", 1)[0]
-        if head in _MODULE_LOCAL_HEADS:
-            del sys.modules[name]
-
-
-def _load_unit_namespace(rel_path: str) -> dict:
-    """Run a unit's `assembly.py` in isolation and return its module
-    namespace. `rel_path` is the unit directory relative to `THIS_DIR`
-    (e.g. `"m05_diverter"` or `"m03_scanner/turret"`).
-    """
-    saved_path = sys.path.copy()
-    _evict_module_locals()
-    try:
-        path = THIS_DIR / rel_path / "assembly.py"
-        return runpy.run_path(str(path), run_name=f"<{rel_path}>")
-    finally:
-        sys.path[:] = saved_path
-        _evict_module_locals()
-
-
-# --- Load each unit ---------------------------------------------------
-
-_M05_NS = _load_unit_namespace("m05_diverter")
-_M03_NS = _load_unit_namespace("m03_scanner")
-_M02_CHAIN_NS = _load_unit_namespace("m02_chain")
-
-_M05_ASSY: Assembly = _M05_NS["assembly"]
-_M03_ASSY: Assembly = _M03_NS["assembly"]
-_M02_CHAIN_ASSY: Assembly = _M02_CHAIN_NS["assembly"]
+from .m02_chain.assembly import assembly as _M02_CHAIN_ASSY
+from .m03_scanner.assembly import assembly as _M03_ASSY
+from .m05_diverter.assembly import assembly as _M05_ASSY
 
 
 # --- World poses (derived from the units' exported anchors) -----------

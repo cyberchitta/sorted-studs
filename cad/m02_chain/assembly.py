@@ -31,35 +31,26 @@ cradle modeled. See `params.py` module docstring.
 
 Composition strategy:
 
-The m02 unit's `assembly.py` imports its own sub-modules via bare
-names (`from rotor import ...`) after a `sys.path.insert`, which
-collide with the chain's identically-named modules. We load it via
-`runpy.run_path` with the colliding cached modules evicted before
-and after, snapshot/restore `sys.path`, then compose the loaded
-assembly as the `s1` subtree at its chain-local pose. The subtree
-keeps m02's own color/material bindings (no re-skin — the values
-come from the same shared palette machinery); m02's within-unit
-assertions ride along nested and are not evaluated by the chain's
-`check()` — the m02 standalone `khana check` validates them.
+The m02 unit is imported as a plain package member
+(`..m02_c_channel_singulator.assembly`) and composed as the `s1`
+subtree at its chain-local pose. The subtree keeps m02's own
+color/material bindings (no re-skin — the values come from the same
+shared palette machinery); m02's within-unit assertions ride along
+nested and are not evaluated by the chain's `check()` — the m02
+standalone `khana check` validates them.
 """
 
 from __future__ import annotations
 
-import runpy
-import sys
-from pathlib import Path
-
 from build123d import Box, Part, Pos, Rot
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
 
-from design_systems import DESIGN_SYSTEM, color_of
-from materials import material_of
-from params import (
-    CHAIN_WORLD_POSE_XYZ,
+from ..m02_c_channel_singulator.assembly import assembly as _M02_ASSY
+from .design_systems import DESIGN_SYSTEM, color_of
+from .materials import material_of
+from .params import (
     COL1_LOCAL_XY,
     DECK_TOP_Z_LOCAL,
     COL1_ROT_DEG,
@@ -68,10 +59,7 @@ from params import (
     COL_Z_BOT_LOCAL,
     COL_Z_TOP_LOCAL,
     EXT_SIZE,
-    M03_LOAD_TOP_Z,
     M03_TURRET_ARM_R,
-    M05_TOP_DECK_T,
-    M05_TOP_VERT_Z,
     RAMP_FLOOR_T,
     RAMP_OUTLET_LOCAL,
     RAMP_PITCH_DEG,
@@ -87,22 +75,6 @@ from params import (
     YOKE_MID_XY,
     YOKE_TOP_Z_LOCAL,
 )
-
-# Re-exports the top-level `cad/assembly.py` reads from this module's
-# `runpy` namespace to verify mirrored anchors and place the chain in
-# world. Keep in sync with the cross-checks in `cad/assembly.py`.
-__all__ = (
-    "assembly",
-    "CHAIN_WORLD_POSE_XYZ",
-    "M05_TOP_VERT_Z",
-    "M05_TOP_DECK_T",
-    "M03_TURRET_ARM_R",
-    "M03_LOAD_TOP_Z",
-)
-
-
-THIS_DIR = Path(__file__).resolve().parent
-
 
 # --- Part builders -----------------------------------------------------
 
@@ -150,53 +122,6 @@ def _load_ramp() -> Part:
         * wall
     )
     return floor + wall_pos + wall_neg
-
-
-# --- m02 sub-assembly loader (runpy + module eviction) ----------------
-
-# Names that the m02 standalone `assembly.py` (and its sub-tree) imports
-# via the bare `from <name> import …` pattern after a `sys.path.insert`.
-# These collide with the chain's own `params` / `design_systems` /
-# `materials` / etc., so we evict them before and after the runpy load.
-_M02_MODULE_LOCAL_HEADS = frozenset(
-    {
-        "params",
-        "design_systems",
-        "materials",
-        "detail_variations",
-        "material_variations",
-        "rotor",
-        "stator",
-        "drive",
-    }
-)
-
-
-def _evict_m02_module_locals() -> None:
-    for name in list(sys.modules):
-        head = name.split(".", 1)[0]
-        if head in _M02_MODULE_LOCAL_HEADS:
-            del sys.modules[name]
-
-
-def _load_m02_namespace() -> dict:
-    """Run m02's `assembly.py` in isolation and return its module
-    namespace. The m02 dir sits as a sibling under `cad/`."""
-    saved_path = sys.path.copy()
-    _evict_m02_module_locals()
-    try:
-        m02_dir = THIS_DIR.parent / "m02_c_channel_singulator"
-        return runpy.run_path(
-            str(m02_dir / "assembly.py"),
-            run_name="<m02_c_channel_singulator>",
-        )
-    finally:
-        sys.path[:] = saved_path
-        _evict_m02_module_locals()
-
-
-_M02_NS = _load_m02_namespace()
-_M02_ASSY: Assembly = _M02_NS["assembly"]
 
 
 # --- Compose -----------------------------------------------------------
@@ -274,7 +199,7 @@ assembly = assembly.with_anchor(
 # --- Design-system coverage --------------------------------------------
 #
 # Chain-own parts only: the s1 subtree carries m02's own bindings, and
-# m02's module-level coverage assert already ran during the runpy load.
+# m02's module-level coverage assert already ran at import.
 
 _untagged = [
     p.name

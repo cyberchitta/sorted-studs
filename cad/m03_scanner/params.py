@@ -12,9 +12,8 @@ the unit at world identity for the rig anchors and at
     +Z     = up                          (parallel to world +Z)
 
 Every sub-assembly under ``cad/m03_scanner/`` (rig + turret + shared
-helpers) imports the constants below via ``from params import …``
-after ``sys.path.insert(0, str(Path(__file__).resolve().parent.parent))``
-puts ``cad/m03_scanner/`` on ``sys.path``.
+helpers) imports the constants below via the package-relative
+``from ..params import …`` (``from .params import …`` at unit level).
 
 The earlier rev-3 split (``camera_rig/params.py`` +
 ``turret/params.py`` + this file as the inter-unit interface mirror)

@@ -45,17 +45,14 @@ prefix on; the m05 collisions on `frame`/`drive` are handled by
 `cad/assembly.py`'s per-unit module eviction.
 """
 
-import sys
-from pathlib import Path
 
 from build123d import Axis, Circle, Pos, Rectangle, loft
 
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 from cad_khana.mechanism.check import check
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from params import (  # noqa: E402
+from .params import (
     RAIL_PAD_CLAMP_BACK_UPPER_CLAMP_ROT,
     RAIL_PAD_CLAMP_BACK_UPPER_POS,
     RAIL_PAD_CLAMP_BELOW_LEFT_CLAMP_ROT,
@@ -80,19 +77,19 @@ from params import (  # noqa: E402
     lens_axis_unit,
     rotation_for_normal,
 )
-from sizing import BRICK_MAX_MM, SCATTER_HALF_MM  # noqa: E402
-from arch import assembly as _arch  # noqa: E402
-from arm import assembly as _arm  # noqa: E402
-from camera_mount_esp32cam import assembly as _camera_mount  # noqa: E402
-from drive import assembly as _drive  # noqa: E402
-from dump_servo import assembly as _dump_servo  # noqa: E402
-from frame import assembly as _frame  # noqa: E402
-from homing import assembly as _homing  # noqa: E402
-from hub import assembly as _hub  # noqa: E402
-from turret_platform import assembly as _turret_platform  # noqa: E402
+from .sizing import BRICK_MAX_MM, SCATTER_HALF_MM
+from .arch import assembly as _arch
+from .arm import assembly as _arm
+from .camera_mount_esp32cam import assembly as _camera_mount
+from .drive import assembly as _drive
+from .dump_servo import assembly as _dump_servo
+from .frame import assembly as _frame
+from .homing import assembly as _homing
+from .hub import assembly as _hub
+from .turret_platform import assembly as _turret_platform
 
-from design_systems import DESIGN_SYSTEM, color_of  # noqa: E402
-from materials import material_of  # noqa: E402
+from .design_systems import DESIGN_SYSTEM, color_of
+from .materials import material_of
 
 
 # --- Per-vertex camera specs ------------------------------------------

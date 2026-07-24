@@ -37,8 +37,6 @@ fire only when the fastener is actually in the assembly. See
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 
 from bd_warehouse.fastener import SocketHeadCapScrew
 from bd_warehouse.open_builds import VSlotLinearRail
@@ -46,15 +44,14 @@ from build123d import Location, Part, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly, DetailOverride
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from drive.assembly import (  # noqa: E402
+from .drive.assembly import (
     BRACKET_BOLT_SPACING_X,
     BRACKET_FOOT_Z,
     BRACKET_WALL_T,
     BRACKET_WALL_X_MIN,
 )
-from params import (  # noqa: E402
+from .params import (
     TURRET_ARM_R,
     TURRET_FRAME_CROSS_Y,
     TURRET_FRAME_FLOOR_Z,

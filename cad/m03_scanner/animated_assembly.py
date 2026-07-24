@@ -39,17 +39,15 @@ wrapper that samples ``factory(t)`` at N values.
 from __future__ import annotations
 
 import math
-import sys
 from dataclasses import replace
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
 
 from cad_khana.mechanism.assembly import Assembly  # noqa: E402
 from cad_khana.mechanism.check import check  # noqa: E402
 
-from assembly import add_m03, add_m03_internal_checks  # noqa: E402
+from .assembly import add_m03, add_m03_internal_checks  # noqa: E402
 
 
 # Number of stations on the turret (= number of dwells per

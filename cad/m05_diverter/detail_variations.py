@@ -29,17 +29,14 @@ cross-module imports.
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 
 from bd_warehouse.open_builds import VSlotLinearRail
 from build123d import Part, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from design_systems import basename_of  # noqa: E402
+from .design_systems import basename_of
 
 
 _MEMBER = 20.0

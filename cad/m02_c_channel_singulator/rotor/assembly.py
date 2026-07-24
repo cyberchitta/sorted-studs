@@ -46,9 +46,7 @@ Coordinate frame:
 
 import math
 import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from build123d import (
     Circle,
@@ -67,9 +65,9 @@ from cad_khana.mechanism.check import check
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
-from design_systems import color_of
-from materials import material_of
-from params import (
+from ..design_systems import color_of
+from ..materials import material_of
+from ..params import (
     BOSS_BOTTOM_Z,
     BOSS_TOP_Z,
     MOTOR_SHAFT_BORE_CLEARANCE,

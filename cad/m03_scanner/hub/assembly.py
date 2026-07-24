@@ -46,8 +46,6 @@ bores, no ledges — prints cleanly at the default 45° FDM overhang
 threshold.
 """
 
-import sys
-from pathlib import Path
 
 from build123d import Box, Cylinder, Pos
 
@@ -56,9 +54,8 @@ from cad_khana.mechanism.check import check
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from params import (  # noqa: E402
+from ..params import (
     TURRET_FRAME_CROSS_Y,
     TURRET_FRAME_FLOOR_Z,
     TURRET_HUB_X,
@@ -67,8 +64,8 @@ from params import (  # noqa: E402
     TURRET_SHAFT_TOP_Z,
     WALL_MIN,
 )
-from design_systems import color_of  # noqa: E402
-from materials import material_of  # noqa: E402
+from ..design_systems import color_of
+from ..materials import material_of
 
 
 # --- Bearing + housing geometry (private to this sub-assembly) ----------

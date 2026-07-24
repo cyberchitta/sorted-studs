@@ -80,25 +80,22 @@ checks read a clean zero volume at every joint. Printed corner
 brackets at the rail joints land in a later slice.
 """
 
-import sys
-from pathlib import Path
 
 from build123d import Box, Part, Pos
 
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.check import check
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from params import (  # noqa: E402
+from ..params import (
     TURRET_FRAME_BACK_Y,
     TURRET_FRAME_CROSS_Y,
     TURRET_FRAME_FLOOR_Z,
     TURRET_FRAME_FRONT_Y,
     TURRET_FRAME_SIDE_X,
 )
-from design_systems import color_of  # noqa: E402
-from materials import material_of  # noqa: E402
+from ..design_systems import color_of
+from ..materials import material_of
 
 
 # --- Member cross-section ----------------------------------------------

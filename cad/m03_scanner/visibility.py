@@ -35,22 +35,17 @@ Coordinate frame: world Z-up, +Y away from operator.
 from __future__ import annotations
 
 import math
-import sys
 from dataclasses import dataclass
-from pathlib import Path
 
-_HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(_HERE))
-sys.path.insert(0, str(_HERE.parent))
 
-from sizing import (  # noqa: E402
+from .sizing import (
     _LENS_CANDIDATES,
     Geometry,
     _camera_basis,
     _dot,
     compute_geometry,
 )
-from params import (  # noqa: E402
+from .params import (
     ARCH_CROSSBAR_Y,
     ARCH_CROSSBAR_Z,
     ARCH_POST_X,
