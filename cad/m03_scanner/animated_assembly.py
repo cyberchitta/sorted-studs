@@ -3,12 +3,12 @@
 ``build_m03_at(t)`` returns the static m03 ``Assembly`` at animation
 parameter ``t ∈ [0, 1]`` with three joint DOFs updated:
 
-  * ``turret_rotor`` → ``rotor_schedule(t)`` — stepwise 90° dwell-and-
+  * ``turret.rotor`` → ``rotor_schedule(t)`` — stepwise 90° dwell-and-
     transit revolution about the hub Z axis.
-  * ``turret_rotor.platform_<dump_station>`` → ``tilt_schedule(t)`` —
+  * ``turret.rotor.platform_<dump_station>`` → ``tilt_schedule(t)`` —
     bell-shaped outer-down tilt of the platform parked at the DUMP
     zone during the current dwell.
-  * ``servo_arm`` → ``tilt_schedule(t) * SERVO_ARM_TILT_SCALE`` —
+  * ``turret.servo_arm`` → ``tilt_schedule(t) * SERVO_ARM_TILT_SCALE`` —
     co-tilt of the bench-mounted servo arm in lock-step with the
     platform tilt; the lifter pad rises against the platform's
     drop block.
@@ -177,13 +177,13 @@ def build_m03_at(t: float) -> Assembly:
     servo dumping a brick) and the servo arm co-tilts to drive it.
 
     Three joints are animated:
-      * ``turret_rotor`` — rotor azimuth.
-      * ``turret_rotor.platform_<dump_station>`` — the one platform
+      * ``turret.rotor`` — rotor azimuth.
+      * ``turret.rotor.platform_<dump_station>`` — the one platform
         currently at DUMP. Per-station axis direction (set in
         ``assembly.py``'s ``_PLATFORM_PIN_TURRET``) makes positive
         joint angle ↔ outer-DOWN tilt, so the same ``tilt_deg`` value
         drives whichever station happens to be at DUMP.
-      * ``servo_arm`` — bench-mounted lifter, co-tilts.
+      * ``turret.servo_arm`` — bench-mounted lifter, co-tilts.
 
     Internal checks survive intact — they're name-based; nested joint
     composition leaves part names unchanged."""
@@ -193,14 +193,14 @@ def build_m03_at(t: float) -> Assembly:
     dump_station = _station_at_dump(q)
 
     a = add_m03(Assembly())
-    a = a.with_joint_angle("turret_rotor", theta_rotor_deg)
+    a = a.with_joint_angle("turret.rotor", theta_rotor_deg)
     arm_angle_deg = 0.0
     if tilt_deg != 0.0:
         a = a.with_joint_angle(
-            f"turret_rotor.platform_{dump_station}", tilt_deg
+            f"turret.rotor.platform_{dump_station}", tilt_deg
         )
         arm_angle_deg = tilt_deg * SERVO_ARM_TILT_SCALE
-        a = a.with_joint_angle("servo_arm", arm_angle_deg)
+        a = a.with_joint_angle("turret.servo_arm", arm_angle_deg)
     # Per-frame regression check. At pure REST (rotor=0, arm=0) the
     # static known-overlap set in `assembly.py` still fires its two
     # assert_interference alarms (hub_housing × flag/sensor). Dynamic

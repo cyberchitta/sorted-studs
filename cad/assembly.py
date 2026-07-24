@@ -231,7 +231,7 @@ def _splice(top: Assembly, mod: Assembly, base: Location, prefix: str) -> Assemb
 
     Walks ``mod.placed_parts`` (not ``mod.parts``) so parts living
     inside sub-assemblies (e.g. m05's ``rotating_stack``, m03's
-    ``turret_rotor``) come through with their joint/sub-assembly
+    ``turret.rotor``) come through with their joint/sub-assembly
     transforms composed into the part's effective location. Splicing
     flat means the top-level loses the joint hierarchy — currently
     fine because the top-level static view fixes every joint at 0;

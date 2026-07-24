@@ -1,17 +1,22 @@
 """
-M03 scanner — flat unit composition + within-unit checks.
+M03 scanner — two-unit subtree composition + within-unit checks.
 
 Composes the integrated camera rig + turret in m03-local coordinates
-(brick centroid on the IMAGE platform top face is the origin):
+(brick centroid on the IMAGE platform top face is the origin), as two
+`with_subassembly` units:
 
-  * Rig parts (`arch/`, `camera_mount_esp32cam/`) placed at m03
-    identity — rig-local frame matches m03, so all rig coordinates
-    in `params.py` are m03-local-equivalent.
-  * Turret parts placed at m03-local `Pos(0, -TURRET_ARM_R, 0)` so
-    the turret hub axis lands at m03-local `(0, -ARM_R, *)` and the
+  * `rig` (`arch/`, `camera_mount_esp32cam/`) at m03 identity —
+    rig-local frame matches m03, so all rig coordinates in
+    `params.py` are m03-local-equivalent.
+  * `turret` placed at m03-local `Pos(0, -TURRET_ARM_R, 0)` so the
+    turret hub axis lands at m03-local `(0, -ARM_R, *)` and the
     DUMP platform centroid at m03-local `(0, -2·ARM_R)` — which the
     world placement in `cad/assembly.py` maps onto the m05 hub axis
     (option a', 2026-05-05).
+
+Part names are globally unique and unchanged by the nesting; checks
+are declared at the m03 root against those flat names (assertions
+inside nested assemblies are NOT evaluated by the root `check()`).
 
 Within-unit checks at this level are the union of arch-internal +
 turret-internal + arch×turret pairs. After Phase 2 (2026-05-06), the
@@ -159,22 +164,20 @@ M03_PART_NAMES = list(CAMERA_RIG_PART_NAMES) + list(TURRET_PART_NAMES)
 
 # --- Composition builders --------------------------------------------
 
-# Turret placement in m03-local. With option a' (2026-05-05), DUMP
-# centroid lives at turret-local (0, -ARM_R, 0); placing the unit at
-# m03-local (0, -ARM_R, 0) lifts DUMP centroid to m03-local origin
-# and IMAGE centroid to m03-local (0, +ARM_R, 0)... no wait — the
-# turret-internal DUMP is at (0, -R), and applying base=Pos(0, -R, 0)
-# puts DUMP at m03-local (0, -2R, 0). The historical placement here
-# is `Pos(0, -TURRET_ARM_R, 0)` so turret-internal hub (= origin)
-# lands at m03-local (0, -ARM_R, 0); the cad/assembly.py top-level
-# then lifts the whole m03 unit so the rig brick centroid reaches
-# world (0, +250, 1030).
+# Turret unit placement in m03-local: the turret's local origin (hub
+# axis at the floor datum) lands at m03-local (0, -ARM_R, 0), so the
+# DUMP centroid at turret-local (0, -ARM_R) reaches m03-local
+# (0, -2·ARM_R) — which the world placement in `cad/assembly.py` maps
+# onto the m05 hub axis (option a', 2026-05-05), while the rig brick
+# centroid stays at the m03 origin.
 TURRET_BASE = Pos(0, -TURRET_ARM_R, 0)
 
 
-def add_camera_rig(a: Assembly) -> Assembly:
-    """Add every camera-rig part in m03-local coordinates."""
-    a = _arch.add_arch(a)
+def build_camera_rig() -> Assembly:
+    """Camera-rig sub-assembly. Rig-local frame == m03-local (the rig
+    is placed at identity), so all rig coordinates in `params.py`
+    apply unchanged."""
+    a = _arch.add_arch(Assembly())
     for prefix, spec in _CAMERA_INSTANCES.items():
         clamp_loc = Pos(*spec["clamp_pos"]) * spec["clamp_rot"]
         axis = lens_axis_unit(spec["vertex_pos"])
@@ -255,11 +258,11 @@ def _build_turret_rotor() -> Assembly:
     """Rotor sub-assembly in turret-local: the rigid body that revolves
     about the hub Z axis. Includes the spider + hinge pins + every
     shaft-keyed part (hub shaft, driven pulley, homing flag), plus
-    four platform sub-sub-assemblies — each platform's hinge pin axis
-    is in the rotor's own frame (= turret-local), so the platforms
-    inherit the rotor's azimuth automatically and add only their own
-    tilt DOF on top. The dump_servo is bench-mounted (not on the
-    rotor), so it doesn't appear here."""
+    four platform sub-sub-assemblies — each carrying the shared
+    cartridge-local pin joint (``_PLATFORM_PIN_LOCAL``), so the
+    platforms inherit the rotor's azimuth automatically and add only
+    their own tilt DOF on top. The dump_servo is bench-mounted (not
+    on the rotor), so it doesn't appear here."""
     rotor = Assembly()
     rotor = _arm.add_turret_arm(rotor)
     rotor = _hub.add_turret_hub_rotor(rotor)
@@ -279,52 +282,50 @@ def _build_turret_rotor() -> Assembly:
 
 
 def _build_servo_arm_subassembly() -> Assembly:
-    """Arm-only sub-assembly in turret-local. The servo shaft axis is
-    attached at ``with_subassembly`` time on the m03 root; the arm
-    rotates around that shaft during a dump dwell while the bracket +
-    body stay with the static frame."""
+    """Arm-only sub-assembly in turret-local. The servo shaft joint is
+    attached at ``with_subassembly`` time inside ``build_turret``; the
+    arm rotates around that shaft during a dump dwell while the
+    bracket + body stay with the static frame."""
     arm = Assembly()
     arm = _dump_servo.add_turret_dump_servo_arm(arm)
     return arm
 
 
-def add_turret(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
-    """Static turret parts in m03-local plus the rotor and the servo
-    arm as jointed sub-assemblies.
+def build_turret() -> Assembly:
+    """Turret unit sub-assembly, in turret-local coordinates (hub axis
+    at the local origin's X/Y, floor datum at z=0 terms of the frame
+    constants). The caller places the whole unit with one transform.
 
     Structure:
       * static parts (frame, hub housing + bearings, motor + bracket
         + motor pulley, homing sensor + bracket, servo bracket + body)
-        sit flat on ``a``, lifted by ``base`` to m03-local.
-      * ``turret_rotor`` is a sub-assembly whose ``RevoluteJoint``
-        about the turret-local Z axis through the hub drives the
-        spider rotation. Inside the rotor live four
-        ``platform_<station>`` sub-sub-assemblies sharing one
-        cartridge-local pin joint (``_PLATFORM_PIN_LOCAL``) — only the
-        platform parked at DUMP tilts during a dwell, but the same
-        axis covers any station.
+        sit flat on the unit root.
+      * ``rotor`` is a sub-assembly whose ``RevoluteJoint`` about the
+        turret-local Z axis through the hub drives the spider
+        rotation. Inside it live four ``platform_<station>``
+        sub-sub-assemblies sharing one cartridge-local pin joint
+        (``_PLATFORM_PIN_LOCAL``) — only the platform parked at DUMP
+        tilts during a dwell, but the same axis covers any station.
       * ``servo_arm`` is a sub-assembly with its servo-shaft joint on
         the same terms; the bracket + body remain static.
 
     All three joints are ``frame="local"``: each axis is written in
     the jointed sub-assembly's own frame (turret-local for the rotor
-    and the arm, cartridge-local for the platforms), and the
-    ``location=`` placement carries it to the parent — no
-    ``base``-composed axis math at this level."""
-    # Static frame (in m03-local via `base`).
-    a = _frame.add_turret_frame(a, base=base)
-    a = _hub.add_turret_hub_static(a, base=base)
-    a = _drive.add_turret_drive_static(a, base=base)
-    a = _homing.add_turret_homing_static(a, base=base)
-    a = _dump_servo.add_turret_dump_servo_static(a, base=base)
+    and the arm, cartridge-local for the platforms), so nothing here
+    depends on where the unit ends up."""
+    t = Assembly()
+    t = _frame.add_turret_frame(t)
+    t = _hub.add_turret_hub_static(t)
+    t = _drive.add_turret_drive_static(t)
+    t = _homing.add_turret_homing_static(t)
+    t = _dump_servo.add_turret_dump_servo_static(t)
 
-    # Rotor — placed at `base`; joint about the turret-local Z axis
-    # through the hub. (Z is parallel to itself everywhere, so the
-    # pivot's Z value is irrelevant; pick 0 for clarity.)
-    a = a.with_subassembly(
-        "turret_rotor",
+    # Rotor — joint about the turret-local Z axis through the hub.
+    # (Z is parallel to itself everywhere, so the pivot's Z value is
+    # irrelevant; pick 0 for clarity.)
+    t = t.with_subassembly(
+        "rotor",
         _build_turret_rotor(),
-        location=base,
         joint=RevoluteJoint(
             axis=Axis((TURRET_HUB_X, TURRET_HUB_Y, 0.0), (0.0, 0.0, 1.0)),
             angle_deg=0.0,
@@ -332,15 +333,14 @@ def add_turret(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
         ),
     )
 
-    # Servo arm — bench-mounted at `base`; joint about the servo
-    # output shaft (turret-local axis along -Y so positive joint
-    # angle = lifter pad up; same sign convention as the retired
-    # kicker_lever so animated_assembly.py can drive it from the same
-    # tilt_schedule without changing the schedule's sign).
-    a = a.with_subassembly(
+    # Servo arm — bench-mounted; joint about the servo output shaft
+    # (turret-local axis along -Y so positive joint angle = lifter
+    # pad up; same sign convention as the retired kicker_lever so
+    # animated_assembly.py can drive it from the same tilt_schedule
+    # without changing the schedule's sign).
+    t = t.with_subassembly(
         "servo_arm",
         _build_servo_arm_subassembly(),
-        location=base,
         joint=RevoluteJoint(
             axis=Axis(
                 (
@@ -354,13 +354,19 @@ def add_turret(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
             frame="local",
         ),
     )
-    return a
+    return t
 
 
 def add_m03(a: Assembly) -> Assembly:
-    """Add every rig + turret part in m03-local coordinates."""
-    a = add_camera_rig(a)
-    a = add_turret(a, base=TURRET_BASE)
+    """Compose m03 as two unit subtrees: the camera rig at m03
+    identity and the turret unit placed by ``TURRET_BASE``. Part
+    names are unchanged by nesting (``placed_parts`` flattens), so
+    all name-keyed consumers — checks, design systems, materials,
+    renders, GLB nodes — see the same flat namespace as before.
+    Joint paths are tree paths: ``turret.rotor``,
+    ``turret.rotor.platform_<station>``, ``turret.servo_arm``."""
+    a = a.with_subassembly("rig", build_camera_rig())
+    a = a.with_subassembly("turret", build_turret(), location=TURRET_BASE)
     return a
 
 
