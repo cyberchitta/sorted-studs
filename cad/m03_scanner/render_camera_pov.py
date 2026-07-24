@@ -2,8 +2,8 @@
 
 Sister to ``render.py``. Where ``render.py`` shoots the rig from the
 default 3/4 hero pose, this script pins the camera to each of the four
-tetrahedral vertices in turn (``VERTEX_*_POS`` in
-``camera_rig/params.py``) and renders one PNG per viewpoint. Each
+tetrahedral vertices in turn (``VERTEX_*_POS`` in the module-level
+``params.py``) and renders one PNG per viewpoint. Each
 camera looks at the world origin (the brick stand-in).
 
 A solid red 2×4-footprint ``Box`` (no studs) sits at the world origin
@@ -14,8 +14,8 @@ Outputs land in ``outputs/renders_pov/`` as
 ``cam_front_low.png``, ``cam_back_upper.png``,
 ``cam_below_left.png``, ``cam_below_right.png``.
 
-Coordinate frame: world Z-up. Vertex positions come from
-``camera_rig/params.py``.
+Coordinate frame: world Z-up. Vertex positions come from the
+module-level ``params.py`` (the manual `sizing.py` mirror).
 """
 
 import sys

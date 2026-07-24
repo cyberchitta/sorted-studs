@@ -86,6 +86,7 @@ _MODULE_LOCAL_HEADS = frozenset(
         "dump_servo",
         "homing",
         "hub",
+        "sizing",
         "turret_platform",
         # shared between m02 (drive), m03 (drive, frame), m05 (frame)
         "drive",

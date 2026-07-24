@@ -40,7 +40,7 @@ prefix on; the m05 collisions on `frame`/`drive` are handled by
 import sys
 from pathlib import Path
 
-from build123d import Axis, Pos, Rot
+from build123d import Axis, Circle, Pos, Rectangle, Rot, loft
 
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 from cad_khana.mechanism.check import check
@@ -72,6 +72,7 @@ from params import (  # noqa: E402
     lens_axis_unit,
     rotation_for_normal,
 )
+from sizing import BRICK_MAX_MM, SCATTER_HALF_MM  # noqa: E402
 from arch import assembly as _arch  # noqa: E402
 from arm import assembly as _arm  # noqa: E402
 from camera_mount_esp32cam import assembly as _camera_mount  # noqa: E402
@@ -466,10 +467,124 @@ assert not _untagged, (
 )
 
 
+# --- Sightline cones (silhouette assertion, was c7-c) -----------------
+#
+# One check-only stub solid per below-vertex camera: the forbidden
+# volume between that camera's lens nose and the imaged region it must
+# see through the transparent platform. Any opaque part inside it
+# occludes part of the imaged region, which `khana check` is otherwise
+# blind to (`cad/CLAUDE.md` §"What a green `khana check` does not
+# mean", Visibility). This assertion is the gate for any further
+# turret Z compression (state file, Open work 3).
+#
+# Geometry: an oblique frustum lofted from a small horizontal disc
+# just past the lens nose (entrance-pupil stand-in) to the imaged
+# square at the platform plane z = 0 — `sizing.py`'s
+# P_imaged = BRICK_MAX_MM + 2·SCATTER_HALF_MM (110 at the settled
+# 3.6 mm lens), axis-aligned and centred on the brick centroid. The
+# square (not its circumscribed circle) is the real imaged region;
+# the circle would falsely collide with the platform frame's edge
+# grip 5 mm outside it.
+#
+# Pose claim: asserted at the parked REST pose only. Capture happens
+# only during an IMAGE-station dwell with the rotor indexed, so
+# transit poses are out of scope; `animated_assembly.py` deliberately
+# does not run these checks (mid-transit platforms sweep through the
+# cones by design).
+#
+# Check-only: the cones are appended to a *separate* checked assembly,
+# never to `assembly` itself — `render*.py`, `export_glb_animated.py`,
+# and `cad/assembly.py` all consume `assembly`, and an opaque cone in
+# front of each below camera would wreck renders/GLB (and demand
+# design-system tags). Only acrylic parts are exempt from the
+# assertions — the below sightlines pass through the transparent
+# platform by design.
+
+SIGHTLINE_CONE_SPECS = {
+    "sightline_below_left": VERTEX_BELOW_LEFT_POS,
+    "sightline_below_right": VERTEX_BELOW_RIGHT_POS,
+}
+
+# Imaged-square side at the platform plane (110 at lens 3.6 / brick 80
+# / scatter ±15). Live import from sizing.py — no manual mirror; the
+# params.py vertex block is reconciled to the same inputs.
+_SIGHTLINE_P_IMAGED = BRICK_MAX_MM + 2 * SCATTER_HALF_MM
+
+# Entrance-pupil stand-in disc at the apex (a true M12 pupil at
+# f/2.8 is ~Ø1.3; Ø4 adds margin), pushed a further 3 mm past the
+# lens nose along the axis so the horizontal disc cannot poke back
+# through the tilted lens front face (3 > disc radius ≥ worst-case
+# back-reach).
+_SIGHTLINE_APEX_D = 4.0
+_SIGHTLINE_APEX_SETBACK = 3.0
+
+
+def sightline_cone(vertex_pos: tuple[float, float, float]):
+    """Oblique frustum from the camera's lens nose to the imaged
+    square at the platform plane, in m03-local coordinates (place at
+    identity). Lens nose = vertex (PCB rear face) + (PCB_T + M12_L)
+    along the lens axis, mirroring `m12_lens_stub`'s extent."""
+    axis = lens_axis_unit(vertex_pos)
+    nose_dist = (
+        _camera_mount.PCB_T + _camera_mount.M12_L + _SIGHTLINE_APEX_SETBACK
+    )
+    apex = tuple(
+        vertex_pos[i] + nose_dist * axis[i] for i in range(3)
+    )
+    return loft(
+        [
+            Pos(*apex) * Circle(_SIGHTLINE_APEX_D / 2),
+            Rectangle(_SIGHTLINE_P_IMAGED, _SIGHTLINE_P_IMAGED),
+        ]
+    )
+
+
+# Known cone overlap (2026-07-24, first run of this assertion): the
+# acrylic aperture equals the imaged square (ACRYLIC_INSERT_SIZE =
+# IMAGED_REGION_SIDE_MM = 110), so each oblique below camera's
+# sightline to its own near edge necessarily passes through the IMAGE
+# cartridge frame below the platform plane — the perimeter wall band
+# (|x| ∈ [55, 60], z ∈ [-4, 0]) plus the two near-side corner lips
+# (z ∈ [-7, -4]). ≈958 mm³ per side. Optical cost: bottom-sliver
+# vignetting of a brick parked at extreme near-edge scatter, and the
+# opposite below camera sees that sliver unobstructed. Kept as a
+# regression alarm, not fixed: growing the aperture past the imaged
+# square or moving the lips inboard-out is a cartridge redesign the
+# vignetting doesn't currently justify — if either lands, this
+# assertion self-fails and must be removed.
+_SIGHTLINE_KNOWN_OVERLAP_REASON = (
+    "aperture == imaged square (110): below-* near-edge sightlines "
+    "graze the IMAGE frame wall + corner lips below z=0; bottom-sliver "
+    "vignetting covered by the opposite below camera"
+)
+_SIGHTLINE_KNOWN_OVERLAPS = frozenset({"platform_image_frame"})
+
+
+def add_sightline_cone_checks(a: Assembly) -> Assembly:
+    """Add both below-vertex sightline cones and assert them clear of
+    every m03 part except acrylics (transparent by design) — with the
+    documented frame-graze pairs downgraded to `assert_interference`
+    regression alarms. Apply to a copy consumed only by `check()` —
+    never to the rendered/exported `assembly`."""
+    for cone_name, vertex_pos in SIGHTLINE_CONE_SPECS.items():
+        a = a.with_part(cone_name, sightline_cone(vertex_pos))
+        for other in M03_PART_NAMES:
+            if "acrylic" in other:
+                continue
+            if other in _SIGHTLINE_KNOWN_OVERLAPS:
+                a = a.assert_interference(
+                    cone_name, other,
+                    reason=_SIGHTLINE_KNOWN_OVERLAP_REASON,
+                )
+            else:
+                a = a.assert_no_interference(cone_name, other)
+    return a
+
+
 # --- Standalone assembly ---------------------------------------------
 
 assembly = add_m03_internal_checks(add_m03(Assembly()))
 
 
 if __name__ == "__main__":
-    check(assembly, out="outputs")
+    check(add_sightline_cone_checks(assembly), out="outputs")
