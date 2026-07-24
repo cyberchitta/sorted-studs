@@ -37,10 +37,14 @@ directory into `sys.path` and imports its sub-assemblies via bare
 names. The bare names collide across units (every unit owns a
 `params`, `materials`, `design_systems`), so we run each unit's
 `assembly.py` through `runpy.run_path` with the colliding cached
-modules evicted before/after every load. We then re-add every part
-of each unit's assembly into a single top-level `Assembly`, with the
-location pre-multiplied by the unit's world pose and the name
-prefixed with the unit tag.
+modules evicted before/after every load.
+
+m03 then composes as a true subtree — `with_subassembly("m03", …,
+location=world_pose)` — so its parts keep their tree paths under the
+`m03.` root and its joints survive to the top level. m05 and the m02
+chain are still spliced flat (every part re-added with its location
+pre-multiplied by the unit's world pose and the name prefixed with
+the unit tag); they migrate to subtrees in later slices.
 """
 
 from __future__ import annotations
@@ -218,7 +222,6 @@ assert _M02_CHAIN_NS["M03_LOAD_TOP_Z"] == _TURRET_WORLD_Z, (
 
 _PREFIX = {
     "m05": "m05__",
-    "m03": "m03__",
     "m02_chain": "m02_chain__",
 }
 
@@ -227,15 +230,17 @@ def _splice(top: Assembly, mod: Assembly, base: Location, prefix: str) -> Assemb
     """Re-add every placed part from ``mod`` into ``top`` with its
     location pre-multiplied by ``base`` and its name prefixed.
     Within-unit assertions are intentionally dropped — each unit's
-    own ``khana check`` validates them.
+    own ``khana check`` validates them. (The same holds for the
+    ``with_subassembly`` path: assertions inside a nested ``Assembly``
+    are root-only and not evaluated by the parent's ``check()``.)
 
     Walks ``mod.placed_parts`` (not ``mod.parts``) so parts living
-    inside sub-assemblies (e.g. m05's ``rotating_stack``, m03's
-    ``turret.rotor``) come through with their joint/sub-assembly
-    transforms composed into the part's effective location. Splicing
-    flat means the top-level loses the joint hierarchy — currently
-    fine because the top-level static view fixes every joint at 0;
-    animation hooks live inside each unit's standalone assembly.
+    inside sub-assemblies (e.g. m05's ``rotating_stack``) come
+    through with their joint/sub-assembly transforms composed into
+    the part's effective location. Splicing flat means the top-level
+    loses the joint hierarchy — currently fine because the top-level
+    static view fixes every joint at 0; animation hooks live inside
+    each unit's standalone assembly.
     """
     for p in mod.placed_parts:
         top = top.with_part(
@@ -250,7 +255,7 @@ def _splice(top: Assembly, mod: Assembly, base: Location, prefix: str) -> Assemb
 
 assembly = Assembly()
 assembly = _splice(assembly, _M05_ASSY, _M05_POSE, _PREFIX["m05"])
-assembly = _splice(assembly, _M03_ASSY, _M03_POSE, _PREFIX["m03"])
+assembly = assembly.with_subassembly("m03", _M03_ASSY, location=_M03_POSE)
 assembly = _splice(
     assembly, _M02_CHAIN_ASSY, _M02_CHAIN_POSE, _PREFIX["m02_chain"]
 )
@@ -260,16 +265,17 @@ assembly = _splice(
 #
 # Every cross-unit pair (m03 × m05, chain × m05, chain × m03). Within-
 # unit pairs are covered by each unit's own standalone `khana check`.
+# m03 is addressed by its subtree path ("m03" expands to every
+# `m03.…` part path); the still-spliced units by explicit name lists.
 
-_M03_NAMES = [f"{_PREFIX['m03']}{p.name}" for p in _M03_ASSY.placed_parts]
 _M05_NAMES = [f"{_PREFIX['m05']}{p.name}" for p in _M05_ASSY.placed_parts]
 _CHAIN_NAMES = [
     f"{_PREFIX['m02_chain']}{p.name}" for p in _M02_CHAIN_ASSY.placed_parts
 ]
 
-assembly = assembly.assert_no_interference_between(_M03_NAMES, _M05_NAMES)
+assembly = assembly.assert_no_interference_between("m03", _M05_NAMES)
 assembly = assembly.assert_no_interference_between(_CHAIN_NAMES, _M05_NAMES)
-assembly = assembly.assert_no_interference_between(_CHAIN_NAMES, _M03_NAMES)
+assembly = assembly.assert_no_interference_between(_CHAIN_NAMES, "m03")
 
 
 if __name__ == "__main__":
