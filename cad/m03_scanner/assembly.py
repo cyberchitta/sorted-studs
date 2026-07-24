@@ -177,7 +177,7 @@ def build_camera_rig() -> Assembly:
     """Camera-rig sub-assembly. Rig-local frame == m03-local (the rig
     is placed at identity), so all rig coordinates in `params.py`
     apply unchanged."""
-    a = _arch.add_arch(Assembly())
+    a = Assembly().with_subassembly("arch", _arch.build_arch())
     for prefix, spec in _CAMERA_INSTANCES.items():
         clamp_loc = Pos(*spec["clamp_pos"]) * spec["clamp_rot"]
         axis = lens_axis_unit(spec["vertex_pos"])
@@ -263,11 +263,13 @@ def _build_turret_rotor() -> Assembly:
     platforms inherit the rotor's azimuth automatically and add only
     their own tilt DOF on top. The dump_servo is bench-mounted (not
     on the rotor), so it doesn't appear here."""
-    rotor = Assembly()
-    rotor = _arm.add_turret_arm(rotor)
-    rotor = _hub.add_turret_hub_rotor(rotor)
-    rotor = _drive.add_turret_drive_rotor(rotor)
-    rotor = _homing.add_turret_homing_rotor(rotor)
+    rotor = (
+        Assembly()
+        .with_subassembly("arm", _arm.build_turret_arm())
+        .with_subassembly("hub", _hub.build_turret_hub_rotor())
+        .with_subassembly("drive", _drive.build_turret_drive_rotor())
+        .with_subassembly("homing", _homing.build_turret_homing_rotor())
+    )
     for station in TURRET_STATIONS:
         rotor = rotor.with_subassembly(
             f"platform_{station}",
@@ -286,9 +288,7 @@ def _build_servo_arm_subassembly() -> Assembly:
     attached at ``with_subassembly`` time inside ``build_turret``; the
     arm rotates around that shaft during a dump dwell while the
     bracket + body stay with the static frame."""
-    arm = Assembly()
-    arm = _dump_servo.add_turret_dump_servo_arm(arm)
-    return arm
+    return _dump_servo.build_turret_dump_servo_arm()
 
 
 def build_turret() -> Assembly:
@@ -297,9 +297,9 @@ def build_turret() -> Assembly:
     constants). The caller places the whole unit with one transform.
 
     Structure:
-      * static parts (frame, hub housing + bearings, motor + bracket
-        + motor pulley, homing sensor + bracket, servo bracket + body)
-        sit flat on the unit root.
+      * static sub-assemblies (frame, hub housing + bearings, motor +
+        bracket + motor pulley, homing sensor + bracket, servo
+        bracket + body) at unit identity.
       * ``rotor`` is a sub-assembly whose ``RevoluteJoint`` about the
         turret-local Z axis through the hub drives the spider
         rotation. Inside it live four ``platform_<station>``
@@ -313,12 +313,16 @@ def build_turret() -> Assembly:
     the jointed sub-assembly's own frame (turret-local for the rotor
     and the arm, cartridge-local for the platforms), so nothing here
     depends on where the unit ends up."""
-    t = Assembly()
-    t = _frame.add_turret_frame(t)
-    t = _hub.add_turret_hub_static(t)
-    t = _drive.add_turret_drive_static(t)
-    t = _homing.add_turret_homing_static(t)
-    t = _dump_servo.add_turret_dump_servo_static(t)
+    t = (
+        Assembly()
+        .with_subassembly("frame", _frame.build_turret_frame())
+        .with_subassembly("hub", _hub.build_turret_hub_static())
+        .with_subassembly("drive", _drive.build_turret_drive_static())
+        .with_subassembly("homing", _homing.build_turret_homing_static())
+        .with_subassembly(
+            "dump_servo", _dump_servo.build_turret_dump_servo_static()
+        )
+    )
 
     # Rotor — joint about the turret-local Z axis through the hub.
     # (Z is parallel to itself everywhere, so the pivot's Z value is

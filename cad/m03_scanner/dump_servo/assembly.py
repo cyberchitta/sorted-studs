@@ -262,7 +262,8 @@ assert _hub_wall >= WALL_MIN, (
 
 def servo_body():
     """Stock SG90-class servo body stub. Centroid placed in
-    `add_turret_dump_servo`; returned at part-local identity here."""
+    `build_turret_dump_servo_static`; returned at part-local identity
+    here."""
     return Box(SERVO_BODY_X, SERVO_BODY_Y, SERVO_BODY_Z)
 
 
@@ -353,19 +354,21 @@ SERVO_ARM_PART_NAMES = ("servo_arm",)
 SERVO_PART_NAMES = SERVO_STATIC_PART_NAMES + SERVO_ARM_PART_NAMES
 
 
-def add_turret_dump_servo_static(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
-    """Static servo parts: printed bracket + bought servo body. Both
-    bolt to the bench cross-rail; the arm (which pivots on the servo
-    output shaft) is added separately so the m03 top level can wrap
-    it in a jointed sub-assembly."""
+def build_turret_dump_servo_static() -> Assembly:
+    """Static servo sub-assembly: printed bracket + bought servo body,
+    in turret-local coordinates. Both bolt to the bench cross-rail;
+    the arm (which pivots on the servo output shaft) is a separate
+    builder so the m03 top level can wrap it in a jointed
+    sub-assembly."""
+    a = Assembly()
     a = a.with_part(
-        "servo_bracket", servo_bracket(), location=base,
+        "servo_bracket", servo_bracket(),
         material=material_of("servo_bracket"), color=color_of("servo_bracket"),
     )
     a = a.with_part(
         "servo_body",
         servo_body(),
-        location=base * Pos(
+        location=Pos(
             _SERVO_BODY_X_CENTER,
             _SERVO_BODY_Y_CENTER,
             _SERVO_BODY_Z_CENTER,
@@ -375,31 +378,25 @@ def add_turret_dump_servo_static(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
     return a
 
 
-def add_turret_dump_servo_arm(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
-    """Just the arm — the rigid body that swings on the servo shaft.
-    Added to whatever Assembly the caller passes, so the m03 top level
-    can hand in a fresh Assembly and wrap it in a jointed sub-assembly
-    around the pivot axis."""
-    return a.with_part(
-        "servo_arm", servo_arm(), location=base,
+def build_turret_dump_servo_arm() -> Assembly:
+    """Just the arm — the rigid body that swings on the servo shaft —
+    as its own sub-assembly, so the m03 top level can attach the
+    revolute joint around the pivot axis."""
+    return Assembly().with_part(
+        "servo_arm", servo_arm(),
         material=material_of("servo_arm"), color=color_of("servo_arm"),
     )
 
 
-def add_turret_dump_servo(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
-    """Bracket + body + arm on a single flat assembly. Kept for the
-    standalone test; the m03 top level composes via the split helpers
-    above so the arm can carry its own revolute joint."""
-    a = add_turret_dump_servo_static(a, base=base)
-    a = add_turret_dump_servo_arm(a, base=base)
-    return a
-
-
 # --- Standalone assembly -----------------------------------------------
 
-assembly = add_turret_dump_servo(Assembly())
-assembly = assembly.with_part(
-    "cross_rail_stub", _cross_rail_stub(), material="aluminium_anodized"
+assembly = (
+    Assembly()
+    .with_subassembly("static", build_turret_dump_servo_static())
+    .with_subassembly("arm", build_turret_dump_servo_arm())
+    .with_part(
+        "cross_rail_stub", _cross_rail_stub(), material="aluminium_anodized"
+    )
 )
 
 # All pairwise no-interference between servo parts and the rail stub.
@@ -407,9 +404,7 @@ assembly = assembly.with_part(
 # on the bracket — both modelled as zero-overlap (assert_no_interference
 # accepts).
 _ALL = list(SERVO_PART_NAMES) + ["cross_rail_stub"]
-for _i, _a in enumerate(_ALL):
-    for _b in _ALL[_i + 1:]:
-        assembly = assembly.assert_no_interference(_a, _b)
+assembly = assembly.assert_no_interference_within(_ALL)
 
 
 if __name__ == "__main__":

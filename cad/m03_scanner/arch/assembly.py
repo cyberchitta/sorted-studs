@@ -304,8 +304,10 @@ ARCH_PART_NAMES = tuple(_MEMBERS.keys())
 
 # --- Assembly builder --------------------------------------------------
 
-def add_arch(a: Assembly) -> Assembly:
-    """Add every arch member in m03-local coordinates."""
+def build_arch() -> Assembly:
+    """Arch sub-assembly. Members are in m03-local coordinates (the
+    rig is placed at m03 identity, so no separate local frame)."""
+    a = Assembly()
     for name, part in _MEMBERS.items():
         a = a.with_part(
             name, part,
@@ -316,14 +318,10 @@ def add_arch(a: Assembly) -> Assembly:
 
 # --- Standalone assembly -----------------------------------------------
 
-assembly = add_arch(Assembly())
-
 # Every pair of members must be non-overlapping — butt joints are
 # separated by CORNER_GAP. Printed gussets at the post-to-back-rail
 # and post-to-stub corners land in a follow-up slice.
-for _i, _a in enumerate(ARCH_PART_NAMES):
-    for _b in ARCH_PART_NAMES[_i + 1:]:
-        assembly = assembly.assert_no_interference(_a, _b)
+assembly = build_arch().assert_no_interference_within(ARCH_PART_NAMES)
 
 
 if __name__ == "__main__":

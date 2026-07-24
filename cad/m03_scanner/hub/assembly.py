@@ -268,12 +268,14 @@ HUB_ROTOR_PART_NAMES = ("hub_shaft",)
 HUB_PART_NAMES = HUB_STATIC_PART_NAMES + HUB_ROTOR_PART_NAMES
 
 
-def add_turret_hub_static(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
-    """Static hub parts: housing + the two bearings. The bearing
-    outer race is physically static; the inner race spins with the
-    shaft, but each bearing renders as one rigid body so we pin it to
-    the housing side (visual cost is nil)."""
-    hub_pose = base * Pos(TURRET_HUB_X, TURRET_HUB_Y, RAIL_TOP_Z)
+def build_turret_hub_static() -> Assembly:
+    """Static hub sub-assembly: housing + the two bearings, in
+    turret-local coordinates. The bearing outer race is physically
+    static; the inner race spins with the shaft, but each bearing
+    renders as one rigid body so we pin it to the housing side
+    (visual cost is nil)."""
+    a = Assembly()
+    hub_pose = Pos(TURRET_HUB_X, TURRET_HUB_Y, RAIL_TOP_Z)
     a = a.with_part(
         "hub_housing", housing(), location=hub_pose,
         material=material_of("hub_housing"), color=color_of("hub_housing"),
@@ -293,13 +295,14 @@ def add_turret_hub_static(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
     return a
 
 
-def add_turret_hub_rotor(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
-    """Rotor hub parts: the shaft (spins with the spider). Bake the
-    +length/2 Z lift into the placement (Cylinder's centroid is at
-    the placement origin) so the part itself stays at canonical
-    identity intrinsic — required by ``export_animated_glb`` for
-    parts inside the rotor sub-assembly."""
-    hub_pose = base * Pos(TURRET_HUB_X, TURRET_HUB_Y, RAIL_TOP_Z)
+def build_turret_hub_rotor() -> Assembly:
+    """Rotor hub sub-assembly: the shaft (spins with the spider), in
+    turret-local coordinates. Bake the +length/2 Z lift into the
+    placement (Cylinder's centroid is at the placement origin) so the
+    part itself stays at canonical identity intrinsic — required by
+    ``export_animated_glb`` for parts inside the rotor sub-assembly."""
+    a = Assembly()
+    hub_pose = Pos(TURRET_HUB_X, TURRET_HUB_Y, RAIL_TOP_Z)
     a = a.with_part(
         "hub_shaft", shaft(),
         location=hub_pose * Pos(0, 0, _SHAFT_LEN / 2),
@@ -308,26 +311,18 @@ def add_turret_hub_rotor(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
     return a
 
 
-def add_turret_hub(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
-    """All four turret-hub parts (housing + shaft + 2 bearings) on the
-    same flat assembly. Kept for the standalone test; the m03 top
-    level composes via the split helpers above so the shaft can sit
-    in the rotor sub-assembly."""
-    a = add_turret_hub_static(a, base=base)
-    a = add_turret_hub_rotor(a, base=base)
-    return a
-
-
 # --- Standalone assembly -----------------------------------------------
 
-assembly = add_turret_hub(Assembly())
-
-# All pairwise no-interference. Bearings press-fit into the housing
-# bore (tangent contact, passes assert_no_interference at zero
-# overlap) and onto the shaft (same).
-for _i, _a in enumerate(HUB_PART_NAMES):
-    for _b in HUB_PART_NAMES[_i + 1:]:
-        assembly = assembly.assert_no_interference(_a, _b)
+# All four turret-hub parts (housing + shaft + 2 bearings). All
+# pairwise no-interference. Bearings press-fit into the housing bore
+# (tangent contact, passes assert_no_interference at zero overlap)
+# and onto the shaft (same).
+assembly = (
+    Assembly()
+    .with_subassembly("static", build_turret_hub_static())
+    .with_subassembly("rotor", build_turret_hub_rotor())
+    .assert_no_interference_within(HUB_PART_NAMES)
+)
 
 
 if __name__ == "__main__":

@@ -330,18 +330,18 @@ ARM_PART_NAMES = ("spider",) + tuple(name for name, _, _ in _PIN_PLACEMENTS)
 
 # --- Assembly builder --------------------------------------------------
 
-def add_turret_arm(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
-    """Add the spider + 4 hinge pins. Parts are positioned in
-    turret-local coordinates; `base` (default: identity) is
-    pre-multiplied to lift them into a parent frame."""
-    spider_pose = base * Pos(TURRET_HUB_X, TURRET_HUB_Y, TURRET_HINGE_PIN_Z)
+def build_turret_arm() -> Assembly:
+    """Spider + 4 hinge pins sub-assembly, in turret-local
+    coordinates; the caller places it."""
+    a = Assembly()
     a = a.with_part(
-        "spider", spider(), location=spider_pose,
+        "spider", spider(),
+        location=Pos(TURRET_HUB_X, TURRET_HUB_Y, TURRET_HINGE_PIN_Z),
         material=material_of("spider"), color=color_of("spider"),
     )
     for name, local_pos, rot in _PIN_PLACEMENTS:
         a = a.with_part(
-            name, pin(), location=base * Pos(*local_pos) * rot,
+            name, pin(), location=Pos(*local_pos) * rot,
             material=material_of(name),
         )
     return a
@@ -349,15 +349,11 @@ def add_turret_arm(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
 
 # --- Standalone assembly -----------------------------------------------
 
-assembly = add_turret_arm(Assembly())
-
 # All pairwise no-interference. Each pin sits in its bushing-block
 # bore (Ø5 pin in Ø5.4 bore = 0.2 mm radial gap, no interference);
 # the 4 pins are well-separated (≥ 70 mm apart). Spider/spider would
 # be self-comparison so it doesn't appear.
-for _i, _a in enumerate(ARM_PART_NAMES):
-    for _b in ARM_PART_NAMES[_i + 1:]:
-        assembly = assembly.assert_no_interference(_a, _b)
+assembly = build_turret_arm().assert_no_interference_within(ARM_PART_NAMES)
 
 
 if __name__ == "__main__":

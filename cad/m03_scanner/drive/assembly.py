@@ -516,56 +516,52 @@ DRIVE_ROTOR_PART_NAMES = ("drive_pulley_shaft",)
 DRIVE_PART_NAMES = DRIVE_ROTOR_PART_NAMES + DRIVE_STATIC_PART_NAMES
 
 
-def add_turret_drive_static(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
-    """Static drive parts: motor + driver pulley (on the motor shaft)
-    + motor bracket. The motor pulley turns in real life, but only
-    the driven-side pulley is locked to the hub shaft we animate —
-    the motor and its pulley render as static for the animation."""
+def build_turret_drive_static() -> Assembly:
+    """Static drive sub-assembly: motor + driver pulley (on the motor
+    shaft) + motor bracket, in turret-local coordinates. The motor
+    pulley turns in real life, but only the driven-side pulley is
+    locked to the hub shaft we animate — the motor and its pulley
+    render as static for the animation."""
+    a = Assembly()
     a = a.with_part(
         "drive_pulley_motor",
         driver_pulley(),
-        location=base * Pos(MOTOR_X, MOTOR_Y, PULLEY_Z_CENTER),
+        location=Pos(MOTOR_X, MOTOR_Y, PULLEY_Z_CENTER),
         material=material_of("drive_pulley_motor"),
     )
     a = a.with_part(
         "drive_motor",
         motor(),
-        location=base * Pos(MOTOR_X, MOTOR_Y, _MOTOR_BODY_CENTER_Z),
+        location=Pos(MOTOR_X, MOTOR_Y, _MOTOR_BODY_CENTER_Z),
         material=material_of("drive_motor"),
     )
     a = a.with_part(
         "drive_bracket",
         bracket(),
-        location=base,
         material=material_of("drive_bracket"),
         color=color_of("drive_bracket"),
     )
     return a
 
 
-def add_turret_drive_rotor(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
-    """Rotor drive parts: the driven pulley (keyed to the hub shaft)."""
-    a = a.with_part(
+def build_turret_drive_rotor() -> Assembly:
+    """Rotor drive sub-assembly: the driven pulley (keyed to the hub
+    shaft), in turret-local coordinates."""
+    return Assembly().with_part(
         "drive_pulley_shaft",
         driven_pulley(),
-        location=base * Pos(TURRET_HUB_X, TURRET_HUB_Y, PULLEY_Z_CENTER),
+        location=Pos(TURRET_HUB_X, TURRET_HUB_Y, PULLEY_Z_CENTER),
         material=material_of("drive_pulley_shaft"),
     )
-    return a
-
-
-def add_turret_drive(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
-    """All four drive parts. Kept for the standalone test; the m03 top
-    level uses the split helpers so the driven pulley lands in the
-    rotor sub-assembly."""
-    a = add_turret_drive_static(a, base=base)
-    a = add_turret_drive_rotor(a, base=base)
-    return a
 
 
 # --- Standalone assembly -----------------------------------------------
 
-assembly = add_turret_drive(Assembly())
+assembly = (
+    Assembly()
+    .with_subassembly("static", build_turret_drive_static())
+    .with_subassembly("rotor", build_turret_drive_rotor())
+)
 
 # Stubs.
 _SHAFT_LEN = TURRET_SHAFT_TOP_Z - RAIL_TOP_Z               # = 160
@@ -587,9 +583,7 @@ assembly = assembly.with_part(
 # overlap. Pulleys vs each other are clear in X (center distance 58.6,
 # OD radii 19.1 + 6.4 = 25.5, gap 33.1 mm).
 _ALL = list(DRIVE_PART_NAMES) + ["hub_shaft_stub", "cross_rail_stub"]
-for _i, _a in enumerate(_ALL):
-    for _b in _ALL[_i + 1:]:
-        assembly = assembly.assert_no_interference(_a, _b)
+assembly = assembly.assert_no_interference_within(_ALL)
 
 
 if __name__ == "__main__":

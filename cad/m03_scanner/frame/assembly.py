@@ -242,17 +242,16 @@ TURRET_FRAME_PART_NAMES = tuple(_MEMBERS.keys())
 
 # --- Assembly builder --------------------------------------------------
 
-def add_turret_frame(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
-    """Add all 2020 turret-frame members and return the updated
-    assembly. Parts are positioned in turret-local coordinates;
-    `base` (default: identity) is pre-multiplied to lift them into a
-    parent frame (e.g. world). Exposed so the top-level scanner
-    assembly composes via the public surface instead of reaching into
-    module-private state.
+def build_turret_frame() -> Assembly:
+    """2020 turret-frame members sub-assembly, in turret-local
+    coordinates; the caller places it. Exposed so the top-level
+    scanner assembly composes via the public surface instead of
+    reaching into module-private state.
     """
+    a = Assembly()
     for name, part in _MEMBERS.items():
         a = a.with_part(
-            name, part, location=base,
+            name, part,
             material=material_of(name), color=color_of(name),
         )
     return a
@@ -260,14 +259,12 @@ def add_turret_frame(a: Assembly, base=Pos(0, 0, 0)) -> Assembly:
 
 # --- Standalone assembly -----------------------------------------------
 
-assembly = add_turret_frame(Assembly())
-
 # Every pair of members must be non-overlapping. Butt-joints are
 # separated by CORNER_GAP (0.3 mm); printed corner brackets bridge the
 # gaps in reality and are not modelled in this slice.
-for _i, _a in enumerate(TURRET_FRAME_PART_NAMES):
-    for _b in TURRET_FRAME_PART_NAMES[_i + 1:]:
-        assembly = assembly.assert_no_interference(_a, _b)
+assembly = build_turret_frame().assert_no_interference_within(
+    TURRET_FRAME_PART_NAMES
+)
 
 
 if __name__ == "__main__":
