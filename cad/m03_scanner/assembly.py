@@ -9,8 +9,9 @@ Composes the integrated camera rig + turret in m03-local coordinates
     in `params.py` are m03-local-equivalent.
   * Turret parts placed at m03-local `Pos(0, -TURRET_ARM_R, 0)` so
     the turret hub axis lands at m03-local `(0, -ARM_R, *)` and the
-    DUMP platform centroid sits at m03-local origin (option a',
-    2026-05-05).
+    DUMP platform centroid at m03-local `(0, -2·ARM_R)` — which the
+    world placement in `cad/assembly.py` maps onto the m05 hub axis
+    (option a', 2026-05-05).
 
 Within-unit checks at this level are the union of arch-internal +
 turret-internal + arch×turret pairs. After Phase 2 (2026-05-06), the

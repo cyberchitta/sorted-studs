@@ -9,7 +9,7 @@ through IMAGE → IDLE → DUMP over the m05 hub axis.
 Constraints landed in this slice:
 
   * **DUMP over hub.** The turret's DUMP station is its "down
-    position" — at every dwell the cam-kicker tilts that platform so
+    position" — at every dwell the dump servo tilts that platform so
     the brick falls. For the brick to drop into the diverter's
     central column, DUMP must sit on the column's hub axis at world
     `(0, 0, *)`. Option (a') lands the firing heading at 270° (-Y in
@@ -83,8 +83,7 @@ _MODULE_LOCAL_HEADS = frozenset(
         "arch",
         "arm",
         "camera_mount_esp32cam",
-        "dump_cam",
-        "dump_kicker",
+        "dump_servo",
         "homing",
         "hub",
         "turret_platform",
