@@ -63,6 +63,7 @@ helper with a reduced plan + basket layout + no drive train / top
 deck. The production assembly is `build_tower(FLOOR_PLAN)`.
 """
 
+import math
 import sys
 from pathlib import Path
 
@@ -83,7 +84,7 @@ from design_systems import (
 )
 from materials import material_of
 from frame import assembly as _frame
-from params import FLOOR_H, FLOOR_LAYOUT
+from params import FLOOR_H, FLOOR_LAYOUT, R_VERT_OUTER
 from ramp_mechanism import assembly as _ramp
 
 
@@ -444,6 +445,23 @@ def build_tower(
 # --- Production assembly -----------------------------------------------
 
 assembly = build_tower(FLOOR_PLAN)
+
+# Exported interface anchors (m05-local; = world while m05 sits at
+# world identity). ``deck_top``: hub-axis point on the top deck's top
+# face — the plane the m03 turret floor rests on. ``outer_vert_0_top``:
+# vertex-0 outer through-column axis at the deck-top plane (vertex
+# azimuths are ``(k + 0.5)·60°`` per ``frame/assembly.py``, so k=0 is
+# 30°) — the face the m02 chain's col1 extension butts against.
+_DECK_TOP_Z = TOP_VERT_Z + TOP_DECK_T
+assembly = assembly.with_anchor("deck_top", Pos(0, 0, _DECK_TOP_Z))
+assembly = assembly.with_anchor(
+    "outer_vert_0_top",
+    Pos(
+        R_VERT_OUTER * math.cos(math.radians(30.0)),
+        R_VERT_OUTER * math.sin(math.radians(30.0)),
+        _DECK_TOP_Z,
+    ),
+)
 
 
 if __name__ == "__main__":

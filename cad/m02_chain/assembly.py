@@ -61,6 +61,7 @@ from materials import material_of
 from params import (
     CHAIN_WORLD_POSE_XYZ,
     COL1_LOCAL_XY,
+    DECK_TOP_Z_LOCAL,
     COL1_ROT_DEG,
     COL2_LOCAL_XY,
     COL_LEN,
@@ -249,6 +250,24 @@ assembly = (
     .with_part("yoke", _yoke_crossbar(), location=_YOKE_LOC, **_kw("yoke"))
     .with_part("load_ramp", _load_ramp(), location=_RAMP_LOC, **_kw("load_ramp"))
     .with_subassembly("s1", _M02_ASSY, location=_S1_POSE)
+)
+
+# Exported belief anchors (chain-local). The chain builds standalone
+# from mirrored m05/m03 constants (params.py); these anchors state
+# where those mirrors put the shared datums, so the top level can
+# assert them against the live units' own anchors — a drifted mirror
+# stops coinciding there and fails loudly. ``load_top`` is the
+# chain-local origin by construction (the top level derives the
+# chain's world pose from m03's live ``load_top``); ``deck_top`` is
+# the hub-axis point on the m05 deck top face; ``col1_base`` is where
+# col1's base center must meet m05's ``outer_vert_0_top``.
+assembly = assembly.with_anchor("load_top", Pos(0, 0, 0))
+assembly = assembly.with_anchor(
+    "deck_top",
+    Pos(-M03_TURRET_ARM_R, -M03_TURRET_ARM_R, DECK_TOP_Z_LOCAL),
+)
+assembly = assembly.with_anchor(
+    "col1_base", Pos(*COL1_LOCAL_XY, DECK_TOP_Z_LOCAL)
 )
 
 

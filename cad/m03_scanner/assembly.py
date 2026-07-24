@@ -323,6 +323,16 @@ def add_m03(a: Assembly) -> Assembly:
     ``turret.servo_arm``."""
     a = a.with_subassembly("rig", build_camera_rig())
     a = a.with_subassembly("turret", build_turret(), location=TURRET_BASE)
+    # Exported interface anchors (m03-local). ``load_top`` /
+    # ``dump_centroid``: station centroids on the platform top-face
+    # plane (stations at hub + TURRET_ARM_R·heading; LOAD at turret
+    # heading 0°, DUMP at 270°) — where the m02 chain delivers and
+    # where bricks drop into the m05 column. ``floor_bottom``
+    # re-exports the frame's own declaration (where the member
+    # cross-section lives) at unit scope.
+    a = a.with_anchor("load_top", TURRET_BASE * Pos(TURRET_ARM_R, 0, 0))
+    a = a.with_anchor("dump_centroid", TURRET_BASE * Pos(0, -TURRET_ARM_R, 0))
+    a = a.with_anchor("floor_bottom", a.anchor("turret.frame.floor_bottom"))
     return a
 
 

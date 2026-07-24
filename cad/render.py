@@ -36,7 +36,7 @@ import runpy
 import sys
 from pathlib import Path
 
-from build123d import Location, Pos
+from build123d import Pos
 
 from cad_khana.mechanism.assembly import Assembly
 from chitra_cad.framing import HERO_3Q
@@ -51,36 +51,19 @@ sys.path.insert(0, str(THIS_DIR.parent))
 import cad.design_systems as _ds  # noqa: E402
 
 
-# --- Placement (mirrors cad/assembly.py) ------------------------------
+# --- Placement --------------------------------------------------------
 #
-# Top-level placement constants are duplicated from cad/assembly.py
-# rather than imported, because importing cad.assembly executes its
-# own module load + cross-module assertion graph at the wrong schema.
-# A drift here surfaces visually as a misaligned render — easy to
-# spot.
+# m05 sits at world identity; the m03 pose derives from the units'
+# exported anchors inside ``_build_top_level`` — the same derivation
+# as ``cad/assembly.py`` (DUMP centroid over the m05 hub axis, turret
+# floor bottom on the deck top face), so the render can no longer
+# drift from the check assembly's layout. The m02 singulator here is
+# a render-only vignette (the m02_chain unit owns the real S1
+# placement): it hangs over the m03 LOAD platform so its exit arc
+# drops bricks onto LOAD, offset by two render-local constants.
 
-M05_TOP_COLUMN_TOP_Z = 933.0
-SCANNER_BENCH_LIFT_OVER_COLUMN = 20.0
-_M03_RAIL_HALF_BELOW_BENCH = 10.0
-_M03_SHARED_BENCH_Z = -220.0
-M03_TURRET_ARM_R = 185.0
 M02_EXIT_RADIUS = 90.0
 SINGULATOR_DROP_OVER_LOAD = 100.0
-
-_M03_PLATFORM_TOP_Z = (
-    M05_TOP_COLUMN_TOP_Z
-    + SCANNER_BENCH_LIFT_OVER_COLUMN
-    + _M03_RAIL_HALF_BELOW_BENCH
-    - _M03_SHARED_BENCH_Z
-)   # 1183
-
-_M05_POSE = Location()
-_M03_POSE = Pos(M03_TURRET_ARM_R, 0, _M03_PLATFORM_TOP_Z)
-_M02_POSE = Pos(
-    2 * M03_TURRET_ARM_R - M02_EXIT_RADIUS,
-    0,
-    _M03_PLATFORM_TOP_Z + SINGULATOR_DROP_OVER_LOAD,
-)
 
 # --- Module-load helpers ---------------------------------------------
 
@@ -159,11 +142,20 @@ def _build_top_level() -> tuple[Assembly, dict[str, str]]:
     assy_m03, mat_m03 = _load_module_detailed("m03_scanner")
     assy_m02, mat_m02 = _load_module_detailed("m02_c_channel_singulator")
 
+    deck = assy_m05.anchor("deck_top").position
+    dump = assy_m03.anchor("dump_centroid").position
+    floor_bottom = assy_m03.anchor("floor_bottom").position
+    m03_pose = Pos(deck.X - dump.X, deck.Y - dump.Y, deck.Z - floor_bottom.Z)
+    load = (m03_pose * assy_m03.anchor("load_top")).position
+    m02_pose = Pos(
+        load.X - M02_EXIT_RADIUS, load.Y, load.Z + SINGULATOR_DROP_OVER_LOAD
+    )
+
     top = (
         Assembly()
-        .with_subassembly("m05", assy_m05, location=_M05_POSE)
-        .with_subassembly("m03", assy_m03, location=_M03_POSE)
-        .with_subassembly("m02", assy_m02, location=_M02_POSE)
+        .with_subassembly("m05", assy_m05)
+        .with_subassembly("m03", assy_m03, location=m03_pose)
+        .with_subassembly("m02", assy_m02, location=m02_pose)
     )
 
     qualified_mat: dict[str, str] = {}

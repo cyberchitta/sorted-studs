@@ -3,8 +3,12 @@
 The chain is a relocatable unit that hangs the m02 singulator(s) off
 column extensions rising from the m05 diverter's top deck and
 delivers bricks onto the m03 turret's LOAD platform. This file owns
-the chain-local frame and the cross-boundary anchors mirrored from
-m05 / m03 / m02 with explicit assertions catching drift.
+the chain-local frame and the cross-boundary constants mirrored from
+m05 / m03 / m02 (the chain must build standalone, so it cannot import
+the live values). `assembly.py` exports the mirrors' implied datums
+as belief anchors (`load_top`, `deck_top`, `col1_base`); the
+top-level `cad/assembly.py` asserts them coincident with the live
+units' own anchors, so a drifted mirror fails loudly there.
 
 Coordinate frame (chain-local):
     origin = LOAD platform top-face centroid (= world (+125, +125, 1030)

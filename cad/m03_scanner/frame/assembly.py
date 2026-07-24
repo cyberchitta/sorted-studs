@@ -254,6 +254,13 @@ def build_turret_frame() -> Assembly:
             name, part,
             material=material_of(name), color=color_of(name),
         )
+    # Exported interface anchor: hub-axis point (frame-local origin =
+    # turret hub axis) on the floor members' bottom-face plane — the
+    # face that rests on the m05 deck top. Declared here because
+    # MEMBER is private to this module; the m03 root re-exports it.
+    a = a.with_anchor(
+        "floor_bottom", Pos(0, 0, TURRET_FRAME_FLOOR_Z - MEMBER / 2)
+    )
     return a
 
 

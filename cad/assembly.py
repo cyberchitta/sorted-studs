@@ -43,6 +43,10 @@ Each unit then composes as a true subtree — `with_subassembly(name,
 …, location=world_pose)` — so parts keep their tree paths under the
 unit root (`m05.…`, `m03.…`, `m02_chain.…`) and every unit's joints
 survive to the top level: the whole machine can animate from here.
+World poses are *derived from the units' exported anchors* (m05
+`deck_top`, m03 `dump_centroid` / `floor_bottom` / `load_top`), and
+the chain's mirrored beliefs are asserted coincident with the live
+units after composition — no mirrored placement constants live here.
 Within-unit assertions ride along nested and are intentionally not
 evaluated by this root's `check()` (root-only evaluate) — each unit's
 own `khana check` validates them.
@@ -139,83 +143,38 @@ _M03_ASSY: Assembly = _M03_NS["assembly"]
 _M02_CHAIN_ASSY: Assembly = _M02_CHAIN_NS["assembly"]
 
 
-# --- Interface values pulled from the loaded namespaces --------------
+# --- World poses (derived from the units' exported anchors) -----------
 
-# m05: top-of-through-columns Z + top-deck thickness — both live at
-# module-level in `m05_diverter/assembly.py`. The deck top face is
-# the surface the turret floor rests on.
-_M05_TOP_VERT_Z: float = _M05_NS["TOP_VERT_Z"]
-_M05_TOP_DECK_T: float = _M05_NS["TOP_DECK_T"]
-M05_DECK_TOP_Z: float = _M05_TOP_VERT_Z + _M05_TOP_DECK_T   # 890
-
-# Turret arm radius (hub axis → station centroid). Mirrors
-# `cad/m03_scanner/params.py:TURRET_ARM_R`.
-TURRET_ARM_R: float = 125.0
-
-# Turret floor frame: cross-section centerline Z and member side.
-# Mirrors `cad/m03_scanner/params.py:TURRET_FRAME_FLOOR_Z` and the
-# 2020 cross-section MEMBER constant local to
-# `cad/m03_scanner/frame/assembly.py`.
-_TURRET_FLOOR_CL_Z: float = -130.0
-_TURRET_FLOOR_MEMBER: float = 20.0
-# Bottom face of the floor 2020s in turret-local coords.
-_TURRET_FLOOR_BOTTOM_Z: float = _TURRET_FLOOR_CL_Z - _TURRET_FLOOR_MEMBER / 2.0  # -140
-
-
-# --- World poses ------------------------------------------------------
-
-# m05 at world identity.
+# m05 at world identity — its local frame IS the world frame.
 _M05_POSE = Location()
 
-# m03 placement. The m03 unit's internal frame has the rig at
-# identity (brick centroid at m03 origin) and the turret offset to
-# m03-local `Pos(0, -TURRET_ARM_R, 0)`, so:
-#   - m03-local (0, 0, 0) = brick centroid on the IMAGE platform top
-#     face → world (0, +2·TURRET_ARM_R, _TURRET_WORLD_Z) = (0, +250,
-#     1030).
-#   - m03-local (0, -TURRET_ARM_R, 0) = turret hub axis → world
-#     (0, +TURRET_ARM_R, _TURRET_WORLD_Z) = (0, +125, 1030).
-#   - m03-local (0, -2·TURRET_ARM_R, 0) = DUMP centroid → world
-#     (0, 0, _TURRET_WORLD_Z) over the diverter hub axis (option a',
-#     2026-05-05).
-# Z chosen so the turret floor's bottom face lands on the m05 deck
-# top face: world z = M05_DECK_TOP_Z - _TURRET_FLOOR_BOTTOM_Z =
-# 890 - (-140) = 1030.
-_TURRET_WORLD_Z = M05_DECK_TOP_Z - _TURRET_FLOOR_BOTTOM_Z   # 890 - (-140) = 1030
-_M03_POSE = Pos(0, 2 * TURRET_ARM_R, _TURRET_WORLD_Z)
+# m03 placement, derived from anchors instead of mirrored constants:
+#   - xy: the turret's DUMP centroid sits on the m05 hub axis (option
+#     a', 2026-05-05) — m05's `deck_top` anchor carries the hub xy.
+#   - z: the turret floor's bottom face rests on the m05 deck top
+#     face — m03's `floor_bottom` meets m05's `deck_top` plane.
+# Both constraints are pure translation, so the pose is componentwise
+# arithmetic on the anchor readings (890 − (−140) = 1030 etc.).
+_DECK_TOP = _M05_ASSY.anchor("deck_top").position
+_DUMP = _M03_ASSY.anchor("dump_centroid").position
+_FLOOR_BOTTOM = _M03_ASSY.anchor("floor_bottom").position
+_M03_POSE = Pos(
+    _DECK_TOP.X - _DUMP.X,
+    _DECK_TOP.Y - _DUMP.Y,
+    _DECK_TOP.Z - _FLOOR_BOTTOM.Z,
+)
 
-# m02 chain placement. The chain owns its own local frame with origin
-# at the LOAD platform top centroid; one transform places it in world.
-# Anchors mirrored inside `m02_chain/params.py` are cross-checked here
-# against the live m05 / m03 values.
-_M02_CHAIN_PARAMS = _M02_CHAIN_NS  # exposes the module dict; pull the
-# mirrored constants the chain hard-codes so we can verify them.
-_CHAIN_WORLD_POSE_XYZ: tuple = _M02_CHAIN_NS["CHAIN_WORLD_POSE_XYZ"]
-_M02_CHAIN_POSE = Pos(*_CHAIN_WORLD_POSE_XYZ)
-
-# Chain mirror cross-checks. The chain hard-codes M05_TOP_VERT_Z,
-# M05_TOP_DECK_T, M03_TURRET_ARM_R, and M03_LOAD_TOP_Z (= turret world
-# z). If any drifts, fail loudly here so the chain's anchors don't
-# silently desync from the rest of the assembly.
-assert _M02_CHAIN_NS["M05_TOP_VERT_Z"] == _M05_TOP_VERT_Z, (
-    f"chain M05_TOP_VERT_Z ({_M02_CHAIN_NS['M05_TOP_VERT_Z']}) != live "
-    f"m05 TOP_VERT_Z ({_M05_TOP_VERT_Z}); update "
-    f"cad/m02_chain/params.py"
-)
-assert _M02_CHAIN_NS["M05_TOP_DECK_T"] == _M05_TOP_DECK_T, (
-    f"chain M05_TOP_DECK_T ({_M02_CHAIN_NS['M05_TOP_DECK_T']}) != live "
-    f"m05 TOP_DECK_T ({_M05_TOP_DECK_T}); update "
-    f"cad/m02_chain/params.py"
-)
-assert _M02_CHAIN_NS["M03_TURRET_ARM_R"] == TURRET_ARM_R, (
-    f"chain M03_TURRET_ARM_R ({_M02_CHAIN_NS['M03_TURRET_ARM_R']}) != "
-    f"live m03 TURRET_ARM_R ({TURRET_ARM_R}); update "
-    f"cad/m02_chain/params.py"
-)
-assert _M02_CHAIN_NS["M03_LOAD_TOP_Z"] == _TURRET_WORLD_Z, (
-    f"chain M03_LOAD_TOP_Z ({_M02_CHAIN_NS['M03_LOAD_TOP_Z']}) != live "
-    f"_TURRET_WORLD_Z ({_TURRET_WORLD_Z}); update "
-    f"cad/m02_chain/params.py"
+# m02 chain placement: the chain's `load_top` anchor must land on
+# m03's live `load_top` (the LOAD platform top centroid the chain
+# delivers onto). The chain's own mirrored beliefs are asserted
+# against the live units after composition (see the anchor asserts
+# below) instead of the retired namespace cross-checks.
+_LOAD_TOP_WORLD = (_M03_POSE * _M03_ASSY.anchor("load_top")).position
+_CHAIN_LOAD_LOCAL = _M02_CHAIN_ASSY.anchor("load_top").position
+_M02_CHAIN_POSE = Pos(
+    _LOAD_TOP_WORLD.X - _CHAIN_LOAD_LOCAL.X,
+    _LOAD_TOP_WORLD.Y - _CHAIN_LOAD_LOCAL.Y,
+    _LOAD_TOP_WORLD.Z - _CHAIN_LOAD_LOCAL.Z,
 )
 
 
@@ -239,6 +198,22 @@ assembly = (
 assembly = assembly.assert_no_interference_between("m03", "m05")
 assembly = assembly.assert_no_interference_between("m02_chain", "m05")
 assembly = assembly.assert_no_interference_between("m02_chain", "m03")
+
+
+# --- Cross-unit interface anchors -------------------------------------
+#
+# Each unit exports where it believes the shared datums are — m05/m03
+# from their live values, the chain from the constants it mirrors so
+# it can build standalone. Composed, the beliefs must coincide; a
+# drifted chain mirror fails here loudly instead of silently
+# desyncing the machine. (m03 has nothing left to drift: its pose is
+# *derived* from the live anchors above.)
+assembly = assembly.assert_anchors_coincident(
+    "m02_chain.deck_top", "m05.deck_top"
+)
+assembly = assembly.assert_anchors_coincident(
+    "m02_chain.col1_base", "m05.outer_vert_0_top"
+)
 
 
 if __name__ == "__main__":
