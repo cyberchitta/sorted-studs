@@ -586,6 +586,19 @@ _ALL = (
 )
 assembly = assembly.assert_no_interference_within(_ALL)
 
+# Detail-tier fastener assertions — bracket side of the bolted foot
+# joint. The two M5 foot bolts exist only when
+# `..detail_variations.apply_default_detail` adds them (additions land
+# at the root the override is applied to); in a cheap run they are
+# absent and these skip (`passed: null` in mechanism.json). Bolt shank
+# rides the foot's M5 clearance hole (bored out — zero overlap). The
+# rail side of the joint is asserted at the m03 root against
+# `turret.frame.floor_cross_x`: the bolt dips 6 mm into the T-slot
+# opening, hollow only on the detailed V-slot — this standalone's
+# solid `cross_rail_stub` would false-fail it.
+for _bolt in ("drive_foot_bolt_inner", "drive_foot_bolt_outer"):
+    assembly = assembly.assert_no_interference(_bolt, "static.drive_bracket")
+
 
 if __name__ == "__main__":
     check(assembly, out="outputs")

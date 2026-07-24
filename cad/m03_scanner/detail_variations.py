@@ -17,22 +17,17 @@ Two layers compose at the call site:
     top T-slot. Added as new placed parts (no cheap-model counterpart).
 
 Use ``apply_default_detail(assembly)`` in render-time consumers — it
-runs both layers and chains the per-fastener no-interference
-assertions onto the returned assembly.
+runs both layers.
 
 GT2 metal pulleys (``drive_pulley_shaft``, ``drive_pulley_motor``)
 are deliberately not in the extrusion target set — they're cylindrical
 drive parts modelled as cheap stand-ins, not extrusions.
 
-Fastener-assertion location: the handoff suggests adding the new
-clearance assertions in the owning sub-assembly's ``assembly.py``.
-That doesn't currently work because ``cad_khana.mechanism.assertions``
-does ``parts[name]`` and KeyErrors when an asserted part isn't present
-— and the standalone sub-assembly check runs WITHOUT the override
-applied (cheap path), so the fastener doesn't exist there. We pair
-the assertions with the override application here instead so they
-fire only when the fastener is actually in the assembly. See
-``_notes/state/m03-scanner.md`` for the open design point on this.
+The per-fastener no-interference assertions live in
+``drive/assembly.py``, where the bolted joint lives — cad-khana
+(2043f01) skips assertions whose parts are absent from the run
+(``passed: null``) instead of KeyErroring, so the cheap standalone
+check tolerates them and a detail-applied ``check()`` evaluates them.
 """
 
 from __future__ import annotations
@@ -172,11 +167,11 @@ def _drive_foot_bolts(
 
 
 def apply_default_detail(assembly: Assembly) -> Assembly:
-    """Apply the full detail bundle (extrusion swap + fastener adds)
-    and chain per-fastener interference assertions. Use at render time
-    and any consumer that wants the high-fidelity geometry plus its
-    joint-clearance checks. Cheap-geometry consumers
-    (``assembly.py``'s ``check()``) ignore this entirely.
+    """Apply the full detail bundle (extrusion swap + fastener adds).
+    Use at render time and any consumer that wants the high-fidelity
+    geometry. Cheap-geometry consumers (``assembly.py``'s ``check()``)
+    ignore this entirely. The fastener interference assertions are
+    declared in ``drive/assembly.py`` beside the joint.
     """
     # Leaf-keyed lookup: both leaves are unique across the m03 tree,
     # and matching by leaf keeps this helper placement-agnostic.
@@ -184,32 +179,13 @@ def apply_default_detail(assembly: Assembly) -> Assembly:
         p.name.rsplit(".", 1)[-1]: p for p in assembly.placed_parts
     }
     overrides: dict[str, object] = dict(default_detail(assembly))
-    fastener_names: list[str] = []
 
     # Drive-bracket foot bolts — only emitted if the bracket itself is
     # in the assembly (lets a sub-assembly slice that omits the drive
     # use the same helper without a missing-key crash).
     if "drive_bracket" in parts_by_leaf:
-        foot_overrides = _drive_foot_bolts(
-            parts_by_leaf["drive_bracket"].location
+        overrides.update(
+            _drive_foot_bolts(parts_by_leaf["drive_bracket"].location)
         )
-        overrides.update(foot_overrides)
-        fastener_names.extend(foot_overrides.keys())
 
-    out = assembly.with_detailed_geometry(overrides)
-    for fastener in fastener_names:
-        # Bolt shank passes through the foot's M5 clearance hole — zero
-        # overlap with the bracket (the hole is bored out of the foot).
-        if "drive_bracket" in parts_by_leaf:
-            out = out.assert_no_interference(
-                fastener, parts_by_leaf["drive_bracket"].name
-            )
-        # Bolt shank dips 6 mm past the rail top face into the V-slot's
-        # opening — clear of the rail's actual material (the slot is
-        # hollow at that depth). Tightening the bolt length any further
-        # would start to graze the rib region.
-        if "floor_cross_x" in parts_by_leaf:
-            out = out.assert_no_interference(
-                fastener, parts_by_leaf["floor_cross_x"].name
-            )
-    return out
+    return assembly.with_detailed_geometry(overrides)

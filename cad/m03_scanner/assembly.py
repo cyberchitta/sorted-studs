@@ -515,6 +515,21 @@ def add_sightline_cone_checks(a: Assembly) -> Assembly:
 
 assembly = add_m03_internal_checks(add_m03(Assembly()))
 
+# Detail-tier fastener assertions — rail side of the drive-bracket
+# foot joint. The M5 foot bolts enter via
+# `detail_variations.apply_default_detail`, whose additions land at
+# the root the override is applied to (this assembly), and dip 6 mm
+# past the rail top face into the T-slot opening — hollow on the
+# detailed V-slot the same override swaps in for `floor_cross_x`,
+# solid on the cheap Box. So the claim is evaluable only in a
+# detail-applied run; in the cheap `check()` these skip
+# (`passed: null`). The bracket side lives in `drive/assembly.py`
+# beside the joint.
+for _bolt in ("drive_foot_bolt_inner", "drive_foot_bolt_outer"):
+    assembly = assembly.assert_no_interference(
+        _bolt, "turret.frame.floor_cross_x"
+    )
+
 
 # --- Design-system coverage ------------------------------------------
 #
