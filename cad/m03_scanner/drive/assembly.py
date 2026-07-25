@@ -573,24 +573,6 @@ assembly = assembly.with_part(
     material="aluminium_anodized",
 )
 
-# Pairwise no-interference. The tangent rests (bracket foot on the
-# cross-rail top, bracket plate on the motor flange) have zero overlap
-# and stay in the group check; their *contact* is asserted separately
-# below / in `build_turret_drive_static`. The driven pulley genuinely
-# overlaps the shaft — it's a press fit — so that one pair leaves the
-# group and is carried by `assert_allowed_contact`. Pulleys vs each
-# other are clear in X (center distance 58.6, OD radii 19.1 + 6.4 =
-# 25.5, gap 33.1 mm).
-_ALL = (
-    [f"rotor.{n}" for n in DRIVE_ROTOR_PART_NAMES]
-    + [f"static.{n}" for n in DRIVE_STATIC_PART_NAMES]
-    + ["hub_shaft_stub", "cross_rail_stub"]
-)
-assembly = assembly.assert_no_interference_within(
-    _ALL,
-    suppressed=[("rotor.drive_pulley_shaft", "hub_shaft_stub")],
-)
-
 # Press fit, declared at its true interference. The 0.02 mm diametral
 # band gives a Ø7.98/Ø8.0 annulus 8 mm tall ≈ 2.01 mm³ of overlap
 # (measured 2.0081 mm³, 2026-07-25); the bounds bracket that at ±25%,
@@ -603,6 +585,23 @@ assembly = assembly.assert_allowed_contact(
     min_overlap_mm3=1.5, max_overlap_mm3=2.6,
     reason=f"press fit, {PULLEY_SHAFT_PRESS_FIT} mm diametral on Ø8",
 )
+
+# Pairwise no-interference. The tangent rests (bracket foot on the
+# cross-rail top, bracket plate on the motor flange) have zero overlap
+# and stay in the group check; their *contact* is asserted separately
+# below / in `build_turret_drive_static`. The driven pulley genuinely
+# overlaps the shaft — it's a press fit — and the group form derives
+# that exclusion from the `assert_allowed_contact` above, which is why
+# this call comes *after* it: the skip set is read at expansion time,
+# so a same-level contact declared later would not be seen. Pulleys vs
+# each other are clear in X (center distance 58.6, OD radii 19.1 + 6.4
+# = 25.5, gap 33.1 mm).
+_ALL = (
+    [f"rotor.{n}" for n in DRIVE_ROTOR_PART_NAMES]
+    + [f"static.{n}" for n in DRIVE_STATIC_PART_NAMES]
+    + ["hub_shaft_stub", "cross_rail_stub"]
+)
+assembly = assembly.assert_no_interference_within(_ALL)
 
 # The bracket foot rests on the cross-rail's top face (both at
 # z = -120) — the M5 bolts pull the joint closed, they don't span a

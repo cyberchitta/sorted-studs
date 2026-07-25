@@ -223,13 +223,25 @@ _PLATFORM_PIN_LOCAL = RevoluteJoint(
 # of one dwell (`cad_khana.mechanism.sweep.classify`, 2026-07-25)
 # reports the pair `transient` over two disjoint `t` intervals —
 # 0.0292..0.0535 rising and 0.1215..0.1458 falling — which are ONE span
-# in platform-tilt angle, bracketing 5.3582..22.5000°, peak overlap
-# 14.107 mm³ at 17.6°. Two phases, and notably not at peak tilt: past
-# 22.5° the pad has passed the block. Windowing the joint angle rather
-# than `t` is what collapses the two intervals into one claim and keeps
-# it valid if the schedule is re-timed.
+# in platform-tilt angle, bracketing 5.3582..22.5000°. Two phases, and
+# notably not at peak tilt: past 22.5° the pad has passed the block.
+# Windowing the joint angle rather than `t` is what collapses the two
+# intervals into one claim and keeps it valid if the schedule is
+# re-timed.
 #
-# Bound is the sampled peak plus headroom. There is deliberately no
+# The bracket is an outer bound because the overlap profile rises and
+# falls exactly once across the span — the check cad-khana's SKILL.md
+# now names as a required step before feeding `angles_bracketing` into
+# a `JointWindow`. Re-derived at 43 frames over one dwell (2026-07-25):
+# 7.50° → 0.416, 9.52 → 3.563, 11.66 → 8.368, 13.88 → 12.570,
+# 16.12 → 14.680, 18.34 → 13.077, 20.48 → 6.662 mm³, zero at both ends
+# and no dip between. A mid-span return to zero would have meant the
+# samples straddled two contact events and the bracket edges said
+# nothing about the second.
+#
+# Bound is the sampled peak plus headroom — 16.0 over the 14.680 mm³
+# the denser sweep found (the 9-frame set had only seen 14.107, so the
+# real headroom is 9%, not 13%). There is deliberately no
 # `min_overlap_mm3`: overlap falls to ~0 at both window edges, so an
 # engagement floor would fail there. Two phased claims can't be layered
 # on one pair to cover that — outside its window a claim collapses to
@@ -365,8 +377,8 @@ def build_turret() -> Assembly:
     # Driven pulley pressed onto the real hub shaft — the drive
     # standalone declares the same fit against its own shaft stub;
     # this is the composed-run pair. Bore Ø7.98 on the Ø8 shaft, so
-    # the overlap is genuine and the within-turret group check
-    # excludes the pair (`_PRESS_FIT_PAIRS` below).
+    # the overlap is genuine — and this declaration is what makes the
+    # within-turret group check skip the pair.
     t = t.assert_allowed_contact(
         "rotor.drive.drive_pulley_shaft", "rotor.hub.hub_shaft",
         min_overlap_mm3=1.5, max_overlap_mm3=2.6,
@@ -436,25 +448,15 @@ def add_m03(a: Assembly) -> Assembly:
 
 _KNOWN_OVERLAPS_STATIC: tuple[tuple[str, str, str], ...] = ()
 
-# Design-intended overlaps carried by `assert_allowed_contact` at
-# `build_turret`, so the group no-interference check must skip them —
-# otherwise it re-flags the very contact the fit assertion declares.
-# This is the group check's entire `suppressed=` set — there is no
-# per-frame addition to it any more.
-#
-# The dump-lift pairs are excluded here at every frame, but they are
-# NOT unguarded: the phased `assert_allowed_contact` holds each one to
-# no-interference outside its tilt window, so the group check's job is
-# done by a claim that knows which phase it is in. (The exclusion is
-# unconditional because the group form expands once at composition,
-# with no view of joint state — the double bookkeeping logged as a
-# cad-khana field-note on 2026-07-25.)
-_ALLOWED_CONTACT_PAIRS: frozenset[tuple[str, str]] = frozenset({
-    ("turret.rotor.drive.drive_pulley_shaft", "turret.rotor.hub.hub_shaft"),
-}) | frozenset(
-    (f"turret.rotor.platform_{station}.frame", "turret.servo_arm.servo_arm")
-    for station in TURRET_STATIONS
-)
+# There is no `suppressed=` list here. The design-intended overlaps —
+# the driven pulley's press fit on the hub shaft, and the four
+# per-station dump-lift pairs — are each declared with
+# `assert_allowed_contact` in `build_turret`, and the group check
+# derives its exclusions from those declarations (cad-khana `db3f6a8`,
+# 2026-07-25). Restating them was double bookkeeping to keep in step,
+# and it went *wider* than the claim: a suppression is blind at every
+# frame, while a phased claim holds its pair to plain no-interference
+# outside the tilt window.
 
 # Backwards-compatible alias (kept for module-level callers that took
 # the previous symbol name).
@@ -471,8 +473,9 @@ def add_m03_internal_checks(
       1. Rig-internal — every non-arch (camera mounts) vs every arch
          member.
       2. Turret-internal — every pair, with the small allow-list of
-         known overlaps downgraded to `assert_interference(reason=…)`
-         and `_ALLOWED_CONTACT_PAIRS` skipped entirely.
+         known overlaps downgraded to `assert_interference(reason=…)`.
+         Pairs carrying an `assert_allowed_contact` declared at or
+         below the turret are skipped by the group form itself.
       3. Cross — every turret part vs every rig part.
 
     Frame-independent: the same checks apply at every animation frame,
@@ -491,7 +494,6 @@ def add_m03_internal_checks(
     a = a.assert_no_interference_within(
         "turret",
         known_overlaps=known_overlaps,
-        suppressed=_ALLOWED_CONTACT_PAIRS,
     )
 
     # 3. Cross — turret × rig.
@@ -525,11 +527,16 @@ def add_m03_internal_checks(
 # does not run these checks (mid-transit platforms sweep through the
 # cones by design).
 #
-# Check-only: the cones are appended to a *separate* checked assembly,
-# never to `assembly` itself — `render*.py`, `export_glb_animated.py`,
-# and `cad/assembly.py` all consume `assembly`, and an opaque cone in
+# Check-only, and nothing in the library enforces that: a cone is an
+# ordinary `with_part`, and `check()` exports whatever assembly it is
+# handed. So there are two assemblies. `assembly` is the real one —
+# what `render*.py`, `export_glb_animated.py`, and `cad/assembly.py`
+# import, and the only one any exporter ever sees; an opaque cone in
 # front of each below camera would wreck renders/GLB (and demand
-# design-system tags). Only acrylic parts are exempt from the
+# design-system tags). The probe-augmented copy is built by
+# `add_sightline_cone_checks()` at the `__main__` call site and reaches
+# nothing but `check()` — see the note there on why this script exports
+# no geometry at all. Only acrylic parts are exempt from the
 # assertions — the below sightlines pass through the transparent
 # platform by design.
 
@@ -660,4 +667,15 @@ assert not _untagged, (
 
 
 if __name__ == "__main__":
-    check(add_sightline_cone_checks(assembly), out="outputs")
+    # `export=False` makes this script diagnostics-only, deliberately.
+    # `check()` exports the assembly it is handed, and the assembly
+    # worth checking here is the probe-augmented one — so under
+    # `khana build` this call would write the two sightline cones into
+    # the STL and STEP beside the real parts. Handing `check()` the
+    # real assembly instead would mean a second full diagnostics pass
+    # (~6 s) on every `khana check` just to reach the export, for a
+    # unit whose geometry is exported from the top level anyway:
+    # `cad/assembly.py` imports the cone-free `assembly` above, so
+    # `khana build cad/assembly.py` is the STL/STEP path and
+    # `export_glb*.py` the GLB path.
+    check(add_sightline_cone_checks(assembly), out="outputs", export=False)
