@@ -801,18 +801,10 @@ if __name__ == "__main__":
     method = FDM(wall_min_mm=WALL_MIN)
     waivers = {
         "bearing_spider": {
-            "wall_min": "hub-annulus ID-edge ray-sampling artifact — "
-            "min_wall_at witness (-33.0, 73.1, 3.3) r=80.2 on the "
-            "SPIDER_HUB_ID edge (r=80.4), between saddles, not mid-wall",
             "overhang_max": "flat 90° ceilings are real: saddle jaws drop "
             "to z=-7 below the hub ring (z=0..5), so the hub underside and "
             "jaw-channel ceilings face down — printed jaws-down with "
             "support in the jaw channels",
-        },
-        "ring_bearing": {
-            "wall_min": "annulus ID-edge ray-sampling artifact — min_wall_at "
-            "witness (-69.4, -6.9, 1.7) r=69.7 on the RING_BEARING_ID edge "
-            "(r=69.9), not mid-wall",
         },
         "column": {
             "overhang_max": "flat 90° ceilings are real: collar / joint-"

@@ -227,11 +227,23 @@ if __name__ == "__main__":
     inspect(
         rotor(), method=method, out="outputs", name="rotor",
         waive={
-            "wall_min": "star-ridge ray-sampling artifact — min_wall_at "
-            "witness (87.2, -42.3, 21.0) θ=-25.9° lies on the sub-facet "
-            "crease between the valley (θ=-18°) and peak (θ=-36°) loft "
-            "paths, not mid-wall; real wall ≥ ROTOR_SHELL_WALL_T by "
-            "construction (see cavity_r_at_kink derivation in rotor())",
+            "wall_min": "wedge tip at the base rim, not a wall — min_wall_at "
+            "witness (40.6, 111.5, 0.0) r=118.7 z=0 with alignment 0.72 ≈ "
+            "cos(V_HALF_ANGLE_DEG=45°), the dihedral between the flat base "
+            "annulus (z=0) and the outer flank that slopes up-and-inward "
+            "from the true-round r=120 rim. Rays leave the base face and "
+            "exit the flank after (120 − r), so the reading is set by how "
+            "close a base facet centroid gets to the rim: all 20 minima are "
+            "the identical 1.2937 at z=0, one per star sub-facet, at θ = "
+            "±2° either side of each valley azimuth. Not the star-ridge "
+            "crease the pre-0.8 metric pointed at (that 0.0900 witness at "
+            "z=21 was the chord-sag artifact). The shell wall itself is "
+            "≥ 3.887 mm — worst of 11 448 radial probes over "
+            "z ∈ [0.25, 79.25] × 72 off-symmetry azimuths — vs "
+            "ROTOR_SHELL_WALL_T = 2.5. The feather rim is the V-trough "
+            "geometry (the rotor flank and the stator inner face both come "
+            "to a point at the V-bottom) and rides the apex-up print plan "
+            "in the module docstring.",
             "overhang_max": "real 90° ceilings: cavity ceiling, boss "
             "bottom, and blind-bore top all face down printed apex-up — "
             "print plan in the module docstring (breakaway support through "

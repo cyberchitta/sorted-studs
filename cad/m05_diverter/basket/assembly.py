@@ -137,6 +137,34 @@ COLUMN_CLEARANCE = 1.0   # gap between notch wall and column face
 CLAMP_ARM_T = 6.0        # vertex-bracket clamp plate thickness
 ACCESS_CHANNEL_W = COLUMN_SIDE + 2 * (CLAMP_ARM_T + COLUMN_CLEARANCE)
 
+# A channel box's radial end face is a flat chord, so pushing it to
+# `arc_radius ∓ 1.0` does not clear a cylindrical basket arc across the
+# channel's own ±ACCESS_CHANNEL_W/2 width: the arc bulges past the chord
+# by the sagitta r − √(r² − (W/2)²), which is 1.116 mm at the r=130 inner
+# arc — more than the 1.0 mm that used to be used. The crescent between
+# chord and arc then survives the subtraction as a full-height knife-edge
+# feather hanging off the channel side wall, 0 mm at |y|=16.09 growing to
+# 0.116 mm at |y|=17. Overshoot each arc by its own sagitta plus
+# ARC_OVERSHOOT_MARGIN instead. The outer arc's sagitta is only 0.438 mm
+# so the old 1.0 mm already cleared it; deriving both keeps the two ends
+# honest if ACCESS_CHANNEL_W or either radius moves.
+ARC_OVERSHOOT_MARGIN = 0.5
+_ARC_HALF_W = ACCESS_CHANNEL_W / 2.0
+
+
+def _arc_overshoot(radius: float) -> float:
+    """Radial depth a chord of half-width `_ARC_HALF_W` must be pushed
+    past a `radius` arc for the whole chord to clear it."""
+    return (
+        radius
+        - math.sqrt(radius**2 - _ARC_HALF_W**2)
+        + ARC_OVERSHOOT_MARGIN
+    )
+
+
+INNER_ARC_OVERSHOOT = _arc_overshoot(R_BASKET_INNER)
+OUTER_ARC_OVERSHOOT = _arc_overshoot(R_BASKET_OUTER)
+
 WALL_MIN = 1.5
 
 
@@ -275,10 +303,14 @@ def basket(
             continue
         radial_clearance = COLUMN_SIDE / 2 + COLUMN_CLEARANCE
         body = body - _radial_access_channel_at(
-            az, R_VERT_OUTER - radial_clearance, R_BASKET_OUTER + 1.0,
+            az,
+            R_VERT_OUTER - radial_clearance,
+            R_BASKET_OUTER + OUTER_ARC_OVERSHOOT,
         )
         body = body - _radial_access_channel_at(
-            az, R_BASKET_INNER - 1.0, R_VERT_INNER + radial_clearance,
+            az,
+            R_BASKET_INNER - INNER_ARC_OVERSHOOT,
+            R_VERT_INNER + radial_clearance,
         )
     return body
 
@@ -363,10 +395,4 @@ if __name__ == "__main__":
         method=FDM(wall_min_mm=WALL_MIN),
         out="outputs",
         name="basket_090_09",
-        waive={
-            "wall_min": "notch sharp-edge ray-sampling artifact — min_wall_at "
-            "witness (129.0, -16.7, 43.3) sits on the corner where the notch "
-            "channel side wall (y=-17) meets the inner arc (r=130), not "
-            "mid-wall; design walls ≥ WALL_MIN by construction",
-        },
     )
