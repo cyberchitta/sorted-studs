@@ -227,8 +227,11 @@ if __name__ == "__main__":
     # The static m03 is already clean; the post-servo
     # `_DYNAMIC_CONFLICT_PAIRS` is empty, so any new transit-time
     # overlap surfaces here.
-    from cad_khana.mechanism.assertions import evaluate as _evaluate
-
+    #
+    # Run this through `khana check`, not bare `python`. The CLI defers
+    # check() failures to its own boundary, so every frame runs and its
+    # JSON is fresh; a bare interpreter keeps raise-on-first-failure and
+    # would abort the sweep at the first bad frame.
     out_root = HERE / "outputs" / "animated"
     sample_ts = (
         0.0,        # REST (rotor at station 0, no tilt)
@@ -245,16 +248,18 @@ if __name__ == "__main__":
     for t in sample_ts:
         out = out_root / f"t_{t:.4f}"
         a = build_m03_at(t)
-        # Don't crash on a documented assertion in one frame — collect
-        # all unexpected failures across the whole sweep and report at
-        # the end. Sub-frame writes still happen via check().
-        try:
-            check(a, out=str(out))
-        except SystemExit:
-            results = _evaluate(a)
-            for r in results:
-                if not r.passed:
-                    new_failures.append((t, r.name, r.detail))
+        # check() returns its result whether or not assertions failed, so
+        # read the failures off the result rather than catching the raise:
+        # under the CLI there is no raise to catch, and re-evaluating the
+        # assembly to find out would duplicate the work check() just did.
+        # `is False` is deliberate — `passed is None` means the assertion
+        # was skipped (a part absent from this run), which is not a failure.
+        result = check(a, out=str(out))
+        new_failures += [
+            (t, r.name, r.detail)
+            for r in result.diagnostics.assertions
+            if r.passed is False
+        ]
     if new_failures:
         print(f"\n{len(new_failures)} NEW failure(s) across {len(sample_ts)} frames:")
         for t, name, detail in new_failures:

@@ -184,6 +184,24 @@ package imports and force `importlib` workarounds.
 top-level `assembly.py` that includes it before claiming the slice is
 done — exit 0 means assertions and printability inspects all passed.
 
+**Use the CLI, not bare `python`, for any script with more than one
+`check()`/`inspect()`.** The CLI defers failures to its own boundary so
+every call runs and every JSON on disk is fresh, then exits nonzero once;
+a bare interpreter keeps raise-on-first-failure and aborts the run,
+leaving the rest of the diagnostics stale at their previous values while
+reading as current. This is a correctness difference, not a convenience:
+a multi-role or multi-frame sweep under bare `python` reports only its
+first red.
+
+The same deferral means **`check()` and `inspect()` return normally on
+failure under the CLI** — there is no `SystemExit` to catch. Read
+failures off the result (`result.diagnostics.assertions`, `passed is
+False` — `None` is a skipped assertion, not a failure); never wrap the
+call in `try/except SystemExit` and never re-`evaluate()` the assembly to
+find out. `animated_assembly.py`'s 9-frame sweep had exactly that
+`except`, and after the deferral shipped it printed *"all 9 frames pass"*
+on runs the CLI was failing.
+
 ## What a green `khana check` does not mean
 
 Exit 0 means *no interference and printability passed, at the poses you
