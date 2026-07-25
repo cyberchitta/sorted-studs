@@ -327,6 +327,24 @@ def build_turret() -> Assembly:
         "rotor.drive.drive_pulley_shaft", "rotor.arm.spider",
         along="Z", min_mm=1.0, name="pulley_spider_gap",
     )
+    # Driven pulley pressed onto the real hub shaft — the drive
+    # standalone declares the same fit against its own shaft stub;
+    # this is the composed-run pair. Bore Ø7.98 on the Ø8 shaft, so
+    # the overlap is genuine and the within-turret group check
+    # excludes the pair (`_PRESS_FIT_PAIRS` below).
+    t = t.assert_allowed_contact(
+        "rotor.drive.drive_pulley_shaft", "rotor.hub.hub_shaft",
+        min_overlap_mm3=1.5, max_overlap_mm3=2.6,
+        reason=(
+            f"press fit, {_drive.PULLEY_SHAFT_PRESS_FIT} mm diametral on Ø8"
+        ),
+    )
+    # Drive-bracket foot resting on the cross-rail's top face — the
+    # rail side of the bolted foot joint, asserted here against the
+    # real member (the drive standalone asserts it against its rail
+    # stub). A foot floating above the rail passes no-interference;
+    # this is what says the joint closes.
+    t = t.assert_tangent_contact("drive.drive_bracket", "frame.floor_cross_x")
     return t
 
 
@@ -364,6 +382,15 @@ def add_m03(a: Assembly) -> Assembly:
 
 _KNOWN_OVERLAPS_STATIC: tuple[tuple[str, str, str], ...] = ()
 
+# Design-intended overlaps carried by `assert_allowed_contact` at
+# `build_turret`, so the group no-interference check must skip them —
+# otherwise it re-flags the very contact the fit assertion declares.
+# Unioned into every caller's `suppressed_pairs` (a caller can add
+# kinematic suppressions; it can't drop these).
+_ALLOWED_CONTACT_PAIRS: frozenset[tuple[str, str]] = frozenset({
+    ("turret.rotor.drive.drive_pulley_shaft", "turret.rotor.hub.hub_shaft"),
+})
+
 # Backwards-compatible alias (kept for module-level callers that took
 # the previous symbol name).
 _KNOWN_OVERLAPS = _KNOWN_OVERLAPS_STATIC
@@ -394,7 +421,10 @@ def add_m03_internal_checks(
     pairs whose overlap state changes throughout the animation but is
     a single documented kinematic root cause (e.g. the lever hub-end
     block in the IDLE arm corridor — overlap present at some frames,
-    absent at others, no clean per-frame predicate).
+    absent at others, no clean per-frame predicate). The
+    ``_ALLOWED_CONTACT_PAIRS`` press-fit pairs are unioned in
+    unconditionally — those overlaps are declared by
+    ``assert_allowed_contact`` and must not be re-flagged here.
     """
     # 1. Rig-internal — camera mounts vs every arch member (no
     #    suppressions apply within the rig).
@@ -404,7 +434,7 @@ def add_m03_internal_checks(
     a = a.assert_no_interference_within(
         "turret",
         known_overlaps=known_overlaps,
-        suppressed=suppressed_pairs,
+        suppressed=suppressed_pairs | _ALLOWED_CONTACT_PAIRS,
     )
 
     # 3. Cross — turret × rig.

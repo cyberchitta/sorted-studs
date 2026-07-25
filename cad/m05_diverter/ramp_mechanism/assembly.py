@@ -753,9 +753,10 @@ def make_assembly(role: str = "middle") -> Assembly:
             # the bearing, far from the column).
             .assert_no_interference("bearing_spider", "lower_column")
             .assert_no_interference("ring_bearing", "lower_column")
-            # This floor's column tangent-meets the lower column at
-            # z=53 (joint plane). assert_no_interference allows
-            # face-to-face contact.
+            # This floor's column mates face-to-face with the lower
+            # column at z=53 (the joint plane). No-interference allows
+            # that contact but would equally allow a floating column,
+            # so the contact itself is the separate claim below.
             .assert_no_interference("rotating.column", "lower_column")
             # Ramp / trap / hinge live well above the joint plane,
             # so they're clear of the lower column entirely.
@@ -769,6 +770,12 @@ def make_assembly(role: str = "middle") -> Assembly:
             .assert_no_interference("lower_trap_open", "bearing_spider")
             .assert_no_interference("lower_trap_open", "ring_bearing")
             .assert_no_interference("lower_trap_open", "rotating.ramp")
+            # The joint-plane rest itself: bottom flange down on the
+            # lower column's top flange, no clearance gap, bumps in
+            # their depressions (see `_col_z_bot`). The tower declares
+            # the same rest between real adjacent floors; this one
+            # covers the stand-in the standalone builds against.
+            .assert_tangent_contact("rotating.column", "lower_column")
         )
     for angle in TRAP_SAMPLES:
         name = f"trap_at_{int(angle)}"

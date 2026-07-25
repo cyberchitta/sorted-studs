@@ -210,7 +210,16 @@ def _add_floor_pair_checks(a: Assembly, lower: int, upper: int) -> Assembly:
             .assert_no_interference(_rot(lower, "trap_open"), u)
             .assert_no_interference(_rot(lower, "column"), u)
         )
-    return a
+    # The two columns mate face-to-face at the joint plane under
+    # gravity preload — the bas-relief bumps transfer torque, nothing
+    # bolts the stack together, so a gap here means the tower isn't
+    # standing on itself. `assert_no_interference` above is blind to
+    # that; this is the claim. (Declared per adjacent pair here, where
+    # the real neighbours meet; `ramp_mechanism`'s standalone declares
+    # the same rest against its `lower_column` stand-in.)
+    return a.assert_tangent_contact(
+        _rot(lower, "column"), _rot(upper, "column")
+    )
 
 
 def _add_top_deck_checks(a: Assembly, top: int) -> Assembly:
@@ -224,6 +233,11 @@ def _add_top_deck_checks(a: Assembly, top: int) -> Assembly:
             a
             .assert_no_interference("top_acrylic", f"columns.outer_vert_{k}")
             .assert_no_interference("top_acrylic", f"columns.inner_vert_{k}")
+            # …and it must actually *sit* on all twelve: the disc is
+            # unsupported between them, so one short column is a disc
+            # resting on eleven points. A gap passes no-interference.
+            .assert_tangent_contact("top_acrylic", f"columns.outer_vert_{k}")
+            .assert_tangent_contact("top_acrylic", f"columns.inner_vert_{k}")
         )
     return a.assert_no_interference("top_acrylic", _rot(top, "column"))
 
@@ -246,6 +260,11 @@ def _add_drive_train_checks(a: Assembly, base: int) -> Assembly:
         .assert_no_interference(ring, _rot(base, "column"))
         .assert_no_interference(ring, _brg(base, "ring_bearing"))
         .assert_no_interference(ring, _brg(base, "bearing_spider"))
+        # The ring's standoff top face seats on the collar's bottom
+        # face — that seat is the whole bolted interface, and a ring
+        # hanging 3 mm below it would satisfy no-interference just as
+        # well.
+        .assert_tangent_contact(ring, _rot(base, "column"))
     )
 
     # Pinion sits at z ∈ [-11, -1] on the off-axis drive axis, threaded
@@ -295,8 +314,14 @@ def _add_drive_train_checks(a: Assembly, base: int) -> Assembly:
         )
 
     # Motor mount is a radial arm at z ∈ [-25, -20]; it bolts up into one
-    # rail (tangent at z = -20) and clears the others + the column-side
-    # stack (all at z ≥ 0).
+    # rail — the inner radial at the drive azimuth, whose bottom face it
+    # meets at z = -20 — and clears the others + the column-side stack
+    # (all at z ≥ 0). The arm's outer end (r ≤ 100) reaches into that
+    # rail's r ∈ [90, 139.7] span; it touches no other rail at all, so
+    # only this one gets the contact claim.
+    a = a.assert_tangent_contact(
+        mount, _rail(base, f"radial_inner_{drive_rail_k}")
+    )
     for k in range(6):
         a = (
             a

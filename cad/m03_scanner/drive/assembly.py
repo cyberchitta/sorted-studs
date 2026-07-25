@@ -27,10 +27,10 @@ Members (4 functional + 2 stubs):
                           turret shaft. Modeled as a simple cylinder
                           at the GT2-60T pitch diameter; the real part
                           has helical GT2 teeth on the OD and an M5
-                          set-screw on a flat. Bore Ø8.4 (clearance
-                          fit; the metal stock part presses on at
-                          slight interference, modeled as clearance to
-                          satisfy assert_no_interference).
+                          set-screw on a flat. Bore Ø7.98 — the true
+                          light press fit on the Ø8 shaft, modeled at
+                          its interference and declared with
+                          `assert_allowed_contact`.
   * drive_pulley_motor  — stock 20T GT2 metal pulley keyed to the
                           NEMA17 shaft. Same idiom as the driven
                           pulley.
@@ -190,10 +190,19 @@ _BELT_L_DERIVED = _belt_length(
 
 # --- Pulley bores ------------------------------------------------------
 
-# Ø8 turret shaft + 0.4 mm clearance (matches slice f1 cam idiom).
-PULLEY_SHAFT_BORE_D = TURRET_SHAFT_D + 0.4                 # = 8.4
+# Driven pulley: light press fit on the Ø8 turret shaft. 0.02 mm
+# diametral interference sits mid-band for ISO H7/p6 at Ø8 — the pulley
+# drives on under an arbor press and the M5 set-screw against the shaft
+# flat is the anti-rotation backup, not the primary grip. Modeled at
+# the true interference and declared with `assert_allowed_contact`; the
+# previous Ø8.4 "clearance" bore existed only to keep
+# assert_no_interference quiet, which left the model lying about the fit.
+PULLEY_SHAFT_PRESS_FIT = 0.02                              # diametral
+PULLEY_SHAFT_BORE_D = TURRET_SHAFT_D - PULLEY_SHAFT_PRESS_FIT   # = 7.98
 
-# Ø5 NEMA17 shaft + 0.4 mm clearance.
+# Driver pulley: Ø5 NEMA17 shaft + 0.4 mm clearance — a slip fit by
+# design (the pulley comes off the stepper shaft routinely; the set
+# screw on the shaft flat carries the torque).
 MOTOR_SHAFT_D = 5.0
 PULLEY_MOTOR_BORE_D = MOTOR_SHAFT_D + 0.4                  # = 5.4
 
@@ -376,9 +385,10 @@ def driven_pulley(
     bore_d: float = PULLEY_SHAFT_BORE_D,
 ):
     """Stock 60T GT2 metal pulley keyed to the turret shaft. Modeled
-    as a simple cylinder at pitch diameter with a Ø8.4 central bore.
-    Real part has helical GT2 teeth on the OD and an M5 set-screw
-    against a flat on the shaft."""
+    as a simple cylinder at pitch diameter with a Ø7.98 central bore —
+    the press fit's true interference on the Ø8 shaft, not a fudged
+    clearance. Real part has helical GT2 teeth on the OD and an M5
+    set-screw against a flat on the shaft."""
     return _pulley_body(od, height, bore_d)
 
 
@@ -520,6 +530,13 @@ def build_turret_drive_static() -> Assembly:
         material=material_of("drive_bracket"),
         color=color_of("drive_bracket"),
     )
+    # The motor hangs from the bracket: its flange face bolts flat
+    # against the cantilever plate's underside (both at z = -68). The
+    # rest must exist — a plate floating above the flange would pass
+    # assert_no_interference just as happily — so declare it here,
+    # where both parts live, and let it propagate into every composed
+    # run.
+    a = a.assert_tangent_contact("drive_bracket", "drive_motor")
     return a
 
 
@@ -556,17 +573,45 @@ assembly = assembly.with_part(
     material="aluminium_anodized",
 )
 
-# Pairwise no-interference. Pulley-onto-shaft is tangent contact (zero
-# overlap; passes assert_no_interference). Bracket foot tangent on
-# cross-rail top, bracket plate tangent on motor flange — also zero-
-# overlap. Pulleys vs each other are clear in X (center distance 58.6,
-# OD radii 19.1 + 6.4 = 25.5, gap 33.1 mm).
+# Pairwise no-interference. The tangent rests (bracket foot on the
+# cross-rail top, bracket plate on the motor flange) have zero overlap
+# and stay in the group check; their *contact* is asserted separately
+# below / in `build_turret_drive_static`. The driven pulley genuinely
+# overlaps the shaft — it's a press fit — so that one pair leaves the
+# group and is carried by `assert_allowed_contact`. Pulleys vs each
+# other are clear in X (center distance 58.6, OD radii 19.1 + 6.4 =
+# 25.5, gap 33.1 mm).
 _ALL = (
     [f"rotor.{n}" for n in DRIVE_ROTOR_PART_NAMES]
     + [f"static.{n}" for n in DRIVE_STATIC_PART_NAMES]
     + ["hub_shaft_stub", "cross_rail_stub"]
 )
-assembly = assembly.assert_no_interference_within(_ALL)
+assembly = assembly.assert_no_interference_within(
+    _ALL,
+    suppressed=[("rotor.drive_pulley_shaft", "hub_shaft_stub")],
+)
+
+# Press fit, declared at its true interference. The 0.02 mm diametral
+# band gives a Ø7.98/Ø8.0 annulus 8 mm tall ≈ 2.01 mm³ of overlap
+# (measured 2.0081 mm³, 2026-07-25); the bounds bracket that at ±25%,
+# i.e. 0.015–0.025 mm of interference. Below the floor the fit has
+# drifted back to a clearance fit and the set screw is carrying the
+# turret alone; above the ceiling it's a hydraulic-press job on a
+# stock pulley.
+assembly = assembly.assert_allowed_contact(
+    "rotor.drive_pulley_shaft", "hub_shaft_stub",
+    min_overlap_mm3=1.5, max_overlap_mm3=2.6,
+    reason=f"press fit, {PULLEY_SHAFT_PRESS_FIT} mm diametral on Ø8",
+)
+
+# The bracket foot rests on the cross-rail's top face (both at
+# z = -120) — the M5 bolts pull the joint closed, they don't span a
+# gap. Declared here against the standalone's rail stub; the same
+# claim against the real `frame.floor_cross_x` lives at the m03 root,
+# where the drive and frame subtrees meet.
+assembly = assembly.assert_tangent_contact(
+    "static.drive_bracket", "cross_rail_stub"
+)
 
 # Detail-tier fastener assertions — bracket side of the bolted foot
 # joint. The two M5 foot bolts exist only when
