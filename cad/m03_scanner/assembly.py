@@ -51,6 +51,7 @@ prefix on; the m05 collisions on `frame`/`drive` are handled by
 from build123d import Axis, Circle, Pos, Rectangle, loft
 
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
+from cad_khana.mechanism.assertions import JointWindow
 from cad_khana.mechanism.check import check
 
 
@@ -207,6 +208,40 @@ _PLATFORM_PIN_LOCAL = RevoluteJoint(
 )
 
 
+# --- Dump-lift contact phase ------------------------------------------
+#
+# The servo pad rises against the DUMP-parked platform's drop block —
+# design-intended contact, not a defect. Root cause is topological
+# rather than dimensional: any lifter that raises a pad against a drop
+# block from below overlaps it somewhere in the lift. The retired
+# kicker_lever tripped the same pair for the same reason, and until
+# 2026-07-25 it was handled by blanket per-frame suppression, which is
+# blind at every frame — the contact could have appeared at REST and
+# nothing would have said so.
+#
+# The window below is geometry, derived not guessed: a 37-frame sweep
+# of one dwell (`cad_khana.mechanism.sweep.classify`, 2026-07-25)
+# reports the pair `transient` over two disjoint `t` intervals —
+# 0.0292..0.0535 rising and 0.1215..0.1458 falling — which are ONE span
+# in platform-tilt angle, bracketing 5.3582..22.5000°, peak overlap
+# 14.107 mm³ at 17.6°. Two phases, and notably not at peak tilt: past
+# 22.5° the pad has passed the block. Windowing the joint angle rather
+# than `t` is what collapses the two intervals into one claim and keeps
+# it valid if the schedule is re-timed.
+#
+# Bound is the sampled peak plus headroom. There is deliberately no
+# `min_overlap_mm3`: overlap falls to ~0 at both window edges, so an
+# engagement floor would fail there. Two phased claims can't be layered
+# on one pair to cover that — outside its window a claim collapses to
+# no-interference, so a narrow "must engage" claim reddens exactly the
+# shallow-overlap frames the wide band allows. The measured volume is
+# recorded on pass, so `khana diff` still sees the pad drifting out of
+# contact even though no assertion claims it.
+_DUMP_LIFT_TILT_MIN_DEG = 5.3582
+_DUMP_LIFT_TILT_MAX_DEG = 22.5
+_DUMP_LIFT_MAX_OVERLAP_MM3 = 16.0
+
+
 def _build_turret_rotor() -> Assembly:
     """Rotor sub-assembly in turret-local: the rigid body that revolves
     about the hub Z axis. Includes the spider + hinge pins + every
@@ -345,6 +380,25 @@ def build_turret() -> Assembly:
     # stub). A foot floating above the rail passes no-interference;
     # this is what says the joint closes.
     t = t.assert_tangent_contact("drive.drive_bracket", "frame.floor_cross_x")
+    # Servo pad × drop block, once per station: whichever platform is
+    # parked at DUMP tilts, so the claim belongs to all four cartridges
+    # (they come from one builder, so the window is the same geometry
+    # each time — verified at a second station in `animated_assembly`'s
+    # frame set). Outside the tilt window the pair is held to plain
+    # no-interference, which is the coverage the old suppression list
+    # threw away.
+    for station in TURRET_STATIONS:
+        t = t.assert_allowed_contact(
+            f"rotor.platform_{station}.frame", "servo_arm.servo_arm",
+            max_overlap_mm3=_DUMP_LIFT_MAX_OVERLAP_MM3,
+            during=JointWindow(
+                f"rotor.platform_{station}",
+                _DUMP_LIFT_TILT_MIN_DEG,
+                _DUMP_LIFT_TILT_MAX_DEG,
+            ),
+            name=f"dump_lift_contact_{station}",
+            reason="servo pad lifts the DUMP-parked platform's drop block",
+        )
     return t
 
 
@@ -385,11 +439,22 @@ _KNOWN_OVERLAPS_STATIC: tuple[tuple[str, str, str], ...] = ()
 # Design-intended overlaps carried by `assert_allowed_contact` at
 # `build_turret`, so the group no-interference check must skip them —
 # otherwise it re-flags the very contact the fit assertion declares.
-# Unioned into every caller's `suppressed_pairs` (a caller can add
-# kinematic suppressions; it can't drop these).
+# This is the group check's entire `suppressed=` set — there is no
+# per-frame addition to it any more.
+#
+# The dump-lift pairs are excluded here at every frame, but they are
+# NOT unguarded: the phased `assert_allowed_contact` holds each one to
+# no-interference outside its tilt window, so the group check's job is
+# done by a claim that knows which phase it is in. (The exclusion is
+# unconditional because the group form expands once at composition,
+# with no view of joint state — the double bookkeeping logged as a
+# cad-khana field-note on 2026-07-25.)
 _ALLOWED_CONTACT_PAIRS: frozenset[tuple[str, str]] = frozenset({
     ("turret.rotor.drive.drive_pulley_shaft", "turret.rotor.hub.hub_shaft"),
-})
+}) | frozenset(
+    (f"turret.rotor.platform_{station}.frame", "turret.servo_arm.servo_arm")
+    for station in TURRET_STATIONS
+)
 
 # Backwards-compatible alias (kept for module-level callers that took
 # the previous symbol name).
@@ -399,7 +464,6 @@ _KNOWN_OVERLAPS = _KNOWN_OVERLAPS_STATIC
 def add_m03_internal_checks(
     a: Assembly,
     known_overlaps: tuple[tuple[str, str, str], ...] = _KNOWN_OVERLAPS_STATIC,
-    suppressed_pairs: frozenset[tuple[str, str]] = frozenset(),
 ) -> Assembly:
     """Add every within-m03 cross-boundary check.
 
@@ -408,23 +472,16 @@ def add_m03_internal_checks(
          member.
       2. Turret-internal — every pair, with the small allow-list of
          known overlaps downgraded to `assert_interference(reason=…)`
-         and the optional `suppressed_pairs` skipped entirely.
+         and `_ALLOWED_CONTACT_PAIRS` skipped entirely.
       3. Cross — every turret part vs every rig part.
 
-    ``known_overlaps`` defaults to the static set; per-frame callers in
-    ``animated_assembly.py`` swap in a different set when the lever /
-    a platform is mid-lift.
-
-    ``suppressed_pairs`` (frozenset of ``(path_a, path_b)`` — order
-    independent) skips both the ``assert_no_interference`` and any
-    ``assert_interference`` for those pairs. Use for dynamic-conflict
-    pairs whose overlap state changes throughout the animation but is
-    a single documented kinematic root cause (e.g. the lever hub-end
-    block in the IDLE arm corridor — overlap present at some frames,
-    absent at others, no clean per-frame predicate). The
-    ``_ALLOWED_CONTACT_PAIRS`` press-fit pairs are unioned in
-    unconditionally — those overlaps are declared by
-    ``assert_allowed_contact`` and must not be re-flagged here.
+    Frame-independent: the same checks apply at every animation frame,
+    because the one pair whose overlap state varies with the motion is
+    declared as a phased `assert_allowed_contact` in ``build_turret``
+    rather than suppressed here. The per-frame ``suppressed_pairs``
+    argument this took until 2026-07-25 is gone with it; a caller that
+    needs a pair excluded now has to say during which joint phase, and
+    that claim belongs at the level owning the pair.
     """
     # 1. Rig-internal — camera mounts vs every arch member (no
     #    suppressions apply within the rig).
@@ -434,15 +491,11 @@ def add_m03_internal_checks(
     a = a.assert_no_interference_within(
         "turret",
         known_overlaps=known_overlaps,
-        suppressed=suppressed_pairs | _ALLOWED_CONTACT_PAIRS,
+        suppressed=_ALLOWED_CONTACT_PAIRS,
     )
 
     # 3. Cross — turret × rig.
-    a = a.assert_no_interference_between(
-        "turret",
-        "rig",
-        suppressed=suppressed_pairs,
-    )
+    a = a.assert_no_interference_between("turret", "rig")
 
     return a
 

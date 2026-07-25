@@ -137,35 +137,24 @@ def _station_at_dump(q: int) -> str:
     raise AssertionError(f"no station with static heading {target}°")
 
 
-# --- Dynamic-conflict pair suppression ---------------------------------
+# --- Dynamic-conflict pairs: retired 2026-07-25 ------------------------
 #
-# One pair after the 2026-05-23 servo slice. The previous five entries
-# all named ``kicker_lever`` (the retired bench-mounted lever paired
-# with the shaft cam); four of them encoded kinematic overlaps the cam
-# linkage couldn't resolve and disappeared with the lever's hub-end
-# block leaving the rotor sweep ring. The fifth — DESIGN-INTENDED
-# contact between the lifter pad and the DUMP-pose drop block at
-# moderate tilt — is geometry-independent: any lifter mechanism that
-# raises a pad against a drop block from below will trip it. The
-# servo arm reproduces it exactly. Skipped here for the same reason
-# the kicker era skipped it: per-frame predicate (pad below drop /
-# pad against drop / pad above drop) is noisier than the value.
-
-_DYNAMIC_CONFLICT_PAIRS: frozenset[tuple[str, str]] = frozenset({
-    ("turret.rotor.platform_dump.frame", "turret.servo_arm.servo_arm"),
-})
-
-
-def _suppressed_for_frame(
-    arm_angle_deg: float, rotor_angle_deg: float
-) -> frozenset[tuple[str, str]]:
-    """Pairs to skip at this frame. Empty at the pure-REST frame
-    (rotor=0, arm=0) so the static `_KNOWN_OVERLAPS_STATIC` still
-    fires its assert_interference alarms. The lone DUMP-platform ×
-    arm pad-contact suppression activates at every dynamic frame."""
-    if arm_angle_deg == 0.0 and rotor_angle_deg == 0.0:
-        return frozenset()
-    return _DYNAMIC_CONFLICT_PAIRS
+# The kinematic root cause stays written down, because a sweep can't
+# derive it: any lifter that raises a pad against a drop block from
+# below overlaps it partway through the lift. It is a property of the
+# topology, not of these dimensions — the retired kicker_lever tripped
+# the same pair, and the servo arm reproduced it exactly.
+#
+# What is gone is the pair *list* and the per-frame predicate that
+# skipped it. That mechanism was blind at every dynamic frame: it could
+# not tell the intended mid-tilt contact from the same parts fouling at
+# a pose where they must not touch, and a 37-frame sweep showed 8 of
+# the 9 sampled frames were suppressing a pair that wasn't in contact
+# at all. The contact is now declared in `assembly.py`'s `build_turret`
+# as `assert_allowed_contact(..., during=JointWindow(...))` — a claim
+# about which tilt window the overlap is allowed in, held to plain
+# no-interference outside it. The list of pairs became a property of
+# the geometry; this comment is the part that couldn't be.
 
 
 def build_m03_at(t: float) -> Assembly:
@@ -192,25 +181,18 @@ def build_m03_at(t: float) -> Assembly:
 
     a = add_m03(Assembly())
     a = a.with_joint_angle("turret.rotor", theta_rotor_deg)
-    arm_angle_deg = 0.0
     if tilt_deg != 0.0:
         a = a.with_joint_angle(
             f"turret.rotor.platform_{dump_station}", tilt_deg
         )
-        arm_angle_deg = tilt_deg * SERVO_ARM_TILT_SCALE
-        a = a.with_joint_angle("turret.servo_arm", arm_angle_deg)
-    # Per-frame regression check. At pure REST (rotor=0, arm=0) the
-    # static known-overlap set in `assembly.py` still fires its two
-    # assert_interference alarms (hub_housing × flag/sensor). Dynamic
-    # frames suppress only the design-intended platform_dump_frame ×
-    # servo_arm pad-contact pair; any other transit-time overlap
-    # surfaces loudly.
-    return add_m03_internal_checks(
-        a,
-        suppressed_pairs=_suppressed_for_frame(
-            arm_angle_deg, theta_rotor_deg
-        ),
-    )
+        a = a.with_joint_angle(
+            "turret.servo_arm", tilt_deg * SERVO_ARM_TILT_SCALE
+        )
+    # Per-frame regression check — the same check set at every frame,
+    # since the one pose-dependent pair carries its own tilt window
+    # (see the retired-suppression note above). Any other transit-time
+    # overlap surfaces loudly.
+    return add_m03_internal_checks(a)
 
 
 assembly = build_m03_at(0.0)
@@ -218,15 +200,20 @@ assembly = build_m03_at(0.0)
 
 if __name__ == "__main__":
     # Per-frame static check at sampled t — regression insurance for
-    # mid-motion interferences. Samples cover REST, the dwell peak
-    # (local_t = dwell_frac/2 = 0.35 ⇒ t = 0.0875 in the first
-    # quarter), the dwell-end transition (just before / after
-    # local_t = dwell_frac = 0.7 ⇒ t = 0.175), and one transit point
-    # per quarter so the rotor is checked at each station.
+    # mid-motion interferences. Samples cover REST, both halves of the
+    # lift, the dwell peak (local_t = dwell_frac/2 = 0.35 ⇒ t = 0.0875
+    # in the first quarter), the dwell-end transition (local_t =
+    # dwell_frac = 0.7 ⇒ t = 0.175), and one transit point per quarter
+    # so the rotor is checked at each station.
     #
-    # The static m03 is already clean; the post-servo
-    # `_DYNAMIC_CONFLICT_PAIRS` is empty, so any new transit-time
-    # overlap surfaces here.
+    # The rising half was unsampled until 2026-07-25: the pad-contact
+    # phase runs t ∈ (0.0292, 0.0535) and the old set jumped 0 → 0.0625
+    # straight over it, so of nine frames exactly one (t=0.125, on the
+    # falling side) was in contact at all. That was tolerable while the
+    # pair was blanket-suppressed and is not now that the tilt window is
+    # the claim — a regression net that never enters the phase it guards
+    # tests nothing. The three added frames enter it from both ends and
+    # at a second station.
     #
     # Run this through `khana check`, not bare `python`. The CLI defers
     # check() failures to its own boundary, so every frame runs and its
@@ -235,12 +222,17 @@ if __name__ == "__main__":
     out_root = HERE / "outputs" / "animated"
     sample_ts = (
         0.0,        # REST (rotor at station 0, no tilt)
-        0.0625,     # rising into peak
-        0.0875,     # platform tilt peak (30°)
-        0.125,      # past peak, descending
+        0.02917,    # tilt 7.5° — pad contact opens (0.4 mm³)
+        0.04375,    # tilt 15.0° — rising, deep in contact (14.0 mm³)
+        0.0625,     # tilt 24.4° — past the block, contact closed again
+        0.0875,     # platform tilt peak (30°), no contact
+        0.125,      # tilt 18.3° — falling side of the same window
         0.175,      # end of dwell
         0.2,        # mid-transit
         0.25,       # arrives at station 1
+        0.29375,    # station 1's dwell at tilt 15.0° — the same claim
+                    #   on platform_idle, so the window is tested on a
+                    #   second cartridge and not just on platform_dump
         0.5,        # arrives at station 2
         0.75,       # arrives at station 3
     )
