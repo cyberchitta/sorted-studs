@@ -251,13 +251,12 @@ def build_drive_train(
     # it). Declared here, where both gears live, so every composed
     # run evaluates the propagated form. Authoritative over the
     # CENTER_DIST derivation above: this measures the placed geometry.
-    # The placed gap equals MESH_BACKLASH *by construction*, so the
-    # lower bound sits a measurement tolerance below it — OCCT's
-    # distance solver returns the exact value ± ~1e-14, and the bound
-    # comparison is strict.
+    # The placed gap equals MESH_BACKLASH by construction; bound
+    # comparisons carry the library's 1e-6 tolerance, so measured ==
+    # bound passes despite solver noise.
     a = a.assert_distance(
         "ring_gear", "pinion",
-        min_mm=MESH_BACKLASH - 0.01, max_mm=MESH_BACKLASH + 0.1,
+        min_mm=MESH_BACKLASH, max_mm=MESH_BACKLASH + 0.1,
         name="gear_mesh_backlash",
     )
     return a

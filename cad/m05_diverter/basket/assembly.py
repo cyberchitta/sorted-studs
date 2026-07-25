@@ -56,7 +56,6 @@ Coordinate frame:
 """
 
 import math
-import sys
 from typing import Callable
 
 
@@ -359,23 +358,15 @@ if __name__ == "__main__":
     # Inspect the geometrically most interesting variant — N=9 MIDDLE,
     # which is the only basket with a column notch cut through its
     # interior rather than at a boundary.
-    method = FDM(wall_min_mm=WALL_MIN, overhang_max_deg=90.0)
-    try:
-        inspect(
-            basket(half_angle_deg=180.0 / 9, notch_middle=True),
-            method=method,
-            out="outputs",
-            name="basket_090_09",
-        )
-    except SystemExit:
-        # Known false positive: ray-sampling reports ~0.08mm wall at the
-        # sharp edges of the interior column notch (same artifact class
-        # waived in ramp_mechanism and the m02 stator/rotor). Design
-        # walls are ≥ WALL_MIN everywhere; the diagnostic in
-        # outputs/basket_090_09-printability.json still records the
-        # failure.
-        print(
-            "WAIVED: basket_090_09 printability "
-            "(interior-notch sharp-edge ray-sampling artifact)",
-            file=sys.stderr,
-        )
+    inspect(
+        basket(half_angle_deg=180.0 / 9, notch_middle=True),
+        method=FDM(wall_min_mm=WALL_MIN),
+        out="outputs",
+        name="basket_090_09",
+        waive={
+            "wall_min": "notch sharp-edge ray-sampling artifact — min_wall_at "
+            "witness (129.0, -16.7, 43.3) sits on the corner where the notch "
+            "channel side wall (y=-17) meets the inner arc (r=130), not "
+            "mid-wall; design walls ≥ WALL_MIN by construction",
+        },
+    )

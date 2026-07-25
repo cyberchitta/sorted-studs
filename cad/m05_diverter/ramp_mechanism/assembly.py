@@ -69,7 +69,6 @@ is stable without active force.
 """
 
 import math
-import sys
 from typing import Callable
 
 
@@ -792,13 +791,28 @@ assembly = make_assembly("middle")
 if __name__ == "__main__":
     for role in FLOOR_ROLES:
         check(make_assembly(role), out=f"outputs/{role}")
-    method = FDM(wall_min_mm=WALL_MIN, overhang_max_deg=90.0)
-    # Per-part waivers for known printability false positives. A new
-    # failure on any part NOT listed here will raise. Full per-part
-    # diagnostics still land in outputs/<role>/<name>-printability.json.
+    method = FDM(wall_min_mm=WALL_MIN)
     waivers = {
-        "bearing_spider": "ray-sampling artifact at hub annulus + saddle bolt-hole edges",
-        "ring_bearing": "ray-sampling artifact at thin annulus edges",
+        "bearing_spider": {
+            "wall_min": "hub-annulus ID-edge ray-sampling artifact — "
+            "min_wall_at witness (-33.0, 73.1, 3.3) r=80.2 on the "
+            "SPIDER_HUB_ID edge (r=80.4), between saddles, not mid-wall",
+            "overhang_max": "flat 90° ceilings are real: saddle jaws drop "
+            "to z=-7 below the hub ring (z=0..5), so the hub underside and "
+            "jaw-channel ceilings face down — printed jaws-down with "
+            "support in the jaw channels",
+        },
+        "ring_bearing": {
+            "wall_min": "annulus ID-edge ray-sampling artifact — min_wall_at "
+            "witness (-69.4, -6.9, 1.7) r=69.7 on the RING_BEARING_ID edge "
+            "(r=69.9), not mid-wall",
+        },
+        "column": {
+            "overhang_max": "flat 90° ceilings are real: collar / joint-"
+            "flange / hinge-boss undersides and the exit-opening lintel on "
+            "a vertically printed tube — printed base-down with support "
+            "under the annular features",
+        },
     }
     for role in FLOOR_ROLES:
         for name, part in [
@@ -806,20 +820,18 @@ if __name__ == "__main__":
             ("ring_bearing", ring_bearing(role)),
             ("column", column(role)),
         ]:
-            try:
-                inspect(part, method=method, out=f"outputs/{role}", name=name)
-            except SystemExit:
-                if name not in waivers:
-                    raise
-                print(
-                    f"WAIVED: {role}/{name} printability ({waivers[name]})",
-                    file=sys.stderr,
-                )
+            inspect(
+                part, method=method, out=f"outputs/{role}", name=name,
+                waive=waivers.get(name),
+            )
     # Trap and ramp are role-independent — inspect once at the top.
-    for name, part_fn in [("trap", trap), ("ramp", ramp)]:
-        try:
-            inspect(part_fn(), method=method, out="outputs", name=name)
-        except SystemExit:
-            if name not in waivers:
-                raise
-            print(f"WAIVED: {name} printability ({waivers[name]})", file=sys.stderr)
+    inspect(
+        trap(), method=method, out="outputs", name="trap",
+        waive={
+            "overhang_max": "real ceilings: KNUCKLE_OD (10) exceeds TRAP_T "
+            "(4), so with the knuckle tangent on the plate the whole plate "
+            "underside floats 3 mm up — printed with support under the "
+            "plate; pin-bore top bridges",
+        },
+    )
+    inspect(ramp(), method=method, out="outputs", name="ramp")

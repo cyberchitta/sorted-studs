@@ -392,19 +392,18 @@ if __name__ == "__main__":
     check(assembly, out="outputs")
     # Print orientation: +Y up (clamp base on the build plate). FDM
     # default up_axis is +Z, so override.
-    #
-    # Threshold raised to ~90° to clear the same beam ↔ plate
-    # tessellation sliver that the rev-4 mirror_clamp_mount /
-    # camera_clamp_bracket dodged: the vertical beam meets the tilted
-    # plate at an oblique angle, and the boolean cut at the plate
-    # front face leaves a degenerate facet whose mesh tangent reports
-    # near-90°. The genuine overhangs all sit comfortably under 90°,
-    # so this still catches anything pathological.
     inspect(
         clamp_mount(),
-        method=FDM(
-            up_axis=(0, 1, 0), wall_min_mm=WALL_MIN, overhang_max_deg=90.0
-        ),
+        method=FDM(up_axis=(0, 1, 0), wall_min_mm=WALL_MIN),
         out="outputs",
         name="clamp_mount",
+        # Facet audit 2026-07-25: the rev-4 "near-90° degenerate sliver"
+        # this site's threshold was loosened for no longer exists —
+        # nothing above 56° is flagged. What remains is real geometry.
+        waive={
+            "overhang_max": "real overhangs, accepted: oblique-beam "
+            "underside facets at 55.4° (~153 mm²) plus 48-54° bore/access-"
+            "cylinder ceiling bands (~21 mm²) — steep-but-printable with "
+            "cooling or minimal support; no near-90° sliver remains",
+        },
     )

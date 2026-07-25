@@ -45,8 +45,6 @@ Coordinate frame:
 """
 
 import math
-import sys
-
 
 from build123d import (
     Circle,
@@ -226,20 +224,17 @@ if __name__ == "__main__":
     # bottom, and blind-bore top will still flag as 90° overhangs — see
     # waiver below.
     method = FDM(wall_min_mm=WALL_MIN, overhang_max_deg=50.0)
-    try:
-        inspect(rotor(), method=method, out="outputs", name="rotor")
-    except SystemExit:
-        # Two known-tolerated failures (full detail in
-        # outputs/rotor-printability.json):
-        # (1) min wall ~0.09mm — ray-sampling artifact at the 20-point
-        #     star kink ridges. Real wall is ≥ ROTOR_SHELL_WALL_T by
-        #     construction (see cavity_r_at_kink derivation in rotor()).
-        # (2) 90° overhang area — cavity ceiling, boss bottom, and blind
-        #     bore top all face downward when printed apex-up. Print
-        #     plan in the module docstring handles this: breakaway
-        #     support through the open base, or split at z=BOSS_BOTTOM_Z
-        #     into shell + cap+boss pieces.
-        print(
-            "WAIVED: rotor printability (star-ridge wall artifact + apex-up cavity ceilings, see docstring print plan)",
-            file=sys.stderr,
-        )
+    inspect(
+        rotor(), method=method, out="outputs", name="rotor",
+        waive={
+            "wall_min": "star-ridge ray-sampling artifact — min_wall_at "
+            "witness (87.2, -42.3, 21.0) θ=-25.9° lies on the sub-facet "
+            "crease between the valley (θ=-18°) and peak (θ=-36°) loft "
+            "paths, not mid-wall; real wall ≥ ROTOR_SHELL_WALL_T by "
+            "construction (see cavity_r_at_kink derivation in rotor())",
+            "overhang_max": "real 90° ceilings: cavity ceiling, boss "
+            "bottom, and blind-bore top all face down printed apex-up — "
+            "print plan in the module docstring (breakaway support through "
+            "the open base, or split at z=BOSS_BOTTOM_Z)",
+        },
+    )

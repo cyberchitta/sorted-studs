@@ -316,12 +316,12 @@ def build_turret() -> Assembly:
     # drive/assembly.py's `_SPIDER_BOTTOM_Z` / `HOUSING_TOP_Z` private
     # mirrors and their hand-derived Z arithmetic. The housing gap is
     # exactly 1 mm by construction (BRACKET_PLATE_AIRGAP_BELOW_PULLEY
-    # sizes the bracket off the same corridor), so the bound sits a
-    # measurement tolerance below it — extents carry ~1e-7 of bbox
-    # slop and the bound comparison is strict.
+    # sizes the bracket off the same corridor); bound comparisons
+    # carry the library's 1e-6 tolerance, which covers the ~1e-7 of
+    # bbox slop the extents carry.
     t = t.assert_distance(
         "rotor.drive.drive_pulley_shaft", "hub.hub_housing",
-        along="-Z", min_mm=0.95, name="pulley_housing_gap",
+        along="-Z", min_mm=1.0, name="pulley_housing_gap",
     )
     t = t.assert_distance(
         "rotor.drive.drive_pulley_shaft", "rotor.arm.spider",

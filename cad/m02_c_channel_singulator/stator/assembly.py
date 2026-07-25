@@ -36,8 +36,6 @@ Cross-boundary rotor↔stator clearance runs in ../assembly.py.
 """
 
 import math
-import sys
-
 
 from build123d import Axis, Box, Part, Plane, Polygon, Pos, Rot, extrude, revolve
 
@@ -221,14 +219,12 @@ if __name__ == "__main__":
     # prints will likely need either outside support or an inverted
     # orientation; split at a later revision.
     method = FDM(wall_min_mm=WALL_MIN, overhang_max_deg=50.0)
-    try:
-        inspect(stator(), method=method, out="outputs", name="stator")
-    except SystemExit:
-        # Known false positive: ray-sampling reports ~0.1mm wall at the
-        # sharp V-cone inner edge where two 45° faces meet. Design wall
-        # is STATOR_WALL_T everywhere; the diagnostic in
-        # outputs/stator-printability.json still records the failure.
-        print(
-            "WAIVED: stator printability (V-cone inner-edge ray-sampling artifact)",
-            file=sys.stderr,
-        )
+    inspect(
+        stator(), method=method, out="outputs", name="stator",
+        waive={
+            "wall_min": "V-cone inner-edge ray-sampling artifact — "
+            "min_wall_at witness (113.9, 43.3, 0.2) r=121.9 on the wall's "
+            "narrowest inner edge (r=122.0 at z=0), not mid-wall; design "
+            "wall is STATOR_WALL_T everywhere",
+        },
+    )
