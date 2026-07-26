@@ -63,6 +63,8 @@ helper with a reduced plan + basket layout + no drive train / top
 deck. The production assembly is `build_tower(FLOOR_PLAN)`.
 """
 
+from functools import cache
+
 import math
 from pathlib import Path
 
@@ -73,11 +75,11 @@ from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 
 from .base_floor import assembly as _base
 from .basket import assembly as _bkt
+from ..design_systems import DEFAULT_SCHEMA, paint
 from .design_systems import (
-    DESIGN_SYSTEM,
     basename_of,
-    basket_color_of,
-    color_of,
+    color_for,
+    design_system,
 )
 from .materials import material_of
 from .frame import assembly as _frame
@@ -132,20 +134,20 @@ def _build_floor_static(role: str, basket_layout) -> Assembly:
         .with_subassembly(
             "rails",
             _frame.build_floor_horizontals(
-                color_fn=color_of, material_fn=material_of,
+                material_fn=material_of,
             ),
         )
         .with_subassembly(
             "baskets",
             _bkt.build_basket_ring(
                 basket_layout,
-                size_color_fn=basket_color_of, material_fn=material_of,
+                material_fn=material_of,
             ),
         )
         .with_subassembly(
             "bearing",
             _ramp.build_column_side_static(
-                role, color_fn=color_of, material_fn=material_of,
+                role, material_fn=material_of,
             ),
         )
     )
@@ -338,28 +340,12 @@ def _add_drive_train_checks(a: Assembly, base: int) -> Assembly:
     return a
 
 
-def _assert_design_system_coverage(a: Assembly) -> None:
-    """Every named part (root + any sub-assembly) must appear in the
-    active design system's tag dict (``None`` allowed for hardware kept
-    at material's intrinsic color). A part added without a tag fails
-    here instead of silently rendering off-palette."""
-    untagged = sorted(
-        {
-            p.name for p in a.placed_parts
-            if basename_of(p.name) not in DESIGN_SYSTEM.tag_of
-        }
-    )
-    assert not untagged, (
-        f"{len(untagged)} m05 part(s) missing a tag for design system "
-        f"'{DESIGN_SYSTEM.name}' in design_systems.py: {untagged}"
-    )
-
-
 # --- Public composition ------------------------------------------------
 
 def build_tower(
     floor_plan: list[tuple[int, str]],
     *,
+    schema: str = DEFAULT_SCHEMA,
     basket_layout=FLOOR_LAYOUT,
     with_top_deck: bool = True,
     with_drive_train: bool = True,
@@ -394,7 +380,7 @@ def build_tower(
         "columns",
         _frame.build_through_columns(
             z_bot=-_frame.VERT_EXT_BELOW, z_top=top_z,
-            color_fn=color_of, material_fn=material_of,
+            material_fn=material_of,
         ),
     )
 
@@ -414,7 +400,7 @@ def build_tower(
                 # Trap-open envelope only needs to exist on floors that
                 # have an upper neighbour to check against.
                 with_trap_open=(i < n - 1),
-                color_fn=color_of, material_fn=material_of,
+                material_fn=material_of,
             ),
             location=fz_loc,
         )
@@ -439,12 +425,10 @@ def build_tower(
         a = a.with_subassembly(
             "drive_train",
             _base.build_drive_train(
-                color_fn=color_of, material_fn=material_of,
+                material_fn=material_of,
             ),
             location=Pos(0, 0, base_idx * FLOOR_H),
         )
-
-    _assert_design_system_coverage(a)
 
     # Adjacent-floor pairs only. Non-adjacent floors are >1·FLOOR_H
     # apart and the trap-open envelope reaches at most ~70 mm above
@@ -460,12 +444,14 @@ def build_tower(
     if with_drive_train:
         a = _add_drive_train_checks(a, base_idx)
 
-    return a
+    # Paint last, once the tree is complete: ``paint`` also carries the
+    # coverage check that ``_assert_design_system_coverage`` used to do
+    # mid-build, and it can only see parts already composed. ``color_for``
+    # applies the basket size ramp alongside the plain tag reads.
+    return paint(a, design_system(schema), color_for=color_for)
 
 
 # --- Production assembly -----------------------------------------------
-
-assembly = build_tower(FLOOR_PLAN)
 
 # Exported interface anchors (m05-local; = world while m05 sits at
 # world identity). ``deck_top``: hub-axis point on the top deck's top
@@ -474,12 +460,44 @@ assembly = build_tower(FLOOR_PLAN)
 # azimuths are ``(k + 0.5)·60°`` per ``frame/assembly.py``, so k=0 is
 # 30°) — the face the m02 chain's col1 extension butts against.
 _DECK_TOP_Z = TOP_VERT_Z + TOP_DECK_T
-assembly = assembly.with_anchor("deck_top", Pos(0, 0, _DECK_TOP_Z))
-assembly = assembly.with_anchor(
-    "outer_vert_0_top",
-    Pos(
-        R_VERT_OUTER * math.cos(math.radians(30.0)),
-        R_VERT_OUTER * math.sin(math.radians(30.0)),
-        _DECK_TOP_Z,
-    ),
-)
+
+
+# Cached because the degenerate ``assembly`` memo below and any
+# composing parent (``cad/assembly.py``, ``cad/render.py``) each ask
+# for the same schema, and the build is seconds of OCCT work. Replaces
+# import-time memoization: the memo line is now free, and a parent
+# calling the builder gets the same object rather than rebuilding.
+# Safe to share — ``Assembly`` is a frozen dataclass and every
+# ``with_*`` returns a copy.
+#
+# Call it with the schema **explicit** everywhere, including the memo
+# below: ``@cache`` keys on the call signature, so ``build_x()`` and
+# ``build_x(DEFAULT_SCHEMA)`` are two entries that build identical
+# geometry twice. That mistake is invisible — same output, double the
+# work — so ``cache_info().misses`` is the only thing that shows it.
+@cache
+def build_m05(schema: str = DEFAULT_SCHEMA) -> Assembly:
+    """The production hex tower with its exported interface anchors,
+    painted under ``schema`` — the m05 unit as the top level composes it.
+
+    ``build_tower`` is the parameterised form (used by the exhibit
+    variants); this is the production floor plan plus the two anchors
+    peers derive their placement from.
+    """
+    return (
+        build_tower(FLOOR_PLAN, schema=schema)
+        .with_anchor("deck_top", Pos(0, 0, _DECK_TOP_Z))
+        .with_anchor(
+            "outer_vert_0_top",
+            Pos(
+                R_VERT_OUTER * math.cos(math.radians(30.0)),
+                R_VERT_OUTER * math.sin(math.radians(30.0)),
+                _DECK_TOP_Z,
+            ),
+        )
+    )
+
+
+# Degenerate memoized master, so ``khana check <file>`` resolves
+# without a ``:factory``.
+assembly = build_m05(DEFAULT_SCHEMA)

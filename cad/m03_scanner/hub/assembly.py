@@ -61,7 +61,6 @@ from ..params import (
     TURRET_SHAFT_TOP_Z,
     WALL_MIN,
 )
-from ..design_systems import color_of
 from ..materials import material_of
 
 
@@ -272,7 +271,7 @@ def build_turret_hub_static() -> Assembly:
     hub_pose = Pos(TURRET_HUB_X, TURRET_HUB_Y, RAIL_TOP_Z)
     a = a.with_part(
         "hub_housing", housing(), location=hub_pose,
-        material=material_of("hub_housing"), color=color_of("hub_housing"),
+        material=material_of("hub_housing"),
     )
     a = a.with_part(
         "hub_bearing_top",

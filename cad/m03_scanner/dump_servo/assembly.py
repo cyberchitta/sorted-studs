@@ -74,7 +74,6 @@ from ..params import (
     TURRET_FRAME_FLOOR_Z,
     WALL_MIN,
 )
-from ..design_systems import color_of
 from ..materials import material_of
 
 
@@ -357,7 +356,7 @@ def build_turret_dump_servo_static() -> Assembly:
     a = Assembly()
     a = a.with_part(
         "servo_bracket", servo_bracket(),
-        material=material_of("servo_bracket"), color=color_of("servo_bracket"),
+        material=material_of("servo_bracket"),
     )
     a = a.with_part(
         "servo_body",
@@ -378,7 +377,7 @@ def build_turret_dump_servo_arm() -> Assembly:
     revolute joint around the pivot axis."""
     return Assembly().with_part(
         "servo_arm", servo_arm(),
-        material=material_of("servo_arm"), color=color_of("servo_arm"),
+        material=material_of("servo_arm"),
     )
 
 

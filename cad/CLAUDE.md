@@ -110,6 +110,58 @@ Guidance for organizing Build123d / cad-khana assemblies in this repo.
    measurement tolerance below the constructed value and say so in a
    comment.
 
+## Design systems: builders never set colour
+
+**This overrides cad-khana's SKILL.md**, which says colours are set at
+the `with_part` placement. In this repo they are not — that guidance is
+for a consumer with one palette, and we have seven.
+
+A design system is a **value threaded as a parameter**, never module
+state:
+
+- **Sub-assembly builders take no colour argument and set no
+  `color=`.** They are palette-free: same geometry whatever the schema.
+- **Unit roots take `schema: str = DEFAULT_SCHEMA`** and paint the
+  finished tree once on the way out —
+  `paint(a, design_system(schema))` from `cad/design_systems.py`. The
+  unit root is where the module's tag dict lives, so it is the only
+  level that can resolve a leaf name to a colour.
+- **Entry points own env resolution.** `schema_from_env("M03")` reads
+  `SORTED_STUDS_DS_<MODULE>` → `SORTED_STUDS_DS` → default, and is for
+  render/export scripts only. A declaration module that reads the
+  environment is not a function of its arguments.
+- **`paint` carries the coverage check.** Every leaf must be tagged;
+  untagged parts are collected and reported in one `KeyError` naming
+  all of them. Don't hand-roll a `placed_parts` walk asserting tag
+  coverage — that is what the four retired module-level asserts did.
+- **A part tagged `None` keeps the colour its builder set.** `None`
+  means "outside the design system", so paint leaves it alone rather
+  than overwriting with `None`. Two parts rely on this: m03's `acrylic`
+  and m05's `top_acrylic` carry translucent baseColors with a real
+  alpha channel that the shape-truth GLB renders through.
+- **Colour that isn't a plain tag read goes in the module's
+  `color_for` hook**, not into the builder. m05 ramps basket luminance
+  off `n_size`, recovered from the leaf name (`basket_090_12` → 12).
+
+Consequence to know: a **sub-assembly's standalone `assembly` is
+uncoloured**, because paint happens at the unit root. Nothing regresses
+— `mechanism.json` records no colour and every export goes through a
+unit root — but `khana view <sub>/assembly.py` shows default-coloured
+parts. View the unit root to see the palette.
+
+Why a walk and not a parameter threaded down every builder: the tag
+dicts key on **leaf part name**, and inside the tree
+`PlacedPart.name` is already the leaf (`placed_parts` is what
+qualifies it into a dotted path), so the walk has its key at every
+level with no plumbing in between.
+
+**`@cache` on a builder needs the schema passed explicitly at every
+call site, including the degenerate `assembly = build_x(DEFAULT_SCHEMA)`
+memo.** `functools.cache` keys on the call signature, so `build_x()`
+and `build_x(DEFAULT_SCHEMA)` are two entries building identical
+geometry twice. The symptom is invisible — same output, double the
+work; `cache_info().misses` is the only tell.
+
 ## World axes: Z is up
 
 Every module in this tree uses the same world frame:

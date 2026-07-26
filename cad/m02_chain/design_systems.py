@@ -27,11 +27,12 @@ from build123d import Color
 
 
 from ..design_systems import (
+    DEFAULT_SCHEMA,
     DesignSystem,
     Module,
     Role,
     bind_all,
-    resolve_name,
+    lookup,
 )
 
 
@@ -67,11 +68,16 @@ MODULE_OF: dict[str, Module | None] = {
 }
 
 
-# --- Bound DesignSystem -----------------------------------------------
+# --- Bound design systems ---------------------------------------------
 
-DESIGN_SYSTEM: DesignSystem = bind_all(ROLE_OF, MODULE_OF)[resolve_name("M02_CHAIN")]
+PALETTES: dict[str, DesignSystem] = bind_all(ROLE_OF, MODULE_OF)
 
 
-def color_of(part_name: str) -> Color | None:
-    """Active design system's color for a named chain part."""
-    return DESIGN_SYSTEM.color_of(part_name)
+def design_system(schema: str = DEFAULT_SCHEMA) -> DesignSystem:
+    """The chain's tag dicts bound to ``schema``.
+
+    Covers the chain's *own* parts only. ``assembly.build_chain``
+    paints with ``skip=("s1",)`` because the composed singulator
+    subtree carries m02's bindings, made against m02's tag dict.
+    """
+    return lookup(PALETTES, schema)

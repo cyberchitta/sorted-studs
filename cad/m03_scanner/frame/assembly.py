@@ -93,7 +93,6 @@ from ..params import (
     TURRET_FRAME_FRONT_Y,
     TURRET_FRAME_SIDE_X,
 )
-from ..design_systems import color_of
 from ..materials import material_of
 
 
@@ -248,7 +247,7 @@ def build_turret_frame() -> Assembly:
     for name, part in _MEMBERS.items():
         a = a.with_part(
             name, part,
-            material=material_of(name), color=color_of(name),
+            material=material_of(name),
         )
     # Exported interface anchor: hub-axis point (frame-local origin =
     # turret hub axis) on the floor members' bottom-face plane — the

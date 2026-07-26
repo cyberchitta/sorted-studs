@@ -111,7 +111,6 @@ from ..params import (  # noqa: E402
     WALL_MIN,
 )
 
-from ..design_systems import color_of  # noqa: E402
 from ..materials import material_of  # noqa: E402
 
 
@@ -525,7 +524,6 @@ def build_turret_drive_static() -> Assembly:
         "drive_bracket",
         bracket(),
         material=material_of("drive_bracket"),
-        color=color_of("drive_bracket"),
     )
     # The motor hangs from the bracket: its flange face bolts flat
     # against the cantilever plate's underside (both at z = -68). The

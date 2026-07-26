@@ -57,7 +57,8 @@ from .params import (
 from .sizing import BRICK_MAX_MM, SCATTER_HALF_MM
 from .camera_mount_esp32cam import assembly as _camera_mount
 
-from .assembly import assembly as _m03
+from ..design_systems import DEFAULT_SCHEMA
+from .assembly import build_m03
 
 
 SIGHTLINE_CONE_SPECS = {
@@ -141,7 +142,14 @@ def add_sightline_cone_checks(a: Assembly) -> Assembly:
     return a
 
 
-def assembly() -> Assembly:
+def assembly(schema: str = DEFAULT_SCHEMA) -> Assembly:
     """The m03 assembly with both sightline cones and their clearance
-    claims attached — the fixture this module exists to check."""
-    return add_sightline_cone_checks(_m03)
+    claims attached — the fixture this module exists to check.
+
+    Builds the product rather than importing a prebuilt object, so the
+    fixture is a function of its argument like every other factory
+    here. The cone claims are geometric and schema-independent; the
+    parameter exists so this fixture can be built alongside a
+    particular palette rather than only the default.
+    """
+    return add_sightline_cone_checks(build_m03(schema))

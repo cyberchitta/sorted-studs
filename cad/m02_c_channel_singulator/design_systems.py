@@ -1,11 +1,12 @@
 """m02 c-channel singulator — per-module design-system tags.
 
-Schema (``Role``, ``Module``, ``DesignSystem``, palettes,
-``DESIGN_SYSTEM_NAME`` switch) lives in
-``cad/design_systems.py``; this file holds only m02's tag dicts and
-binds the module-local ``DESIGN_SYSTEM`` + ``color_of`` shim that
-m02 sub-assemblies and the top-level assembly import. Material is a
-physical property, not a render axis — see ``materials.py``.
+Schema (``Role``, ``Module``, ``DesignSystem``, palettes, the palette
+registry, ``paint``) lives in ``cad/design_systems.py``; this file
+holds only m02's tag dicts and the ``design_system(schema)`` lookup
+that ``assembly.build_m02`` binds when it paints. Sub-assembly
+builders import nothing from here — they emit no colour at all.
+Material is a physical property, not a render axis — see
+``materials.py``.
 
 m02 has four named parts: ``rotor`` (rotates, MECHANISM),
 ``stator`` (fixed structural shell, SECONDARY_STRUCTURE), ``stem``
@@ -17,15 +18,13 @@ system — keeps its cast-aluminium intrinsic).
 from __future__ import annotations
 
 
-from build123d import Color
-
-
 from ..design_systems import (
+    DEFAULT_SCHEMA,
     DesignSystem,
     Module,
     Role,
     bind_all,
-    resolve_name,
+    lookup,
 )
 
 
@@ -51,15 +50,16 @@ MODULE_OF: dict[str, Module | None] = {
 }
 
 
-# --- Bound DesignSystem -----------------------------------------------
+# --- Bound design systems ---------------------------------------------
 
-DESIGN_SYSTEM: DesignSystem = bind_all(ROLE_OF, MODULE_OF)[resolve_name("M02")]
+PALETTES: dict[str, DesignSystem] = bind_all(ROLE_OF, MODULE_OF)
 
 
-def color_of(part_name: str) -> Color | None:
-    """Active design system's color for a named m02 part.
+def design_system(schema: str = DEFAULT_SCHEMA) -> DesignSystem:
+    """m02's tag dicts bound to ``schema``.
 
-    Thin shim over ``DESIGN_SYSTEM.color_of(...)`` so call sites import
-    one symbol regardless of which palette is active.
+    Called by ``assembly.build_m02`` to paint its subtree; there is no
+    module-global "active" binding, so nothing here reads the
+    environment at import.
     """
-    return DESIGN_SYSTEM.color_of(part_name)
+    return lookup(PALETTES, schema)

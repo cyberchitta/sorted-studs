@@ -96,7 +96,6 @@ from ..params import (
     TURRET_HINGE_PIN_Z,
     WALL_MIN,
 )
-from ..design_systems import color_of
 from ..materials import material_of
 
 
@@ -565,7 +564,6 @@ def build_platform_cartridge() -> Assembly:
             "frame",
             frame(),
             material=material_of("frame"),
-            color=color_of("frame"),
         )
     )
 

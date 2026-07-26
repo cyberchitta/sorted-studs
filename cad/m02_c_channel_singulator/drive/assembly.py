@@ -43,7 +43,6 @@ from build123d import Box, Cylinder, Part, Pos
 
 from cad_khana.mechanism.assembly import Assembly
 
-from ..design_systems import color_of
 from ..materials import material_of
 from ..params import (
     MOTOR_BASE_Z,
@@ -128,7 +127,7 @@ def build_drive() -> Assembly:
         Assembly()
         .with_part(
             "stem", stem(),
-            material=material_of("stem"), color=color_of("stem"),
+            material=material_of("stem"),
         )
         .with_part(
             "motor", motor(),

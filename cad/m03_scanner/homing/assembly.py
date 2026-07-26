@@ -102,7 +102,6 @@ from ..params import (
     TURRET_SHAFT_TOP_Z,
     WALL_MIN,
 )
-from ..design_systems import color_of
 from ..materials import material_of
 
 
@@ -445,7 +444,6 @@ def build_turret_homing_static() -> Assembly:
         "homing_bracket",
         bracket(),
         material=material_of("homing_bracket"),
-        color=color_of("homing_bracket"),
     )
     return a
 
@@ -458,7 +456,6 @@ def build_turret_homing_rotor() -> Assembly:
         flag(),
         location=Pos(TURRET_HUB_X, TURRET_HUB_Y, FLAG_Z_CENTER),
         material=material_of("homing_flag"),
-        color=color_of("homing_flag"),
     )
 
 

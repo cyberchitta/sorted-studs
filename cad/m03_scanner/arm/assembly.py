@@ -86,7 +86,6 @@ from ..params import (
     TURRET_SHAFT_TOP_Z,
     WALL_MIN,
 )
-from ..design_systems import color_of
 from ..materials import material_of
 
 
@@ -331,7 +330,7 @@ def build_turret_arm() -> Assembly:
     a = a.with_part(
         "spider", spider(),
         location=Pos(TURRET_HUB_X, TURRET_HUB_Y, TURRET_HINGE_PIN_Z),
-        material=material_of("spider"), color=color_of("spider"),
+        material=material_of("spider"),
     )
     for name, local_pos, rot in _PIN_PLACEMENTS:
         a = a.with_part(

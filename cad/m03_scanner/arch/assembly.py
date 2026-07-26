@@ -108,7 +108,6 @@ from ..params import (
     VERTEX_FRONT_LOW_POS,
     lens_axis_unit,
 )
-from ..design_systems import color_of
 from ..materials import material_of
 
 # Plate edge-grip half-extent — half the bonded mount plate's longest
@@ -307,7 +306,7 @@ def build_arch() -> Assembly:
     for name, part in _MEMBERS.items():
         a = a.with_part(
             name, part,
-            material=material_of(name), color=color_of(name),
+            material=material_of(name),
         )
     return a
 

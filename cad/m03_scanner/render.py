@@ -22,7 +22,8 @@ import os
 from pathlib import Path
 
 
-from .assembly import assembly
+from ..design_systems import DEFAULT_SCHEMA, schema_from_env
+from .assembly import build_m03
 from .detail_variations import apply_default_detail
 from .material_variations import DEFAULT_OVERRIDES
 
@@ -32,8 +33,15 @@ from chitra_cad.render import render
 from chitra_cad.scene import Scene
 
 
-detailed = apply_default_detail(assembly)
-scene = Scene.from_assembly(detailed).with_materials(DEFAULT_OVERRIDES)
+def build_scene(schema: str = DEFAULT_SCHEMA) -> Scene:
+    """The m03 scene under ``schema``, with both override layers applied.
+
+    A function rather than a module-level value: the schema is a
+    parameter now, so building at import would both pick one palette
+    arbitrarily and pay for the geometry on any import of this module.
+    """
+    detailed = apply_default_detail(build_m03(schema))
+    return Scene.from_assembly(detailed).with_materials(DEFAULT_OVERRIDES)
 
 
 def _pick_rig() -> lighting.StudioRig:
@@ -76,15 +84,32 @@ def _pick_rig() -> lighting.StudioRig:
     return rig
 
 
-if __name__ == "__main__":
-    out_dir = os.environ.get("SORTED_STUDS_RENDERS_OUT", "outputs/renders")
-    transparent = os.environ.get("SORTED_STUDS_TRANSPARENT", "0") == "1"
-    render(
-        scene,
-        out=out_dir,
+def render_m03(
+    schema: str = DEFAULT_SCHEMA,
+    out: str | Path = "outputs/renders",
+    *,
+    transparent: bool = False,
+) -> list[Path]:
+    """Render m03 under ``schema`` into ``out``; returns the paths written.
+
+    Callable in a loop from one process — ``render_all_ds.py`` renders
+    every palette that way. chitra-cad resets the Blender scene per
+    call, so successive schemas don't contaminate each other.
+    """
+    return render(
+        build_scene(schema),
+        out=out,
         resolution=(1920, 1080),
         world_up=(0.0, 0.0, 1.0),
         framing=HERO_3Q,
         transparent_background=transparent,
         rig=_pick_rig(),
+    )
+
+
+if __name__ == "__main__":
+    render_m03(
+        schema_from_env("M03"),
+        os.environ.get("SORTED_STUDS_RENDERS_OUT", "outputs/renders"),
+        transparent=os.environ.get("SORTED_STUDS_TRANSPARENT", "0") == "1",
     )

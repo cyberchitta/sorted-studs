@@ -20,12 +20,13 @@ Layers applied before rendering (per module):
     composition qualifies them under the unit's subtree name
     (``rig.cam_front_low_pcb`` → ``m03.rig.cam_front_low_pcb``).
 
-Schema switch is a *mutation* of ``cad.design_systems.DESIGN_SYSTEM_NAME``
-between renders. Each unit's per-module ``design_systems.py`` reads
-the cad-level switch at import time, so between schema passes we
-evict the unit subtrees from ``sys.modules`` and re-import them. The
-shared ``cad.design_systems`` module is never evicted — it keeps its
-mutated attribute, so the re-import sees the new schema.
+Schema switch is a **parameter**: ``render_schema(schema)`` passes the
+name to each unit builder, which binds its own tag dicts and paints
+its own subtree. Every schema builds in this one process. Until
+2026-07-26 the schema was a module global mutated between renders, so
+this file had to evict ``cad.m02_*`` / ``cad.m03_*`` / ``cad.m05_*``
+from ``sys.modules`` and re-import them to make the units re-read it —
+the last surviving eviction site in the tree, and now gone.
 
 Lighting and camera framing come from chitra-cad's defaults.
 """
@@ -34,7 +35,6 @@ from __future__ import annotations
 
 import importlib
 import importlib.util
-import sys
 
 from build123d import Pos
 
@@ -43,7 +43,9 @@ from chitra_cad.framing import HERO_3Q
 from chitra_cad.render import render
 from chitra_cad.scene import Scene
 
-from . import design_systems as _ds
+from .m02_c_channel_singulator.assembly import build_m02
+from .m03_scanner.assembly import build_m03
+from .m05_diverter.assembly import build_m05
 
 
 # --- Placement --------------------------------------------------------
@@ -60,19 +62,8 @@ from . import design_systems as _ds
 M02_EXIT_RADIUS = 90.0
 SINGULATOR_DROP_OVER_LOAD = 100.0
 
-# --- Module-load helpers ---------------------------------------------
 
-# Unit subtrees evicted between schema passes so their import-time
-# palette bindings re-read the mutated switch. ``cad.design_systems``
-# itself deliberately doesn't match — it carries the switch.
-_UNIT_MODULE_PREFIXES = ("cad.m02_", "cad.m03_", "cad.m05_")
-
-
-def _evict_unit_modules() -> None:
-    for name in list(sys.modules):
-        if name.startswith(_UNIT_MODULE_PREFIXES):
-            del sys.modules[name]
-
+# --- Override layers --------------------------------------------------
 
 def _optional_import(dotted: str):
     if importlib.util.find_spec(dotted) is None:
@@ -80,16 +71,21 @@ def _optional_import(dotted: str):
     return importlib.import_module(dotted)
 
 
-def _load_module_detailed(module_dirname: str) -> tuple[Assembly, dict[str, str]]:
-    """Load a module's assembly + apply its detail variations.
+def _with_overrides(
+    unit_dirname: str, assembly: Assembly
+) -> tuple[Assembly, dict[str, str]]:
+    """Apply a unit's detail variations and collect its material
+    overrides.
 
     Returns ``(detailed_assembly, material_overrides)``. Material
     overrides are render-time-only and stay module-local here;
-    ``_build_top_level`` qualifies them under the unit's subtree
-    name before they hit the chitra-cad scene.
+    ``_build_top_level`` qualifies them under the unit's subtree name
+    before they hit the chitra-cad scene. Both layers are optional —
+    only m03 and m05 carry detail variations, only m03 carries
+    material overrides — hence the spec probe rather than a plain
+    import.
     """
-    unit = f"cad.{module_dirname}"
-    assembly: Assembly = importlib.import_module(f"{unit}.assembly").assembly
+    unit = f"cad.{unit_dirname}"
 
     detail = _optional_import(f"{unit}.detail_variations")
     if detail is not None and hasattr(detail, "apply_default_detail"):
@@ -103,14 +99,17 @@ def _load_module_detailed(module_dirname: str) -> tuple[Assembly, dict[str, str]
     return assembly, material_overrides
 
 
-def _build_top_level() -> tuple[Assembly, dict[str, str]]:
-    """Compose the three-module top-level assembly with detail
-    variations applied. Returns ``(assembly, material_overrides)``
-    with the override keys qualified as full tree paths.
+def _build_top_level(schema: str) -> tuple[Assembly, dict[str, str]]:
+    """Compose the three-module top-level assembly under ``schema``,
+    with detail variations applied. Returns ``(assembly,
+    material_overrides)`` with the override keys qualified as full tree
+    paths.
     """
-    assy_m05, mat_m05 = _load_module_detailed("m05_diverter")
-    assy_m03, mat_m03 = _load_module_detailed("m03_scanner")
-    assy_m02, mat_m02 = _load_module_detailed("m02_c_channel_singulator")
+    assy_m05, mat_m05 = _with_overrides("m05_diverter", build_m05(schema))
+    assy_m03, mat_m03 = _with_overrides("m03_scanner", build_m03(schema))
+    assy_m02, mat_m02 = _with_overrides(
+        "m02_c_channel_singulator", build_m02(schema)
+    )
 
     deck = assy_m05.anchor("deck_top").position
     dump = assy_m03.anchor("dump_centroid").position
@@ -141,9 +140,7 @@ SCHEMAS = ("workshop", "bauhaus")
 
 
 def render_schema(schema: str) -> None:
-    _ds.DESIGN_SYSTEM_NAME = schema
-    _evict_unit_modules()
-    top, mat = _build_top_level()
+    top, mat = _build_top_level(schema)
     scene = Scene.from_assembly(top).with_materials(mat)
     render(
         scene,

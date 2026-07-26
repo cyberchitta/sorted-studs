@@ -20,18 +20,25 @@ from .detail_variations import apply_default_detail  # noqa: E402
 
 from cad_khana.export import export_glb  # noqa: E402
 
-from ..design_systems import Role, fill_palette_neutrals, resolve_name  # noqa: E402
+from ..design_systems import (  # noqa: E402
+    fill_palette_neutrals,
+    neutral_of,
+    schema_from_env,
+)
 
-from .design_systems import DESIGN_SYSTEM  # noqa: E402
+from .design_systems import design_system  # noqa: E402
 
 OUT_DIR = HERE.parent.parent / "subsite" / "assets" / "exhibits"
 
 
 def main() -> None:
-    detailed = apply_default_detail(build_m03_at(0.0))
-    filled = fill_palette_neutrals(detailed, DESIGN_SYSTEM.palette[Role.SECONDARY_STRUCTURE])
-    palette = resolve_name("M03")
-    tag = palette.removeprefix("cyberchitta-")
+    # This script is the entry point, so it is what resolves the schema
+    # from the environment — and it passes the *same* name to the
+    # builder and to the filename tag, so the two can't disagree.
+    schema = schema_from_env("M03")
+    detailed = apply_default_detail(build_m03_at(0.0, schema))
+    filled = fill_palette_neutrals(detailed, neutral_of(design_system(schema)))
+    tag = schema.removeprefix("cyberchitta-")
     path = export_glb(
         filled,
         out=OUT_DIR,

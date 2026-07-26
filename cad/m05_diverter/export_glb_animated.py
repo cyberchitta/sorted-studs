@@ -22,9 +22,13 @@ from .detail_variations import apply_default_detail  # noqa: E402
 
 from cad_khana.export import export_animated_glb  # noqa: E402
 
-from ..design_systems import Role, fill_palette_neutrals, resolve_name  # noqa: E402
+from ..design_systems import (  # noqa: E402
+    fill_palette_neutrals,
+    neutral_of,
+    schema_from_env,
+)
 
-from .design_systems import DESIGN_SYSTEM  # noqa: E402
+from .design_systems import design_system  # noqa: E402
 
 OUT_DIR = HERE.parent.parent / "subsite" / "assets" / "exhibits"
 
@@ -35,17 +39,30 @@ N_FRAMES = 97
 DURATION_S = 12.0
 
 
-def factory(t: float):
-    detailed = apply_default_detail(build_exhibit_at(t))
-    return fill_palette_neutrals(detailed, DESIGN_SYSTEM.palette[Role.SECONDARY_STRUCTURE])
+def make_factory(schema: str):
+    """A ``t -> Assembly`` factory bound to one palette.
+
+    ``export_animated_glb`` calls the factory per frame, so the schema
+    has to be closed over rather than passed — the sweep's signature is
+    ``t`` alone.
+    """
+    neutral = neutral_of(design_system(schema))
+
+    def factory(t: float):
+        detailed = apply_default_detail(build_exhibit_at(t, schema))
+        return fill_palette_neutrals(detailed, neutral)
+
+    return factory
 
 
 def main() -> None:
-    palette = resolve_name("M05")
-    tag = palette.removeprefix("cyberchitta-")
+    # Entry point owns env resolution; one name feeds both the geometry
+    # and the filename tag.
+    schema = schema_from_env("M05")
+    tag = schema.removeprefix("cyberchitta-")
     ts = [i / (N_FRAMES - 1) for i in range(N_FRAMES)]
     path = export_animated_glb(
-        factory,
+        make_factory(schema),
         ts=ts,
         out=OUT_DIR,
         name=f"diverter-{date.today():%y%m%d}-{tag}.glb",

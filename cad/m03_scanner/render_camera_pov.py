@@ -18,10 +18,12 @@ Coordinate frame: world Z-up. Vertex positions come from the
 module-level ``params.py`` (the manual `sizing.py` mirror).
 """
 
+from dataclasses import replace
 from pathlib import Path
 
 
-from .assembly import assembly
+from ..design_systems import DEFAULT_SCHEMA, schema_from_env
+from .assembly import build_m03
 from .params import (
     VERTEX_BACK_UPPER_POS,
     VERTEX_BELOW_LEFT_POS,
@@ -65,20 +67,25 @@ CAMERA_VFOV_DEG = 32.0
 # the lens. Per-camera in the loop below.
 
 
-detailed = apply_default_detail(assembly).with_part(
-    "brick_2x4_stand_in",
-    Box(*BRICK_2X4),
-    material="pla_matte",
-    color=Color("red"),
-)
-base_scene = Scene.from_assembly(detailed).with_materials(DEFAULT_OVERRIDES)
+def build_base_scene(schema: str = DEFAULT_SCHEMA) -> Scene:
+    """The POV scene under ``schema``, brick stand-in included.
+
+    A function rather than a module-level value, so importing this
+    module builds no geometry and picks no palette.
+    """
+    detailed = apply_default_detail(build_m03(schema)).with_part(
+        "brick_2x4_stand_in",
+        Box(*BRICK_2X4),
+        material="pla_matte",
+        color=Color("red"),
+    )
+    return Scene.from_assembly(detailed).with_materials(DEFAULT_OVERRIDES)
 
 
-def _scene_excluding(prefix: str) -> Scene:
+def _scene_excluding(base_scene: Scene, prefix: str) -> Scene:
     """Scene with the named camera's own clamp_mount + pcb + lens
     parts stripped, so the camera doesn't render from inside its own
     housing."""
-    from dataclasses import replace
     excluded = frozenset(
         {
             f"rig.{prefix}_clamp_mount",
@@ -94,8 +101,9 @@ def _scene_excluding(prefix: str) -> Scene:
 
 if __name__ == "__main__":
     out_dir = Path("outputs/renders_pov")
+    base = build_base_scene(schema_from_env("M03"))
     for prefix, location in CAMERA_POSES:
-        scene = _scene_excluding(prefix)
+        scene = _scene_excluding(base, prefix)
         [written] = render(
             scene,
             out=str(out_dir),

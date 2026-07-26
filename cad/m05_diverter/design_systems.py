@@ -1,17 +1,18 @@
 """m05 diverter — per-module design-system tags.
 
-Schema (``Role``, ``Module``, ``DesignSystem``, palettes,
-``DESIGN_SYSTEM_NAME`` switch) lives in
-``cad/design_systems.py``; this file holds only m05's tag dicts and
-binds the module-local ``DESIGN_SYSTEM`` + ``color_of`` shim that
-``assembly.py`` and ``single_floor.py`` use at every ``.with_part(...)``
-site. Material is a physical property, not a render axis — see
+Schema (``Role``, ``Module``, ``DesignSystem``, palettes, the palette
+registry, ``paint``) lives in ``cad/design_systems.py``; this file
+holds only m05's tag dicts, the ``design_system(schema)`` lookup, and
+the ``color_for`` hook that carries the basket size ramp into
+``paint``. ``assembly.py`` and ``single_floor.py`` paint their subtree
+once on the way out; no ``.with_part(...)`` site sets a colour.
+Material is a physical property, not a render axis — see
 ``materials.py``.
 
-``basename_of`` lives here because both ``color_of`` and
-``materials.material_of`` need it to map a qualified tree path to
-its attribute-lookup leaf; ``materials.py`` imports it from this
-file.
+``basename_of`` lives here because ``materials.material_of`` needs it
+to map a qualified tree path to its attribute-lookup leaf;
+``materials.py`` imports it from this file. ``paint`` does not need it
+— inside the tree a part's name is already its leaf.
 
 One complication relative to m02 / m03:
 
@@ -26,12 +27,13 @@ from __future__ import annotations
 from build123d import Color
 
 from ..design_systems import (
+    DEFAULT_SCHEMA,
     DesignSystem,
     Module,
     Role,
     bind_all,
     blend,
-    resolve_name,
+    lookup,
 )
 from .params import FLOOR_LAYOUT
 
@@ -98,9 +100,18 @@ MODULE_OF: dict[str, Module | None] = {
 }
 
 
-# --- Bound DesignSystem -----------------------------------------------
+# --- Bound design systems ---------------------------------------------
 
-DESIGN_SYSTEM: DesignSystem = bind_all(ROLE_OF, MODULE_OF)[resolve_name("M05")]
+PALETTES: dict[str, DesignSystem] = bind_all(ROLE_OF, MODULE_OF)
+
+
+def design_system(schema: str = DEFAULT_SCHEMA) -> DesignSystem:
+    """m05's tag dicts bound to ``schema``.
+
+    Callers pair it with ``color_for`` below when painting, so the
+    basket size ramp is applied along with the plain tag reads.
+    """
+    return lookup(PALETTES, schema)
 
 
 # --- Instance-name → basename helpers ---------------------------------
@@ -149,34 +160,35 @@ _BASKET_TINT_BY_N: dict[int, float] = {
 _DARK_PAGE_PALETTES: frozenset[str] = frozenset({"cyberchitta-dark", "midnight"})
 
 
-def _page_shift_sign() -> int:
-    return -1 if resolve_name("M05") in _DARK_PAGE_PALETTES else +1
+def _page_shift_sign(ds: DesignSystem) -> int:
+    return -1 if ds.name in _DARK_PAGE_PALETTES else +1
 
 
-def basket_color_of(n_size: int) -> Color:
-    """Per-size basket color: the baskets' shared base color under the
-    active design system, with a luminance shift keyed to ``n_size``
-    and the active palette's page direction. Raises ``KeyError`` for
-    an unknown size so a new basket variant surfaces loudly instead of
-    silently inheriting the base color.
+def basket_color_of(ds: DesignSystem, n_size: int) -> Color:
+    """Per-size basket color: the baskets' shared base color under
+    ``ds``, with a luminance shift keyed to ``n_size`` and that
+    palette's page direction. Raises ``KeyError`` for an unknown size
+    so a new basket variant surfaces loudly instead of silently
+    inheriting the base color.
     """
     if n_size not in _BASKET_TINT_BY_N:
         raise KeyError(
             f"no basket-size tint for N={n_size} — add an entry to "
             f"_BASKET_TINT_BY_N in cad/m05_diverter/design_systems.py"
         )
-    base = DESIGN_SYSTEM.color_of(_basket_basenames()[0])
-    return blend(base, _BASKET_TINT_BY_N[n_size] * _page_shift_sign())
+    base = ds.color_of(_basket_basenames()[0])
+    return blend(base, _BASKET_TINT_BY_N[n_size] * _page_shift_sign(ds))
 
 
-def color_of(part_name: str) -> Color | None:
-    """Active design system's color for a m05 part instance.
+def color_for(ds: DesignSystem, leaf: str) -> Color | None:
+    """``paint``'s per-part hook for m05 — a plain tag read except for
+    baskets, which take the size-keyed luminance ramp.
 
-    Accepts either a basename or a qualified tree path. Falls
-    through to ``DESIGN_SYSTEM.color_of(...)``, which raises
-    ``KeyError`` for an unknown basename — module-level coverage
-    assertions in ``assembly.py`` / ``single_floor.py`` catch that
-    earlier, but the explicit raise prevents silent off-palette
-    renders.
+    ``n_size`` comes out of the leaf name (``basket_090_12`` → 12), the
+    same field the builder put there, so the ramp survives colour
+    moving out of the builders: the size is part of the part's identity
+    rather than a build argument that would have to be threaded.
     """
-    return DESIGN_SYSTEM.color_of(basename_of(part_name))
+    if leaf.startswith("basket_"):
+        return basket_color_of(ds, int(leaf.rsplit("_", 1)[-1]))
+    return ds.color_of(leaf)

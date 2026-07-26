@@ -29,6 +29,7 @@ from dataclasses import replace
 
 from cad_khana.mechanism.assembly import Assembly
 
+from ..design_systems import DEFAULT_SCHEMA
 from .assembly import build_tower
 from .exhibit_assembly import (
     EXHIBIT_BASKETS_BY_FLOOR,
@@ -94,7 +95,7 @@ def pose_at(t: float) -> float:
     return _lerp_angle(current, nxt, s)
 
 
-def build_exhibit_at(t: float) -> Assembly:
+def build_exhibit_at(t: float, schema: str = DEFAULT_SCHEMA) -> Assembly:
     """Animated exhibit assembly at time ``t ∈ [0, 1]``.
 
     Rebuilds the exhibit assembly via ``build_tower(...)`` and sets the
@@ -105,6 +106,7 @@ def build_exhibit_at(t: float) -> Assembly:
     """
     a = build_tower(
         EXHIBIT_FLOOR_PLAN,
+        schema=schema,
         basket_layout=EXHIBIT_BASKETS_BY_FLOOR,
         with_top_deck=True,
         with_drive_train=False,
@@ -113,4 +115,6 @@ def build_exhibit_at(t: float) -> Assembly:
     return replace(a, assertions=())
 
 
+# Degenerate memoized master at t=0. Assertion-free by design — see
+# the docstring; a green ``khana check`` here proves nothing.
 assembly = build_exhibit_at(0.0)

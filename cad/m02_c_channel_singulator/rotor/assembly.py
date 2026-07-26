@@ -60,7 +60,6 @@ from build123d import (
 
 from cad_khana.mechanism.assembly import Assembly
 
-from ..design_systems import color_of
 from ..materials import material_of
 from ..params import (
     BOSS_BOTTOM_Z,
@@ -207,7 +206,7 @@ def build_rotor() -> Assembly:
     the rotation axis at the base plane). Single part; the parent
     composes it as the ``rotor`` subtree and owns the spin DOF."""
     return Assembly().with_part(
-        "rotor", rotor(), material=material_of("rotor"), color=color_of("rotor"),
+        "rotor", rotor(), material=material_of("rotor"),
     )
 
 

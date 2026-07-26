@@ -53,6 +53,8 @@ prefix on; the m05 collisions on `frame`/`drive` are handled by
 """
 
 
+from functools import cache
+
 from build123d import Axis, Pos
 
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
@@ -94,7 +96,8 @@ from .homing import assembly as _homing
 from .hub import assembly as _hub
 from .turret_platform import assembly as _turret_platform
 
-from .design_systems import DESIGN_SYSTEM, color_of
+from ..design_systems import DEFAULT_SCHEMA, paint
+from .design_systems import design_system
 from .materials import material_of
 
 
@@ -176,7 +179,6 @@ def build_camera_rig() -> Assembly:
                 _camera_mount.clamp_mount(mount_in_clamp=mount_in_clamp),
                 location=clamp_loc,
                 material=material_of(f"{prefix}_clamp_mount"),
-                color=color_of(f"{prefix}_clamp_mount"),
             )
             .with_part(
                 f"{prefix}_pcb", _camera_mount.camera_pcb_stub(),
@@ -506,45 +508,49 @@ def add_m03_internal_checks(
 
 
 
-# --- Standalone assembly ---------------------------------------------
-
-assembly = add_m03_internal_checks(add_m03(Assembly()))
+# --- Unit root -------------------------------------------------------
 
 # Detail-tier fastener assertions — rail side of the drive-bracket
 # foot joint. The M5 foot bolts enter via
 # `detail_variations.apply_default_detail`, whose additions land at
-# the root the override is applied to (this assembly), and dip 6 mm
-# past the rail top face into the T-slot opening — hollow on the
-# detailed V-slot the same override swaps in for `floor_cross_x`,
-# solid on the cheap Box. So the claim is evaluable only in a
-# detail-applied run; in the cheap `check()` these skip
-# (`passed: null`). The bracket side lives in `drive/assembly.py`
-# beside the joint.
-for _bolt in ("drive_foot_bolt_inner", "drive_foot_bolt_outer"):
-    assembly = assembly.assert_no_interference(
-        _bolt, "turret.frame.floor_cross_x"
-    )
+# the root the override is applied to, and dip 6 mm past the rail top
+# face into the T-slot opening — hollow on the detailed V-slot the same
+# override swaps in for `floor_cross_x`, solid on the cheap Box. So the
+# claim is evaluable only in a detail-applied run; in the cheap
+# `check()` these skip (`passed: null`). The bracket side lives in
+# `drive/assembly.py` beside the joint.
+_DETAIL_FOOT_BOLTS = ("drive_foot_bolt_inner", "drive_foot_bolt_outer")
 
 
-# --- Design-system coverage ------------------------------------------
+# Cached because the degenerate ``assembly`` memo below and any
+# composing parent (``cad/assembly.py``, ``cad/render.py``) each ask
+# for the same schema, and the build is seconds of OCCT work. Replaces
+# import-time memoization: the memo line is now free, and a parent
+# calling the builder gets the same object rather than rebuilding.
+# Safe to share — ``Assembly`` is a frozen dataclass and every
+# ``with_*`` returns a copy.
 #
-# Every m03 part's leaf name must appear in the active design system's
-# tagging dict (`None` allowed for hardware / optical glass / acrylic
-# — those keep their material's intrinsic color). Attributes key on
-# the leaf (a builder binds them without knowing its placement path);
-# identity stays the full path. A part added without a tag fails here
-# instead of silently rendering off-palette. Swapping `DESIGN_SYSTEM`
-# to a palette with missing tags also fails here, so the swap surface
-# is loud.
+# Call it with the schema **explicit** everywhere, including the memo
+# below: ``@cache`` keys on the call signature, so ``build_x()`` and
+# ``build_x(DEFAULT_SCHEMA)`` are two entries that build identical
+# geometry twice. That mistake is invisible — same output, double the
+# work — so ``cache_info().misses`` is the only thing that shows it.
+@cache
+def build_m03(schema: str = DEFAULT_SCHEMA) -> Assembly:
+    """The m03 scanner unit, painted under ``schema``.
 
-_untagged = sorted(
-    {
-        leaf
-        for p in assembly.placed_parts
-        if (leaf := p.name.rsplit(".", 1)[-1]) not in DESIGN_SYSTEM.tag_of
-    }
-)
-assert not _untagged, (
-    f"{len(_untagged)} m03 part leaf name(s) missing a tag for design "
-    f"system '{DESIGN_SYSTEM.name}' in design_systems.py: {_untagged}"
-)
+    Sub-assembly builders emit no colour; this root paints the finished
+    tree once. ``paint`` also carries the design-system coverage check
+    that used to be a module-level assert here — every leaf name must
+    be tagged, and a palette missing tags names every offender at build
+    time instead of crashing the import.
+    """
+    a = add_m03_internal_checks(add_m03(Assembly()))
+    for bolt in _DETAIL_FOOT_BOLTS:
+        a = a.assert_no_interference(bolt, "turret.frame.floor_cross_x")
+    return paint(a, design_system(schema))
+
+
+# Degenerate memoized master, so ``khana check <file>`` resolves
+# without a ``:factory``.
+assembly = build_m03(DEFAULT_SCHEMA)

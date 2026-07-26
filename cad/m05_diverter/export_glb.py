@@ -12,23 +12,29 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
-from .exhibit_assembly import assembly  # noqa: E402
+from .exhibit_assembly import build_exhibit  # noqa: E402
 from .detail_variations import apply_default_detail  # noqa: E402
 
 from cad_khana.export import export_glb  # noqa: E402
 
-from ..design_systems import Role, fill_palette_neutrals, resolve_name  # noqa: E402
+from ..design_systems import (  # noqa: E402
+    fill_palette_neutrals,
+    neutral_of,
+    schema_from_env,
+)
 
-from .design_systems import DESIGN_SYSTEM  # noqa: E402
+from .design_systems import design_system  # noqa: E402
 
 OUT_DIR = HERE.parent.parent / "subsite" / "assets" / "exhibits"
 
 
 def main() -> None:
-    detailed = apply_default_detail(assembly)
-    filled = fill_palette_neutrals(detailed, DESIGN_SYSTEM.palette[Role.SECONDARY_STRUCTURE])
-    palette = resolve_name("M05")
-    tag = palette.removeprefix("cyberchitta-")
+    # Entry point owns env resolution; one name feeds both the geometry
+    # and the filename tag.
+    schema = schema_from_env("M05")
+    detailed = apply_default_detail(build_exhibit(schema))
+    filled = fill_palette_neutrals(detailed, neutral_of(design_system(schema)))
+    tag = schema.removeprefix("cyberchitta-")
     path = export_glb(
         filled,
         out=OUT_DIR,

@@ -42,12 +42,15 @@ standalone `khana check` validates them.
 
 from __future__ import annotations
 
+from functools import cache
+
 from build123d import Box, Part, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 
-from ..m02_c_channel_singulator.assembly import assembly as _M02_ASSY
-from .design_systems import DESIGN_SYSTEM, color_of
+from ..design_systems import DEFAULT_SCHEMA, paint
+from ..m02_c_channel_singulator.assembly import build_m02
+from .design_systems import design_system
 from .materials import material_of
 from .params import (
     COL1_LOCAL_XY,
@@ -125,11 +128,6 @@ def _load_ramp() -> Part:
 
 # --- Compose -----------------------------------------------------------
 
-def _kw(name: str) -> dict:
-    """Color + material kwargs for the active design system."""
-    return {"color": color_of(name), "material": material_of(name)}
-
-
 # Column placements. col1 rotated 30° about Z to match m05
 # `outer_vert_0`'s orientation (one face aligned with the bracket
 # plate convention). col2 rotated to the yoke angle so its faces
@@ -167,58 +165,72 @@ _S1_POSE = (
 )
 
 
-assembly = (
-    Assembly()
-    .with_part("col1_ext", _column_ext(), location=_COL1_LOC, **_kw("col1_ext"))
-    .with_part("col2_ext", _column_ext(), location=_COL2_LOC, **_kw("col2_ext"))
-    .with_part("yoke", _yoke_crossbar(), location=_YOKE_LOC, **_kw("yoke"))
-    .with_part("load_ramp", _load_ramp(), location=_RAMP_LOC, **_kw("load_ramp"))
-    .with_subassembly("s1", _M02_ASSY, location=_S1_POSE)
-)
-
-# Exported belief anchors (chain-local). The chain builds standalone
-# from mirrored m05/m03 constants (params.py); these anchors state
-# where those mirrors put the shared datums, so the top level can
-# assert them against the live units' own anchors — a drifted mirror
-# stops coinciding there and fails loudly. ``load_top`` is the
-# chain-local origin by construction (the top level derives the
-# chain's world pose from m03's live ``load_top``); ``deck_top`` is
-# the hub-axis point on the m05 deck top face; ``col1_base`` is where
-# col1's base center must meet m05's ``outer_vert_0_top``.
-assembly = assembly.with_anchor("load_top", Pos(0, 0, 0))
-assembly = assembly.with_anchor(
-    "deck_top",
-    Pos(-M03_TURRET_ARM_R, -M03_TURRET_ARM_R, DECK_TOP_Z_LOCAL),
-)
-assembly = assembly.with_anchor(
-    "col1_base", Pos(*COL1_LOCAL_XY, DECK_TOP_Z_LOCAL)
-)
-
-
-# --- Design-system coverage --------------------------------------------
-#
-# Chain-own parts only: the s1 subtree carries m02's own bindings, and
-# m02's module-level coverage assert already ran at import.
-
-_untagged = [
-    p.name
-    for p in assembly.placed_parts
-    if not p.name.startswith("s1.") and p.name not in DESIGN_SYSTEM.tag_of
-]
-assert not _untagged, (
-    f"{len(_untagged)} chain part(s) missing a tag for design system "
-    f"'{DESIGN_SYSTEM.name}' in design_systems.py: {_untagged}"
-)
-
-
-# --- Intra-chain interference asserts ----------------------------------
-#
-# Chain skeleton parts vs m02 internals at S1, plus skeleton
-# self-pairs. m02's internal pairs (rotor↔stator, rotor↔stem, etc.)
-# are covered by m02's standalone `khana check` — its assertions ride
-# along nested and are not evaluated here.
+# Chain skeleton parts, asserted against m02 internals at S1 and
+# against each other. m02's internal pairs (rotor↔stator, rotor↔stem,
+# etc.) are covered by m02's standalone `khana check` — its assertions
+# ride along nested and are not evaluated here.
 
 _CHAIN_SKELETON = ("col1_ext", "col2_ext", "yoke", "load_ramp")
 
-assembly = assembly.assert_no_interference_between(_CHAIN_SKELETON, "s1")
-assembly = assembly.assert_no_interference_within(_CHAIN_SKELETON)
+
+# Cached because the degenerate ``assembly`` memo below and any
+# composing parent (``cad/assembly.py``, ``cad/render.py``) each ask
+# for the same schema, and the build is seconds of OCCT work. Replaces
+# import-time memoization: the memo line is now free, and a parent
+# calling the builder gets the same object rather than rebuilding.
+# Safe to share — ``Assembly`` is a frozen dataclass and every
+# ``with_*`` returns a copy.
+#
+# Call it with the schema **explicit** everywhere, including the memo
+# below: ``@cache`` keys on the call signature, so ``build_x()`` and
+# ``build_x(DEFAULT_SCHEMA)`` are two entries that build identical
+# geometry twice. That mistake is invisible — same output, double the
+# work — so ``cache_info().misses`` is the only thing that shows it.
+@cache
+def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
+    """The m02 chain — singulator at S1 plus the skeleton that carries
+    it — painted under ``schema``.
+
+    Painted with ``skip=("s1",)``: the singulator subtree arrives from
+    ``build_m02(schema)`` already painted against m02's own tag dict,
+    and the chain's dict covers only its four skeleton parts. Without
+    the skip this walk would look m02's part names up here and report
+    every one as untagged. (That split is why the coverage check this
+    replaces had a hand-written ``startswith("s1.")`` filter.)
+
+    The anchors are chain-local *belief* anchors. The chain builds
+    standalone from mirrored m05/m03 constants (``params.py``); these
+    state where those mirrors put the shared datums, so the top level
+    can assert them against the live units' own anchors — a drifted
+    mirror stops coinciding there and fails loudly. ``load_top`` is the
+    chain-local origin by construction (the top level derives the
+    chain's world pose from m03's live ``load_top``); ``deck_top`` is
+    the hub-axis point on the m05 deck top face; ``col1_base`` is where
+    col1's base center must meet m05's ``outer_vert_0_top``.
+    """
+    def mat(name: str) -> dict:
+        return {"material": material_of(name)}
+
+    return paint(
+        Assembly()
+        .with_part("col1_ext", _column_ext(), location=_COL1_LOC, **mat("col1_ext"))
+        .with_part("col2_ext", _column_ext(), location=_COL2_LOC, **mat("col2_ext"))
+        .with_part("yoke", _yoke_crossbar(), location=_YOKE_LOC, **mat("yoke"))
+        .with_part("load_ramp", _load_ramp(), location=_RAMP_LOC, **mat("load_ramp"))
+        .with_subassembly("s1", build_m02(schema), location=_S1_POSE)
+        .with_anchor("load_top", Pos(0, 0, 0))
+        .with_anchor(
+            "deck_top",
+            Pos(-M03_TURRET_ARM_R, -M03_TURRET_ARM_R, DECK_TOP_Z_LOCAL),
+        )
+        .with_anchor("col1_base", Pos(*COL1_LOCAL_XY, DECK_TOP_Z_LOCAL))
+        .assert_no_interference_between(_CHAIN_SKELETON, "s1")
+        .assert_no_interference_within(_CHAIN_SKELETON),
+        design_system(schema),
+        skip=("s1",),
+    )
+
+
+# Degenerate memoized master, so ``khana check <file>`` resolves
+# without a ``:factory``.
+assembly = build_chain(DEFAULT_SCHEMA)

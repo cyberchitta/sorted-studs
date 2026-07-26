@@ -72,7 +72,7 @@ import math
 from typing import Callable
 
 
-from build123d import Box, Color, Cylinder, Location, Part, Plane, Pos, Rot
+from build123d import Box, Cylinder, Location, Part, Plane, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 
@@ -596,20 +596,17 @@ lower_column_loc = Location((0, 0, -FLOOR_H))
 
 def build_column_side_static(
     role: str = "middle",
-    color_fn: Callable[[str], Color | None] | None = None,
     material_fn: Callable[[str], str | None] | None = None,
 ) -> Assembly:
     """Stationary column-side parts — bearing spider + ring bearing —
     as a sub-`Assembly` in the floor-local frame (bearing base at
     z=0). The parent places the whole floor with one transform; floor
     identity lives in the parent's subtree path, so the leaf names
-    here are plain. ``color_fn`` / ``material_fn`` follow the same
-    contract as the frame builders (leaf name in, attribute out;
-    ``None`` leaves the attribute unset).
+    here are plain. ``material_fn`` follows the same contract as the
+    frame builders (leaf name in, attribute out; ``None`` leaves the
+    attribute unset). Colour is not a parameter here — the unit root
+    paints the finished tree (``cad/design_systems.py:paint``).
     """
-    def _co(name: str) -> Color | None:
-        return color_fn(name) if color_fn is not None else None
-
     def _mt(name: str) -> str | None:
         return material_fn(name) if material_fn is not None else None
 
@@ -617,8 +614,8 @@ def build_column_side_static(
     n_rb = "ring_bearing"
     return (
         Assembly()
-        .with_part(n_sp, bearing_spider(role), color=_co(n_sp), material=_mt(n_sp))
-        .with_part(n_rb, ring_bearing(role), color=_co(n_rb), material=_mt(n_rb))
+        .with_part(n_sp, bearing_spider(role), material=_mt(n_sp))
+        .with_part(n_rb, ring_bearing(role), material=_mt(n_rb))
     )
 
 
@@ -626,7 +623,6 @@ def build_column_side_rotating(
     role: str = "middle",
     *,
     with_trap_open: bool = True,
-    color_fn: Callable[[str], Color | None] | None = None,
     material_fn: Callable[[str], str | None] | None = None,
 ) -> Assembly:
     """Rotating column-side parts — column + hinge pin + ramp +
@@ -636,14 +632,11 @@ def build_column_side_rotating(
     stack; the revolute joint that carries the azimuth lives on the
     consumer's rotating-stack subtree, not here.
     """
-    def _co(name: str) -> Color | None:
-        return color_fn(name) if color_fn is not None else None
-
     def _mt(name: str) -> str | None:
         return material_fn(name) if material_fn is not None else None
 
     def _add(a: Assembly, name: str, part, **kwargs) -> Assembly:
-        return a.with_part(name, part, color=_co(name), material=_mt(name), **kwargs)
+        return a.with_part(name, part, material=_mt(name), **kwargs)
 
     a = Assembly()
     a = _add(a, "column", column(role))

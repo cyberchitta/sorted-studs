@@ -19,6 +19,11 @@ resolves every name; ``build_tower`` accepts a
 """
 
 
+from functools import cache
+
+from cad_khana.mechanism.assembly import Assembly
+
+from ..design_systems import DEFAULT_SCHEMA
 from .assembly import build_tower
 
 
@@ -56,9 +61,32 @@ EXHIBIT_BASKETS_BY_FLOOR = {
 }
 
 
-assembly = build_tower(
-    EXHIBIT_FLOOR_PLAN,
-    basket_layout=EXHIBIT_BASKETS_BY_FLOOR,
-    with_top_deck=True,
-    with_drive_train=False,
-)
+# Cached because the degenerate ``assembly`` memo below and any
+# composing parent (``cad/assembly.py``, ``cad/render.py``) each ask
+# for the same schema, and the build is seconds of OCCT work. Replaces
+# import-time memoization: the memo line is now free, and a parent
+# calling the builder gets the same object rather than rebuilding.
+# Safe to share — ``Assembly`` is a frozen dataclass and every
+# ``with_*`` returns a copy.
+#
+# Call it with the schema **explicit** everywhere, including the memo
+# below: ``@cache`` keys on the call signature, so ``build_x()`` and
+# ``build_x(DEFAULT_SCHEMA)`` are two entries that build identical
+# geometry twice. That mistake is invisible — same output, double the
+# work — so ``cache_info().misses`` is the only thing that shows it.
+@cache
+def build_exhibit(schema: str = DEFAULT_SCHEMA) -> Assembly:
+    """The static three-floor exhibit tower, painted under ``schema``."""
+    return build_tower(
+        EXHIBIT_FLOOR_PLAN,
+        schema=schema,
+        basket_layout=EXHIBIT_BASKETS_BY_FLOOR,
+        with_top_deck=True,
+        with_drive_train=False,
+    )
+
+
+# Degenerate memoized master, so ``khana check <file>`` resolves
+# without a ``:factory``. Privileged-stem rule: this file is not
+# ``assembly.py``, so diagnostics land in ``outputs/exhibit_assembly/``.
+assembly = build_exhibit(DEFAULT_SCHEMA)

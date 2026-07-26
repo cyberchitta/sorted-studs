@@ -56,7 +56,7 @@ import math
 from typing import Callable
 
 
-from build123d import Box, Color, Cylinder, Part, Pos, Rot
+from build123d import Box, Cylinder, Part, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 
@@ -218,19 +218,16 @@ def motor_mount() -> Part:
 # --- Assembly -----------------------------------------------------------
 
 def build_drive_train(
-    color_fn: Callable[[str], Color | None] | None = None,
     material_fn: Callable[[str], str | None] | None = None,
 ) -> Assembly:
     """Off-axis drive train — ring gear + pinion + motor + motor mount
     — as a sub-`Assembly` in the base-floor-local frame (rail-top
     datum at z=0; every part hangs below it). The part functions carry
     their own off-axis placement, so all four are placed at identity.
-    ``color_fn`` / ``material_fn`` follow the same leaf-name contract
-    as the frame builders.
+    ``material_fn`` follows the same leaf-name contract as the frame
+    builders. Colour is not a parameter — the unit root paints the
+    finished tree (``cad/design_systems.py:paint``).
     """
-    def _co(name: str) -> Color | None:
-        return color_fn(name) if color_fn is not None else None
-
     def _mt(name: str) -> str | None:
         return material_fn(name) if material_fn is not None else None
 
@@ -241,7 +238,7 @@ def build_drive_train(
         ("motor", motor()),
         ("motor_mount", motor_mount()),
     ):
-        a = a.with_part(n, part, color=_co(n), material=_mt(n))
+        a = a.with_part(n, part, material=_mt(n))
     # Mesh validity — close but not touching: the cheap pitch blanks
     # must sit in the [MESH_BACKLASH, MESH_BACKLASH + 0.1] band (too
     # far = no mesh, too close = jam; real teeth interleave within

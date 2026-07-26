@@ -67,7 +67,7 @@ import math
 from typing import Callable
 
 
-from build123d import Box, Color, Part, Pos, Rot
+from build123d import Box, Part, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 
@@ -158,7 +158,6 @@ VERT_EXT_BELOW = -(BRACKET_Z_TOP - OUTER_BRACKET_PLATE_T) + 10.0  # 36
 # --- Assembly builders --------------------------------------------------
 
 def build_floor_horizontals(
-    color_fn: Callable[[str], Color | None] | None = None,
     material_fn: Callable[[str], str | None] | None = None,
 ) -> Assembly:
     """One floor's worth of horizontal frame members + brackets as a
@@ -176,15 +175,12 @@ def build_floor_horizontals(
     Through-columns are NOT built here — they span all floors and live
     in `build_through_columns`.
 
-    `color_fn` / `material_fn` are optional callables mapping each leaf
-    name to a `Color` / material string. Default `None` keeps the
-    standalone behavior (no color/material set); multi-floor consumers
-    thread `color_of` / `material_of` from the module-level
-    `design_systems.py`.
+    `material_fn` is an optional callable mapping each leaf name to a
+    material string. Default `None` keeps the standalone behavior (no
+    material set); multi-floor consumers thread `material_of` from the
+    module-level `materials.py`. Colour is not a parameter — the unit
+    root paints the finished tree (`cad/design_systems.py:paint`).
     """
-    def _co(name: str) -> Color | None:
-        return color_fn(name) if color_fn is not None else None
-
     def _mt(name: str) -> str | None:
         return material_fn(name) if material_fn is not None else None
 
@@ -203,7 +199,6 @@ def build_floor_horizontals(
             n_ovb,
             outer_bracket(),
             location=Pos(vx_out, vy_out, 0.0) * Rot(0, 0, v_angle + 180.0),
-            color=_co(n_ovb),
             material=_mt(n_ovb),
         )
 
@@ -213,7 +208,6 @@ def build_floor_horizontals(
             n_ivb,
             inner_bracket(),
             location=Pos(vx_in, vy_in, 0.0) * Rot(0, 0, v_angle + 180.0),
-            color=_co(n_ivb),
             material=_mt(n_ivb),
         )
 
@@ -227,7 +221,6 @@ def build_floor_horizontals(
             n_oh,
             _horiz_ext(OUTER_HORIZ_LEN),
             location=Pos(oex, oey, 0.0) * Rot(0, 0, oe_angle + 90.0),
-            color=_co(n_oh),
             material=_mt(n_oh),
         )
 
@@ -241,7 +234,6 @@ def build_floor_horizontals(
             n_ih,
             _horiz_ext(INNER_HORIZ_LEN),
             location=Pos(iex, iey, 0.0) * Rot(0, 0, ie_angle + 90.0),
-            color=_co(n_ih),
             material=_mt(n_ih),
         )
 
@@ -267,7 +259,6 @@ def build_floor_horizontals(
                 n_r,
                 _horiz_ext(seg_len),
                 location=Pos(rx, ry, 0.0) * Rot(0, 0, r_angle),
-                color=_co(n_r),
                 material=_mt(n_r),
             )
 
@@ -277,7 +268,6 @@ def build_floor_horizontals(
 def build_through_columns(
     z_bot: float = -VERT_EXT_BELOW,
     z_top: float = FLOOR_H,
-    color_fn: Callable[[str], Color | None] | None = None,
     material_fn: Callable[[str], str | None] | None = None,
 ) -> Assembly:
     """The twelve vertical 2020 corner columns spanning [z_bot, z_top]
@@ -319,7 +309,6 @@ def build_through_columns(
                 n,
                 column,
                 location=Pos(vx, vy, 0.0) * Rot(0, 0, v_angle),
-                color=color_fn(n) if color_fn is not None else None,
                 material=material_fn(n) if material_fn is not None else None,
             )
     return a

@@ -1,51 +1,48 @@
 """Render the M03 scanner under every available design system.
 
-Run directly (not via ``chitra render``):
-
-    python cad/m03_scanner/render_all_ds.py
+    python -m cad.m03_scanner.render_all_ds        # from the repo root
 
 Outputs land flat in the renders directory, one PNG per design system:
 
     cad/m03_scanner/outputs/renders/<ds_name>.png
 
-Each invocation is an isolated subprocess so design-system module state
-doesn't bleed between renders.
+One process, one Blender, a plain loop over the palettes. Until
+2026-07-26 each palette needed its own ``chitra render`` subprocess
+purely to get a fresh set of module-level design-system bindings —
+the schema was captured at import, so nothing short of a new
+interpreter could change it. Now ``render_m03`` takes the schema as an
+argument.
+
+That subprocess path had also been broken since the 2026-07-24 package
+refactor: it invoked ``chitra render cad/m03_scanner/render.py``, and
+``chitra render`` is ``runpy.run_path(..., run_name="__main__")``,
+which cannot resolve this file's relative imports
+(``ImportError: attempted relative import with no known parent
+package``). Hence ``python -m`` above — a package-aware entry point.
 """
 
-import os
-import subprocess
+from __future__ import annotations
+
 import tempfile
 from pathlib import Path
 
+from ..design_systems import PALETTE_NAMES
+from .render import render_m03
+
 _HERE = Path(__file__).resolve().parent
-_RENDER_SCRIPT = _HERE / "render.py"
-_CHITRA = Path(__file__).resolve().parents[2] / ".venv" / "bin" / "chitra"
 _OUT_DIR = _HERE / "outputs" / "renders"
-
-from ..design_systems import bind_all  # noqa: E402
-from .design_systems import MODULE_OF, ROLE_OF  # noqa: E402
-
-# Derived from the canonical bind_all registry so adding a palette in
-# cad/design_systems.py automatically picks up here too.
-DESIGN_SYSTEMS = list(bind_all(ROLE_OF, MODULE_OF).keys())
 
 
 def main() -> None:
     _OUT_DIR.mkdir(parents=True, exist_ok=True)
-    for ds in DESIGN_SYSTEMS:
+    for ds in PALETTE_NAMES:
         dest = _OUT_DIR / f"{ds}.png"
+        # chitra-cad names its single-frame output ``render.png``, so
+        # each pass renders into a scratch dir and moves the result to
+        # the palette-named destination.
         with tempfile.TemporaryDirectory() as tmp:
-            env = {
-                **os.environ,
-                "SORTED_STUDS_DS": ds,
-                "SORTED_STUDS_RENDERS_OUT": tmp,
-            }
             print(f"[{ds}] → {dest}")
-            subprocess.run(
-                [str(_CHITRA), "render", str(_RENDER_SCRIPT)],
-                env=env,
-                check=True,
-            )
+            render_m03(ds, tmp)
             (Path(tmp) / "render.png").replace(dest)
 
 

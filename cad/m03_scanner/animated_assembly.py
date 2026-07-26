@@ -44,7 +44,9 @@ import math
 
 from cad_khana.mechanism.assembly import Assembly
 
+from ..design_systems import DEFAULT_SCHEMA, paint
 from .assembly import add_m03, add_m03_internal_checks
+from .design_systems import design_system
 
 
 # Number of stations on the turret (= number of dwells per
@@ -154,7 +156,7 @@ def _station_at_dump(q: int) -> str:
 # the geometry; this comment is the part that couldn't be.
 
 
-def build_m03_at(t: float) -> Assembly:
+def build_m03_at(t: float, schema: str = DEFAULT_SCHEMA) -> Assembly:
     """``t ∈ [0, 1]`` ↔ one full rotor revolution. Stepwise dwell-and-
     transit schedule snaps the rotor 90° per quarter; during each
     dwell, the platform parked at the DUMP zone tips outer-down (the
@@ -170,7 +172,8 @@ def build_m03_at(t: float) -> Assembly:
       * ``turret.servo_arm`` — bench-mounted lifter, co-tilts.
 
     Internal checks survive intact — they address tree paths, which
-    joint angles don't change."""
+    joint angles don't change. ``schema`` picks the palette the frame
+    is painted in; geometry and claims are identical whatever it is."""
     theta_rotor_deg = rotor_schedule(t)
     tilt_deg = tilt_schedule(t)
     q, _ = _quarter(t)
@@ -189,7 +192,10 @@ def build_m03_at(t: float) -> Assembly:
     # since the one pose-dependent pair carries its own tilt window
     # (see the retired-suppression note above). Any other transit-time
     # overlap surfaces loudly.
-    return add_m03_internal_checks(a)
+    return paint(add_m03_internal_checks(a), design_system(schema))
 
 
+# Degenerate memoized master at t=0, so ``khana check <file>``
+# resolves without a ``:factory``. ``frame_sweep.py`` covers the other
+# eleven sampled frames.
 assembly = build_m03_at(0.0)

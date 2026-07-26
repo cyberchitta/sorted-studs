@@ -59,7 +59,7 @@ import math
 from typing import Callable
 
 
-from build123d import Box, Color, Cylinder, Part, Polygon, Pos, Rot, extrude
+from build123d import Box, Cylinder, Part, Polygon, Pos, Rot, extrude
 
 from cad_khana.mechanism.assembly import Assembly
 
@@ -331,17 +331,18 @@ def col_stub() -> Part:
 
 def build_basket_ring(
     layout,
-    size_color_fn: Callable[[int], Color | None] | None = None,
     material_fn: Callable[[str], str | None] | None = None,
 ) -> Assembly:
     """Basket ring per ``layout`` as a sub-`Assembly` in the
     floor-local frame (floor datum at z=0). ``layout`` is a list of
     ``(center_deg, n_size, notches)`` tuples (``params.FLOOR_LAYOUT``
-    shape). ``size_color_fn`` maps a basket's N-size to its color —
-    the tower threads ``design_systems.basket_color_of``, a size-keyed
-    luminance ramp rather than a name-keyed lookup. ``material_fn``
-    follows the frame builders' leaf-name contract; floor identity
-    lives in the parent's subtree path.
+    shape). ``material_fn`` follows the frame builders' leaf-name
+    contract; floor identity lives in the parent's subtree path.
+
+    Colour is not a parameter. Each basket's size-keyed luminance ramp
+    is applied by the unit root's paint pass, which recovers ``n_size``
+    from the leaf name this builder writes (``basket_090_12`` → 12) —
+    see ``design_systems.color_for``.
     """
     a = Assembly()
     for center_deg, n_size, notches in layout:
@@ -355,7 +356,6 @@ def build_basket_ring(
                 notch_middle="middle" in notches,
             ),
             location=Rot(0, 0, center_deg),
-            color=size_color_fn(n_size) if size_color_fn is not None else None,
             material=material_fn(name) if material_fn is not None else None,
         )
     return a

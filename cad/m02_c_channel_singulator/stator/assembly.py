@@ -41,7 +41,6 @@ from build123d import Axis, Box, Part, Plane, Polygon, Pos, Rot, extrude, revolv
 
 from cad_khana.mechanism.assembly import Assembly
 
-from ..design_systems import color_of
 from ..materials import material_of
 from ..params import (
     EXIT_ARC_DEG,
@@ -202,7 +201,7 @@ def build_stator() -> Assembly:
     """Stator sub-assembly in stator-local frame (= m02-local: origin
     on the rotor axis at the V-bottom). Single fixed part."""
     return Assembly().with_part(
-        "stator", stator(), material=material_of("stator"), color=color_of("stator"),
+        "stator", stator(), material=material_of("stator"),
     )
 
 

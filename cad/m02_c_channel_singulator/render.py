@@ -1,7 +1,7 @@
 """M02 c-channel singulator — photo-real render via chitra-cad.
 
-Imports the composed top-level assembly (already module-level in
-``assembly.py``) and hands it to chitra-cad. No detail-geometry or
+Builds the singulator via ``assembly.build_m02`` and hands it to
+chitra-cad. No detail-geometry or
 material override layers yet — both are deferred to a later slice
 (see ``_notes/state/m02-singulator.md`` "Detailed geometry for rendering"). When the
 cad-khana ``Assembly.with_detailed_geometry`` API lands and m02
@@ -13,19 +13,27 @@ author them here.
 """
 
 
-from .assembly import assembly
+from ..design_systems import DEFAULT_SCHEMA, schema_from_env
+from .assembly import build_m02
 
 from chitra_cad.framing import HERO_3Q
 from chitra_cad.render import render
 from chitra_cad.scene import Scene
 
 
-scene = Scene.from_assembly(assembly)
+def build_scene(schema: str = DEFAULT_SCHEMA) -> Scene:
+    """The m02 scene under ``schema``.
+
+    A function rather than a module-level value: the schema is a
+    parameter now, so building at import would pick one palette
+    arbitrarily and pay for the geometry on any import of this module.
+    """
+    return Scene.from_assembly(build_m02(schema))
 
 
 if __name__ == "__main__":
     render(
-        scene,
+        build_scene(schema_from_env("M02")),
         out="outputs/renders",
         resolution=(1920, 1080),
         world_up=(0.0, 0.0, 1.0),

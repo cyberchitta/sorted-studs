@@ -1,10 +1,10 @@
 """m03 scanner — per-module design-system tags.
 
-Schema (``Role``, ``Module``, ``DesignSystem``, palettes,
-``DESIGN_SYSTEM_NAME`` switch) lives in
-``cad/design_systems.py``; this file holds only m03's tag dicts and
-binds the module-local ``DESIGN_SYSTEM`` + ``color_of`` shim that
-m03 sub-assemblies import.
+Schema (``Role``, ``Module``, ``DesignSystem``, palettes, the palette
+registry, ``paint``) lives in ``cad/design_systems.py``; this file
+holds only m03's tag dicts and the ``design_system(schema)`` lookup
+that ``assembly.build_m03`` binds when it paints. m03's sub-assembly
+builders import nothing from here — they emit no colour at all.
 """
 
 from __future__ import annotations
@@ -14,11 +14,12 @@ from build123d import Color
 
 
 from ..design_systems import (
+    DEFAULT_SCHEMA,
     DesignSystem,
     Module,
     Role,
     bind_all,
-    resolve_name,
+    lookup,
 )
 
 
@@ -99,15 +100,16 @@ MODULE_OF: dict[str, Module | None] = {
 }
 
 
-# --- Bound DesignSystem -----------------------------------------------
+# --- Bound design systems ---------------------------------------------
 
-DESIGN_SYSTEM: DesignSystem = bind_all(ROLE_OF, MODULE_OF)[resolve_name("M03")]
+PALETTES: dict[str, DesignSystem] = bind_all(ROLE_OF, MODULE_OF)
 
 
-def color_of(part_name: str) -> Color | None:
-    """Active design system's color for a named m03 part.
+def design_system(schema: str = DEFAULT_SCHEMA) -> DesignSystem:
+    """m03's tag dicts bound to ``schema``.
 
-    Thin shim over ``DESIGN_SYSTEM.color_of(...)`` so call sites import
-    one symbol regardless of which palette is active.
+    Called by ``assembly.build_m03`` (and the animated factory) to
+    paint the unit's subtree. m03's sub-assembly builders emit no
+    colour, so nothing else imports this.
     """
-    return DESIGN_SYSTEM.color_of(part_name)
+    return lookup(PALETTES, schema)

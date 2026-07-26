@@ -5,45 +5,50 @@ The same architecture supports multiple axes — functional role,
 module, floor, sub-unit, etc. — by parameterising the axis enum and
 its per-part tagging dict.
 
-Every concrete design system is a ``DesignSystem(name, tag_of, palette)``:
+Every concrete design system is a
+``DesignSystem(name, axis, tag_of, palette)``:
 
   * ``tag_of`` — every named printed / extrusion part maps to an axis
     value (or ``None`` for parts outside the design system: hardware,
     optical glass, clear acrylic).
   * ``palette`` — each axis value maps to a ``Color``.
 
-Two are wired up:
+Two axes are wired up:
 
-  * ``WORKSHOP`` — axis = functional role (what the part *does*).
-    Graphite skeleton, signal-yellow mechanism, matte-black optical
-    envelope, warm-off-white consumables.
-  * ``BAUHAUS``  — axis = module (which subsystem the part lives in).
-    Saturated primary-color wayfinding: m02 yellow, m03 red, m05 blue.
+  * ``Axis.ROLE`` — what the part *does*. ``WORKSHOP`` is the
+    reference: graphite skeleton, signal-yellow mechanism, matte-black
+    optical envelope, warm-off-white consumables.
+  * ``Axis.MODULE`` — which subsystem the part lives in. ``BAUHAUS``
+    is the only one: saturated primary-color wayfinding, m02 yellow,
+    m03 red, m05 blue.
 
 This file holds only the axis-agnostic machinery — enums, palettes,
-the dataclass, and the active-selection switch. **Per-module tag
-dicts live in each module's own ``cad/m0X_*/design_systems.py``** so
-that a rename in a module's assembly tree edits the same module's tag
-dict — no cross-directory drift. Cross-module composition needs no
-tag-dict merging: the top level composes units as subtrees, and each
-part's color/material is already baked at its own module's
-``with_part`` site.
+the dataclass, the palette registry, and the ``paint`` walk.
+**Per-module tag dicts live in each module's own
+``cad/m0X_*/design_systems.py``** so that a rename in a module's
+assembly tree edits the same module's tag dict — no cross-directory
+drift. Cross-module composition needs no tag-dict merging: the top
+level composes units as subtrees, and each unit root paints its own
+subtree before handing it up.
 
-Active selection: edit ``DESIGN_SYSTEM_NAME`` below to swap the whole
-repo's palette. Each module's ``DESIGN_SYSTEM`` reads this switch on
-import; module-local coverage assertions catch a swap to a palette
-that's missing a tag.
+**A design system is a value, not module state.** There is no active
+selection here to edit and no environment variable read at import.
+Builders take a ``schema`` name, bind their module's tag dicts to it,
+and paint on the way out — pure functions from schema to assembly. Entry
+points (render drivers, export scripts) resolve the name, via
+``schema_from_env`` if they want the env layers. See ``paint``.
 """
 
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from enum import Enum
 
 from build123d import Color
 
-from cad_khana.mechanism.assembly import Assembly
+from cad_khana.mechanism.assembly import Assembly, PlacedPart
 
 
 def _srgb(r: float, g: float, b: float) -> Color:
@@ -84,6 +89,20 @@ class Module(Enum):
     DIVERTER = "diverter"       # m05
 
 
+# --- Which tag dict a palette keys on ---------------------------------
+
+class Axis(Enum):
+    """Which per-module tag dict a palette's keys are drawn from.
+
+    Carried on the ``DesignSystem`` so axis-dependent decisions can
+    dispatch on it explicitly instead of probing the palette for a
+    ``Role`` key — see ``neutral_of``.
+    """
+
+    ROLE = "role"        # keys are ``Role``   — what the part does
+    MODULE = "module"    # keys are ``Module`` — which subsystem it's in
+
+
 # --- DesignSystem -----------------------------------------------------
 
 @dataclass(frozen=True)
@@ -96,14 +115,16 @@ class DesignSystem:
     """
 
     name: str
+    axis: Axis
     tag_of: dict[str, Enum | None]
     palette: dict[Enum, Color]
 
     def color_of(self, part_name: str) -> Color | None:
         """Active color for a named part. ``None`` falls through to the
         material's intrinsic color. Raises ``KeyError`` for an untagged
-        part — module-level coverage assertions catch this earlier, but
-        the explicit raise prevents silent off-palette renders.
+        part — ``paint`` checks coverage over a whole assembly and
+        reports every offender at once, but the explicit raise prevents
+        a silent off-palette render for anyone calling this directly.
         """
         if part_name not in self.tag_of:
             raise KeyError(
@@ -192,39 +213,52 @@ CYBERCHITTA_DARK_COLORS: dict[Enum, Color] = {
 }
 
 
-# --- Active selection -------------------------------------------------
+# --- Palette registry -------------------------------------------------
 
-# Repo-wide default palette. Resolves in three layers, highest-priority
-# first:
-#
-#   1. Per-module env var ``SORTED_STUDS_DS_<MODULE>`` (e.g.
-#      ``SORTED_STUDS_DS_M03``) — a module's own switch, useful for
-#      one-pane subsite refreshes where the rest of the assemblies
-#      stay on the global palette.
-#   2. Global env var ``SORTED_STUDS_DS`` — captured here into
-#      ``DESIGN_SYSTEM_NAME`` at import time.
-#   3. The fallback default below.
-#
-# Each module's ``design_systems.py`` calls ``resolve_name("M0X")`` to
-# pick its palette; layers 2 and 3 share the ``DESIGN_SYSTEM_NAME``
-# state (so ``cad/render.py``'s mutate-and-reload schema-switch dance
-# keeps working). Valid palette names match the keys returned by
-# ``bind_all`` below — keep them in sync when adding a palette.
-DESIGN_SYSTEM_NAME: str = os.environ.get("SORTED_STUDS_DS", "cyberchitta-light")
+# One entry per palette: which tag dict its keys come from, and the
+# colors. ``bind_all`` and ``PALETTE_NAMES`` both derive from this, so
+# adding a palette is one line here and nothing else.
+PALETTES: dict[str, tuple[Axis, dict[Enum, Color]]] = {
+    "workshop":          (Axis.ROLE,   WORKSHOP_COLORS),
+    "bauhaus":           (Axis.MODULE, BAUHAUS_COLORS),
+    "clean":             (Axis.ROLE,   CLEAN_COLORS),
+    "midnight":          (Axis.ROLE,   MIDNIGHT_COLORS),
+    "signal":            (Axis.ROLE,   SIGNAL_COLORS),
+    "cyberchitta-light": (Axis.ROLE,   CYBERCHITTA_LIGHT_COLORS),
+    "cyberchitta-dark":  (Axis.ROLE,   CYBERCHITTA_DARK_COLORS),
+}
+
+PALETTE_NAMES: tuple[str, ...] = tuple(PALETTES)
+
+# The schema a builder uses when its caller doesn't name one, so
+# ``khana check <unit>/assembly.py`` resolves without any ambient
+# state. Entry points that want the env layers call
+# ``schema_from_env`` and pass the result down explicitly.
+DEFAULT_SCHEMA: str = "cyberchitta-light"
 
 
-def resolve_name(module: str | None = None) -> str:
-    """Resolve the active palette name for ``module`` (e.g. ``"M03"``).
+def schema_from_env(module: str | None = None) -> str:
+    """Resolve a palette name from the environment — for **entry
+    points only**: a render driver, an export script, a CLI.
 
-    Layered per the docstring above ``DESIGN_SYSTEM_NAME``:
-    per-module env var → global env var (captured into
-    ``DESIGN_SYSTEM_NAME``) → repo default.
+    Layers, highest first: ``SORTED_STUDS_DS_<MODULE>`` (e.g.
+    ``SORTED_STUDS_DS_M03``, one module's own switch) → the global
+    ``SORTED_STUDS_DS`` → ``DEFAULT_SCHEMA``.
+
+    Declaration modules must not call this. A builder that reads the
+    environment is not a function of its arguments, which is the whole
+    defect this module's rewrite retired: the schema used to be
+    captured into a module global at import, so switching it meant
+    evicting ``cad.m0*`` from ``sys.modules`` and re-importing
+    (``cad/render.py``) or spawning a subprocess per schema
+    (``m03_scanner/render_all_ds.py``). Take a ``schema`` parameter and
+    let your caller decide where it came from.
     """
     if module:
         per_module = os.environ.get(f"SORTED_STUDS_DS_{module.upper()}")
         if per_module:
             return per_module
-    return DESIGN_SYSTEM_NAME
+    return os.environ.get("SORTED_STUDS_DS", DEFAULT_SCHEMA)
 
 
 # --- Bind every palette for a module ----------------------------------
@@ -233,26 +267,37 @@ def bind_all(
     role_of: dict[str, Role | None],
     module_of: dict[str, Module | None],
 ) -> dict[str, DesignSystem]:
-    """Bind every known palette to a module's tag dicts.
+    """Bind every palette in ``PALETTES`` to a module's tag dicts.
 
     Each module's ``design_systems.py`` declares two tag dicts
-    (``ROLE_OF`` and ``MODULE_OF``) and then picks the active palette
-    with ``bind_all(ROLE_OF, MODULE_OF)[DESIGN_SYSTEM_NAME]``. Role-
-    keyed palettes (workshop / clean / midnight / signal /
-    cyberchitta-light / cyberchitta-dark) consume ``role_of``; the
-    module-keyed ``bauhaus`` palette consumes ``module_of``. Adding a
-    new palette is one line here — modules pick it up automatically on
-    the next import.
+    (``ROLE_OF`` and ``MODULE_OF``) and exposes a
+    ``design_system(schema)`` lookup over the result. Role-keyed
+    palettes consume ``role_of``; the module-keyed ``bauhaus`` palette
+    consumes ``module_of``. Adding a palette is one line in
+    ``PALETTES`` — modules pick it up with no edit of their own.
     """
-    return {
-        "workshop":         DesignSystem("workshop",         role_of,   WORKSHOP_COLORS),
-        "bauhaus":          DesignSystem("bauhaus",          module_of, BAUHAUS_COLORS),
-        "clean":            DesignSystem("clean",            role_of,   CLEAN_COLORS),
-        "midnight":         DesignSystem("midnight",         role_of,   MIDNIGHT_COLORS),
-        "signal":           DesignSystem("signal",           role_of,   SIGNAL_COLORS),
-        "cyberchitta-light": DesignSystem("cyberchitta-light", role_of, CYBERCHITTA_LIGHT_COLORS),
-        "cyberchitta-dark":  DesignSystem("cyberchitta-dark",  role_of, CYBERCHITTA_DARK_COLORS),
+    tags: dict[Axis, dict[str, Enum | None]] = {
+        Axis.ROLE: dict(role_of),
+        Axis.MODULE: dict(module_of),
     }
+    return {
+        name: DesignSystem(name, axis, tags[axis], colors)
+        for name, (axis, colors) in PALETTES.items()
+    }
+
+
+def lookup(palettes: dict[str, DesignSystem], schema: str) -> DesignSystem:
+    """``palettes[schema]`` with an error that names the alternatives.
+
+    A typo'd schema otherwise surfaces as a bare ``KeyError`` inside a
+    module's ``design_system()`` with no hint of what is valid.
+    """
+    try:
+        return palettes[schema]
+    except KeyError:
+        raise KeyError(
+            f"unknown design system {schema!r} — have {list(PALETTE_NAMES)}"
+        ) from None
 
 
 # --- Luminance blend helper -------------------------------------------
@@ -275,7 +320,145 @@ def blend(color: Color, t: float) -> Color:
     )
 
 
+# --- Painting an assembly ---------------------------------------------
+#
+# Colour is applied to a *finished* assembly rather than set at each
+# ``with_part`` site. Builders stay palette-free: they take no colour
+# argument, import nothing from a design system, and produce the same
+# geometry whatever the schema. The unit root — the level that owns the
+# module's tag dict — paints its own subtree on the way out.
+#
+# Why a walk rather than a parameter threaded down every builder: the
+# tag dicts are keyed on **leaf part name**, and inside the tree
+# ``PlacedPart.name`` is already the leaf (``placed_parts`` is what
+# qualifies it into a dotted path). So a recursive walk has exactly the
+# key it needs at every level, with no plumbing through the builders in
+# between.
+
+ColorFor = Callable[[DesignSystem, str], Color | None]
+
+
+def _by_tag(ds: DesignSystem, leaf: str) -> Color | None:
+    return ds.color_of(leaf)
+
+
+def paint(
+    assembly: Assembly,
+    ds: DesignSystem,
+    *,
+    skip: tuple[str, ...] = (),
+    color_for: ColorFor = _by_tag,
+) -> Assembly:
+    """Return ``assembly`` with every part's ``color`` set from ``ds``.
+
+    ``skip`` names **root-level sub-assemblies** to leave untouched —
+    for a foreign unit composed as a subtree whose own unit root has
+    already painted it against its own tag dict (the m02 chain's
+    ``s1``). Without it, this walk would look the singulator's part
+    names up in the chain's tag dict and report them all as untagged.
+
+    ``color_for`` overrides the per-part lookup for a module whose
+    colour isn't a plain tag read — m05 ramps basket luminance off
+    ``n_size``. It is called only for parts the tag dict covers, so a
+    coverage gap is still reported rather than silently absorbed.
+
+    Every part whose leaf name is missing from ``ds.tag_of`` is
+    collected, and **one** ``KeyError`` names all of them with their
+    tree paths. That replaces the four hand-rolled module-level
+    coverage asserts that walked ``placed_parts`` at import time: same
+    guarantee (nothing renders off-palette), one error listing every
+    offender instead of a bare assert per module, and it fires when the
+    unit is *built* rather than when it is imported.
+    """
+    untagged: list[str] = []
+    out = _painted(assembly, ds, frozenset(skip), color_for, untagged, "")
+    if untagged:
+        raise KeyError(
+            f"{len(untagged)} part(s) have no tag in design system "
+            f"'{ds.name}' — add them to the owning module's "
+            f"design_systems.py tag dict: {sorted(untagged)}"
+        )
+    return out
+
+
+def _painted(
+    assembly: Assembly,
+    ds: DesignSystem,
+    skip: frozenset[str],
+    color_for: ColorFor,
+    untagged: list[str],
+    prefix: str,
+) -> Assembly:
+    parts = tuple(
+        _paint_part(p, ds, color_for, untagged, prefix)
+        for p in assembly.parts
+    )
+    subs = tuple(
+        s if s.name in skip else replace(
+            s,
+            assembly=_painted(
+                s.assembly, ds, skip, color_for, untagged,
+                f"{prefix}{s.name}.",
+            ),
+        )
+        for s in assembly.subassemblies
+    )
+    return replace(assembly, parts=parts, subassemblies=subs)
+
+
+def _paint_part(
+    p: PlacedPart,
+    ds: DesignSystem,
+    color_for: ColorFor,
+    untagged: list[str],
+    prefix: str,
+) -> PlacedPart:
+    """One part's colour, or the part unchanged.
+
+    A part tagged ``None`` is *outside* the design system, so the
+    system has nothing to say about it and the builder's own colour
+    stands — that is what ``color_of``'s "falls through to the
+    material's intrinsic color" means. The one part that relies on it
+    is m03's ``acrylic``, which carries a translucent baseColor with a
+    real alpha channel so the shape-truth GLB renders through it;
+    assigning ``None`` over that would silently make it opaque.
+    """
+    if p.name not in ds.tag_of:
+        untagged.append(f"{prefix}{p.name}")
+        return p
+    color = color_for(ds, p.name)
+    return p if color is None else replace(p, color=color)
+
+
 # --- GLB-export neutral fill ------------------------------------------
+
+# Warm mid-grey, luminance-matched to the role palettes'
+# SECONDARY_STRUCTURE band so a module-axis GLB reads like the others.
+_MODULE_AXIS_NEUTRAL: Color = _srgb(0.478, 0.443, 0.416)
+
+
+def neutral_of(ds: DesignSystem) -> Color:
+    """The palette's mid-luminance neutral, for ``fill_palette_neutrals``.
+
+    Owns the per-axis decision that four ``export_glb*.py`` call sites
+    used to make by indexing ``palette[Role.SECONDARY_STRUCTURE]``
+    directly — a reach that raises ``KeyError`` under the module-keyed
+    ``bauhaus`` palette, which has no ``Role`` keys. (Same defect class
+    as the ``basket_color_of`` crash fixed 2026-07-24; this was the
+    surviving instance, tracked as "Latent: GLB-export neutral fill
+    hardcodes the role axis" in ``_notes/state/cad-top-level.md``.)
+
+    On the role axis the answer is the printed-bracket shade. On the
+    module axis there is none: a wayfinding palette encodes *which
+    subsystem*, not *how light*, and picking one module's colour would
+    tint every untagged part with a subsystem it doesn't belong to.
+    Hence a fixed warm mid-grey — which is what "mid-luminance neutral"
+    means once the axis carries no luminance information.
+    """
+    if ds.axis is Axis.ROLE:
+        return ds.palette[Role.SECONDARY_STRUCTURE]
+    return _MODULE_AXIS_NEUTRAL
+
 
 def fill_palette_neutrals(assembly: Assembly, neutral: Color) -> Assembly:
     """Recursively assign ``neutral`` to every PlacedPart whose ``color``
@@ -287,12 +470,12 @@ def fill_palette_neutrals(assembly: Assembly, neutral: Color) -> Assembly:
     therefore default to glTF's flat white baseColor — which has no
     contrast against ``--color-base-100`` ``#f7f6f4`` in the light
     palette. Filling with the palette's mid-luminance neutral
-    (``Role.SECONDARY_STRUCTURE``) reads cleanly against both themes.
+    (``neutral_of``) reads cleanly against both themes.
 
     Photo-real chitra-cad renders are unaffected: they go through a
     different driver (``cad/render.py``) that builds its own Assembly
-    instance per palette pass, so this in-place-style return value
-    doesn't leak into Cycles' material catalog.
+    per palette pass, so this in-place-style return value doesn't leak
+    into Cycles' material catalog.
     """
     new_parts = tuple(
         replace(p, color=neutral) if p.color is None else p
