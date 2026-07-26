@@ -39,7 +39,6 @@ Deferred:
 from build123d import Axis
 
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
-from cad_khana.mechanism.check import check
 
 from .design_systems import DESIGN_SYSTEM
 from .drive import assembly as _drive
@@ -107,7 +106,3 @@ assert not _untagged, (
     f"{len(_untagged)} m02 part leaf name(s) missing a tag for design "
     f"system '{DESIGN_SYSTEM.name}' in design_systems.py: {_untagged}"
 )
-
-
-if __name__ == "__main__":
-    check(assembly, out="outputs")

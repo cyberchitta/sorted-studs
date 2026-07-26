@@ -70,7 +70,6 @@ from pathlib import Path
 from build123d import Axis, Color, Cylinder, Pos
 
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
-from cad_khana.mechanism.check import check
 
 from .base_floor import assembly as _base
 from .basket import assembly as _bkt
@@ -484,7 +483,3 @@ assembly = assembly.with_anchor(
         _DECK_TOP_Z,
     ),
 )
-
-
-if __name__ == "__main__":
-    check(assembly, out="outputs")

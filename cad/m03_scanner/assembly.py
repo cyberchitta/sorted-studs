@@ -38,6 +38,11 @@ Sub-assemblies (all in `cad/m03_scanner/<sub>/`):
   Turret: frame, hub, arm, turret_platform (×4 stations), dump_servo,
           drive, homing
 
+Claims about this assembly's interaction with *probe* geometry — the
+below-camera sightline cones — are external, and live in the check
+module `check_cones.py`, which nothing here imports. That is what
+keeps the cones out of every export.
+
 `turret_platform/` keeps its `turret_` prefix because the bare
 `platform` directory name collides with Python's stdlib `platform`
 module — `from platform import assembly` would resolve to the
@@ -48,11 +53,10 @@ prefix on; the m05 collisions on `frame`/`drive` are handled by
 """
 
 
-from build123d import Axis, Circle, Pos, Rectangle, loft
+from build123d import Axis, Pos
 
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 from cad_khana.mechanism.assertions import JointWindow
-from cad_khana.mechanism.check import check
 
 
 from .params import (
@@ -80,7 +84,6 @@ from .params import (
     lens_axis_unit,
     rotation_for_normal,
 )
-from .sizing import BRICK_MAX_MM, SCATTER_HALF_MM
 from .arch import assembly as _arch
 from .arm import assembly as _arm
 from .camera_mount_esp32cam import assembly as _camera_mount
@@ -502,125 +505,6 @@ def add_m03_internal_checks(
     return a
 
 
-# --- Sightline cones (silhouette assertion, was c7-c) -----------------
-#
-# One check-only stub solid per below-vertex camera: the forbidden
-# volume between that camera's lens nose and the imaged region it must
-# see through the transparent platform. Any opaque part inside it
-# occludes part of the imaged region, which `khana check` is otherwise
-# blind to (`cad/CLAUDE.md` §"What a green `khana check` does not
-# mean", Visibility). This assertion is the gate for any further
-# turret Z compression (state file, Open work 3).
-#
-# Geometry: an oblique frustum lofted from a small horizontal disc
-# just past the lens nose (entrance-pupil stand-in) to the imaged
-# square at the platform plane z = 0 — `sizing.py`'s
-# P_imaged = BRICK_MAX_MM + 2·SCATTER_HALF_MM (110 at the settled
-# 3.6 mm lens), axis-aligned and centred on the brick centroid. The
-# square (not its circumscribed circle) is the real imaged region;
-# the circle would falsely collide with the platform frame's edge
-# grip 5 mm outside it.
-#
-# Pose claim: asserted at the parked REST pose only. Capture happens
-# only during an IMAGE-station dwell with the rotor indexed, so
-# transit poses are out of scope; `animated_assembly.py` deliberately
-# does not run these checks (mid-transit platforms sweep through the
-# cones by design).
-#
-# Check-only, and nothing in the library enforces that: a cone is an
-# ordinary `with_part`, and `check()` exports whatever assembly it is
-# handed. So there are two assemblies. `assembly` is the real one —
-# what `render*.py`, `export_glb_animated.py`, and `cad/assembly.py`
-# import, and the only one any exporter ever sees; an opaque cone in
-# front of each below camera would wreck renders/GLB (and demand
-# design-system tags). The probe-augmented copy is built by
-# `add_sightline_cone_checks()` at the `__main__` call site and reaches
-# nothing but `check()` — see the note there on why this script exports
-# no geometry at all. Only acrylic parts are exempt from the
-# assertions — the below sightlines pass through the transparent
-# platform by design.
-
-SIGHTLINE_CONE_SPECS = {
-    "sightline_below_left": VERTEX_BELOW_LEFT_POS,
-    "sightline_below_right": VERTEX_BELOW_RIGHT_POS,
-}
-
-# Imaged-square side at the platform plane (110 at lens 3.6 / brick 80
-# / scatter ±15). Live import from sizing.py — no manual mirror; the
-# params.py vertex block is reconciled to the same inputs.
-_SIGHTLINE_P_IMAGED = BRICK_MAX_MM + 2 * SCATTER_HALF_MM
-
-# Entrance-pupil stand-in disc at the apex (a true M12 pupil at
-# f/2.8 is ~Ø1.3; Ø4 adds margin), pushed a further 3 mm past the
-# lens nose along the axis so the horizontal disc cannot poke back
-# through the tilted lens front face (3 > disc radius ≥ worst-case
-# back-reach).
-_SIGHTLINE_APEX_D = 4.0
-_SIGHTLINE_APEX_SETBACK = 3.0
-
-
-def sightline_cone(vertex_pos: tuple[float, float, float]):
-    """Oblique frustum from the camera's lens nose to the imaged
-    square at the platform plane, in m03-local coordinates (place at
-    identity). Lens nose = vertex (PCB rear face) + (PCB_T + M12_L)
-    along the lens axis, mirroring `m12_lens_stub`'s extent."""
-    axis = lens_axis_unit(vertex_pos)
-    nose_dist = (
-        _camera_mount.PCB_T + _camera_mount.M12_L + _SIGHTLINE_APEX_SETBACK
-    )
-    apex = tuple(
-        vertex_pos[i] + nose_dist * axis[i] for i in range(3)
-    )
-    return loft(
-        [
-            Pos(*apex) * Circle(_SIGHTLINE_APEX_D / 2),
-            Rectangle(_SIGHTLINE_P_IMAGED, _SIGHTLINE_P_IMAGED),
-        ]
-    )
-
-
-# Known cone overlap (2026-07-24, first run of this assertion): the
-# acrylic aperture equals the imaged square (ACRYLIC_INSERT_SIZE =
-# IMAGED_REGION_SIDE_MM = 110), so each oblique below camera's
-# sightline to its own near edge necessarily passes through the IMAGE
-# cartridge frame below the platform plane — the perimeter wall band
-# (|x| ∈ [55, 60], z ∈ [-4, 0]) plus the two near-side corner lips
-# (z ∈ [-7, -4]). ≈958 mm³ per side. Optical cost: bottom-sliver
-# vignetting of a brick parked at extreme near-edge scatter, and the
-# opposite below camera sees that sliver unobstructed. Kept as a
-# regression alarm, not fixed: growing the aperture past the imaged
-# square or moving the lips inboard-out is a cartridge redesign the
-# vignetting doesn't currently justify — if either lands, this
-# assertion self-fails and must be removed.
-_SIGHTLINE_KNOWN_OVERLAP_REASON = (
-    "aperture == imaged square (110): below-* near-edge sightlines "
-    "graze the IMAGE frame wall + corner lips below z=0; bottom-sliver "
-    "vignetting covered by the opposite below camera"
-)
-_SIGHTLINE_KNOWN_OVERLAPS = frozenset({"turret.rotor.platform_image.frame"})
-
-
-def add_sightline_cone_checks(a: Assembly) -> Assembly:
-    """Add both below-vertex sightline cones and assert them clear of
-    every m03 part except acrylics (transparent by design) — with the
-    documented frame-graze pairs downgraded to `assert_interference`
-    regression alarms. Apply to a copy consumed only by `check()` —
-    never to the rendered/exported `assembly`."""
-    # Opaque set fixed at entry — the cones added below must not land
-    # in each other's check groups.
-    opaque = [p.name for p in a.placed_parts if "acrylic" not in p.name]
-    for cone_name, vertex_pos in SIGHTLINE_CONE_SPECS.items():
-        a = a.with_part(cone_name, sightline_cone(vertex_pos))
-        a = a.assert_no_interference_between(
-            (cone_name,),
-            opaque,
-            known_overlaps=tuple(
-                (cone_name, other, _SIGHTLINE_KNOWN_OVERLAP_REASON)
-                for other in _SIGHTLINE_KNOWN_OVERLAPS
-            ),
-        )
-    return a
-
 
 # --- Standalone assembly ---------------------------------------------
 
@@ -664,18 +548,3 @@ assert not _untagged, (
     f"{len(_untagged)} m03 part leaf name(s) missing a tag for design "
     f"system '{DESIGN_SYSTEM.name}' in design_systems.py: {_untagged}"
 )
-
-
-if __name__ == "__main__":
-    # `export=False` makes this script diagnostics-only, deliberately.
-    # `check()` exports the assembly it is handed, and the assembly
-    # worth checking here is the probe-augmented one — so under
-    # `khana build` this call would write the two sightline cones into
-    # the STL and STEP beside the real parts. Handing `check()` the
-    # real assembly instead would mean a second full diagnostics pass
-    # (~6 s) on every `khana check` just to reach the export, for a
-    # unit whose geometry is exported from the top level anyway:
-    # `cad/assembly.py` imports the cone-free `assembly` above, so
-    # `khana build cad/assembly.py` is the STL/STEP path and
-    # `export_glb*.py` the GLB path.
-    check(add_sightline_cone_checks(assembly), out="outputs", export=False)

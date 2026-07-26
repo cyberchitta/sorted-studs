@@ -99,9 +99,6 @@ import math
 from build123d import Box, Cylinder, Pos
 
 from cad_khana.mechanism.assembly import Assembly
-from cad_khana.mechanism.check import check
-from cad_khana.printability.inspect import inspect
-from cad_khana.printability.methods import FDM
 
 
 from ..params import (  # noqa: E402
@@ -624,18 +621,3 @@ assembly = assembly.assert_tangent_contact(
 # solid `cross_rail_stub` would false-fail it.
 for _bolt in ("drive_foot_bolt_inner", "drive_foot_bolt_outer"):
     assembly = assembly.assert_no_interference(_bolt, "static.drive_bracket")
-
-
-if __name__ == "__main__":
-    check(assembly, out="outputs")
-    # Print orientation: bottom face on the build plate, +Z up
-    # (build123d default). All bores are vertical and clean. The
-    # cantilever plate's underside is a 90° overhang requiring print-
-    # time supports — accepted at the 90° threshold per the slice
-    # docstring.
-    inspect(
-        bracket(),
-        method=FDM(wall_min_mm=WALL_MIN, overhang_max_deg=90.0),
-        out="outputs",
-        name="drive_bracket",
-    )

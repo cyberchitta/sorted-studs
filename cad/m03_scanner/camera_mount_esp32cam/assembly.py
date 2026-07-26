@@ -63,9 +63,6 @@ import math
 from build123d import Box, Cylinder, Location, Part, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
-from cad_khana.mechanism.check import check
-from cad_khana.printability.inspect import inspect
-from cad_khana.printability.methods import FDM
 
 
 from ..params import (
@@ -386,24 +383,3 @@ assembly = (
     .assert_no_interference("clamp_mount", "lens")
     .assert_no_interference("pcb", "lens")
 )
-
-
-if __name__ == "__main__":
-    check(assembly, out="outputs")
-    # Print orientation: +Y up (clamp base on the build plate). FDM
-    # default up_axis is +Z, so override.
-    inspect(
-        clamp_mount(),
-        method=FDM(up_axis=(0, 1, 0), wall_min_mm=WALL_MIN),
-        out="outputs",
-        name="clamp_mount",
-        # Facet audit 2026-07-25: the rev-4 "near-90° degenerate sliver"
-        # this site's threshold was loosened for no longer exists —
-        # nothing above 56° is flagged. What remains is real geometry.
-        waive={
-            "overhang_max": "real overhangs, accepted: oblique-beam "
-            "underside facets at 55.4° (~153 mm²) plus 48-54° bore/access-"
-            "cylinder ceiling bands (~21 mm²) — steep-but-printable with "
-            "cooling or minimal support; no near-90° sliver remains",
-        },
-    )

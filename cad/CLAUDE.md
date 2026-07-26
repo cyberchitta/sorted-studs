@@ -9,10 +9,9 @@ Guidance for organizing Build123d / cad-khana assemblies in this repo.
    in a single assembly just because they share a module.
 
 2. **Sub-assemblies run standalone.** `khana check <dir>/assembly.py`
-   (or `python -m cad.<unit>.<sub>.assembly` from the repo root) must
-   work without any sibling sub-assembly. `cad/` is a package —
-   `khana` runs a package-member script with `python -m` semantics, so
-   its relative imports resolve; plain `python <path>` does not.
+   must work without any sibling sub-assembly. `cad/` is a package —
+   `khana` imports a package member with `python -m` semantics, so its
+   relative imports resolve; plain `python <path>` does not.
    Shared inputs live in a module-local `params.py`;
    sibling-to-sibling imports are not allowed.
 
@@ -156,11 +155,38 @@ cad/
         params.py          # unit-shared inputs + derived constants
         basket/
             __init__.py
-            assembly.py    # build_basket_ring() -> Assembly (+ standalone check)
+            assembly.py      # build_basket_ring() -> Assembly — declarations
+            printability.py  # command script: the unit's inspect() batch
         ramp_mechanism/
             __init__.py
-            assembly.py    # build_* builders (+ standalone check)
+            assembly.py      # build_* builders — declarations
+            role_sweep.py    # command script: the three-role check + inspect suite
+    m03_scanner/
+        assembly.py          # product declarations
+        check_cones.py       # CHECK module: probe fixture + external claims
+        frame_sweep.py       # command script: 12-frame regression sweep
 ```
+
+**Three file kinds, and the boundary is what the file does.**
+
+- **Declaration modules** (`assembly.py`, `animated_assembly.py`) —
+  pure. Parts, builders, joints, claims. They call nothing effectful:
+  no `check()`, no `inspect()`, no export, no `__main__` block. The
+  module's public surface is its named factories returning `Assembly`.
+- **Check modules** (`check_*.py`) — declaration modules whose purpose
+  is verification. They import product factories, compose a fixture
+  (probe geometry, a merged assembly), declare the claims that fixture
+  exists to test, and expose the result as `assembly()`. **Nothing ever
+  imports a check module** — that rule is what keeps probe solids out of
+  every export. A claim internal to one unit stays in that unit; only a
+  claim about the *interaction* of a unit with something it doesn't own
+  earns a check module.
+- **Command scripts** (`printability.py`, `role_sweep.py`,
+  `frame_sweep.py`, `render*.py`, `export_glb*.py`) — orchestration,
+  run for effect, never imported. Reach for one only when the CLI
+  genuinely can't address the work: an `inspect()` batch, a family of
+  members the CLI can't name (a required factory argument, a float),
+  a multi-frame sweep. Orchestration only — no logic that matters.
 
 Imports are relative (`.params` at unit level, `..params` in
 sub-modules); no `sys.path` manipulation anywhere. Use underscores in
@@ -173,34 +199,81 @@ package imports and force `importlib` workarounds.
 `uv`-managed venv at `.venv/`. Invoke the CLI directly:
 
 ```
-.venv/bin/khana check  <path/to/assembly.py>   # diagnostics only
-.venv/bin/khana build  <path/to/assembly.py>   # also write STL/STEP
+# import-model verbs — take <module-path>[:<factory>], import it,
+# resolve one member, run one verb. Nothing in the module executes.
+.venv/bin/khana check  <path/to/assembly.py>   # diagnostics + assertions
+.venv/bin/khana export <path/to/assembly.py>   # write STL + STEP
 .venv/bin/khana view   <path/to/assembly.py>   # push to the OCP viewer
 .venv/bin/khana draw   <path/to/assembly.py>   # ortho + iso engineering drawings
+
+# exec-model verb — runs a command script for effect
+.venv/bin/khana run    <path/to/printability.py>
 ```
 
-`uv run khana …` works too. After any geometry change, run
-`khana check` on the affected sub-assembly's `assembly.py` and the
-top-level `assembly.py` that includes it before claiming the slice is
-done — exit 0 means assertions and printability inspects all passed.
+`uv run khana …` works too. `khana build` is **deprecated** and
+retires in the next cad-khana release — it is `run` plus exports, and
+nothing in this tree needs it any more.
 
-**Use the CLI, not bare `python`, for any script with more than one
-`check()`/`inspect()`.** The CLI defers failures to its own boundary so
-every call runs and every JSON on disk is fresh, then exits nonzero once;
-a bare interpreter keeps raise-on-first-failure and aborts the run,
-leaving the rest of the diagnostics stale at their previous values while
-reading as current. This is a correctness difference, not a convenience:
-a multi-role or multi-frame sweep under bare `python` reports only its
-first red.
+**Member resolution.** With no `:factory`, `check`/`export`/`view`/
+`draw` resolve the name `assembly` — a callable is called, a bare
+`Assembly` value is accepted as the degenerate (but still supported)
+form, which is what most `assembly.py` files here expose. Naming a
+factory (`assembly.py:build_lid`) calls it with its defaults. A target
+that resolves nothing exits **2** and lists the module's public
+`-> Assembly` factories on stderr — read that error rather than
+grepping for candidates.
+
+**Where output lands.** The target owns its default out:
+`<module-dir>/outputs` for a unit's `assembly.py`, and
+`<module-dir>/outputs/<slug>` for anything else, where the slug is the
+module stem (`check_cones.py` → `outputs/check_cones/`,
+`single_floor.py` → `outputs/single_floor/`). So co-located targets
+never overwrite each other's `mechanism.json`, and no `--out` flag is
+needed. An explicit `--out` still wins and is taken cwd-relative.
+
+**A green `khana check` no longer covers printability.** Since the
+Phase B decomposition (2026-07-26) the `inspect()` calls live in a
+per-unit `printability.py` run separately. After a geometry change,
+for the affected unit run **both**:
+
+```
+.venv/bin/khana check <unit>/assembly.py
+.venv/bin/khana run   <unit>/printability.py     # if the unit has one
+```
+
+then re-run `khana check` on the enclosing top-level `assembly.py`
+before claiming the slice is done. Three units carry a parametrized
+suite whose members the CLI cannot address, and there `khana check`
+on `assembly.py` evaluates **one** member only — run the command
+script for the rest:
+
+| unit | `khana check assembly.py` covers | command script covers |
+|---|---|---|
+| `m05_diverter/ramp_mechanism` | the `middle` role | `role_sweep.py` — all three roles + 11 inspects |
+| `m03_scanner` (animated) | frame `t = 0` | `frame_sweep.py` — all 12 sampled frames |
+| `m03_scanner` (cones) | the cone-free product assembly | `khana check check_cones.py` — the sightline claims |
+
+**Use the CLI, not bare `python`, for any command script.** The CLI
+defers failures to its own boundary so every call runs and every JSON
+on disk is fresh, then exits nonzero once; a bare interpreter keeps
+raise-on-first-failure and aborts the run, leaving the rest of the
+diagnostics stale at their previous values while reading as current.
+This is a correctness difference, not a convenience: a multi-role or
+multi-frame sweep under bare `python` reports only its first red.
 
 The same deferral means **`check()` and `inspect()` return normally on
 failure under the CLI** — there is no `SystemExit` to catch. Read
 failures off the result (`result.diagnostics.assertions`, `passed is
 False` — `None` is a skipped assertion, not a failure); never wrap the
 call in `try/except SystemExit` and never re-`evaluate()` the assembly to
-find out. `animated_assembly.py`'s 9-frame sweep had exactly that
+find out. The m03 9-frame sweep (now `frame_sweep.py`) had exactly that
 `except`, and after the deferral shipped it printed *"all 9 frames pass"*
 on runs the CLI was failing.
+
+A command script does not need to read failures off the result at all:
+the CLI's roll-up already names every one and sets the exit code. Only
+reach into `result.diagnostics.assertions` when the script has to
+*branch* on a failure — which, in this tree, nothing does.
 
 ## What a green `khana check` does not mean
 

@@ -84,7 +84,6 @@ brackets at the rail joints land in a later slice.
 from build123d import Box, Part, Pos
 
 from cad_khana.mechanism.assembly import Assembly
-from cad_khana.mechanism.check import check
 
 
 from ..params import (
@@ -269,9 +268,3 @@ def build_turret_frame() -> Assembly:
 assembly = build_turret_frame().assert_no_interference_within(
     TURRET_FRAME_PART_NAMES
 )
-
-
-if __name__ == "__main__":
-    check(assembly, out="outputs")
-    # Members are stock 2020 aluminum extrusion — no per-part
-    # printability pass.

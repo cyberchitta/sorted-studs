@@ -52,7 +52,6 @@ from __future__ import annotations
 from build123d import Location, Pos
 
 from cad_khana.mechanism.assembly import Assembly
-from cad_khana.mechanism.check import check
 
 from .m02_chain.assembly import assembly as _M02_CHAIN_ASSY
 from .m03_scanner.assembly import assembly as _M03_ASSY
@@ -130,7 +129,3 @@ assembly = assembly.assert_anchors_coincident(
 assembly = assembly.assert_anchors_coincident(
     "m02_chain.col1_base", "m05.outer_vert_0_top"
 )
-
-
-if __name__ == "__main__":
-    check(assembly, out="outputs")

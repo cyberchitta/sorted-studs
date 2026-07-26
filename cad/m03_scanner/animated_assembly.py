@@ -27,8 +27,10 @@ servo to lift on the rotor index pulse at DUMP and return to rest
 during transit.
 
 Used by the GLB animation exporter (see ``export_glb_animated.py``)
-and as the unit of regression insurance for ``khana check`` across
-mid-motion frames.
+and by ``frame_sweep.py``, the command script that evaluates this
+factory's claims at twelve sampled ``t`` — the regression insurance
+across mid-motion frames. ``khana check`` on *this* module resolves
+the degenerate ``assembly`` attribute, which is frame ``t = 0`` alone.
 
 The t→Assembly model is the project's animation primitive: motion is
 expressed mathematically here (``theta_rotor_deg = rotor_schedule(t)``,
@@ -39,15 +41,10 @@ wrapper that samples ``factory(t)`` at N values.
 from __future__ import annotations
 
 import math
-from dataclasses import replace
-from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
+from cad_khana.mechanism.assembly import Assembly
 
-from cad_khana.mechanism.assembly import Assembly  # noqa: E402
-from cad_khana.mechanism.check import check  # noqa: E402
-
-from .assembly import add_m03, add_m03_internal_checks  # noqa: E402
+from .assembly import add_m03, add_m03_internal_checks
 
 
 # Number of stations on the turret (= number of dwells per
@@ -196,65 +193,3 @@ def build_m03_at(t: float) -> Assembly:
 
 
 assembly = build_m03_at(0.0)
-
-
-if __name__ == "__main__":
-    # Per-frame static check at sampled t — regression insurance for
-    # mid-motion interferences. Samples cover REST, both halves of the
-    # lift, the dwell peak (local_t = dwell_frac/2 = 0.35 ⇒ t = 0.0875
-    # in the first quarter), the dwell-end transition (local_t =
-    # dwell_frac = 0.7 ⇒ t = 0.175), and one transit point per quarter
-    # so the rotor is checked at each station.
-    #
-    # The rising half was unsampled until 2026-07-25: the pad-contact
-    # phase runs t ∈ (0.0292, 0.0535) and the old set jumped 0 → 0.0625
-    # straight over it, so of nine frames exactly one (t=0.125, on the
-    # falling side) was in contact at all. That was tolerable while the
-    # pair was blanket-suppressed and is not now that the tilt window is
-    # the claim — a regression net that never enters the phase it guards
-    # tests nothing. The three added frames enter it from both ends and
-    # at a second station.
-    #
-    # Run this through `khana check`, not bare `python`. The CLI defers
-    # check() failures to its own boundary, so every frame runs and its
-    # JSON is fresh; a bare interpreter keeps raise-on-first-failure and
-    # would abort the sweep at the first bad frame.
-    out_root = HERE / "outputs" / "animated"
-    sample_ts = (
-        0.0,        # REST (rotor at station 0, no tilt)
-        0.02917,    # tilt 7.5° — pad contact opens (0.4 mm³)
-        0.04375,    # tilt 15.0° — rising, deep in contact (14.0 mm³)
-        0.0625,     # tilt 24.4° — past the block, contact closed again
-        0.0875,     # platform tilt peak (30°), no contact
-        0.125,      # tilt 18.3° — falling side of the same window
-        0.175,      # end of dwell
-        0.2,        # mid-transit
-        0.25,       # arrives at station 1
-        0.29375,    # station 1's dwell at tilt 15.0° — the same claim
-                    #   on platform_idle, so the window is tested on a
-                    #   second cartridge and not just on platform_dump
-        0.5,        # arrives at station 2
-        0.75,       # arrives at station 3
-    )
-    new_failures: list[tuple[float, str, str]] = []
-    for t in sample_ts:
-        out = out_root / f"t_{t:.4f}"
-        a = build_m03_at(t)
-        # check() returns its result whether or not assertions failed, so
-        # read the failures off the result rather than catching the raise:
-        # under the CLI there is no raise to catch, and re-evaluating the
-        # assembly to find out would duplicate the work check() just did.
-        # `is False` is deliberate — `passed is None` means the assertion
-        # was skipped (a part absent from this run), which is not a failure.
-        result = check(a, out=str(out))
-        new_failures += [
-            (t, r.name, r.detail)
-            for r in result.diagnostics.assertions
-            if r.passed is False
-        ]
-    if new_failures:
-        print(f"\n{len(new_failures)} NEW failure(s) across {len(sample_ts)} frames:")
-        for t, name, detail in new_failures:
-            print(f"  t={t:.4f}  {name}: {detail[:160]}")
-        raise SystemExit(1)
-    print(f"all {len(sample_ts)} frames pass (baseline known overlaps applied)")

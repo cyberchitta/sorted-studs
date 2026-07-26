@@ -61,9 +61,6 @@ import math
 from build123d import Box, Cylinder, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
-from cad_khana.mechanism.check import check
-from cad_khana.printability.inspect import inspect
-from cad_khana.printability.methods import FDM
 
 
 from ..params import (
@@ -406,19 +403,3 @@ _ALL = (
     + ["cross_rail_stub"]
 )
 assembly = assembly.assert_no_interference_within(_ALL)
-
-
-if __name__ == "__main__":
-    check(assembly, out="outputs")
-    inspect(
-        servo_bracket(),
-        method=FDM(wall_min_mm=WALL_MIN, overhang_max_deg=90.0),
-        out="outputs",
-        name="servo_bracket",
-    )
-    inspect(
-        servo_arm(),
-        method=FDM(wall_min_mm=WALL_MIN, overhang_max_deg=90.0),
-        out="outputs",
-        name="servo_arm",
-    )

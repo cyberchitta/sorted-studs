@@ -19,8 +19,6 @@ resolves every name; ``build_tower`` accepts a
 """
 
 
-from cad_khana.mechanism.check import check
-
 from .assembly import build_tower
 
 
@@ -64,7 +62,3 @@ assembly = build_tower(
     with_top_deck=True,
     with_drive_train=False,
 )
-
-
-if __name__ == "__main__":
-    check(assembly, out="outputs/exhibit")

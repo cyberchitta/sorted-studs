@@ -45,7 +45,6 @@ already checked against the frame.
 from build123d import Location, Rot
 
 from cad_khana.mechanism.assembly import Assembly
-from cad_khana.mechanism.check import check
 
 from .basket import assembly as _bkt
 from .design_systems import (
@@ -237,7 +236,3 @@ for k in range(6):
     assembly = assembly.assert_no_interference("rotating.ramp", f"rails.radial_inner_{k}")
     assembly = assembly.assert_no_interference("rotating.ramp", f"rails.radial_outer_{k}")
     assembly = assembly.assert_no_interference("rotating.ramp", f"columns.inner_vert_{k}")
-
-
-if __name__ == "__main__":
-    check(assembly, out="outputs")

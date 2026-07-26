@@ -59,9 +59,6 @@ from typing import Callable
 from build123d import Box, Color, Cylinder, Part, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
-from cad_khana.mechanism.check import check
-from cad_khana.printability.inspect import inspect
-from cad_khana.printability.methods import FDM
 
 from ..params import COL_INTERIOR_SIDE, COLLAR_OD, RAIL_INNER_R, RAIL_SIZE
 
@@ -285,11 +282,3 @@ def make_assembly() -> Assembly:
 
 
 assembly = make_assembly()
-
-
-if __name__ == "__main__":
-    check(assembly, out="outputs")
-    method = FDM(wall_min_mm=WALL_MIN, overhang_max_deg=90.0)
-    # pinion is bought (metal, on the motor shaft) — not inspected.
-    inspect(ring_gear(), method=method, out="outputs", name="ring_gear")
-    inspect(motor_mount(), method=method, out="outputs", name="motor_mount")

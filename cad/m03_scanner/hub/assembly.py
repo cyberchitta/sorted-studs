@@ -50,9 +50,6 @@ threshold.
 from build123d import Box, Cylinder, Pos
 
 from cad_khana.mechanism.assembly import Assembly
-from cad_khana.mechanism.check import check
-from cad_khana.printability.inspect import inspect
-from cad_khana.printability.methods import FDM
 
 
 from ..params import (
@@ -324,16 +321,3 @@ assembly = assembly.assert_no_interference_within(
     tuple(f"static.{n}" for n in HUB_STATIC_PART_NAMES)
     + tuple(f"rotor.{n}" for n in HUB_ROTOR_PART_NAMES)
 )
-
-
-if __name__ == "__main__":
-    check(assembly, out="outputs")
-    # Print orientation: bottom face on the build plate, +Z up
-    # (build123d default). All bores are vertical cylinders → no
-    # overhangs to lift the threshold for; default 45° is enough.
-    inspect(
-        housing(),
-        method=FDM(wall_min_mm=WALL_MIN, overhang_max_deg=45.0),
-        out="outputs",
-        name="hub_housing",
-    )

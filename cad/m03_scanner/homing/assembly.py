@@ -91,9 +91,6 @@ drive_bracket did, since this bracket has no cantilever plate).
 from build123d import Box, Cylinder, Pos
 
 from cad_khana.mechanism.assembly import Assembly
-from cad_khana.mechanism.check import check
-from cad_khana.printability.inspect import inspect
-from cad_khana.printability.methods import FDM
 
 
 from ..params import (
@@ -498,25 +495,3 @@ _ALL = (
     + ["hub_shaft_stub", "cross_rail_stub"]
 )
 assembly = assembly.assert_no_interference_within(_ALL)
-
-
-if __name__ == "__main__":
-    check(assembly, out="outputs")
-    # Print orientation: bottom face on the build plate, +Z up
-    # (build123d default). Flag is a thin disc with a centered bore +
-    # offset detect hole — all vertical bores, clean print at default
-    # 45° overhang threshold.
-    inspect(
-        flag(),
-        method=FDM(wall_min_mm=WALL_MIN, overhang_max_deg=45.0),
-        out="outputs",
-        name="homing_flag",
-    )
-    # Bracket: foot + vertical post, no horizontal cantilever. Default
-    # 45° threshold suffices.
-    inspect(
-        bracket(),
-        method=FDM(wall_min_mm=WALL_MIN, overhang_max_deg=45.0),
-        out="outputs",
-        name="homing_bracket",
-    )

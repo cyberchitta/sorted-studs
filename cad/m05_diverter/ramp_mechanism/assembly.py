@@ -75,9 +75,6 @@ from typing import Callable
 from build123d import Box, Color, Cylinder, Location, Part, Plane, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
-from cad_khana.mechanism.check import check
-from cad_khana.printability.inspect import inspect
-from cad_khana.printability.methods import FDM
 
 from ..params import (
     BASKET_RIM_Z,
@@ -793,44 +790,3 @@ def make_assembly(role: str = "middle") -> Assembly:
 # `m05_diverter/assembly.py` and other consumers can import a ready-
 # built middle-floor assembly without going through `make_assembly`.
 assembly = make_assembly("middle")
-
-
-if __name__ == "__main__":
-    for role in FLOOR_ROLES:
-        check(make_assembly(role), out=f"outputs/{role}")
-    method = FDM(wall_min_mm=WALL_MIN)
-    waivers = {
-        "bearing_spider": {
-            "overhang_max": "flat 90° ceilings are real: saddle jaws drop "
-            "to z=-7 below the hub ring (z=0..5), so the hub underside and "
-            "jaw-channel ceilings face down — printed jaws-down with "
-            "support in the jaw channels",
-        },
-        "column": {
-            "overhang_max": "flat 90° ceilings are real: collar / joint-"
-            "flange / hinge-boss undersides and the exit-opening lintel on "
-            "a vertically printed tube — printed base-down with support "
-            "under the annular features",
-        },
-    }
-    for role in FLOOR_ROLES:
-        for name, part in [
-            ("bearing_spider", bearing_spider(role)),
-            ("ring_bearing", ring_bearing(role)),
-            ("column", column(role)),
-        ]:
-            inspect(
-                part, method=method, out=f"outputs/{role}", name=name,
-                waive=waivers.get(name),
-            )
-    # Trap and ramp are role-independent — inspect once at the top.
-    inspect(
-        trap(), method=method, out="outputs", name="trap",
-        waive={
-            "overhang_max": "real ceilings: KNUCKLE_OD (10) exceeds TRAP_T "
-            "(4), so with the knuckle tangent on the plate the whole plate "
-            "underside floats 3 mm up — printed with support under the "
-            "plate; pin-bore top bridges",
-        },
-    )
-    inspect(ramp(), method=method, out="outputs", name="ramp")

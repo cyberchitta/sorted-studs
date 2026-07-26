@@ -62,9 +62,6 @@ from typing import Callable
 from build123d import Box, Color, Cylinder, Part, Polygon, Pos, Rot, extrude
 
 from cad_khana.mechanism.assembly import Assembly
-from cad_khana.mechanism.check import check
-from cad_khana.printability.inspect import inspect
-from cad_khana.printability.methods import FDM
 
 from ..params import (
     BASKET_DEPTH_Z,
@@ -383,16 +380,3 @@ for name in basket_names:
 # through the missing column envelope, which this loop catches.
 for a, b in zip(basket_names, basket_names[1:] + basket_names[:1]):
     assembly = assembly.assert_no_interference(a, b)
-
-
-if __name__ == "__main__":
-    check(assembly, out="outputs")
-    # Inspect the geometrically most interesting variant — N=9 MIDDLE,
-    # which is the only basket with a column notch cut through its
-    # interior rather than at a boundary.
-    inspect(
-        basket(half_angle_deg=180.0 / 9, notch_middle=True),
-        method=FDM(wall_min_mm=WALL_MIN),
-        out="outputs",
-        name="basket_090_09",
-    )

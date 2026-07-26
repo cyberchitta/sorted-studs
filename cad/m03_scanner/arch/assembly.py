@@ -85,7 +85,6 @@ import math
 from build123d import Box, Part, Pos
 
 from cad_khana.mechanism.assembly import Assembly
-from cad_khana.mechanism.check import check
 
 
 from ..params import (
@@ -319,7 +318,3 @@ def build_arch() -> Assembly:
 # separated by CORNER_GAP. Printed gussets at the post-to-back-rail
 # and post-to-stub corners land in a follow-up slice.
 assembly = build_arch().assert_no_interference_within(ARCH_PART_NAMES)
-
-
-if __name__ == "__main__":
-    check(assembly, out="outputs")

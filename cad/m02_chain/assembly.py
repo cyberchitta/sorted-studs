@@ -45,7 +45,6 @@ from __future__ import annotations
 from build123d import Box, Part, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
-from cad_khana.mechanism.check import check
 
 from ..m02_c_channel_singulator.assembly import assembly as _M02_ASSY
 from .design_systems import DESIGN_SYSTEM, color_of
@@ -223,7 +222,3 @@ _CHAIN_SKELETON = ("col1_ext", "col2_ext", "yoke", "load_ramp")
 
 assembly = assembly.assert_no_interference_between(_CHAIN_SKELETON, "s1")
 assembly = assembly.assert_no_interference_within(_CHAIN_SKELETON)
-
-
-if __name__ == "__main__":
-    check(assembly, out="outputs")

@@ -72,9 +72,6 @@ T-slot on the bottom face of its extrusion.
 from build123d import Box, Cylinder, Part, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
-from cad_khana.mechanism.check import check
-from cad_khana.printability.inspect import inspect
-from cad_khana.printability.methods import FDM
 
 
 # --- Parameters ---------------------------------------------------------
@@ -286,15 +283,3 @@ assembly = (
     .assert_no_interference("horiz_ext_2", "radial_ext_in")
     .assert_no_interference("radial_ext_out", "radial_ext_in")
 )
-
-
-if __name__ == "__main__":
-    check(assembly, out="outputs")
-    # Real overhangs under the hub and arms when printed with +Z up;
-    # keep overhang check informational (matches outer_vertex_bracket).
-    inspect(
-        bracket(),
-        method=FDM(wall_min_mm=WALL_MIN, overhang_max_deg=90.0),
-        out="outputs",
-        name="bracket",
-    )

@@ -82,9 +82,6 @@ import math
 from build123d import Box, Color, Cylinder, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
-from cad_khana.mechanism.check import check
-from cad_khana.printability.inspect import inspect
-from cad_khana.printability.methods import FDM
 
 
 from ..params import (
@@ -581,13 +578,3 @@ def build_platform_cartridge() -> Assembly:
 assembly = build_platform_cartridge().assert_no_interference(
     "acrylic", "frame"
 )
-
-
-if __name__ == "__main__":
-    check(assembly, out="outputs")
-    inspect(
-        frame(),
-        method=FDM(wall_min_mm=WALL_MIN, overhang_max_deg=90.0),
-        out="outputs",
-        name="frame",
-    )

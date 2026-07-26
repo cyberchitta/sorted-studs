@@ -74,9 +74,6 @@ import math
 from build123d import Box, Cylinder, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
-from cad_khana.mechanism.check import check
-from cad_khana.printability.inspect import inspect
-from cad_khana.printability.methods import FDM
 
 
 from ..params import (
@@ -351,19 +348,3 @@ def build_turret_arm() -> Assembly:
 # the 4 pins are well-separated (≥ 70 mm apart). Spider/spider would
 # be self-comparison so it doesn't appear.
 assembly = build_turret_arm().assert_no_interference_within(ARM_PART_NAMES)
-
-
-if __name__ == "__main__":
-    check(assembly, out="outputs")
-    # Print orientation: bottom face on build plate, +Z up (build123d
-    # default). The 4 horizontal pin bores + 1 horizontal set-screw
-    # bore each have a lower-half ceiling that reads as a 90° overhang
-    # but bridges cleanly in FDM at Ø4–5.4. Threshold raised to 90°
-    # (same rationale as platform_hinge_bearing) so cylinder bridging
-    # doesn't false-fail.
-    inspect(
-        spider(),
-        method=FDM(wall_min_mm=WALL_MIN, overhang_max_deg=90.0),
-        out="outputs",
-        name="spider",
-    )

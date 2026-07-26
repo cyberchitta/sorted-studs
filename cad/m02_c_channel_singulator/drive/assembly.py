@@ -33,13 +33,15 @@ positions with a no-interference assertion between them — captures
 drift in MOUNT_Z / NEMA17_BODY_LEN that would park the motor body
 inside the mount flange. Rotor-vs-drive and stator-vs-drive checks
 live in the top-level ../assembly.py.
+
+Both parts are bought/standard hardware — not printed — so this unit
+has no `inspect()` calls and no command script.
 """
 
 
 from build123d import Box, Cylinder, Part, Pos
 
 from cad_khana.mechanism.assembly import Assembly
-from cad_khana.mechanism.check import check
 
 from ..design_systems import color_of
 from ..materials import material_of
@@ -143,9 +145,3 @@ def build_drive() -> Assembly:
 # assert_no_interference is the right check — tangent contact reads
 # as zero clearance but zero overlap volume.
 assembly = build_drive().assert_no_interference("stem", "motor")
-
-
-if __name__ == "__main__":
-    check(assembly, out="outputs")
-    # stem and motor are bought/standard hardware — not printed, so
-    # no inspect() calls here.

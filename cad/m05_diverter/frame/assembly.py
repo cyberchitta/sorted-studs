@@ -70,7 +70,6 @@ from typing import Callable
 from build123d import Box, Color, Part, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
-from cad_khana.mechanism.check import check
 
 from ..inner_vertex_bracket.assembly import bracket as inner_bracket
 from ..outer_vertex_bracket.assembly import (
@@ -394,7 +393,3 @@ assembly = (
     .assert_no_interference("rails.radial_outer_0", "columns.outer_vert_1")
     .assert_no_interference("rails.radial_outer_0", "rails.outer_vertex_bracket_1")
 )
-
-
-if __name__ == "__main__":
-    check(assembly, out="outputs")
