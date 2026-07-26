@@ -363,20 +363,27 @@ def build_basket_ring(
 
 # --- Standalone assembly -------------------------------------------------
 
-assembly = build_basket_ring(FLOOR_LAYOUT).with_part("col_stub", col_stub())
+def build_basket_ring_standalone() -> Assembly:
+    """The `FLOOR_LAYOUT` ring plus a stand-in for the central column,
+    with the two check families the ring owns."""
+    a = build_basket_ring(FLOOR_LAYOUT).with_part("col_stub", col_stub())
 
-basket_names = [
-    f"basket_{int(round(center_deg)):03d}_{n_size:02d}"
-    for center_deg, n_size, _notches in FLOOR_LAYOUT
-]
+    names = [
+        f"basket_{int(round(center_deg)):03d}_{n_size:02d}"
+        for center_deg, n_size, _notches in FLOOR_LAYOUT
+    ]
+    for name in names:
+        a = a.assert_no_interference(name, "col_stub")
 
-for name in basket_names:
-    assembly = assembly.assert_no_interference(name, "col_stub")
+    # Every adjacent pair around the ring, including wrap. Two baskets
+    # that share a boundary must both cut the notch for the column on
+    # that boundary (or the column would lie inside their shared wall);
+    # if either side forgets its notch, the two basket bodies overlap
+    # through the missing column envelope, which this loop catches.
+    for left, right in zip(names, names[1:] + names[:1]):
+        a = a.assert_no_interference(left, right)
+    return a
 
-# Every adjacent pair around the ring, including wrap. Two baskets
-# that share a boundary must both cut the notch for the column on
-# that boundary (or the column would lie inside their shared wall);
-# if either side forgets its notch, the two basket bodies overlap
-# through the missing column envelope, which this loop catches.
-for a, b in zip(basket_names, basket_names[1:] + basket_names[:1]):
-    assembly = assembly.assert_no_interference(a, b)
+
+# Degenerate master, so `khana check <file>` resolves with no `:factory`.
+assembly = build_basket_ring_standalone()

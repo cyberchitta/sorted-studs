@@ -548,74 +548,81 @@ def build_turret_drive_rotor() -> Assembly:
 
 # --- Standalone assembly -----------------------------------------------
 
-assembly = (
-    Assembly()
-    .with_subassembly("static", build_turret_drive_static())
-    .with_subassembly("rotor", build_turret_drive_rotor())
-)
-
-# Stubs.
 _SHAFT_LEN = TURRET_SHAFT_TOP_Z - RAIL_TOP_Z               # = 160
-assembly = assembly.with_part(
-    "hub_shaft_stub",
-    _shaft_stub(length=_SHAFT_LEN),
-    location=Pos(TURRET_HUB_X, TURRET_HUB_Y, RAIL_TOP_Z),
-    material="steel",
-)
-assembly = assembly.with_part(
-    "cross_rail_stub",
-    _cross_rail_stub(),
-    material="aluminium_anodized",
-)
 
-# Press fit, declared at its true interference. The 0.02 mm diametral
-# band gives a Ø7.98/Ø8.0 annulus 8 mm tall ≈ 2.01 mm³ of overlap
-# (measured 2.0081 mm³, 2026-07-25); the bounds bracket that at ±25%,
-# i.e. 0.015–0.025 mm of interference. Below the floor the fit has
-# drifted back to a clearance fit and the set screw is carrying the
-# turret alone; above the ceiling it's a hydraulic-press job on a
-# stock pulley.
-assembly = assembly.assert_allowed_contact(
-    "rotor.drive_pulley_shaft", "hub_shaft_stub",
-    min_overlap_mm3=1.5, max_overlap_mm3=2.6,
-    reason=f"press fit, {PULLEY_SHAFT_PRESS_FIT} mm diametral on Ø8",
-)
+_DETAIL_FOOT_BOLTS = ("drive_foot_bolt_inner", "drive_foot_bolt_outer")
 
-# Pairwise no-interference. The tangent rests (bracket foot on the
-# cross-rail top, bracket plate on the motor flange) have zero overlap
-# and stay in the group check; their *contact* is asserted separately
-# below / in `build_turret_drive_static`. The driven pulley genuinely
-# overlaps the shaft — it's a press fit — and the group form derives
-# that exclusion from the `assert_allowed_contact` above, which is why
-# this call comes *after* it: the skip set is read at expansion time,
-# so a same-level contact declared later would not be seen. Pulleys vs
-# each other are clear in X (center distance 58.6, OD radii 19.1 + 6.4
-# = 25.5, gap 33.1 mm).
-_ALL = (
-    [f"rotor.{n}" for n in DRIVE_ROTOR_PART_NAMES]
-    + [f"static.{n}" for n in DRIVE_STATIC_PART_NAMES]
-    + ["hub_shaft_stub", "cross_rail_stub"]
-)
-assembly = assembly.assert_no_interference_within(_ALL)
 
-# The bracket foot rests on the cross-rail's top face (both at
-# z = -120) — the M5 bolts pull the joint closed, they don't span a
-# gap. Declared here against the standalone's rail stub; the same
-# claim against the real `frame.floor_cross_x` lives at the m03 root,
-# where the drive and frame subtrees meet.
-assembly = assembly.assert_tangent_contact(
-    "static.drive_bracket", "cross_rail_stub"
-)
+def build_turret_drive_standalone() -> Assembly:
+    """Both drive subtrees plus the shaft and cross-rail stubs the
+    press fit and the bolted foot joint are declared against."""
+    a = (
+        Assembly()
+        .with_subassembly("static", build_turret_drive_static())
+        .with_subassembly("rotor", build_turret_drive_rotor())
+        .with_part(
+            "hub_shaft_stub",
+            _shaft_stub(length=_SHAFT_LEN),
+            location=Pos(TURRET_HUB_X, TURRET_HUB_Y, RAIL_TOP_Z),
+            material="steel",
+        )
+        .with_part(
+            "cross_rail_stub",
+            _cross_rail_stub(),
+            material="aluminium_anodized",
+        )
+        # Press fit, declared at its true interference. The 0.02 mm
+        # diametral band gives a Ø7.98/Ø8.0 annulus 8 mm tall ≈ 2.01 mm³
+        # of overlap (measured 2.0081 mm³, 2026-07-25); the bounds
+        # bracket that at ±25%, i.e. 0.015–0.025 mm of interference.
+        # Below the floor the fit has drifted back to a clearance fit
+        # and the set screw is carrying the turret alone; above the
+        # ceiling it's a hydraulic-press job on a stock pulley.
+        .assert_allowed_contact(
+            "rotor.drive_pulley_shaft", "hub_shaft_stub",
+            min_overlap_mm3=1.5, max_overlap_mm3=2.6,
+            reason=f"press fit, {PULLEY_SHAFT_PRESS_FIT} mm diametral on Ø8",
+        )
+    )
 
-# Detail-tier fastener assertions — bracket side of the bolted foot
-# joint. The two M5 foot bolts exist only when
-# `..detail_variations.apply_default_detail` adds them (additions land
-# at the root the override is applied to); in a cheap run they are
-# absent and these skip (`passed: null` in mechanism.json). Bolt shank
-# rides the foot's M5 clearance hole (bored out — zero overlap). The
-# rail side of the joint is asserted at the m03 root against
-# `turret.frame.floor_cross_x`: the bolt dips 6 mm into the T-slot
-# opening, hollow only on the detailed V-slot — this standalone's
-# solid `cross_rail_stub` would false-fail it.
-for _bolt in ("drive_foot_bolt_inner", "drive_foot_bolt_outer"):
-    assembly = assembly.assert_no_interference(_bolt, "static.drive_bracket")
+    # Pairwise no-interference. The tangent rests (bracket foot on the
+    # cross-rail top, bracket plate on the motor flange) have zero
+    # overlap and stay in the group check; their *contact* is asserted
+    # separately below / in `build_turret_drive_static`. The driven
+    # pulley genuinely overlaps the shaft — it's a press fit — and the
+    # group form derives that exclusion from the `assert_allowed_contact`
+    # above, which is why this call comes *after* it: the skip set is
+    # read at expansion time, so a same-level contact declared later
+    # would not be seen. Pulleys vs each other are clear in X (center
+    # distance 58.6, OD radii 19.1 + 6.4 = 25.5, gap 33.1 mm).
+    all_parts = (
+        [f"rotor.{n}" for n in DRIVE_ROTOR_PART_NAMES]
+        + [f"static.{n}" for n in DRIVE_STATIC_PART_NAMES]
+        + ["hub_shaft_stub", "cross_rail_stub"]
+    )
+    a = a.assert_no_interference_within(all_parts)
+
+    # The bracket foot rests on the cross-rail's top face (both at
+    # z = -120) — the M5 bolts pull the joint closed, they don't span a
+    # gap. Declared here against the standalone's rail stub; the same
+    # claim against the real `frame.floor_cross_x` lives at the m03
+    # root, where the drive and frame subtrees meet.
+    a = a.assert_tangent_contact("static.drive_bracket", "cross_rail_stub")
+
+    # Detail-tier fastener assertions — bracket side of the bolted foot
+    # joint. The two M5 foot bolts exist only when
+    # `..detail_variations.apply_default_detail` adds them (additions
+    # land at the root the override is applied to); in a cheap run they
+    # are absent and these skip (`passed: null` in mechanism.json). Bolt
+    # shank rides the foot's M5 clearance hole (bored out — zero
+    # overlap). The rail side of the joint is asserted at the m03 root
+    # against `turret.frame.floor_cross_x`: the bolt dips 6 mm into the
+    # T-slot opening, hollow only on the detailed V-slot — this
+    # standalone's solid `cross_rail_stub` would false-fail it.
+    for bolt in _DETAIL_FOOT_BOLTS:
+        a = a.assert_no_interference(bolt, "static.drive_bracket")
+    return a
+
+
+# Degenerate master, so `khana check <file>` resolves with no `:factory`.
+assembly = build_turret_drive_standalone()

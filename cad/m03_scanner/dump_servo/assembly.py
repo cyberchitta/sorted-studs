@@ -383,22 +383,31 @@ def build_turret_dump_servo_arm() -> Assembly:
 
 # --- Standalone assembly -----------------------------------------------
 
-assembly = (
-    Assembly()
-    .with_subassembly("static", build_turret_dump_servo_static())
-    .with_subassembly("arm", build_turret_dump_servo_arm())
-    .with_part(
-        "cross_rail_stub", _cross_rail_stub(), material="aluminium_anodized"
-    )
-)
+def build_turret_dump_servo_standalone() -> Assembly:
+    """Both servo subtrees plus a cross-rail stub to seat the bracket
+    foot on.
 
-# All pairwise no-interference between servo parts and the rail stub.
-# The bracket foot tangent-sits on the rail top; the body tangent-seats
-# on the bracket — both modelled as zero-overlap (assert_no_interference
-# accepts).
-_ALL = (
-    [f"static.{n}" for n in SERVO_STATIC_PART_NAMES]
-    + [f"arm.{n}" for n in SERVO_ARM_PART_NAMES]
-    + ["cross_rail_stub"]
-)
-assembly = assembly.assert_no_interference_within(_ALL)
+    All pairwise no-interference between servo parts and the rail stub.
+    The bracket foot tangent-sits on the rail top; the body
+    tangent-seats on the bracket — both modelled as zero-overlap
+    (assert_no_interference accepts).
+    """
+    all_parts = (
+        [f"static.{n}" for n in SERVO_STATIC_PART_NAMES]
+        + [f"arm.{n}" for n in SERVO_ARM_PART_NAMES]
+        + ["cross_rail_stub"]
+    )
+    return (
+        Assembly()
+        .with_subassembly("static", build_turret_dump_servo_static())
+        .with_subassembly("arm", build_turret_dump_servo_arm())
+        .with_part(
+            "cross_rail_stub", _cross_rail_stub(),
+            material="aluminium_anodized",
+        )
+        .assert_no_interference_within(all_parts)
+    )
+
+
+# Degenerate master, so `khana check <file>` resolves with no `:factory`.
+assembly = build_turret_dump_servo_standalone()

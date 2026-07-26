@@ -225,6 +225,19 @@ cad/
   pure. Parts, builders, joints, claims. They call nothing effectful:
   no `check()`, no `inspect()`, no export, no `__main__` block. The
   module's public surface is its named factories returning `Assembly`.
+
+  **A module binds `assembly` exactly once, and only as the degenerate
+  memo** — `assembly = build_x()`, last line. Everything above it is a
+  factory. A sub-assembly's standalone fixture (its subtrees plus the
+  stubs and claims that only make sense outside a parent) is a factory
+  too: name it `build_<unit>_standalone()`. Nothing imports it — the
+  parent calls the product builders directly — but making it a
+  function is what keeps the module import-time-effect-free, and it
+  gives `khana check <file>:build_x_standalone` a name to address.
+  Watch for the two shapes that aren't a literal `x = x.with_…`
+  rebind: sequential module-level bindings (compose, then a long
+  assert chain) and a module-level `for` loop appending asserts. Binds
+  *once* is the invariant; "no `x = x.`" is only a proxy for it.
 - **Check modules** (`check_*.py`) — declaration modules whose purpose
   is verification. They import product factories, compose a fixture
   (probe geometry, a merged assembly), declare the claims that fixture

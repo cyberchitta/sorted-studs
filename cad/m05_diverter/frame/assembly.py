@@ -315,70 +315,71 @@ def build_through_columns(
 
 
 # --- Standalone assembly ------------------------------------------------
-#
-# Same subtree names as every consumer: one floor's horizontals under
-# `rails` (floor-local at z=0) and the through-columns under `columns`
-# (single-floor span). Assertions address the qualified paths.
 
-assembly = (
-    Assembly()
-    .with_subassembly("rails", build_floor_horizontals())
-    .with_subassembly("columns", build_through_columns())
-)
+def build_frame_standalone() -> Assembly:
+    """One floor's frame, under the same subtree names every consumer
+    uses: horizontals under `rails` (floor-local at z=0) and the
+    through-columns under `columns` (single-floor span). Assertions
+    address the qualified paths."""
+    return (
+        Assembly()
+        .with_subassembly("rails", build_floor_horizontals())
+        .with_subassembly("columns", build_through_columns())
+        # Outer-vertex consistency at V_0 (6-fold rotational symmetry ⇒
+        # other 5 vertices follow). V_0 is endpoint of edges 0 and 5
+        # (edge 0 between V_0→V_1, edge 5 between V_5→V_0).
+        .assert_no_interference("rails.outer_vertex_bracket_0", "columns.outer_vert_0")
+        .assert_no_interference("rails.outer_vertex_bracket_0", "rails.outer_horiz_0")
+        .assert_no_interference("rails.outer_vertex_bracket_0", "rails.outer_horiz_5")
+        .assert_no_interference("rails.outer_vertex_bracket_0", "rails.radial_outer_0")
+        .assert_no_interference("columns.outer_vert_0", "rails.outer_horiz_0")
+        .assert_no_interference("columns.outer_vert_0", "rails.outer_horiz_5")
+        .assert_no_interference("columns.outer_vert_0", "rails.radial_outer_0")
+        # Adjacent outer edges meeting at V_1.
+        .assert_no_interference("rails.outer_horiz_0", "rails.outer_horiz_1")
+        # Far-apart outer edges (sanity — trivial pass).
+        .assert_no_interference("rails.outer_horiz_0", "rails.outer_horiz_3")
+        # Inner-vertex consistency at inner V_0. Inner edges 0 and 5 meet
+        # at inner V_0, the inner through-column passes through it, and
+        # both radial segments butt against the inner-vertex bracket
+        # here.
+        .assert_no_interference("rails.inner_vertex_bracket_0", "rails.inner_horiz_0")
+        .assert_no_interference("rails.inner_vertex_bracket_0", "rails.inner_horiz_5")
+        .assert_no_interference("rails.inner_vertex_bracket_0", "rails.radial_inner_0")
+        .assert_no_interference("rails.inner_vertex_bracket_0", "rails.radial_outer_0")
+        .assert_no_interference("rails.inner_vertex_bracket_0", "columns.inner_vert_0")
+        .assert_no_interference("columns.inner_vert_0", "rails.inner_horiz_0")
+        .assert_no_interference("columns.inner_vert_0", "rails.inner_horiz_5")
+        .assert_no_interference("columns.inner_vert_0", "rails.radial_inner_0")
+        .assert_no_interference("columns.inner_vert_0", "rails.radial_outer_0")
+        # Adjacent inner edges meeting at inner V_1.
+        .assert_no_interference("rails.inner_horiz_0", "rails.inner_horiz_1")
+        # Inner vs outer separation — same azimuth with aligned hexes but
+        # ≫ 100 mm radial gap, so this should trivially pass.
+        .assert_no_interference("rails.inner_horiz_0", "rails.outer_horiz_0")
+        .assert_no_interference("rails.inner_horiz_0", "columns.outer_vert_0")
+        .assert_no_interference("rails.inner_horiz_0", "rails.outer_vertex_bracket_0")
+        .assert_no_interference("rails.inner_vertex_bracket_0", "rails.outer_vertex_bracket_0")
+        .assert_no_interference("columns.inner_vert_0", "columns.outer_vert_0")
+        .assert_no_interference("columns.inner_vert_0", "rails.outer_horiz_0")
+        .assert_no_interference("columns.inner_vert_0", "rails.outer_vertex_bracket_0")
+        # Both radial segments clear the adjacent inner-hex edges they
+        # pass between at the inner vertex (edges 0 and 5 both terminate
+        # at inner V_0).
+        .assert_no_interference("rails.radial_inner_0", "rails.inner_horiz_0")
+        .assert_no_interference("rails.radial_inner_0", "rails.inner_horiz_5")
+        .assert_no_interference("rails.radial_outer_0", "rails.inner_horiz_0")
+        .assert_no_interference("rails.radial_outer_0", "rails.inner_horiz_5")
+        # Outer segment sits well clear of the outer hex edges adjacent
+        # to its outer-vertex landing (edges 0 and 5).
+        .assert_no_interference("rails.radial_outer_0", "rails.outer_horiz_0")
+        .assert_no_interference("rails.radial_outer_0", "rails.outer_horiz_5")
+        # Outer-segment clearance from non-adjoining verticals / brackets
+        # (sanity).
+        .assert_no_interference("rails.radial_outer_0", "columns.outer_vert_1")
+        .assert_no_interference("rails.radial_outer_0", "rails.outer_vertex_bracket_1")
+    )
 
-assembly = (
-    assembly
-    # Outer-vertex consistency at V_0 (6-fold rotational symmetry ⇒
-    # other 5 vertices follow). V_0 is endpoint of edges 0 and 5
-    # (edge 0 between V_0→V_1, edge 5 between V_5→V_0).
-    .assert_no_interference("rails.outer_vertex_bracket_0", "columns.outer_vert_0")
-    .assert_no_interference("rails.outer_vertex_bracket_0", "rails.outer_horiz_0")
-    .assert_no_interference("rails.outer_vertex_bracket_0", "rails.outer_horiz_5")
-    .assert_no_interference("rails.outer_vertex_bracket_0", "rails.radial_outer_0")
-    .assert_no_interference("columns.outer_vert_0", "rails.outer_horiz_0")
-    .assert_no_interference("columns.outer_vert_0", "rails.outer_horiz_5")
-    .assert_no_interference("columns.outer_vert_0", "rails.radial_outer_0")
-    # Adjacent outer edges meeting at V_1.
-    .assert_no_interference("rails.outer_horiz_0", "rails.outer_horiz_1")
-    # Far-apart outer edges (sanity — trivial pass).
-    .assert_no_interference("rails.outer_horiz_0", "rails.outer_horiz_3")
-    # Inner-vertex consistency at inner V_0. Inner edges 0 and 5 meet
-    # at inner V_0, the inner through-column passes through it, and
-    # both radial segments butt against the inner-vertex bracket
-    # here.
-    .assert_no_interference("rails.inner_vertex_bracket_0", "rails.inner_horiz_0")
-    .assert_no_interference("rails.inner_vertex_bracket_0", "rails.inner_horiz_5")
-    .assert_no_interference("rails.inner_vertex_bracket_0", "rails.radial_inner_0")
-    .assert_no_interference("rails.inner_vertex_bracket_0", "rails.radial_outer_0")
-    .assert_no_interference("rails.inner_vertex_bracket_0", "columns.inner_vert_0")
-    .assert_no_interference("columns.inner_vert_0", "rails.inner_horiz_0")
-    .assert_no_interference("columns.inner_vert_0", "rails.inner_horiz_5")
-    .assert_no_interference("columns.inner_vert_0", "rails.radial_inner_0")
-    .assert_no_interference("columns.inner_vert_0", "rails.radial_outer_0")
-    # Adjacent inner edges meeting at inner V_1.
-    .assert_no_interference("rails.inner_horiz_0", "rails.inner_horiz_1")
-    # Inner vs outer separation — same azimuth with aligned hexes but
-    # ≫ 100 mm radial gap, so this should trivially pass.
-    .assert_no_interference("rails.inner_horiz_0", "rails.outer_horiz_0")
-    .assert_no_interference("rails.inner_horiz_0", "columns.outer_vert_0")
-    .assert_no_interference("rails.inner_horiz_0", "rails.outer_vertex_bracket_0")
-    .assert_no_interference("rails.inner_vertex_bracket_0", "rails.outer_vertex_bracket_0")
-    .assert_no_interference("columns.inner_vert_0", "columns.outer_vert_0")
-    .assert_no_interference("columns.inner_vert_0", "rails.outer_horiz_0")
-    .assert_no_interference("columns.inner_vert_0", "rails.outer_vertex_bracket_0")
-    # Both radial segments clear the adjacent inner-hex edges they
-    # pass between at the inner vertex (edges 0 and 5 both terminate
-    # at inner V_0).
-    .assert_no_interference("rails.radial_inner_0", "rails.inner_horiz_0")
-    .assert_no_interference("rails.radial_inner_0", "rails.inner_horiz_5")
-    .assert_no_interference("rails.radial_outer_0", "rails.inner_horiz_0")
-    .assert_no_interference("rails.radial_outer_0", "rails.inner_horiz_5")
-    # Outer segment sits well clear of the outer hex edges adjacent
-    # to its outer-vertex landing (edges 0 and 5).
-    .assert_no_interference("rails.radial_outer_0", "rails.outer_horiz_0")
-    .assert_no_interference("rails.radial_outer_0", "rails.outer_horiz_5")
-    # Outer-segment clearance from non-adjoining verticals / brackets
-    # (sanity).
-    .assert_no_interference("rails.radial_outer_0", "columns.outer_vert_1")
-    .assert_no_interference("rails.radial_outer_0", "rails.outer_vertex_bracket_1")
-)
+
+# Degenerate master, so `khana check <file>` resolves with no `:factory`.
+assembly = build_frame_standalone()

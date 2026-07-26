@@ -461,34 +461,42 @@ def build_turret_homing_rotor() -> Assembly:
 
 # --- Standalone assembly -----------------------------------------------
 
-assembly = (
-    Assembly()
-    .with_subassembly("static", build_turret_homing_static())
-    .with_subassembly("rotor", build_turret_homing_rotor())
-)
-
-# Stubs.
 _SHAFT_LEN = TURRET_SHAFT_TOP_Z - RAIL_TOP_Z               # = 200
-assembly = assembly.with_part(
-    "hub_shaft_stub",
-    _shaft_stub(length=_SHAFT_LEN),
-    location=Pos(TURRET_HUB_X, TURRET_HUB_Y, RAIL_TOP_Z),
-    material="steel",
-)
-assembly = assembly.with_part(
-    "cross_rail_stub",
-    _cross_rail_stub(),
-    material="aluminium_anodized",
-)
 
-# Pairwise no-interference. Flag-onto-shaft is tangent contact (zero
-# overlap; passes assert_no_interference). Sensor prongs vs flag: prong
-# Z faces are tangent to disc Z faces (zero overlap). Bracket foot
-# tangent on cross-rail top, sensor outer face tangent on bracket post
-# +X face — also zero-overlap.
-_ALL = (
-    [f"rotor.{n}" for n in HOMING_ROTOR_PART_NAMES]
-    + [f"static.{n}" for n in HOMING_STATIC_PART_NAMES]
-    + ["hub_shaft_stub", "cross_rail_stub"]
-)
-assembly = assembly.assert_no_interference_within(_ALL)
+
+def build_turret_homing_standalone() -> Assembly:
+    """Both homing subtrees plus the shaft and cross-rail stubs they
+    key to.
+
+    Pairwise no-interference. Flag-onto-shaft is tangent contact (zero
+    overlap; passes assert_no_interference). Sensor prongs vs flag:
+    prong Z faces are tangent to disc Z faces (zero overlap). Bracket
+    foot tangent on cross-rail top, sensor outer face tangent on
+    bracket post +X face — also zero-overlap.
+    """
+    all_parts = (
+        [f"rotor.{n}" for n in HOMING_ROTOR_PART_NAMES]
+        + [f"static.{n}" for n in HOMING_STATIC_PART_NAMES]
+        + ["hub_shaft_stub", "cross_rail_stub"]
+    )
+    return (
+        Assembly()
+        .with_subassembly("static", build_turret_homing_static())
+        .with_subassembly("rotor", build_turret_homing_rotor())
+        .with_part(
+            "hub_shaft_stub",
+            _shaft_stub(length=_SHAFT_LEN),
+            location=Pos(TURRET_HUB_X, TURRET_HUB_Y, RAIL_TOP_Z),
+            material="steel",
+        )
+        .with_part(
+            "cross_rail_stub",
+            _cross_rail_stub(),
+            material="aluminium_anodized",
+        )
+        .assert_no_interference_within(all_parts)
+    )
+
+
+# Degenerate master, so `khana check <file>` resolves with no `:factory`.
+assembly = build_turret_homing_standalone()
