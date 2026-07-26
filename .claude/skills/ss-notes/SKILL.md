@@ -261,6 +261,13 @@ No note should be more than a week or two stale. When you run a pass:
 
 1. **Reconcile `worklist.md` against reality** — it is navigation only; if an
    entry has become a second copy of a `state/` item, delete it from the worklist.
+   Its characteristic rot is **append-only done-logging**: each closed slice
+   arrives as a paragraph, none is ever compressed, and within a week the file is
+   a narrative record of work whose real record is a `state/` file or a cross-repo
+   handoff (2026-07-26: 130 of 246 lines). A closed slice earns one dated line
+   naming where the record lives. What must survive compression is anything a
+   *reader deciding what to do next* needs — the open asks, the one still-red
+   part, who owes whom.
 2. **Sweep `state/` status lines** — correct anything a slice of work has
    falsified; fix stale claims in place, never layer.
 3. **Drain `lessons.md`** per the pipeline; update its "do not re-promote" list.
@@ -270,7 +277,12 @@ No note should be more than a week or two stale. When you run a pass:
    nothing until you've watched it go red: inject a bad reference, confirm it
    reports, remove it.
 6. **Commit `working-notes`** — the periodic cadence from the `working-notes`
-   skill; structural moves already went in immediately.
+   skill. Structural moves ride along with it: stage them with `git mv` when you
+   make them, so the sweep records a rename rather than a delete plus an
+   unrelated creation. *(This line used to say moves "already went in
+   immediately" — a stale copy of an earlier cadence, corrected 2026-07-26
+   against the `working-notes` skill, which is the authority on when to
+   commit.)*
 
 A pass that finds nothing is a successful pass.
 
