@@ -84,9 +84,6 @@ STATOR_WALL_H = 40.0
 # already seated in the V, and a cylindrical upper wall just
 # contains splash. Must be ≤ STATOR_WALL_H.
 STATOR_V_H = 30.0
-assert 0.0 < STATOR_V_H <= STATOR_WALL_H, (
-    "STATOR_V_H must be positive and not exceed STATOR_WALL_H"
-)
 
 # Exit arc angular width — the cut-away on the outer stator wall
 # where bricks fall off. Starts at one facet-pitch so a single facet

@@ -107,21 +107,6 @@ HALF_HEX_ANGLE_DEG = 60.0
 WALL_MIN = 1.5
 
 
-# --- Parametric sanity checks -------------------------------------------
-# cad-khana's assert_clearance is part-to-part and bolt holes are
-# subtracted negative space, so bolt-hole-to-edge wall thickness isn't
-# directly expressible as an assertion. The global assert_min_wall on
-# the bracket catches thin walls implicitly, but these plain Python
-# asserts fail at script-run time if someone bumps BOLT_HOLE_D or
-# BOLT_SPACING past safe parameters.
-assert ARM_W - BOLT_HOLE_D >= 2 * WALL_MIN, (
-    f"bolt-hole-to-arm-edge wall {(ARM_W - BOLT_HOLE_D) / 2:.2f}mm < {WALL_MIN}mm"
-)
-assert BOLT_SPACING - BOLT_HOLE_D >= 2 * WALL_MIN, (
-    f"bolt-hole-to-bolt-hole wall {BOLT_SPACING - BOLT_HOLE_D:.2f}mm < {2 * WALL_MIN}mm"
-)
-
-
 # --- Part functions -----------------------------------------------------
 
 def _through_hole_z(hole_d: float, plate_t: float) -> Part:
@@ -144,6 +129,18 @@ def bracket() -> Part:
     to VERT_ARM_TOP_Z at the column's -X face. The through-column
     passes through the hub's square cutout at hub-Z.
     """
+    # Bolt-hole wall sanity. Holes are subtracted negative space and
+    # cad-khana's clearance assertions are part-to-part, so these walls
+    # aren't expressible as assembly claims; `printability.py`'s
+    # `wall_min` catches them only implicitly. Bare asserts here fire
+    # when the bracket is actually built, not at import.
+    assert ARM_W - BOLT_HOLE_D >= 2 * WALL_MIN, (
+        f"bolt-hole-to-arm-edge wall {(ARM_W - BOLT_HOLE_D) / 2:.2f}mm < {WALL_MIN}mm"
+    )
+    assert BOLT_SPACING - BOLT_HOLE_D >= 2 * WALL_MIN, (
+        f"bolt-hole-to-bolt-hole wall {BOLT_SPACING - BOLT_HOLE_D:.2f}mm < {2 * WALL_MIN}mm"
+    )
+
     plate_cz = BRACKET_Z_TOP - PLATE_T / 2   # hub/horizontal-arm center z (= -23)
 
     # Hub: flat square plate below the floor datum.

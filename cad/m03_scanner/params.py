@@ -383,14 +383,12 @@ _BU_BACK = plate_back_centre_world(VERTEX_BACK_UPPER_POS)
 _BL_BACK = plate_back_centre_world(VERTEX_BELOW_LEFT_POS)
 _BR_BACK = plate_back_centre_world(VERTEX_BELOW_RIGHT_POS)
 
-assert abs(_FL_BACK[0]) < 1e-6, (
-    "front-low vertex has drifted off the YZ plane; the front-low rail "
-    "clamp assumes the x-symmetric (centered on rail D) pose"
-)
-assert abs(_BU_BACK[0]) < 1e-6, (
-    "back-upper vertex has drifted off the YZ plane; the back-upper "
-    "rail clamp assumes the x-symmetric (centered on rail D) pose"
-)
+# The front-low and back-upper rail clamps both assume an x-symmetric
+# pose (centred on rail D), i.e. `_FL_BACK[0]` and `_BU_BACK[0]` are
+# 0 — see the `rail_d_centred_vertices` check in `build_camera_rig`.
+# A pure-parameter module has no builder to host a claim, so the
+# assertion lives with the builder that depends on it rather than
+# firing when someone imports this file for an unrelated constant.
 
 # Below-left: clamp on the shared back rail's +Z face, X-centred under
 # the mount-back centre. The shared back rail (turret-frame member,
@@ -596,14 +594,12 @@ TURRET_FRAME_FRONT_Y = -TURRET_ARM_R                          # = -125 (no membe
 TURRET_FRAME_SIDE_X = TURRET_ARM_R + 20.0                     # = 145
 
 # Cross-check: ARCH_POST_X (defined earlier, before TURRET_ARM_R) is
-# the literal 145; assert it tracks TURRET_FRAME_SIDE_X so a future
+# the literal 145 and must track TURRET_FRAME_SIDE_X, so a future
 # change to TURRET_ARM_R can't silently desync the arch post position
-# from the side-rail corner it lands on.
-assert ARCH_POST_X == TURRET_FRAME_SIDE_X, (
-    f"ARCH_POST_X ({ARCH_POST_X}) must equal TURRET_FRAME_SIDE_X "
-    f"({TURRET_FRAME_SIDE_X}); arch post lands on the back end of the "
-    f"side rail at x = ±TURRET_FRAME_SIDE_X"
-)
+# from the side-rail corner it lands on. Asserted in `build_arch`,
+# which is what places the post — a pure-parameter module has no
+# builder, and an import-time assert here would fire on anyone reading
+# an unrelated constant out of this file.
 
 
 # --- Turret hub (slice b) ----------------------------------------------

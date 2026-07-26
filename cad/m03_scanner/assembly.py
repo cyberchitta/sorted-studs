@@ -84,6 +84,7 @@ from .params import (
     VERTEX_FRONT_LOW_POS,
     horizontal_x_roll_deg,
     lens_axis_unit,
+    plate_back_centre_world,
     rotation_for_normal,
 )
 from .arch import assembly as _arch
@@ -164,6 +165,22 @@ def build_camera_rig() -> Assembly:
     """Camera-rig sub-assembly. Rig-local frame == m03-local (the rig
     is placed at identity), so all rig coordinates in `params.py`
     apply unchanged."""
+    # The front-low and back-upper clamps both hang from rail D's
+    # underside in the x-symmetric pose, so their plate-back centres
+    # must sit on the world YZ plane. `params.py` derives those from
+    # the vertex positions but has no builder of its own to hold the
+    # claim; this is the builder that places the clamps.
+    for _label, _vertex in (
+        ("front-low", VERTEX_FRONT_LOW_POS),
+        ("back-upper", VERTEX_BACK_UPPER_POS),
+    ):
+        _back = plate_back_centre_world(_vertex)
+        assert abs(_back[0]) < 1e-6, (
+            f"{_label} vertex has drifted off the YZ plane; the "
+            f"{_label} rail clamp assumes the x-symmetric (centered "
+            f"on rail D) pose"
+        )
+
     a = Assembly().with_subassembly("arch", _arch.build_arch())
     for prefix, spec in _CAMERA_INSTANCES.items():
         clamp_loc = Pos(*spec["clamp_pos"]) * spec["clamp_rot"]
@@ -379,6 +396,27 @@ def build_turret() -> Assembly:
         "rotor.drive.drive_pulley_shaft", "rotor.arm.spider",
         along="Z", min_mm=1.0, name="pulley_spider_gap",
     )
+    # Homing parts' lower Z bound — the flag and the sensor must clear
+    # the driven pulley's top face by ≥1 mm. Declared here for the same
+    # reason as the pulley corridor above: it retires
+    # homing/assembly.py's PULLEY_TOP_Z mirror and its hand-derived Z
+    # subtractions, measuring the live pulley instead. Both pairs are
+    # pose-invariant (flag and pulley are rigid on the rotor; the
+    # sensor is bench-mounted and the pulley is a body of revolution),
+    # so the 12-frame sweep re-evaluates them safely.
+    #
+    # The matching UPPER bound — clearing the platform drop blocks —
+    # stays a bare rest-pose assert in `homing/assembly.py`; see the
+    # note there. The bracket is not bounded below by the pulley: its
+    # foot sits far beneath it and its post passes outboard in X.
+    t = t.assert_distance(
+        "homing.homing_sensor", "rotor.drive.drive_pulley_shaft",
+        along="-Z", min_mm=1.0, name="homing_sensor_pulley_gap",
+    )
+    t = t.assert_distance(
+        "rotor.homing.homing_flag", "rotor.drive.drive_pulley_shaft",
+        along="-Z", min_mm=1.0, name="homing_flag_pulley_gap",
+    )
     # Driven pulley pressed onto the real hub shaft — the drive
     # standalone declares the same fit against its own shaft stub;
     # this is the composed-run pair. Bore Ø7.98 on the Ø8 shaft, so
@@ -397,6 +435,13 @@ def build_turret() -> Assembly:
     # stub). A foot floating above the rail passes no-interference;
     # this is what says the joint closes.
     t = t.assert_tangent_contact("drive.drive_bracket", "frame.floor_cross_x")
+    # Same joint, servo side — the dump-servo bracket's foot rests on
+    # the same cross-rail. Was a `_BRACKET_PLATE_BOTTOM_Z == RAIL_TOP_Z`
+    # constant comparison inside dump_servo; the standalone asserts it
+    # against its rail stub, this is the real-member pair.
+    t = t.assert_tangent_contact(
+        "dump_servo.servo_bracket", "frame.floor_cross_x"
+    )
     # Servo pad × drop block, once per station: whichever platform is
     # parked at DUMP tilts, so the claim belongs to all four cartridges
     # (they come from one builder, so the window is the same geometry

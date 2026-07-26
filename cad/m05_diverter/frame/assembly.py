@@ -112,32 +112,6 @@ INNER_HORIZ_LEN = EDGE_LEN_INNER - 2.0 * HOR_INNER_OFFSET
 RADIAL_INNER_LEN = RAIL_INNER_OUTER_END_R - RAIL_INNER_R          # ≈ 49.66
 RADIAL_OUTER_LEN = RAIL_OUTER_R - RAIL_OUTER_INNER_END_R          # ≈ 106.11
 
-assert OUTER_HORIZ_LEN > 0, (
-    f"OUTER_HORIZ_LEN = {OUTER_HORIZ_LEN:.1f} mm ≤ 0 — increase R_HEX_OUTER "
-    f"or decrease HOR_INNER_OFFSET."
-)
-assert INNER_HORIZ_LEN > 0, (
-    f"INNER_HORIZ_LEN = {INNER_HORIZ_LEN:.1f} mm ≤ 0 — increase R_HEX_INNER "
-    f"or decrease HOR_INNER_OFFSET."
-)
-assert RAIL_SIZE == EXT_SIZE, (
-    f"RAIL_SIZE ({RAIL_SIZE}) must equal frame EXT_SIZE ({EXT_SIZE}); "
-    f"the radial rail is a standard 2020 and reuses the frame helper."
-)
-assert RADIAL_INNER_LEN > 0, (
-    f"RADIAL_INNER_LEN = {RADIAL_INNER_LEN:.1f} mm ≤ 0 — "
-    f"RAIL_INNER_OUTER_END_R must exceed RAIL_INNER_R."
-)
-assert RADIAL_OUTER_LEN > 0, (
-    f"RADIAL_OUTER_LEN = {RADIAL_OUTER_LEN:.1f} mm ≤ 0 — "
-    f"RAIL_OUTER_R must exceed RAIL_OUTER_INNER_END_R."
-)
-assert BRACKET_HOR_OFFSET == HOR_INNER_OFFSET, (
-    f"params.BRACKET_HOR_OFFSET ({BRACKET_HOR_OFFSET}) must equal bracket "
-    f"HOR_INNER_OFFSET ({HOR_INNER_OFFSET}); params.py copies this value "
-    f"intentionally and this assertion catches drift."
-)
-
 
 # --- Part helpers -------------------------------------------------------
 
@@ -181,6 +155,35 @@ def build_floor_horizontals(
     module-level `materials.py`. Colour is not a parameter — the unit
     root paints the finished tree (`cad/design_systems.py:paint`).
     """
+    # Member-length and mirror sanity for the spans this builder cuts.
+    # Loose bounds with no geometric content — a zero-length extrusion
+    # is a parameter mistake, not a fit problem — so they stay bare.
+    assert OUTER_HORIZ_LEN > 0, (
+        f"OUTER_HORIZ_LEN = {OUTER_HORIZ_LEN:.1f} mm ≤ 0 — increase R_HEX_OUTER "
+        f"or decrease HOR_INNER_OFFSET."
+    )
+    assert INNER_HORIZ_LEN > 0, (
+        f"INNER_HORIZ_LEN = {INNER_HORIZ_LEN:.1f} mm ≤ 0 — increase R_HEX_INNER "
+        f"or decrease HOR_INNER_OFFSET."
+    )
+    assert RAIL_SIZE == EXT_SIZE, (
+        f"RAIL_SIZE ({RAIL_SIZE}) must equal frame EXT_SIZE ({EXT_SIZE}); "
+        f"the radial rail is a standard 2020 and reuses the frame helper."
+    )
+    assert RADIAL_INNER_LEN > 0, (
+        f"RADIAL_INNER_LEN = {RADIAL_INNER_LEN:.1f} mm ≤ 0 — "
+        f"RAIL_INNER_OUTER_END_R must exceed RAIL_INNER_R."
+    )
+    assert RADIAL_OUTER_LEN > 0, (
+        f"RADIAL_OUTER_LEN = {RADIAL_OUTER_LEN:.1f} mm ≤ 0 — "
+        f"RAIL_OUTER_R must exceed RAIL_OUTER_INNER_END_R."
+    )
+    assert BRACKET_HOR_OFFSET == HOR_INNER_OFFSET, (
+        f"params.BRACKET_HOR_OFFSET ({BRACKET_HOR_OFFSET}) must equal bracket "
+        f"HOR_INNER_OFFSET ({HOR_INNER_OFFSET}); params.py copies this value "
+        f"intentionally and this assertion catches drift."
+    )
+
     def _mt(name: str) -> str | None:
         return material_fn(name) if material_fn is not None else None
 

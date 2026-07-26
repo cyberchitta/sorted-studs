@@ -128,16 +128,6 @@ HALF_HEX_ANGLE_DEG = 60.0
 WALL_MIN = 1.5
 
 
-# --- Parametric sanity checks -------------------------------------------
-
-assert ARM_W - BOLT_HOLE_D >= 2 * WALL_MIN, (
-    f"bolt-hole-to-arm-edge wall {(ARM_W - BOLT_HOLE_D) / 2:.2f}mm < {WALL_MIN}mm"
-)
-assert BOLT_SPACING - BOLT_HOLE_D >= 2 * WALL_MIN, (
-    f"bolt-hole-to-bolt-hole wall {BOLT_SPACING - BOLT_HOLE_D:.2f}mm < {2 * WALL_MIN}mm"
-)
-
-
 # --- Part helpers -------------------------------------------------------
 
 def _through_hole_z(hole_d: float, plate_t: float) -> Part:
@@ -165,6 +155,18 @@ def bracket() -> Part:
     hub bottom (z=-26) up to VERT_ARM_TOP_Z (=40) with two M5 bolts
     at z = 10, 30.
     """
+    # Bolt-hole wall sanity. Holes are subtracted negative space and
+    # cad-khana's clearance assertions are part-to-part, so these walls
+    # aren't expressible as assembly claims; `printability.py`'s
+    # `wall_min` catches them only implicitly. Bare asserts here fire
+    # when the bracket is actually built, not at import.
+    assert ARM_W - BOLT_HOLE_D >= 2 * WALL_MIN, (
+        f"bolt-hole-to-arm-edge wall {(ARM_W - BOLT_HOLE_D) / 2:.2f}mm < {WALL_MIN}mm"
+    )
+    assert BOLT_SPACING - BOLT_HOLE_D >= 2 * WALL_MIN, (
+        f"bolt-hole-to-bolt-hole wall {BOLT_SPACING - BOLT_HOLE_D:.2f}mm < {2 * WALL_MIN}mm"
+    )
+
     plate_cz = BRACKET_Z_TOP - PLATE_T / 2  # plate center z
 
     # Hub: flat square plate below the floor datum.

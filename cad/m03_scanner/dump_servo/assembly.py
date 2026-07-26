@@ -195,62 +195,6 @@ HUB_DISC_Y_LEN = 8.0
 HUB_BORE_D = 4.5
 
 
-# --- Sanity asserts ----------------------------------------------------
-
-# Bracket foot to rail T-slot: bolts inside the foot footprint with
-# WALL_MIN walls on each side.
-_bolt_to_foot_x_inner = (
-    _BRACKET_PLATE_X / 2 - _BRACKET_BOLT_HALF_X - BRACKET_BOLT_HOLE_D / 2
-)
-assert _bolt_to_foot_x_inner >= WALL_MIN, (
-    f"bracket bolt edge to foot X-edge wall {_bolt_to_foot_x_inner:.2f} mm "
-    f"< WALL_MIN ({WALL_MIN}); raise _BRACKET_PLATE_X or shrink "
-    f"BRACKET_BOLT_SPACING_X"
-)
-
-# Bracket Y-extent: bolt at rail centreline must sit inside the plate.
-assert _BRACKET_PLATE_Y_MIN < TURRET_FRAME_CROSS_Y < _BRACKET_PLATE_Y_MAX, (
-    f"bracket plate Y range [{_BRACKET_PLATE_Y_MIN}, {_BRACKET_PLATE_Y_MAX}] "
-    f"doesn't contain rail centreline Y = {TURRET_FRAME_CROSS_Y}; "
-    f"M5 bolts wouldn't drop into the T-slot"
-)
-
-# Bracket plate sits on rail top (flush).
-assert _BRACKET_PLATE_BOTTOM_Z == RAIL_TOP_Z, (
-    f"bracket bottom Z ({_BRACKET_PLATE_BOTTOM_Z}) ≠ rail top "
-    f"({RAIL_TOP_Z}); the foot has to sit flush on the rail"
-)
-
-# Servo body bottom flush with bracket plate top.
-assert abs(_SERVO_BODY_Z_MIN - _BRACKET_PLATE_TOP_Z) < 1e-6, (
-    f"servo body bottom Z ({_SERVO_BODY_Z_MIN}) ≠ bracket plate top Z "
-    f"({_BRACKET_PLATE_TOP_Z}); the body has to seat flush on the bracket"
-)
-
-# Cradle wall thickness ≥ WALL_MIN.
-assert _CRADLE_WALL_T >= WALL_MIN, (
-    f"cradle wall thickness {_CRADLE_WALL_T:.2f} mm < WALL_MIN "
-    f"({WALL_MIN}); raise _BRACKET_PLATE_X or shrink _WALL_AIR_GAP"
-)
-
-# Pad bottom at REST clears the platform extension's bottom (z = -43)
-# by ≥ 2 mm so an indexing IDLE platform doesn't crash the pad.
-_PLATFORM_EXT_BOTTOM_Z = -43.0
-_pad_to_extension = _PLATFORM_EXT_BOTTOM_Z - _PAD_TOP_Z
-assert _pad_to_extension >= 2.0 - 1e-9, (
-    f"pad top ({_PAD_TOP_Z}) too close to platform extension bottom "
-    f"({_PLATFORM_EXT_BOTTOM_Z}); REST clearance "
-    f"{_pad_to_extension:.2f} mm < 2 mm"
-)
-
-# Hub bore clears the shaft with a single-wall-thick remainder.
-_hub_wall = (HUB_DISC_OD - HUB_BORE_D) / 2
-assert _hub_wall >= WALL_MIN, (
-    f"hub disc wall around shaft bore {_hub_wall:.2f} mm < WALL_MIN "
-    f"({WALL_MIN}); raise HUB_DISC_OD"
-)
-
-
 # --- Part functions ----------------------------------------------------
 
 def servo_body():
@@ -265,6 +209,29 @@ def servo_bracket():
     two M5 bolt holes at the rail centreline, plus a pair of cradle
     walls hugging the servo body in ±X. Returned in turret-local
     coords (placed at identity in the assembly)."""
+    # Bolt-hole and cradle wall sanity. WALL_MIN arithmetic over
+    # subtracted negative space plus a containment bound on the plate's
+    # Y span, so none is a part-pair claim — bare, fired when the
+    # bracket is cut.
+    _bolt_to_foot_x_inner = (
+        _BRACKET_PLATE_X / 2 - _BRACKET_BOLT_HALF_X - BRACKET_BOLT_HOLE_D / 2
+    )
+    assert _bolt_to_foot_x_inner >= WALL_MIN, (
+        f"bracket bolt edge to foot X-edge wall {_bolt_to_foot_x_inner:.2f} mm "
+        f"< WALL_MIN ({WALL_MIN}); raise _BRACKET_PLATE_X or shrink "
+        f"BRACKET_BOLT_SPACING_X"
+    )
+    # Bracket Y-extent: bolt at rail centreline must sit inside the plate.
+    assert _BRACKET_PLATE_Y_MIN < TURRET_FRAME_CROSS_Y < _BRACKET_PLATE_Y_MAX, (
+        f"bracket plate Y range [{_BRACKET_PLATE_Y_MIN}, {_BRACKET_PLATE_Y_MAX}] "
+        f"doesn't contain rail centreline Y = {TURRET_FRAME_CROSS_Y}; "
+        f"M5 bolts wouldn't drop into the T-slot"
+    )
+    assert _CRADLE_WALL_T >= WALL_MIN, (
+        f"cradle wall thickness {_CRADLE_WALL_T:.2f} mm < WALL_MIN "
+        f"({WALL_MIN}); raise _BRACKET_PLATE_X or shrink _WALL_AIR_GAP"
+    )
+
     plate = (
         Pos(_BRACKET_PLATE_X_CENTER, _BRACKET_PLATE_Y_CENTER, _BRACKET_PLATE_CENTER_Z)
         * Box(_BRACKET_PLATE_X, _BRACKET_PLATE_Y_LEN, _BRACKET_PLATE_T)
@@ -296,6 +263,13 @@ def servo_arm():
     """Printed lifter arm: hub disc at the servo shaft + slanted beam +
     pad block at the tip. Single rigid body; the whole part rotates
     about the servo Y-axis through the pivot."""
+    # Hub bore clears the shaft with a single-wall-thick remainder.
+    _hub_wall = (HUB_DISC_OD - HUB_BORE_D) / 2
+    assert _hub_wall >= WALL_MIN, (
+        f"hub disc wall around shaft bore {_hub_wall:.2f} mm < WALL_MIN "
+        f"({WALL_MIN}); raise HUB_DISC_OD"
+    )
+
     hub = (
         Pos(
             TURRET_DUMP_SERVO_PIVOT_X,
@@ -368,6 +342,26 @@ def build_turret_dump_servo_static() -> Assembly:
         ),
         material=material_of("servo_body"),
     )
+    # The servo body seats flush on the bracket plate's top face. This
+    # was a `_SERVO_BODY_Z_MIN == _BRACKET_PLATE_TOP_Z` constant
+    # comparison; as a contact assertion it is measured on the placed
+    # geometry, and it closes the gap the module docstring flagged —
+    # a body floating 3 mm above the plate passes no-interference just
+    # as happily, so nothing asserted that the seat *exists*.
+    a = a.assert_tangent_contact("servo_bracket", "servo_body")
+    # Pad-to-platform clearance at REST. `_PLATFORM_EXT_BOTTOM_Z` is a
+    # mirror of the platform extension's bottom; the claim is scoped to
+    # the platforms' rest tilt, so it stays bare for the same reason as
+    # the homing drop-block bound (see `homing/assembly.py`) — a
+    # directed-distance form goes red mid-dump-dwell, when the dumping
+    # platform tips through the same Z band without ever touching.
+    _platform_ext_bottom_z = -43.0
+    _pad_to_extension = _platform_ext_bottom_z - _PAD_TOP_Z
+    assert _pad_to_extension >= 2.0 - 1e-9, (
+        f"pad top ({_PAD_TOP_Z}) too close to platform extension bottom "
+        f"({_platform_ext_bottom_z}); REST clearance "
+        f"{_pad_to_extension:.2f} mm < 2 mm"
+    )
     return a
 
 
@@ -387,10 +381,13 @@ def build_turret_dump_servo_standalone() -> Assembly:
     """Both servo subtrees plus a cross-rail stub to seat the bracket
     foot on.
 
-    All pairwise no-interference between servo parts and the rail stub.
-    The bracket foot tangent-sits on the rail top; the body
-    tangent-seats on the bracket — both modelled as zero-overlap
-    (assert_no_interference accepts).
+    All pairwise no-interference between servo parts and the rail stub,
+    plus the bracket foot's tangent rest on the rail top. (The body's
+    seat on the bracket is declared in
+    ``build_turret_dump_servo_static``, so it propagates into composed
+    runs too.) Both rests used to be constant comparisons in this
+    module's sanity block — no-interference alone accepts a floating
+    part, so it never asserted the joints close.
     """
     all_parts = (
         [f"static.{n}" for n in SERVO_STATIC_PART_NAMES]
@@ -406,6 +403,7 @@ def build_turret_dump_servo_standalone() -> Assembly:
             material="aluminium_anodized",
         )
         .assert_no_interference_within(all_parts)
+        .assert_tangent_contact("static.servo_bracket", "cross_rail_stub")
     )
 
 

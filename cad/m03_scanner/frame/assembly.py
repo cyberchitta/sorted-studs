@@ -167,28 +167,6 @@ _CROSS_X_RIGHT = +TURRET_FRAME_SIDE_X - MEMBER / 2 - CORNER_GAP
 _CROSS_X_LEN = _CROSS_X_RIGHT - _CROSS_X_LEFT
 
 
-# --- Sanity asserts ----------------------------------------------------
-
-assert _SIDE_Y_LEN > 0, (
-    f"side rail length {_SIDE_Y_LEN:.1f} mm ≤ 0; front "
-    f"({TURRET_FRAME_FRONT_Y}) must sit forward of back "
-    f"({TURRET_FRAME_BACK_Y}) by more than MEMBER + 2·GAP"
-)
-
-assert _OUTRIG_Y_LEN > 0, (
-    f"outrigger length {_OUTRIG_Y_LEN:.1f} mm ≤ 0; outrigger end "
-    f"({TURRET_FRAME_OUTRIG_Y_BACK}) must sit aft of back rail "
-    f"+Y face by more than MEMBER + 2·GAP"
-)
-
-# Cross-rail Y must lie strictly between front and back rail Y so it
-# can fit between the side rails as a third X-rail.
-assert TURRET_FRAME_FRONT_Y + MEMBER / 2 < TURRET_FRAME_CROSS_Y < TURRET_FRAME_BACK_Y - MEMBER / 2, (
-    f"cross-rail Y ({TURRET_FRAME_CROSS_Y}) must sit strictly between "
-    f"front ({TURRET_FRAME_FRONT_Y}) and back ({TURRET_FRAME_BACK_Y}) "
-    f"with at least MEMBER/2 clearance to each"
-)
-
 # Back rail back face Z-clearance vs the camera rig's rail A front
 # face is a cross-unit boundary asserted in `../../assembly.py` after
 # the turret is placed in world. Within the unit we only check the
@@ -243,6 +221,28 @@ def build_turret_frame() -> Assembly:
     scanner assembly composes via the public surface instead of
     reaching into module-private state.
     """
+    # Member-span sanity. Loose bounds with no geometric content — a
+    # non-positive rail length is a parameter mistake, not a fit
+    # problem — so they stay bare, and fire when the frame is built
+    # rather than at import.
+    assert _SIDE_Y_LEN > 0, (
+        f"side rail length {_SIDE_Y_LEN:.1f} mm ≤ 0; front "
+        f"({TURRET_FRAME_FRONT_Y}) must sit forward of back "
+        f"({TURRET_FRAME_BACK_Y}) by more than MEMBER + 2·GAP"
+    )
+    assert _OUTRIG_Y_LEN > 0, (
+        f"outrigger length {_OUTRIG_Y_LEN:.1f} mm ≤ 0; outrigger end "
+        f"({TURRET_FRAME_OUTRIG_Y_BACK}) must sit aft of back rail "
+        f"+Y face by more than MEMBER + 2·GAP"
+    )
+    # Cross-rail Y must lie strictly between front and back rail Y so
+    # it can fit between the side rails as a third X-rail.
+    assert TURRET_FRAME_FRONT_Y + MEMBER / 2 < TURRET_FRAME_CROSS_Y < TURRET_FRAME_BACK_Y - MEMBER / 2, (
+        f"cross-rail Y ({TURRET_FRAME_CROSS_Y}) must sit strictly between "
+        f"front ({TURRET_FRAME_FRONT_Y}) and back ({TURRET_FRAME_BACK_Y}) "
+        f"with at least MEMBER/2 clearance to each"
+    )
+
     a = Assembly()
     for name, part in _MEMBERS.items():
         a = a.with_part(

@@ -110,6 +110,39 @@ Guidance for organizing Build123d / cad-khana assemblies in this repo.
    measurement tolerance below the constructed value and say so in a
    comment.
 
+7. **A bare `assert` lives inside the thing it constrains, never at
+   module level.** Importing a module must not run a claim. Put each
+   surviving bare assert where its knowledge is:
+
+   - a wall, bore or cut-feature bound → the **part function** that
+     cuts it, written over the *arguments* so an override is guarded
+     too, not just the module default;
+   - a span, datum or mirror-drift bound → the **builder** that
+     consumes it;
+   - a claim owned by a `params.py` → the **consumer's** builder.
+     A pure-parameter module has no builder, and an import-time assert
+     there fires on anyone reading an unrelated constant out of the
+     file.
+
+   Pick the builder the *parent* calls, not the standalone fixture: a
+   claim parked in `build_x_standalone()` never runs in a composed
+   check. When a unit splits static/rotor, that means the static (or
+   rotor) builder, not the standalone.
+
+   Caveat worth knowing: the degenerate memo (`assembly = build_x()`)
+   still calls its builder at import, so a builder-hosted assert does
+   fire during import — via the memo, not as a module-level statement.
+   That import-time effect is the memo's, and is the accepted cost of
+   the CLI's degenerate-target contract.
+
+   **Bare stays bare when there is nothing to measure**: bolt-hole and
+   wall arithmetic over subtracted negative space, deliberately loose
+   parameter bounds, and swept-envelope claims. Convert to
+   `assert_distance` / `assert_scalar` / `assert_tangent_contact` only
+   where the claim is about parts that actually coexist in one
+   assembly — and see "What a green `khana check` does not mean" below
+   for the pose trap that catches the rest.
+
 ## Design systems: builders never set colour
 
 **This overrides cad-khana's SKILL.md**, which says colours are set at
@@ -371,6 +404,19 @@ these, the check is not your evidence — find the one that is.
   because 60° bounds the upward-intrusion envelope *at the current*
   `TRAP_L` / `TRAP_OPEN_DEG`. Write that claim beside the assert, or it
   expires silently when the parameter moves.
+
+  The converse bites when *promoting* a bare assert to an assertion. A
+  bare assert over constants is frozen at whatever pose its numbers
+  came from; an `assert_distance` is re-evaluated at **every** pose the
+  sweeps build. Promoting a rest-pose claim therefore reddens frames
+  that were always fine — the homing parts' drop-block clearance
+  measures −22.6 mm at `t=0.0875`, when the dumping platform tips
+  through the same Z band without ever touching. Nothing is wrong
+  there; the directed-distance form is simply the wrong shape for a
+  claim scoped to one pose of a moving part, and `during=` windows
+  exist only for contact assertions, not distances. Before converting,
+  ask which poses the claim was ever true at, and run the sweep — not
+  just the unit's own `khana check`.
 
 Two habits that keep the check honest:
 

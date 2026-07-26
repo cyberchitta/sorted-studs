@@ -62,6 +62,7 @@ from .params import (
     COL_Z_TOP_LOCAL,
     EXT_SIZE,
     M03_TURRET_ARM_R,
+    M05_TOP_DECK_OD_HALF,
     RAMP_FLOOR_T,
     RAMP_OUTLET_LOCAL,
     RAMP_PITCH_DEG,
@@ -224,6 +225,16 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
             Pos(-M03_TURRET_ARM_R, -M03_TURRET_ARM_R, DECK_TOP_Z_LOCAL),
         )
         .with_anchor("col1_base", Pos(*COL1_LOCAL_XY, DECK_TOP_Z_LOCAL))
+        .assert_scalar(
+            "col2_outboard_of_deck",
+            COL2_LOCAL_XY[0] + M03_TURRET_ARM_R,
+            ge=M05_TOP_DECK_OD_HALF,
+            detail=(
+                "col2 world X must sit outboard of the m05 top-deck "
+                f"OD/2 ({M05_TOP_DECK_OD_HALF}); otherwise move col2 "
+                "outward or rework the deck mounting strategy"
+            ),
+        )
         .assert_no_interference_between(_CHAIN_SKELETON, "s1")
         .assert_no_interference_within(_CHAIN_SKELETON),
         design_system(schema),

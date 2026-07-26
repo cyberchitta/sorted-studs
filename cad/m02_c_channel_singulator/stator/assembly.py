@@ -125,6 +125,12 @@ def stator(
     exit_wall_rotor_gap), its outer edge sits flush with the
     cylindrical outer wall.
     """
+    # Guards the argument, not just the module default: the profile
+    # below degenerates if the kink sits at or above the wall top.
+    assert 0.0 < v_h <= height, (
+        f"v_h ({v_h}) must be positive and not exceed height ({height})"
+    )
+
     profile_pts: list[tuple[float, float]] = [
         (r_in_base, 0.0),
         (r_out_base, 0.0),

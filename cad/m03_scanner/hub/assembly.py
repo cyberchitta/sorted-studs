@@ -133,58 +133,6 @@ BEARING_ID = SHAFT_D
 BEARING_T = TURRET_BEARING_T
 
 
-# --- Sanity asserts ----------------------------------------------------
-
-# Bolt clearance hole leaves a wall to the central bore.
-_bolt_to_bore = _BOLT_HALF_X - BORE_D / 2 - BOLT_HOLE_D / 2
-assert _bolt_to_bore >= WALL_MIN, (
-    f"bolt-to-bore wall {_bolt_to_bore:.2f} mm < WALL_MIN ({WALL_MIN}); "
-    f"either widen BOLT_SPACING_X or shrink BORE_D"
-)
-
-# Bolt clearance hole leaves a wall to the housing X-end face.
-_bolt_to_edge = HOUSING_X / 2 - _BOLT_HALF_X - BOLT_HOLE_D / 2
-assert _bolt_to_edge >= WALL_MIN, (
-    f"bolt-to-X-edge wall {_bolt_to_edge:.2f} mm < WALL_MIN ({WALL_MIN}); "
-    f"either widen HOUSING_X or shrink BOLT_SPACING_X"
-)
-
-# Bore wall to the housing X / Y edges. X is the narrower direction.
-_bore_wall_x = HOUSING_X / 2 - BORE_D / 2
-assert _bore_wall_x >= WALL_MIN, (
-    f"bore-to-X-edge wall {_bore_wall_x:.2f} mm < WALL_MIN ({WALL_MIN}); "
-    f"raise HOUSING_X"
-)
-_bore_wall_y = HOUSING_Y / 2 - BORE_D / 2
-assert _bore_wall_y >= WALL_MIN, (
-    f"bore-to-Y-edge wall {_bore_wall_y:.2f} mm < WALL_MIN ({WALL_MIN}); "
-    f"raise HOUSING_Y"
-)
-
-# Re-derive the world housing top Z from rail top + housing height
-# and check it agrees with the params constant — guards against the
-# two drifting apart silently.
-_HOUSING_TOP_Z_DERIVED = RAIL_TOP_Z + HOUSING_Z
-assert abs(TURRET_HUB_HOUSING_TOP_Z - _HOUSING_TOP_Z_DERIVED) < 1e-6, (
-    f"TURRET_HUB_HOUSING_TOP_Z ({TURRET_HUB_HOUSING_TOP_Z}) disagrees with "
-    f"rail-top + HOUSING_Z ({_HOUSING_TOP_Z_DERIVED}); update one to match"
-)
-
-# The slice (a) cross-rail must run through the hub axis Y so the
-# housing centers on it. (Both should be 0 by construction.)
-assert abs(TURRET_FRAME_CROSS_Y - TURRET_HUB_Y) < 1e-6, (
-    f"cross-rail Y ({TURRET_FRAME_CROSS_Y}) ≠ hub Y ({TURRET_HUB_Y}); "
-    f"hub housing assumes the rail runs through the hub axis"
-)
-
-# Shaft must extend above the housing top face for slice (c) arm
-# attachment.
-assert TURRET_SHAFT_TOP_Z > _HOUSING_TOP_Z_DERIVED, (
-    f"shaft top ({TURRET_SHAFT_TOP_Z}) must sit above housing top "
-    f"({_HOUSING_TOP_Z_DERIVED}) for slice (c) arm-hub attachment"
-)
-
-
 # --- Part functions ----------------------------------------------------
 
 def housing(
@@ -199,6 +147,32 @@ def housing(
     vertical Ø22 through-bore (bearing seats top + bottom, shaft
     clearance in the middle) and two vertical M5 bolt clearance holes
     that drop into the cross-rail's top T-slot."""
+    # Wall sanity for the bore and bolt holes. These are subtracted
+    # negative space, so no part-pair assertion can express them;
+    # `printability.py`'s `wall_min` sees them only implicitly. Bare,
+    # and over the arguments, so an override is guarded too.
+    _bolt_to_bore = bolt_half_x - bore_d / 2 - bolt_hole_d / 2
+    assert _bolt_to_bore >= WALL_MIN, (
+        f"bolt-to-bore wall {_bolt_to_bore:.2f} mm < WALL_MIN ({WALL_MIN}); "
+        f"either widen BOLT_SPACING_X or shrink BORE_D"
+    )
+    _bolt_to_edge = housing_x / 2 - bolt_half_x - bolt_hole_d / 2
+    assert _bolt_to_edge >= WALL_MIN, (
+        f"bolt-to-X-edge wall {_bolt_to_edge:.2f} mm < WALL_MIN ({WALL_MIN}); "
+        f"either widen HOUSING_X or shrink BOLT_SPACING_X"
+    )
+    # Bore wall to the housing X / Y edges. X is the narrower direction.
+    _bore_wall_x = housing_x / 2 - bore_d / 2
+    assert _bore_wall_x >= WALL_MIN, (
+        f"bore-to-X-edge wall {_bore_wall_x:.2f} mm < WALL_MIN ({WALL_MIN}); "
+        f"raise HOUSING_X"
+    )
+    _bore_wall_y = housing_y / 2 - bore_d / 2
+    assert _bore_wall_y >= WALL_MIN, (
+        f"bore-to-Y-edge wall {_bore_wall_y:.2f} mm < WALL_MIN ({WALL_MIN}); "
+        f"raise HOUSING_Y"
+    )
+
     body = Pos(0, 0, housing_z / 2) * Box(housing_x, housing_y, housing_z)
 
     # Central vertical through-bore (axis along ±Z = build123d default).
@@ -267,6 +241,28 @@ def build_turret_hub_static() -> Assembly:
     static; the inner race spins with the shaft, but each bearing
     renders as one rigid body so we pin it to the housing side
     (visual cost is nil)."""
+    # Datum-consistency sanity. Declared here rather than in
+    # `build_turret_hub_standalone` because the parent turret composes
+    # the static and rotor builders directly — a claim parked in the
+    # standalone fixture would never run in a composed check.
+    _housing_top_z_derived = RAIL_TOP_Z + HOUSING_Z
+    assert abs(TURRET_HUB_HOUSING_TOP_Z - _housing_top_z_derived) < 1e-6, (
+        f"TURRET_HUB_HOUSING_TOP_Z ({TURRET_HUB_HOUSING_TOP_Z}) disagrees with "
+        f"rail-top + HOUSING_Z ({_housing_top_z_derived}); update one to match"
+    )
+    # The slice (a) cross-rail must run through the hub axis Y so the
+    # housing centers on it. (Both should be 0 by construction.)
+    assert abs(TURRET_FRAME_CROSS_Y - TURRET_HUB_Y) < 1e-6, (
+        f"cross-rail Y ({TURRET_FRAME_CROSS_Y}) ≠ hub Y ({TURRET_HUB_Y}); "
+        f"hub housing assumes the rail runs through the hub axis"
+    )
+    # Shaft must extend above the housing top face for slice (c) arm
+    # attachment.
+    assert TURRET_SHAFT_TOP_Z > _housing_top_z_derived, (
+        f"shaft top ({TURRET_SHAFT_TOP_Z}) must sit above housing top "
+        f"({_housing_top_z_derived}) for slice (c) arm-hub attachment"
+    )
+
     a = Assembly()
     hub_pose = Pos(TURRET_HUB_X, TURRET_HUB_Y, RAIL_TOP_Z)
     a = a.with_part(

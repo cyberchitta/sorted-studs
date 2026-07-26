@@ -151,65 +151,6 @@ _PIN_PROTRUSION = 5.0
 PIN_LENGTH = BUSHING_BLOCK_W + 2 * _PIN_PROTRUSION   # = 30
 
 
-# --- Sanity asserts ----------------------------------------------------
-
-# Set-screw insert leaves wall between insert tip and shaft bore.
-_insert_to_shaft_wall = (HUB_OD - HUB_BORE_D) / 2 - SET_SCREW_INSERT_D
-assert _insert_to_shaft_wall >= 0, (
-    f"set-screw insert depth {SET_SCREW_INSERT_D} mm exceeds disc wall "
-    f"({(HUB_OD - HUB_BORE_D) / 2:.2f} mm); raise HUB_OD or shrink "
-    f"SET_SCREW_INSERT_D"
-)
-
-# Pin bore wall to bushing-block tangential (W) faces.
-_pin_wall_w = BUSHING_BLOCK_W / 2 - PIN_BORE_D / 2
-assert _pin_wall_w >= WALL_MIN, (
-    f"pin-bore-to-block-W wall {_pin_wall_w:.2f} mm < WALL_MIN "
-    f"({WALL_MIN}); raise BUSHING_BLOCK_W"
-)
-
-# Pin bore wall to spider Z (top + bottom) faces.
-_pin_wall_z = HUB_HEIGHT / 2 - PIN_BORE_D / 2
-assert _pin_wall_z >= WALL_MIN, (
-    f"pin-bore-to-spider-Z wall {_pin_wall_z:.2f} mm < WALL_MIN "
-    f"({WALL_MIN}); raise TURRET_ARM_SPIDER_HEIGHT"
-)
-
-# Pin bore wall to bushing-block radial (inner / outer) faces.
-_pin_wall_r = (BUSHING_BLOCK_RADIAL_LEN - PIN_BORE_D) / 2
-assert _pin_wall_r >= WALL_MIN, (
-    f"pin-bore-to-block-radial wall {_pin_wall_r:.2f} mm < WALL_MIN "
-    f"({WALL_MIN}); raise BUSHING_BLOCK_RADIAL_LEN"
-)
-
-# Spider top face Z (world) consistency — re-derive and compare.
-_SPIDER_TOP_Z_DERIVED = TURRET_HINGE_PIN_Z + HUB_HEIGHT / 2
-assert abs(TURRET_ARM_SPIDER_TOP_Z - _SPIDER_TOP_Z_DERIVED) < 1e-6, (
-    f"TURRET_ARM_SPIDER_TOP_Z ({TURRET_ARM_SPIDER_TOP_Z}) ≠ derived "
-    f"({_SPIDER_TOP_Z_DERIVED}); update TURRET_HINGE_PIN_Z or "
-    f"TURRET_ARM_SPIDER_HEIGHT"
-)
-
-# Spider top face flush with shaft top (design assumes flush mounting).
-assert abs(TURRET_ARM_SPIDER_TOP_Z - TURRET_SHAFT_TOP_Z) < 1e-6, (
-    f"spider top ({TURRET_ARM_SPIDER_TOP_Z}) ≠ shaft top "
-    f"({TURRET_SHAFT_TOP_Z}); design assumes flush mounting"
-)
-
-# Arm beam has positive length (hub disc OD inside bushing-block
-# inner face).
-assert _ARM_INNER_R < _BUSHING_BLOCK_INNER_R, (
-    f"arm inner R ({_ARM_INNER_R}) ≥ block inner R "
-    f"({_BUSHING_BLOCK_INNER_R}); arm beam has zero or negative length"
-)
-
-# Arm beam angular extent must not crash the +45° set-screw bore.
-_arm_half_angle = math.degrees(math.atan2(ARM_BEAM_W / 2, _ARM_INNER_R))
-assert _arm_half_angle < 45.0, (
-    f"arm half-angle {_arm_half_angle:.1f}° exceeds 45°; +X / +Y arm "
-    f"would clip the set-screw bore at heading +45°"
-)
-
 # --- Part functions ----------------------------------------------------
 
 def _arm_unit():
@@ -242,6 +183,47 @@ def spider():
     bushing blocks. Spider-local origin at hub axis intersected with
     the pin-axis horizontal plane. Disc + arms span z ∈
     [-HUB_HEIGHT/2, +HUB_HEIGHT/2] around origin."""
+    # Wall and proportion sanity for this body. The bores and the
+    # set-screw insert are subtracted negative space and the arm-beam
+    # bounds are loose parameter checks, so none is expressible as a
+    # part-pair claim — they stay bare and fire when the spider is cut.
+    _insert_to_shaft_wall = (HUB_OD - HUB_BORE_D) / 2 - SET_SCREW_INSERT_D
+    assert _insert_to_shaft_wall >= 0, (
+        f"set-screw insert depth {SET_SCREW_INSERT_D} mm exceeds disc wall "
+        f"({(HUB_OD - HUB_BORE_D) / 2:.2f} mm); raise HUB_OD or shrink "
+        f"SET_SCREW_INSERT_D"
+    )
+    # Pin bore wall to bushing-block tangential (W) faces.
+    _pin_wall_w = BUSHING_BLOCK_W / 2 - PIN_BORE_D / 2
+    assert _pin_wall_w >= WALL_MIN, (
+        f"pin-bore-to-block-W wall {_pin_wall_w:.2f} mm < WALL_MIN "
+        f"({WALL_MIN}); raise BUSHING_BLOCK_W"
+    )
+    # Pin bore wall to spider Z (top + bottom) faces.
+    _pin_wall_z = HUB_HEIGHT / 2 - PIN_BORE_D / 2
+    assert _pin_wall_z >= WALL_MIN, (
+        f"pin-bore-to-spider-Z wall {_pin_wall_z:.2f} mm < WALL_MIN "
+        f"({WALL_MIN}); raise TURRET_ARM_SPIDER_HEIGHT"
+    )
+    # Pin bore wall to bushing-block radial (inner / outer) faces.
+    _pin_wall_r = (BUSHING_BLOCK_RADIAL_LEN - PIN_BORE_D) / 2
+    assert _pin_wall_r >= WALL_MIN, (
+        f"pin-bore-to-block-radial wall {_pin_wall_r:.2f} mm < WALL_MIN "
+        f"({WALL_MIN}); raise BUSHING_BLOCK_RADIAL_LEN"
+    )
+    # Arm beam has positive length (hub disc OD inside bushing-block
+    # inner face).
+    assert _ARM_INNER_R < _BUSHING_BLOCK_INNER_R, (
+        f"arm inner R ({_ARM_INNER_R}) ≥ block inner R "
+        f"({_BUSHING_BLOCK_INNER_R}); arm beam has zero or negative length"
+    )
+    # Arm beam angular extent must not crash the +45° set-screw bore.
+    _arm_half_angle = math.degrees(math.atan2(ARM_BEAM_W / 2, _ARM_INNER_R))
+    assert _arm_half_angle < 45.0, (
+        f"arm half-angle {_arm_half_angle:.1f}° exceeds 45°; +X / +Y arm "
+        f"would clip the set-screw bore at heading +45°"
+    )
+
     # Hub disc — Cylinder default axis +Z = vertical = correct under
     # Z-up. No rotation needed.
     body = Cylinder(HUB_OD / 2, HUB_HEIGHT)
@@ -326,6 +308,21 @@ ARM_PART_NAMES = ("spider",) + tuple(name for name, _, _ in _PIN_PLACEMENTS)
 def build_turret_arm() -> Assembly:
     """Spider + 4 hinge pins sub-assembly, in turret-local
     coordinates; the caller places it."""
+    # Spider-top Z datum consistency. Both sides are constants, so
+    # there is nothing to measure — bare, in the builder that places
+    # the spider at the datum they describe.
+    _spider_top_z_derived = TURRET_HINGE_PIN_Z + HUB_HEIGHT / 2
+    assert abs(TURRET_ARM_SPIDER_TOP_Z - _spider_top_z_derived) < 1e-6, (
+        f"TURRET_ARM_SPIDER_TOP_Z ({TURRET_ARM_SPIDER_TOP_Z}) ≠ derived "
+        f"({_spider_top_z_derived}); update TURRET_HINGE_PIN_Z or "
+        f"TURRET_ARM_SPIDER_HEIGHT"
+    )
+    # Spider top face flush with shaft top (design assumes flush mounting).
+    assert abs(TURRET_ARM_SPIDER_TOP_Z - TURRET_SHAFT_TOP_Z) < 1e-6, (
+        f"spider top ({TURRET_ARM_SPIDER_TOP_Z}) ≠ shaft top "
+        f"({TURRET_SHAFT_TOP_Z}); design assumes flush mounting"
+    )
+
     a = Assembly()
     a = a.with_part(
         "spider", spider(),

@@ -285,94 +285,6 @@ BRACKET_BOLT_SPACING_X = 35.0
 _BRACKET_BOLT_HALF_X = BRACKET_BOLT_SPACING_X / 2
 
 
-# --- Sanity asserts ----------------------------------------------------
-
-# Belt length at chosen C is within tolerance of stock value.
-_belt_err = abs(_BELT_L_DERIVED - DRIVE_BELT_LENGTH)
-assert _belt_err < 0.5, (
-    f"belt length at C = {DRIVE_CENTER_DIST} mm derives to "
-    f"{_BELT_L_DERIVED:.2f} mm; expected close to {DRIVE_BELT_LENGTH} mm "
-    f"(stock). Adjust DRIVE_CENTER_DIST or pick a different stock length."
-)
-
-# (Pulley-to-housing / pulley-to-spider Z gaps are asserted at the
-# m03 root against the real neighbour parts — see the header note.)
-
-# Driven pulley OD doesn't crash motor body in X.
-_pulley_to_motor_body_x = (
-    (MOTOR_X - MOTOR_BODY_X / 2) - DRIVEN_PULLEY_OD / 2
-)
-assert _pulley_to_motor_body_x >= WALL_MIN, (
-    f"driven pulley OD reaches +{DRIVEN_PULLEY_OD/2:.2f} mm in X; motor "
-    f"body inboard face at +{MOTOR_X - MOTOR_BODY_X/2:.2f}; X gap "
-    f"{_pulley_to_motor_body_x:.2f} mm < WALL_MIN ({WALL_MIN})"
-)
-
-# Driver pulley OD doesn't crash the bracket plate's M3 holes.
-_m3_hole_radius = math.sqrt(2) * MOTOR_BOLT_PATTERN / 2
-_driver_to_m3 = _m3_hole_radius - MOTOR_BOLT_HOLE_D / 2 - DRIVER_PULLEY_OD / 2
-assert _driver_to_m3 >= WALL_MIN, (
-    f"driver pulley OD edge {DRIVER_PULLEY_OD/2:.2f} too close to M3 "
-    f"hole edge at radius {_m3_hole_radius - MOTOR_BOLT_HOLE_D/2:.2f}; "
-    f"gap {_driver_to_m3:.2f} mm < WALL_MIN ({WALL_MIN})"
-)
-
-# Bracket plate inboard edge has wall to inboard M3 hole.
-_plate_inboard_to_hole_edge = (
-    (MOTOR_X - MOTOR_BOLT_PATTERN / 2 - MOTOR_BOLT_HOLE_D / 2)
-    - BRACKET_PLATE_X_MIN
-)
-assert _plate_inboard_to_hole_edge >= WALL_MIN, (
-    f"bracket plate inboard edge to inboard M3 hole edge wall "
-    f"{_plate_inboard_to_hole_edge:.2f} mm < WALL_MIN ({WALL_MIN})"
-)
-
-# Bracket plate Y edge has wall to M3 holes (M3 at y = ±15.5).
-_plate_y_to_hole_edge = (
-    BRACKET_PLATE_Y / 2 - MOTOR_BOLT_PATTERN / 2 - MOTOR_BOLT_HOLE_D / 2
-)
-assert _plate_y_to_hole_edge >= WALL_MIN, (
-    f"bracket plate Y edge to M3 hole edge wall "
-    f"{_plate_y_to_hole_edge:.2f} mm < WALL_MIN ({WALL_MIN}); raise "
-    f"BRACKET_PLATE_Y"
-)
-
-# Boss hole walls — Ø22 boss in plate. Plate Y extent ±25; Y-edge wall
-# = 25 - 11 = 14 mm.
-_boss_to_y_edge = BRACKET_PLATE_Y / 2 - MOTOR_BOSS_D / 2
-assert _boss_to_y_edge >= WALL_MIN, (
-    f"boss hole to plate Y edge wall {_boss_to_y_edge:.2f} mm < "
-    f"WALL_MIN ({WALL_MIN})"
-)
-
-# Bracket wall inboard face clears motor body in X by ≥ WALL_MIN.
-_wall_to_motor = BRACKET_WALL_X_MIN - _MOTOR_BODY_OUTBOARD_X
-assert _wall_to_motor >= WALL_MIN, (
-    f"bracket wall inboard face {BRACKET_WALL_X_MIN:.2f} too close to "
-    f"motor body outboard face {_MOTOR_BODY_OUTBOARD_X:.2f}; gap "
-    f"{_wall_to_motor:.2f} mm < WALL_MIN ({WALL_MIN})"
-)
-
-# Foot bolt pattern fits inside foot footprint (X-direction).
-_foot_bolt_outer_x = (
-    _BRACKET_FOOT_CENTER_X + _BRACKET_BOLT_HALF_X + BRACKET_BOLT_HOLE_D / 2
-)
-assert _foot_bolt_outer_x + WALL_MIN <= _BRACKET_FOOT_X_MAX, (
-    f"foot bolt outer edge {_foot_bolt_outer_x:.2f} too close to foot "
-    f"X+ end face {_BRACKET_FOOT_X_MAX:.2f}; raise BRACKET_FOOT_X or "
-    f"shrink BRACKET_BOLT_SPACING_X"
-)
-
-# Foot bolt inner edge clears the wall foot-print (so bolt heads can
-# drop in from above without the wall in the way).
-_inner_bolt_x = _BRACKET_FOOT_CENTER_X - _BRACKET_BOLT_HALF_X
-assert _inner_bolt_x < BRACKET_WALL_X_MIN - BRACKET_BOLT_HOLE_D / 2, (
-    f"inner bolt at x = {_inner_bolt_x:.2f} sits inside the wall "
-    f"footprint [{BRACKET_WALL_X_MIN:.2f}, {BRACKET_WALL_X_MAX:.2f}]; "
-    f"bolt head won't have clearance from above"
-)
-
-
 # --- Part functions ----------------------------------------------------
 
 def driven_pulley(
@@ -423,6 +335,66 @@ def bracket():
     y = 0. Plate hosts the motor's 4× M3 mounting holes plus the Ø22
     centering-boss pass-through. Returned in turret-local coords (no
     `base` shift — caller multiplies the placement)."""
+    # Hole-edge and plate-edge wall sanity for this body. Every one is
+    # WALL_MIN arithmetic over subtracted negative space (M3 pattern,
+    # Ø22 boss, foot bolt pattern), so none is expressible as a
+    # part-pair assertion — bare, and fired when the bracket is cut.
+    _m3_hole_radius = math.sqrt(2) * MOTOR_BOLT_PATTERN / 2
+    _driver_to_m3 = _m3_hole_radius - MOTOR_BOLT_HOLE_D / 2 - DRIVER_PULLEY_OD / 2
+    assert _driver_to_m3 >= WALL_MIN, (
+        f"driver pulley OD edge {DRIVER_PULLEY_OD/2:.2f} too close to M3 "
+        f"hole edge at radius {_m3_hole_radius - MOTOR_BOLT_HOLE_D/2:.2f}; "
+        f"gap {_driver_to_m3:.2f} mm < WALL_MIN ({WALL_MIN})"
+    )
+    _plate_inboard_to_hole_edge = (
+        (MOTOR_X - MOTOR_BOLT_PATTERN / 2 - MOTOR_BOLT_HOLE_D / 2)
+        - BRACKET_PLATE_X_MIN
+    )
+    assert _plate_inboard_to_hole_edge >= WALL_MIN, (
+        f"bracket plate inboard edge to inboard M3 hole edge wall "
+        f"{_plate_inboard_to_hole_edge:.2f} mm < WALL_MIN ({WALL_MIN})"
+    )
+    # Bracket plate Y edge has wall to M3 holes (M3 at y = ±15.5).
+    _plate_y_to_hole_edge = (
+        BRACKET_PLATE_Y / 2 - MOTOR_BOLT_PATTERN / 2 - MOTOR_BOLT_HOLE_D / 2
+    )
+    assert _plate_y_to_hole_edge >= WALL_MIN, (
+        f"bracket plate Y edge to M3 hole edge wall "
+        f"{_plate_y_to_hole_edge:.2f} mm < WALL_MIN ({WALL_MIN}); raise "
+        f"BRACKET_PLATE_Y"
+    )
+    # Boss hole walls — Ø22 boss in plate. Plate Y extent ±25; Y-edge
+    # wall = 25 - 11 = 14 mm.
+    _boss_to_y_edge = BRACKET_PLATE_Y / 2 - MOTOR_BOSS_D / 2
+    assert _boss_to_y_edge >= WALL_MIN, (
+        f"boss hole to plate Y edge wall {_boss_to_y_edge:.2f} mm < "
+        f"WALL_MIN ({WALL_MIN})"
+    )
+    # Bracket wall inboard face clears motor body in X by ≥ WALL_MIN.
+    _wall_to_motor = BRACKET_WALL_X_MIN - _MOTOR_BODY_OUTBOARD_X
+    assert _wall_to_motor >= WALL_MIN, (
+        f"bracket wall inboard face {BRACKET_WALL_X_MIN:.2f} too close to "
+        f"motor body outboard face {_MOTOR_BODY_OUTBOARD_X:.2f}; gap "
+        f"{_wall_to_motor:.2f} mm < WALL_MIN ({WALL_MIN})"
+    )
+    # Foot bolt pattern fits inside foot footprint (X-direction).
+    _foot_bolt_outer_x = (
+        _BRACKET_FOOT_CENTER_X + _BRACKET_BOLT_HALF_X + BRACKET_BOLT_HOLE_D / 2
+    )
+    assert _foot_bolt_outer_x + WALL_MIN <= _BRACKET_FOOT_X_MAX, (
+        f"foot bolt outer edge {_foot_bolt_outer_x:.2f} too close to foot "
+        f"X+ end face {_BRACKET_FOOT_X_MAX:.2f}; raise BRACKET_FOOT_X or "
+        f"shrink BRACKET_BOLT_SPACING_X"
+    )
+    # Foot bolt inner edge clears the wall footprint (so bolt heads can
+    # drop in from above without the wall in the way).
+    _inner_bolt_x = _BRACKET_FOOT_CENTER_X - _BRACKET_BOLT_HALF_X
+    assert _inner_bolt_x < BRACKET_WALL_X_MIN - BRACKET_BOLT_HOLE_D / 2, (
+        f"inner bolt at x = {_inner_bolt_x:.2f} sits inside the wall "
+        f"footprint [{BRACKET_WALL_X_MIN:.2f}, {BRACKET_WALL_X_MAX:.2f}]; "
+        f"bolt head won't have clearance from above"
+    )
+
     foot = (
         Pos(_BRACKET_FOOT_CENTER_X, 0, _BRACKET_FOOT_CENTER_Z)
         * Box(BRACKET_FOOT_X, BRACKET_FOOT_Y, BRACKET_FOOT_Z)
@@ -507,6 +479,19 @@ def build_turret_drive_static() -> Assembly:
     pulley turns in real life, but only the driven-side pulley is
     locked to the hub shaft we animate — the motor and its pulley
     render as static for the animation."""
+    # Driven pulley OD must not crash the motor body in X. WALL_MIN
+    # arithmetic against the motor's placement constants — the two
+    # parts live in different subtrees (rotor vs static), so there is
+    # no level below the turret that could measure the pair. Bare.
+    _pulley_to_motor_body_x = (
+        (MOTOR_X - MOTOR_BODY_X / 2) - DRIVEN_PULLEY_OD / 2
+    )
+    assert _pulley_to_motor_body_x >= WALL_MIN, (
+        f"driven pulley OD reaches +{DRIVEN_PULLEY_OD/2:.2f} mm in X; motor "
+        f"body inboard face at +{MOTOR_X - MOTOR_BODY_X/2:.2f}; X gap "
+        f"{_pulley_to_motor_body_x:.2f} mm < WALL_MIN ({WALL_MIN})"
+    )
+
     a = Assembly()
     a = a.with_part(
         "drive_pulley_motor",
@@ -532,6 +517,21 @@ def build_turret_drive_static() -> Assembly:
     # where both parts live, and let it propagate into every composed
     # run.
     a = a.assert_tangent_contact("drive_bracket", "drive_motor")
+    # Belt length at the chosen centre distance must land on a stock
+    # length. The belt is not modelled, so there is no part pair to
+    # measure — but recording the derived length beats a bare assert:
+    # it lands in mechanism.json and `khana diff` reports it drifting
+    # toward the tolerance before it crosses it.
+    a = a.assert_scalar(
+        "belt_length_error",
+        abs(_BELT_L_DERIVED - DRIVE_BELT_LENGTH),
+        le=0.5,
+        detail=(
+            f"belt length at C = {DRIVE_CENTER_DIST} mm derives to "
+            f"{_BELT_L_DERIVED:.2f} mm against {DRIVE_BELT_LENGTH} mm "
+            f"stock; adjust DRIVE_CENTER_DIST or pick another stock length"
+        ),
+    )
     return a
 
 

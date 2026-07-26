@@ -169,86 +169,21 @@ def mount_in_clamp_for(
 
 def _mount_back_in_clamp(mount_in_clamp: Location) -> tuple[float, float, float]:
     """Mount plate back-face centre in clamp-local. Used for beam tilt
-    + length derivation and for module-level sanity asserts."""
+    + length derivation and for `clamp_mount`'s pose sanity asserts."""
     p = (mount_in_clamp * Pos(0, 0, -CAMERA_MOUNT_PLATE_T)).position
     return (p.X, p.Y, p.Z)
 
 
-# Below-left pose — canonical POC for module-level asserts and standalone.
+# Below-left pose — the standalone's canonical instance and
+# `clamp_mount`'s default. The back-upper pose used to be evaluated
+# here too, purely to feed a module-level two-variant assert loop;
+# that check now lives inside `clamp_mount` over its `mount_in_clamp`
+# argument, so every instance the m03 root builds is covered and the
+# hardcoded second variant is no longer needed.
 _MOUNT_IN_CLAMP: Location = mount_in_clamp_for(
     RAIL_PAD_CLAMP_BELOW_LEFT_POS,
     RAIL_PAD_CLAMP_BELOW_LEFT_CLAMP_ROT,
     VERTEX_BELOW_LEFT_POS,
-)
-_MOUNT_BACK_XYZ = _mount_back_in_clamp(_MOUNT_IN_CLAMP)
-
-_MOUNT_IN_CLAMP_BACK_UPPER: Location = mount_in_clamp_for(
-    RAIL_PAD_CLAMP_BACK_UPPER_POS,
-    RAIL_PAD_CLAMP_BACK_UPPER_CLAMP_ROT,
-    VERTEX_BACK_UPPER_POS,
-)
-_MOUNT_BACK_XYZ_BACK_UPPER = _mount_back_in_clamp(_MOUNT_IN_CLAMP_BACK_UPPER)
-
-
-# --- Parametric sanity --------------------------------------------------
-
-for _label, _xyz in (
-    ("below-left", _MOUNT_BACK_XYZ),
-    ("back-upper", _MOUNT_BACK_XYZ_BACK_UPPER),
-):
-    assert _xyz[1] > BASE_H, (
-        f"{_label}: mount-back in clamp-local +Y must clear the clamp "
-        f"base (BASE_H = {BASE_H}); got Y={_xyz[1]:.1f}"
-    )
-    assert abs(_xyz[0]) < 2.0, (
-        f"{_label}: mount-back in clamp-local +X should sit near 0; "
-        f"got X={_xyz[0]:.2f}"
-    )
-    assert abs(_xyz[2]) < 2.0, (
-        f"{_label}: mount-back in clamp-local +Z should sit near 0; "
-        f"got Z={_xyz[2]:.2f}"
-    )
-
-# Clamp bolts must clear the beam footprint on the base.
-assert _CLAMP_BOLT_HALF > BEAM_W / 2 + WALL_MIN, (
-    f"clamp bolt half-spacing {_CLAMP_BOLT_HALF:.1f} mm leaves "
-    f"{_CLAMP_BOLT_HALF - BEAM_W / 2:.1f} mm wall to the beam edge; "
-    f"must be ≥ {WALL_MIN} mm"
-)
-
-# Clamp bolt must sit inside the base footprint with an edge wall.
-_edge_x = BASE_L / 2 - _CLAMP_BOLT_HALF - CLAMP_BOLT_HOLE_D / 2
-assert _edge_x >= WALL_MIN, (
-    f"clamp bolt-to-base-edge wall {_edge_x:.2f} mm < {WALL_MIN} mm"
-)
-
-# Plate must be at least as big as the PCB, with a flange margin around
-# both the PCB outline and the M2 corner holes.
-assert PLATE_SIZE >= PCB_W and PLATE_SIZE >= PCB_H, (
-    f"plate {PLATE_SIZE} smaller than PCB ({PCB_W} × {PCB_H})"
-)
-assert (PLATE_SIZE - PCB_W) / 2 >= WALL_MIN, (
-    f"plate-PCB long-edge flange {(PLATE_SIZE - PCB_W) / 2:.2f} mm "
-    f"< {WALL_MIN} mm"
-)
-_m2_to_edge_x = PLATE_SIZE / 2 - PCB_HOLE_PITCH_X / 2 - PCB_HOLE_D / 2
-_m2_to_edge_y = PLATE_SIZE / 2 - PCB_HOLE_PITCH_Y / 2 - PCB_HOLE_D / 2
-assert _m2_to_edge_x >= WALL_MIN, (
-    f"M2-to-plate-edge wall (long axis) {_m2_to_edge_x:.2f} mm < {WALL_MIN} mm"
-)
-assert _m2_to_edge_y >= WALL_MIN, (
-    f"M2-to-plate-edge wall (short axis) {_m2_to_edge_y:.2f} mm < {WALL_MIN} mm"
-)
-
-# M12 lens body must clear the M2 screw heads on the PCB front face.
-# M2 corner holes sit at radial distance √((PITCH_X/2)² + (PITCH_Y/2)²)
-# from the PCB centre; lens cylinder is centred on origin. ~Ø4 mm
-# typical M2 pan-head footprint.
-_m2_radial = math.hypot(PCB_HOLE_PITCH_X / 2, PCB_HOLE_PITCH_Y / 2)
-_lens_to_m2 = _m2_radial - M12_OD / 2
-assert _lens_to_m2 >= 2.0, (
-    f"lens body radial gap to M2 hole centre {_lens_to_m2:.2f} mm "
-    f"leaves no room for an M2 screw head"
 )
 
 
@@ -279,6 +214,53 @@ def clamp_mount(
     the same body — only the mount-rotation differs, which parameterises
     the plate orientation."""
     _mb_x, _mb_y, _mb_z = _mount_back_in_clamp(mount_in_clamp)
+    # Pose sanity for the supplied `mount_in_clamp`: the mount back
+    # must clear the clamp base in +Y and sit on the clamp's YZ axis
+    # in X/Z, or the derived beam tilt below is meaningless. This
+    # replaces a module-level loop over two hardcoded variants —
+    # checking the argument covers every instance actually built,
+    # which is all four cameras (the m03 root passes each its own
+    # pose) rather than the two the loop happened to name.
+    assert _mb_y > base_h, (
+        f"mount-back in clamp-local +Y must clear the clamp base "
+        f"(base_h = {base_h}); got Y={_mb_y:.1f}"
+    )
+    assert abs(_mb_x) < 2.0, (
+        f"mount-back in clamp-local +X should sit near 0; got X={_mb_x:.2f}"
+    )
+    assert abs(_mb_z) < 2.0, (
+        f"mount-back in clamp-local +Z should sit near 0; got Z={_mb_z:.2f}"
+    )
+    # Bolt-hole and flange wall sanity for this body — all WALL_MIN
+    # arithmetic over subtracted negative space, so none is a part-pair
+    # claim. Over the arguments, so overrides are guarded too.
+    assert bolt_half > beam_w / 2 + WALL_MIN, (
+        f"clamp bolt half-spacing {bolt_half:.1f} mm leaves "
+        f"{bolt_half - beam_w / 2:.1f} mm wall to the beam edge; "
+        f"must be ≥ {WALL_MIN} mm"
+    )
+    _edge_x = base_l / 2 - bolt_half - clamp_hole_d / 2
+    assert _edge_x >= WALL_MIN, (
+        f"clamp bolt-to-base-edge wall {_edge_x:.2f} mm < {WALL_MIN} mm"
+    )
+    # Plate must be at least as big as the PCB, with a flange margin
+    # around both the PCB outline and the M2 corner holes.
+    assert plate_size >= PCB_W and plate_size >= PCB_H, (
+        f"plate {plate_size} smaller than PCB ({PCB_W} × {PCB_H})"
+    )
+    assert (plate_size - PCB_W) / 2 >= WALL_MIN, (
+        f"plate-PCB long-edge flange {(plate_size - PCB_W) / 2:.2f} mm "
+        f"< {WALL_MIN} mm"
+    )
+    _m2_to_edge_x = plate_size / 2 - pcb_hole_pitch_x / 2 - pcb_hole_d / 2
+    _m2_to_edge_y = plate_size / 2 - pcb_hole_pitch_y / 2 - pcb_hole_d / 2
+    assert _m2_to_edge_x >= WALL_MIN, (
+        f"M2-to-plate-edge wall (long axis) {_m2_to_edge_x:.2f} mm < {WALL_MIN} mm"
+    )
+    assert _m2_to_edge_y >= WALL_MIN, (
+        f"M2-to-plate-edge wall (short axis) {_m2_to_edge_y:.2f} mm < {WALL_MIN} mm"
+    )
+
     beam_tilt_deg = math.degrees(math.atan2(_mb_z, _mb_y))
     beam_axial_len = (
         math.hypot(_mb_y, _mb_z)   # length to mount plate back face
@@ -363,6 +345,19 @@ def m12_lens_stub(
     """M12 lens + holder column stand-in. Cylinder centred on the
     mount-local +Z axis (lens axis), starting at the PCB front face
     (z = pcb_t) and extending forward. Bought, not printed."""
+    # The lens body must clear the M2 screw heads on the PCB front
+    # face. M2 corner holes sit at radial distance
+    # √((PITCH_X/2)² + (PITCH_Y/2)²) from the PCB centre; the lens
+    # cylinder is centred on origin. ~Ø4 mm typical M2 pan-head
+    # footprint. The screw heads are not modelled, so this is a bare
+    # parametric bound rather than a part-pair claim.
+    _m2_radial = math.hypot(PCB_HOLE_PITCH_X / 2, PCB_HOLE_PITCH_Y / 2)
+    _lens_to_m2 = _m2_radial - od / 2
+    assert _lens_to_m2 >= 2.0, (
+        f"lens body radial gap to M2 hole centre {_lens_to_m2:.2f} mm "
+        f"leaves no room for an M2 screw head"
+    )
+
     z_bot = pcb_t
     z_top = z_bot + length
     cz = (z_bot + z_top) / 2

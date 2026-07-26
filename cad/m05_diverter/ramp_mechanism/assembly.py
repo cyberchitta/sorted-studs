@@ -168,16 +168,6 @@ OPENING_W = RAMP_W + 2 * OPENING_MARGIN       # 80
 OPENING_Z_BOT = _RAMP_WALL_Z - RAMP_T - OPENING_MARGIN
 OPENING_Z_TOP = _RAMP_WALL_Z + MAX_BRICK_DIM + OPENING_MARGIN
 
-# Sanity: bosses must fit in the solid +X wall strip outside the opening,
-# and the opening must not encroach on the boss footprint.
-assert BOSS_Y_OFFSET + BOSS_Y / 2 <= COL_INTERIOR_SIDE / 2, (
-    f"Hinge bosses at |Y| = {BOSS_Y_OFFSET + BOSS_Y/2:.1f} mm exceed column "
-    f"interior half-width {COL_INTERIOR_SIDE/2:.1f} mm. Reduce TRAP_W."
-)
-assert OPENING_W / 2 <= BOSS_Y_OFFSET - BOSS_Y / 2, (
-    f"Opening half-width ({OPENING_W/2:.1f} mm) overlaps boss inner edge "
-    f"({BOSS_Y_OFFSET - BOSS_Y/2:.1f} mm). Reduce RAMP_W or OPENING_MARGIN."
-)
 
 # Basket angular-slot width at ramp tip must admit the ramp width.
 # This is an UPPER BOUND on the real slot: basket/assembly.py shrinks
@@ -190,18 +180,13 @@ assert OPENING_W / 2 <= BOSS_Y_OFFSET - BOSS_Y / 2, (
 # we can't pull BASKET_HALF_DELTA_DEG in here; keep this as a cheap
 # parametric sanity check only.
 BASKET_SLOT_W_AT_TIP = 2 * RAMP_TIP_X * math.tan(math.pi / N_BASKETS_PER_FLOOR)
-assert RAMP_W <= BASKET_SLOT_W_AT_TIP, (
-    f"RAMP_W ({RAMP_W:.1f} mm) > basket angular slot upper bound at "
-    f"ramp tip ({BASKET_SLOT_W_AT_TIP:.1f} mm at X={RAMP_TIP_X:.1f}, "
-    f"R_BASKET_INNER={R_BASKET_INNER:.1f}). Reduce RAMP_W, "
-    f"increase R_BASKET_INNER, or decrease N_BASKETS_PER_FLOOR."
-)
 
 # Column height — pinned by the column-to-column joint plane. Joints
 # stack at z_world = N·FLOOR_H + COL_Z_TOP, with each column extending
 # (COL_Z_TOP - FLOOR_H) above the floor's own bracket level to form the
 # overhang that the floor *above* grips. The 53 mm overhang must clear
-# both the trap-open free-end Z and the +X opening top — asserted below.
+# both the trap-open free-end Z and the +X opening top — asserted in
+# `build_column_side_rotating` and `column()` respectively.
 RAIL_TOP_Z = 0.0                                     # frame datum (rail top face)
 COL_Z_TOP = 273.0                                    # joint plane in this floor's frame
 
@@ -211,10 +196,6 @@ _TRAP_OPEN_RAD = math.radians(TRAP_OPEN_DEG)
 # `build_column_side_rotating`. The opening top stays a parametric
 # check: the opening is a cut feature, not a part.
 JOINT_ZONE_CLEARANCE = 5.0
-assert COL_Z_TOP >= OPENING_Z_TOP + JOINT_ZONE_CLEARANCE, (
-    f"COL_Z_TOP ({COL_Z_TOP}) too low — opening top "
-    f"({OPENING_Z_TOP:.1f}) reaches inside the joint zone."
-)
 
 # Joint flange thickness at the column top. Top 5 mm of the column
 # carries a circular face flange (OD = COLLAR_OD) for end-to-end
@@ -248,15 +229,6 @@ JOINT_DEPRESSION_H = JOINT_BUMP_H + JOINT_BUMP_CLEARANCE_Z
 # inside the solid overhang band so the bump roots in flange material.
 _BUMP_R_INNER = JOINT_BUMP_CENTERLINE_R - JOINT_BUMP_D / 2
 _BUMP_R_OUTER = JOINT_BUMP_CENTERLINE_R + JOINT_BUMP_D / 2
-assert _BUMP_R_INNER >= COL_INTERIOR_SIDE / 2 + 2.0, (
-    f"Joint bump inner edge at r={_BUMP_R_INNER:.1f} crowds the column "
-    f"interior boundary at r={COL_INTERIOR_SIDE/2:.1f}; bump would not "
-    f"root in solid flange material on the cardinal axes."
-)
-assert _BUMP_R_OUTER + JOINT_BUMP_CLEARANCE_R <= COLLAR_OD / 2 - 2.0, (
-    f"Joint bump+depression outer edge at r={_BUMP_R_OUTER + JOINT_BUMP_CLEARANCE_R:.1f} "
-    f"crowds the flange OD at r={COLLAR_OD/2:.1f}; leave ≥2 mm rim."
-)
 
 # Rotating collar — circular OD on the column at mid-height that the
 # bearing on the floor *above* grips (so this floor's bearing engages
@@ -267,11 +239,6 @@ assert _BUMP_R_OUTER + JOINT_BUMP_CLEARANCE_R <= COLLAR_OD / 2 - 2.0, (
 ROT_COLLAR_T = COLLAR_T                              # 5.0
 ROT_COLLAR_Z_BOT = FLOOR_H                           # 220
 ROT_COLLAR_Z_TOP = ROT_COLLAR_Z_BOT + ROT_COLLAR_T   # 225
-assert OPENING_Z_BOT <= ROT_COLLAR_Z_BOT and ROT_COLLAR_Z_TOP <= OPENING_Z_TOP, (
-    f"Rotating collar at z={ROT_COLLAR_Z_BOT}..{ROT_COLLAR_Z_TOP} not "
-    f"inside opening z={OPENING_Z_BOT:.1f}..{OPENING_Z_TOP:.1f}; the "
-    f"partial-ring split assumption no longer holds."
-)
 
 # Bearing engagement plane on this floor — short ring at z = 0..5,
 # uniform across all roles. Engages the lower column's rotating collar
@@ -461,6 +428,38 @@ def column(role: str = "middle") -> Part:
     - **base**: body 0..273, bottom collar at 0..5 (ring-gear interface).
     - **middle**, **top**: body 53..273, mating face at z=53.
     """
+    # Packing sanity for the cut features this part carries. All five
+    # are parameter bounds over subtracted negative space (the opening,
+    # the boss footprint, the bas-relief bump ring, the collar band) —
+    # no part pair to measure, so they stay bare asserts and fire here,
+    # when a column is actually cut, rather than at import.
+    assert BOSS_Y_OFFSET + BOSS_Y / 2 <= COL_INTERIOR_SIDE / 2, (
+        f"Hinge bosses at |Y| = {BOSS_Y_OFFSET + BOSS_Y/2:.1f} mm exceed column "
+        f"interior half-width {COL_INTERIOR_SIDE/2:.1f} mm. Reduce TRAP_W."
+    )
+    assert OPENING_W / 2 <= BOSS_Y_OFFSET - BOSS_Y / 2, (
+        f"Opening half-width ({OPENING_W/2:.1f} mm) overlaps boss inner edge "
+        f"({BOSS_Y_OFFSET - BOSS_Y/2:.1f} mm). Reduce RAMP_W or OPENING_MARGIN."
+    )
+    assert COL_Z_TOP >= OPENING_Z_TOP + JOINT_ZONE_CLEARANCE, (
+        f"COL_Z_TOP ({COL_Z_TOP}) too low — opening top "
+        f"({OPENING_Z_TOP:.1f}) reaches inside the joint zone."
+    )
+    assert _BUMP_R_INNER >= COL_INTERIOR_SIDE / 2 + 2.0, (
+        f"Joint bump inner edge at r={_BUMP_R_INNER:.1f} crowds the column "
+        f"interior boundary at r={COL_INTERIOR_SIDE/2:.1f}; bump would not "
+        f"root in solid flange material on the cardinal axes."
+    )
+    assert _BUMP_R_OUTER + JOINT_BUMP_CLEARANCE_R <= COLLAR_OD / 2 - 2.0, (
+        f"Joint bump+depression outer edge at r={_BUMP_R_OUTER + JOINT_BUMP_CLEARANCE_R:.1f} "
+        f"crowds the flange OD at r={COLLAR_OD/2:.1f}; leave ≥2 mm rim."
+    )
+    assert OPENING_Z_BOT <= ROT_COLLAR_Z_BOT and ROT_COLLAR_Z_TOP <= OPENING_Z_TOP, (
+        f"Rotating collar at z={ROT_COLLAR_Z_BOT}..{ROT_COLLAR_Z_TOP} not "
+        f"inside opening z={OPENING_Z_BOT:.1f}..{OPENING_Z_TOP:.1f}; the "
+        f"partial-ring split assumption no longer holds."
+    )
+
     z_bot = _col_z_bot(role)
     col_h = COL_Z_TOP - z_bot
     col_z_center = (COL_Z_TOP + z_bot) / 2
@@ -563,6 +562,15 @@ def ramp() -> Part:
     exporters pick it up via per-frame TRS samplers, which only see
     ``PlacedPart.location`` and silently drop part-internal Locations.
     """
+    # Deliberately loose upper bound (see BASKET_SLOT_W_AT_TIP above —
+    # the real slot is narrower, and the tight cross-boundary check is
+    # the top level's basket-vs-ramp no-interference). Stays bare.
+    assert RAMP_W <= BASKET_SLOT_W_AT_TIP, (
+        f"RAMP_W ({RAMP_W:.1f} mm) > basket angular slot upper bound at "
+        f"ramp tip ({BASKET_SLOT_W_AT_TIP:.1f} mm at X={RAMP_TIP_X:.1f}, "
+        f"R_BASKET_INNER={R_BASKET_INNER:.1f}). Reduce RAMP_W, "
+        f"increase R_BASKET_INNER, or decrease N_BASKETS_PER_FLOOR."
+    )
     return Box(RAMP_L, RAMP_W, RAMP_T)
 
 

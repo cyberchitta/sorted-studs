@@ -86,11 +86,9 @@ MESH_BACKLASH = 0.2                   # extra center distance for FDM mesh play
 CENTER_DIST = (RING_PITCH_D + PINION_PITCH_D) / 2 + MESH_BACKLASH   # 78.2
 
 # Pitch ≈ collar OD: the ring gear must seat on the collar's bolt face.
-assert abs(RING_PITCH_D - COLLAR_OD) <= 2 * MODULE, (
-    f"Ring-gear pitch D ({RING_PITCH_D:.1f}) strays from the base "
-    f"collar OD ({COLLAR_OD:.1f}) by more than one tooth height; the "
-    f"bolt-on ring no longer seats on the collar face. Re-pick RING_TEETH."
-)
+# Declared as a `ring_gear_collar_seat` assert_scalar in
+# `build_drive_train` — the collar is not a part of this sub-assembly,
+# so the claim is a recorded scalar rather than a part-pair distance.
 
 # Tight constraint: the pinion's tip circle must stay inside the radial-
 # rail ring (rails start at RAIL_INNER_R). This is the packaging knife-
@@ -252,6 +250,22 @@ def build_drive_train(
         "ring_gear", "pinion",
         min_mm=MESH_BACKLASH, max_mm=MESH_BACKLASH + 0.1,
         name="gear_mesh_backlash",
+    )
+    # The bolt-on ring must seat on the base collar's face, so its pitch
+    # diameter has to track COLLAR_OD to within one tooth height. The
+    # collar belongs to another sub-assembly, so this is a recorded
+    # scalar rather than a part-pair distance — but recording it still
+    # beats a bare assert: the measured offset lands in mechanism.json
+    # and `khana diff` sees it drift before it crosses the bound.
+    a = a.assert_scalar(
+        "ring_gear_collar_seat",
+        abs(RING_PITCH_D - COLLAR_OD),
+        le=2 * MODULE,
+        detail=(
+            f"|ring pitch D {RING_PITCH_D:.1f} − base collar OD "
+            f"{COLLAR_OD:.1f}| must stay within one tooth height "
+            f"({2 * MODULE:.1f} mm); re-pick RING_TEETH if it fails"
+        ),
     )
     return a
 

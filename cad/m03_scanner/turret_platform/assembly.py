@@ -242,143 +242,6 @@ EXTENSION_DROP_Y_OUTBOARD = -89.0
 EXTENSION_DROP_Y_TIP = EXTENSION_Y_TIP                             # = -111
 
 
-# --- Sanity asserts ----------------------------------------------------
-
-# Pin bore wall to bracket Z (top + bottom) faces.
-assert _PIN_Z_BRACKET_LOCAL - PIN_BORE_D / 2 >= WALL_MIN, (
-    f"pin-bore to bracket bottom-Z wall "
-    f"{_PIN_Z_BRACKET_LOCAL - PIN_BORE_D / 2:.2f} mm < WALL_MIN ({WALL_MIN}); "
-    f"raise BRACKET_BLOCK_Z or move TURRET_HINGE_PIN_Z down"
-)
-assert (BRACKET_BLOCK_Z - _PIN_Z_BRACKET_LOCAL) - PIN_BORE_D / 2 >= WALL_MIN, (
-    f"pin-bore to bracket top-Z wall "
-    f"{(BRACKET_BLOCK_Z - _PIN_Z_BRACKET_LOCAL) - PIN_BORE_D / 2:.2f} mm < "
-    f"WALL_MIN ({WALL_MIN})"
-)
-
-# Pin bore wall to bracket Y (front + back) faces. Bore centred on
-# bracket Y centerline so both walls equal.
-_pin_y_wall = BRACKET_BLOCK_Y / 2 - PIN_BORE_D / 2
-assert _pin_y_wall >= WALL_MIN, (
-    f"pin-bore to bracket Y wall {_pin_y_wall:.2f} mm < WALL_MIN "
-    f"({WALL_MIN}); raise BRACKET_BLOCK_Y"
-)
-
-# Bracket inboard X face (toward bushing block) clears the bushing block.
-_inboard_face_x = abs(BRACKET_POS_X_LOCAL) - BRACKET_BLOCK_X / 2
-assert _inboard_face_x - _BUSHING_HALF_X >= _PIN_AIR_GAP - 1e-9, (
-    f"bracket inboard X face {_inboard_face_x:.2f} mm closer than "
-    f"AIR_GAP ({_PIN_AIR_GAP}) to bushing block face "
-    f"({_BUSHING_HALF_X}); shift the bracket outboard"
-)
-
-# Bracket outboard face inside frame X footprint.
-assert (
-    abs(BRACKET_POS_X_LOCAL) + BRACKET_BLOCK_X / 2
-    <= FRAME_OUTER_SIZE / 2
-), "bracket outboard X face overhangs frame edge"
-
-# Frame perimeter wall thickness ≥ WALL_MIN.
-assert FRAME_WALL_T >= WALL_MIN, (
-    f"frame perimeter wall thickness {FRAME_WALL_T:.2f} mm < WALL_MIN "
-    f"({WALL_MIN}); shrink ACRYLIC_INSERT_SIZE or grow FRAME_OUTER_SIZE"
-)
-
-# Acrylic insert covers the imaged region.
-assert ACRYLIC_INSERT_SIZE >= IMAGED_REGION_SIDE_MM, (
-    f"acrylic insert {ACRYLIC_INSERT_SIZE} < imaged region "
-    f"{IMAGED_REGION_SIDE_MM} mm; cameras would see frame instead of "
-    f"acrylic at the imaged region edge"
-)
-# (Per-camera below-view occlusion of corner lips and kicker extension
-# is rig-level, checked by visibility.py — not asserted here.)
-
-# Corner lip width ≥ WALL_MIN.
-assert CORNER_LIP_SIZE >= WALL_MIN, (
-    f"corner lip size {CORNER_LIP_SIZE} < WALL_MIN ({WALL_MIN})"
-)
-assert CORNER_LIP_T >= WALL_MIN, (
-    f"corner lip thickness {CORNER_LIP_T} < WALL_MIN ({WALL_MIN})"
-)
-
-# Bushing-block notch clears the slice (c) block X face with AIR_GAP.
-assert _BUSHING_NOTCH_HALF_X >= _BUSHING_HALF_X + _PIN_AIR_GAP - 1e-9, (
-    f"bushing-block notch half-width {_BUSHING_NOTCH_HALF_X} mm "
-    f"insufficient over block half-width {_BUSHING_HALF_X} + AIR_GAP "
-    f"({_PIN_AIR_GAP})"
-)
-
-# Bushing-block notch leaves wall material between notch outer face and
-# bracket inner face.
-_notch_to_bracket_x = (
-    abs(BRACKET_POS_X_LOCAL) - BRACKET_BLOCK_X / 2 - _BUSHING_NOTCH_HALF_X
-)
-assert _notch_to_bracket_x >= -1e-9, (
-    f"bushing notch ({_BUSHING_NOTCH_HALF_X}) overlaps bracket inner "
-    f"face ({abs(BRACKET_POS_X_LOCAL) - BRACKET_BLOCK_X/2}); brackets "
-    f"would lose their hub-side skirt connection"
-)
-
-# Extension X within frame footprint.
-assert EXTENSION_X_OUTER <= FRAME_OUTER_SIZE / 2, (
-    f"extension outer X face {EXTENSION_X_OUTER} overhangs frame edge "
-    f"{FRAME_OUTER_SIZE / 2}"
-)
-
-# Extension Y reaches the lift point.
-assert EXTENSION_Y_TIP <= LIFT_POINT_Y_LOCAL, (
-    f"extension Y tip {EXTENSION_Y_TIP} doesn't reach lift point Y "
-    f"{LIFT_POINT_Y_LOCAL}"
-)
-
-# Extension joins the skirt at the hub-side wall.
-assert EXTENSION_Y_OUTBOARD == HUB_SKIRT_Y_INNER, (
-    f"extension outboard end {EXTENSION_Y_OUTBOARD} doesn't meet skirt "
-    f"inner face {HUB_SKIRT_Y_INNER}"
-)
-
-# Extension clear of the +X bracket in cart X.
-_BRACKET_POS_OUTER_X = BRACKET_POS_X_LOCAL + BRACKET_BLOCK_X / 2  # = +15.5
-_EXT_TO_BRACKET_X_GAP = EXTENSION_X_INNER - _BRACKET_POS_OUTER_X
-assert _EXT_TO_BRACKET_X_GAP >= _PIN_AIR_GAP - 1e-9, (
-    f"extension inner X face {EXTENSION_X_INNER} too close to +X "
-    f"bracket outer X face {_BRACKET_POS_OUTER_X} (gap "
-    f"{_EXT_TO_BRACKET_X_GAP} < AIR_GAP {_PIN_AIR_GAP})"
-)
-
-# Lever arm to lift point ≥ minimum for reliable dump.
-_LEVER_ARM = abs(LIFT_POINT_Y_LOCAL - PIN_AXIS_Y_LOCAL)            # = 40
-assert _LEVER_ARM >= 30.0, (
-    f"lever arm hinge→lift {_LEVER_ARM:.2f} mm < 30 mm; dump may "
-    f"be unreliable — push EXTENSION_Y_TIP further hub-ward"
-)
-
-# (Extension below-view occlusion is rig-level — visibility.py.)
-
-# Extension bottom strictly above lifter pad top at REST.
-assert EXTENSION_BOTTOM_Z > TURRET_DUMP_SERVO_LIFTER_TOP_Z, (
-    f"extension bottom {EXTENSION_BOTTOM_Z} ≤ lifter top at REST "
-    f"{TURRET_DUMP_SERVO_LIFTER_TOP_Z}; would contact at rest"
-)
-
-# Lifter pad cart-frame position derived from turret-local matches the
-# extension's lift point. Option a' (2026-05-05) DUMP at heading 270°
-# uses Rz(+180) + centroid translate (0, -ARM_R), so the inversion
-# from turret-local back to cart-frame is:
-#   cart_x = -turret_x
-#   cart_y = -(turret_y + ARM_R) = -turret_y - ARM_R
-_LIFTER_CART_X = -TURRET_DUMP_SERVO_LIFTER_TURRET_X                # = +30
-_LIFTER_CART_Y = -TURRET_DUMP_SERVO_LIFTER_TURRET_Y - TURRET_ARM_R  # = -100
-assert _LIFTER_CART_X == EXTENSION_X_CENTER, (
-    f"lifter cart X {_LIFTER_CART_X} ≠ extension X center "
-    f"{EXTENSION_X_CENTER}"
-)
-assert _LIFTER_CART_Y == LIFT_POINT_Y_LOCAL, (
-    f"lifter cart Y {_LIFTER_CART_Y} ≠ extension lift point Y "
-    f"{LIFT_POINT_Y_LOCAL}"
-)
-
-
 # --- Part functions ----------------------------------------------------
 
 def acrylic_insert(
@@ -397,6 +260,15 @@ def acrylic_insert(
     Locations, so a dynamic part (any platform during a DUMP dwell)
     with a non-identity intrinsic renders correctly at frame 0 and
     quietly wrong thereafter."""
+    # Acrylic insert covers the imaged region.
+    assert ACRYLIC_INSERT_SIZE >= IMAGED_REGION_SIDE_MM, (
+        f"acrylic insert {ACRYLIC_INSERT_SIZE} < imaged region "
+        f"{IMAGED_REGION_SIDE_MM} mm; cameras would see frame instead of "
+        f"acrylic at the imaged region edge"
+    )
+    # (Per-camera below-view occlusion of corner lips and kicker extension
+    # is rig-level, checked by visibility.py — not asserted here.)
+
     return Box(size, size, thickness)
 
 
@@ -404,6 +276,138 @@ def frame():
     """Single printed frame body: top ring + pocket walls + 4 corner
     lips + hub-side skirt (with bushing notch) + integrated hinge
     brackets (with horizontal pin bore) + L-shaped kicker extension."""
+    # Wall, clearance and datum sanity for this single printed
+    # body. All of it is either WALL_MIN arithmetic over subtracted
+    # negative space (pin bores, the bushing notch) or a bound
+    # against a peer unit's constant (the lifter pad, the hinge
+    # pin datum), so none is expressible as a part-pair claim in
+    # this cartridge — bare, and fired when the frame is cut
+    # rather than at import.
+    # Pin bore wall to bracket Z (top + bottom) faces.
+    assert _PIN_Z_BRACKET_LOCAL - PIN_BORE_D / 2 >= WALL_MIN, (
+        f"pin-bore to bracket bottom-Z wall "
+        f"{_PIN_Z_BRACKET_LOCAL - PIN_BORE_D / 2:.2f} mm < WALL_MIN ({WALL_MIN}); "
+        f"raise BRACKET_BLOCK_Z or move TURRET_HINGE_PIN_Z down"
+    )
+    assert (BRACKET_BLOCK_Z - _PIN_Z_BRACKET_LOCAL) - PIN_BORE_D / 2 >= WALL_MIN, (
+        f"pin-bore to bracket top-Z wall "
+        f"{(BRACKET_BLOCK_Z - _PIN_Z_BRACKET_LOCAL) - PIN_BORE_D / 2:.2f} mm < "
+        f"WALL_MIN ({WALL_MIN})"
+    )
+
+    # Pin bore wall to bracket Y (front + back) faces. Bore centred on
+    # bracket Y centerline so both walls equal.
+    _pin_y_wall = BRACKET_BLOCK_Y / 2 - PIN_BORE_D / 2
+    assert _pin_y_wall >= WALL_MIN, (
+        f"pin-bore to bracket Y wall {_pin_y_wall:.2f} mm < WALL_MIN "
+        f"({WALL_MIN}); raise BRACKET_BLOCK_Y"
+    )
+
+    # Bracket inboard X face (toward bushing block) clears the bushing block.
+    _inboard_face_x = abs(BRACKET_POS_X_LOCAL) - BRACKET_BLOCK_X / 2
+    assert _inboard_face_x - _BUSHING_HALF_X >= _PIN_AIR_GAP - 1e-9, (
+        f"bracket inboard X face {_inboard_face_x:.2f} mm closer than "
+        f"AIR_GAP ({_PIN_AIR_GAP}) to bushing block face "
+        f"({_BUSHING_HALF_X}); shift the bracket outboard"
+    )
+
+    # Bracket outboard face inside frame X footprint.
+    assert (
+        abs(BRACKET_POS_X_LOCAL) + BRACKET_BLOCK_X / 2
+        <= FRAME_OUTER_SIZE / 2
+    ), "bracket outboard X face overhangs frame edge"
+
+    # Frame perimeter wall thickness ≥ WALL_MIN.
+    assert FRAME_WALL_T >= WALL_MIN, (
+        f"frame perimeter wall thickness {FRAME_WALL_T:.2f} mm < WALL_MIN "
+        f"({WALL_MIN}); shrink ACRYLIC_INSERT_SIZE or grow FRAME_OUTER_SIZE"
+    )
+
+    # Corner lip width ≥ WALL_MIN.
+    assert CORNER_LIP_SIZE >= WALL_MIN, (
+        f"corner lip size {CORNER_LIP_SIZE} < WALL_MIN ({WALL_MIN})"
+    )
+    assert CORNER_LIP_T >= WALL_MIN, (
+        f"corner lip thickness {CORNER_LIP_T} < WALL_MIN ({WALL_MIN})"
+    )
+
+    # Bushing-block notch clears the slice (c) block X face with AIR_GAP.
+    assert _BUSHING_NOTCH_HALF_X >= _BUSHING_HALF_X + _PIN_AIR_GAP - 1e-9, (
+        f"bushing-block notch half-width {_BUSHING_NOTCH_HALF_X} mm "
+        f"insufficient over block half-width {_BUSHING_HALF_X} + AIR_GAP "
+        f"({_PIN_AIR_GAP})"
+    )
+
+    # Bushing-block notch leaves wall material between notch outer face and
+    # bracket inner face.
+    _notch_to_bracket_x = (
+        abs(BRACKET_POS_X_LOCAL) - BRACKET_BLOCK_X / 2 - _BUSHING_NOTCH_HALF_X
+    )
+    assert _notch_to_bracket_x >= -1e-9, (
+        f"bushing notch ({_BUSHING_NOTCH_HALF_X}) overlaps bracket inner "
+        f"face ({abs(BRACKET_POS_X_LOCAL) - BRACKET_BLOCK_X/2}); brackets "
+        f"would lose their hub-side skirt connection"
+    )
+
+    # Extension X within frame footprint.
+    assert EXTENSION_X_OUTER <= FRAME_OUTER_SIZE / 2, (
+        f"extension outer X face {EXTENSION_X_OUTER} overhangs frame edge "
+        f"{FRAME_OUTER_SIZE / 2}"
+    )
+
+    # Extension Y reaches the lift point.
+    assert EXTENSION_Y_TIP <= LIFT_POINT_Y_LOCAL, (
+        f"extension Y tip {EXTENSION_Y_TIP} doesn't reach lift point Y "
+        f"{LIFT_POINT_Y_LOCAL}"
+    )
+
+    # Extension joins the skirt at the hub-side wall.
+    assert EXTENSION_Y_OUTBOARD == HUB_SKIRT_Y_INNER, (
+        f"extension outboard end {EXTENSION_Y_OUTBOARD} doesn't meet skirt "
+        f"inner face {HUB_SKIRT_Y_INNER}"
+    )
+
+    # Extension clear of the +X bracket in cart X.
+    _BRACKET_POS_OUTER_X = BRACKET_POS_X_LOCAL + BRACKET_BLOCK_X / 2  # = +15.5
+    _EXT_TO_BRACKET_X_GAP = EXTENSION_X_INNER - _BRACKET_POS_OUTER_X
+    assert _EXT_TO_BRACKET_X_GAP >= _PIN_AIR_GAP - 1e-9, (
+        f"extension inner X face {EXTENSION_X_INNER} too close to +X "
+        f"bracket outer X face {_BRACKET_POS_OUTER_X} (gap "
+        f"{_EXT_TO_BRACKET_X_GAP} < AIR_GAP {_PIN_AIR_GAP})"
+    )
+
+    # Lever arm to lift point ≥ minimum for reliable dump.
+    _LEVER_ARM = abs(LIFT_POINT_Y_LOCAL - PIN_AXIS_Y_LOCAL)            # = 40
+    assert _LEVER_ARM >= 30.0, (
+        f"lever arm hinge→lift {_LEVER_ARM:.2f} mm < 30 mm; dump may "
+        f"be unreliable — push EXTENSION_Y_TIP further hub-ward"
+    )
+
+    # (Extension below-view occlusion is rig-level — visibility.py.)
+
+    # Extension bottom strictly above lifter pad top at REST.
+    assert EXTENSION_BOTTOM_Z > TURRET_DUMP_SERVO_LIFTER_TOP_Z, (
+        f"extension bottom {EXTENSION_BOTTOM_Z} ≤ lifter top at REST "
+        f"{TURRET_DUMP_SERVO_LIFTER_TOP_Z}; would contact at rest"
+    )
+
+    # Lifter pad cart-frame position derived from turret-local matches the
+    # extension's lift point. Option a' (2026-05-05) DUMP at heading 270°
+    # uses Rz(+180) + centroid translate (0, -ARM_R), so the inversion
+    # from turret-local back to cart-frame is:
+    #   cart_x = -turret_x
+    #   cart_y = -(turret_y + ARM_R) = -turret_y - ARM_R
+    _LIFTER_CART_X = -TURRET_DUMP_SERVO_LIFTER_TURRET_X                # = +30
+    _LIFTER_CART_Y = -TURRET_DUMP_SERVO_LIFTER_TURRET_Y - TURRET_ARM_R  # = -100
+    assert _LIFTER_CART_X == EXTENSION_X_CENTER, (
+        f"lifter cart X {_LIFTER_CART_X} ≠ extension X center "
+        f"{EXTENSION_X_CENTER}"
+    )
+    assert _LIFTER_CART_Y == LIFT_POINT_Y_LOCAL, (
+        f"lifter cart Y {_LIFTER_CART_Y} ≠ extension lift point Y "
+        f"{LIFT_POINT_Y_LOCAL}"
+    )
+
     # Top ring + pocket walls — one perimeter tube spanning z ∈ [-4, +5].
     perim_z_center = (TOP_RING_TOP_Z + ACRYLIC_BOTTOM_Z) / 2       # = +0.5
     perim_z_len = TOP_RING_TOP_Z - ACRYLIC_BOTTOM_Z                # = 9

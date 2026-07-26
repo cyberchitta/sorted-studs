@@ -70,12 +70,13 @@ import math
 M05_R_VERT_OUTER = 311.769145362398
 
 # m05's `_APOTHEM_TO_VERTEX = 2 / sqrt(3)` × R_HEX_OUTER (= 270). The
-# literal is reproduced here so the chain stays standalone; the
-# top-level `cad/assembly.py` cross-checks against the live m05 value.
-assert abs(M05_R_VERT_OUTER - (270.0 * 2.0 / math.sqrt(3.0))) < 1e-6, (
-    "M05_R_VERT_OUTER mismatched — update from "
-    "cad/m05_diverter/params.py: R_VERT_OUTER"
-)
+# literal is reproduced here so the chain stays standalone.
+#
+# Drift is caught by the `col1_base` belief anchor, which is derived
+# from this value and checked against m05's live `outer_vert_0_top` in
+# the top-level `cad/assembly.py`. A local `assert` against a
+# recomputed `270 * 2/sqrt(3)` would only catch a transcription typo
+# here — both sides being local literals, it cannot see m05 move.
 
 
 # --- Mirror from cad/m05_diverter/assembly.py --------------------------
@@ -86,11 +87,10 @@ assert abs(M05_R_VERT_OUTER - (270.0 * 2.0 / math.sqrt(3.0))) < 1e-6, (
 M05_TOP_VERT_Z = 880.0
 M05_TOP_DECK_T = 10.0
 M05_DECK_TOP_Z = M05_TOP_VERT_Z + M05_TOP_DECK_T   # 890
-
-assert M05_TOP_VERT_Z == 4 * 220.0, (
-    "M05_TOP_VERT_Z mismatched — m05 FLOOR_H × 4 expected; update from "
-    "cad/m05_diverter/assembly.py: TOP_VERT_Z"
-)
+#
+# As with M05_R_VERT_OUTER: drift is caught by the `deck_top` belief
+# anchor derived from this value, against m05's live `deck_top` at the
+# top level — not by a local assert over local literals.
 
 
 # --- Mirror from cad/m03_scanner/params.py + cad/assembly.py -----------
@@ -187,11 +187,12 @@ COL2_LOCAL_XY = (
     S1_AXIS_LOCAL_XY[1] + 50.0,                              # +50
 )
 
-assert (COL2_LOCAL_XY[0] + M03_TURRET_ARM_R) > 330.0, (
-    f"col2 world X ({COL2_LOCAL_XY[0] + M03_TURRET_ARM_R}) should sit "
-    "outboard of the m05 top-deck OD/2 = 330. Move col2 outward or "
-    "rework the deck mounting strategy."
-)
+# col2 must land outboard of the m05 top-deck OD/2 — declared as the
+# `col2_outboard_of_deck` assert_scalar in `build_chain`, so the
+# measured world X is recorded and diffable rather than crashing an
+# import. (The deck is m05's part, so this is a scalar claim, not a
+# part-pair distance.)
+M05_TOP_DECK_OD_HALF = 330.0
 
 
 # --- Yoke crossbar -----------------------------------------------------

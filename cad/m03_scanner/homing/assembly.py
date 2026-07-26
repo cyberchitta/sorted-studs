@@ -119,10 +119,11 @@ RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2             # = -120 after c7
 # top in Z but the foot does not).
 HOUSING_HALF_X = 30.0
 
-# Slice (g) driven pulley top face Z. Flag + sensor must clear this
-# above with ≥ 1 mm gap. (Pulley body at z ∈ [-59, -51]; the bracket
-# post passes outboard of the pulley in X — see post X-range below.)
-PULLEY_TOP_Z = -51.0
+# The driven pulley bounds the homing parts' Z corridor from below.
+# That used to be a mirrored PULLEY_TOP_Z literal here feeding
+# hand-derived subtractions; it is retired. The claim is now the
+# `homing_*_pulley_gap` assert_distance pair in `build_turret`, where
+# the drive and homing subtrees meet, measuring the live pulley.
 
 # Slice (d) platform extension drop-block bottom Z. The IDLE-pose
 # platform sweeps through azimuth 180° (the homing sensor's azimuth)
@@ -132,6 +133,18 @@ PULLEY_TOP_Z = -51.0
 # gap. Mirror of `turret_platform/assembly.py`'s EXTENSION_BOTTOM_Z;
 # itself derived from `TURRET_DUMP_SERVO_LIFTER_TOP_Z + 2` in
 # `params.py`. Update if the platform drop-block geometry changes.
+#
+# This one stays a mirror-and-bare-assert rather than following the
+# pulley bound into `build_turret`, and the reason is a claim the old
+# code left implicit: **it holds at the platforms' REST tilt only.**
+# Declared as an assert_distance it goes red across three frames of
+# `frame_sweep.py` — during the dump dwell the dumping platform tips
+# far enough that its Z-projection overlaps the homing band (measured
+# −22.6 mm at t=0.0875). Nothing collides there; the group
+# no-interference checks stay green. The directed-distance form is
+# simply the wrong shape for a claim scoped to one pose of a moving
+# part, and cad-khana has no `during=` window for distances (only for
+# contact assertions) — see adoption-inventory §3.
 DROP_BLOCK_BOTTOM_Z = -43.0
 
 # --- Flag disc geometry ------------------------------------------------
@@ -219,117 +232,6 @@ BRACKET_POST_Z = _BRACKET_POST_TOP_Z - _BRACKET_POST_BOTTOM_Z  # = 68
 _BRACKET_POST_CENTER_Z = (_BRACKET_POST_BOTTOM_Z + _BRACKET_POST_TOP_Z) / 2
 
 
-# --- Sanity asserts ----------------------------------------------------
-
-# Flag clears pulley top (below) + drop-block bottom (above) by ≥ 1 mm.
-_flag_to_pulley = _FLAG_BOTTOM_Z - PULLEY_TOP_Z
-assert _flag_to_pulley >= 1.0, (
-    f"flag bottom ({_FLAG_BOTTOM_Z}) too close to pulley top "
-    f"({PULLEY_TOP_Z}); gap {_flag_to_pulley:.2f} mm < 1 mm"
-)
-_flag_to_drop = DROP_BLOCK_BOTTOM_Z - _FLAG_TOP_Z
-assert _flag_to_drop >= 1.0, (
-    f"flag top ({_FLAG_TOP_Z}) too close to drop-block bottom "
-    f"({DROP_BLOCK_BOTTOM_Z}); gap {_flag_to_drop:.2f} mm < 1 mm"
-)
-
-# Sensor clears pulley top (below) + drop-block bottom (above) by ≥ 1 mm.
-_sensor_to_pulley = _SENSOR_BOT_Z - PULLEY_TOP_Z
-assert _sensor_to_pulley >= 1.0, (
-    f"sensor bottom ({_SENSOR_BOT_Z}) too close to pulley top "
-    f"({PULLEY_TOP_Z}); gap {_sensor_to_pulley:.2f} mm < 1 mm"
-)
-_sensor_to_drop = DROP_BLOCK_BOTTOM_Z - _SENSOR_TOP_Z
-assert _sensor_to_drop >= 1.0, (
-    f"sensor top ({_SENSOR_TOP_Z}) too close to drop-block bottom "
-    f"({DROP_BLOCK_BOTTOM_Z}); gap {_sensor_to_drop:.2f} mm < 1 mm"
-)
-
-# Bracket post top stays below drop-block bottom by ≥ 1 mm so the
-# transit sweep at azimuth 180° clears the post (post X-range
-# [-54, -40] overlaps the drop-block sweep annulus at radius 25-53).
-_post_to_drop = DROP_BLOCK_BOTTOM_Z - _BRACKET_POST_TOP_Z
-assert _post_to_drop >= 1.0, (
-    f"bracket post top ({_BRACKET_POST_TOP_Z}) too close to drop-block "
-    f"bottom ({DROP_BLOCK_BOTTOM_Z}); gap {_post_to_drop:.2f} mm < 1 mm"
-)
-
-# Detect hole sits inside the slot's X range (so the beam aligns with
-# the hole at home).
-assert SENSOR_OUTER_X + SENSOR_MAIN_X <= -FLAG_DETECT_HOLE_R <= _SENSOR_PRONG_TIP_X, (
-    f"detect hole at x = -{FLAG_DETECT_HOLE_R} (azimuth 180°) outside "
-    f"slot X range [{_SENSOR_MAIN_X_MAX}, {_SENSOR_PRONG_TIP_X}]; "
-    f"adjust FLAG_DETECT_HOLE_R or SENSOR_PRONG_X"
-)
-
-# Detect hole edge clears the bore (so the hole doesn't break the
-# bore-side wall).
-_hole_to_bore = (
-    FLAG_DETECT_HOLE_R - FLAG_DETECT_HOLE_D / 2 - FLAG_BORE_D / 2
-)
-assert _hole_to_bore >= WALL_MIN, (
-    f"detect hole edge to bore edge wall {_hole_to_bore:.2f} mm < "
-    f"WALL_MIN ({WALL_MIN}); raise FLAG_DETECT_HOLE_R or shrink hole"
-)
-
-# Detect hole edge clears the disc OD (so the hole doesn't break the
-# rim).
-_hole_to_od = (
-    FLAG_OD / 2 - FLAG_DETECT_HOLE_R - FLAG_DETECT_HOLE_D / 2
-)
-assert _hole_to_od >= WALL_MIN, (
-    f"detect hole edge to disc OD wall {_hole_to_od:.2f} mm < "
-    f"WALL_MIN ({WALL_MIN}); raise FLAG_OD or lower FLAG_DETECT_HOLE_R"
-)
-
-# Sensor prong tip clears the shaft.
-_prong_tip_to_shaft = abs(_SENSOR_PRONG_TIP_X) - TURRET_SHAFT_D / 2
-assert _prong_tip_to_shaft >= WALL_MIN, (
-    f"sensor prong tip ({_SENSOR_PRONG_TIP_X}) too close to shaft "
-    f"OD (Ø{TURRET_SHAFT_D}); gap {_prong_tip_to_shaft:.2f} mm < "
-    f"WALL_MIN ({WALL_MIN})"
-)
-
-# Bracket foot inner edge clears housing X-half.
-_foot_to_housing = abs(_BRACKET_FOOT_X_MAX) - HOUSING_HALF_X
-assert _foot_to_housing >= WALL_MIN, (
-    f"bracket foot inner edge ({_BRACKET_FOOT_X_MAX}) too close to "
-    f"housing -X face (-{HOUSING_HALF_X}); gap {_foot_to_housing:.2f} "
-    f"mm < WALL_MIN ({WALL_MIN}); shift bracket further -X or shrink "
-    f"BRACKET_FOOT_X"
-)
-
-# Bolt holes fit inside the foot with WALL_MIN walls on each side, and
-# don't pass through the post.
-_inner_bolt_x = _BRACKET_FOOT_CENTER_X + _BRACKET_BOLT_HALF_X
-_outer_bolt_x = _BRACKET_FOOT_CENTER_X - _BRACKET_BOLT_HALF_X
-_bolt_to_foot_inner = _BRACKET_FOOT_X_MAX - (_inner_bolt_x + BRACKET_BOLT_HOLE_D / 2)
-assert _bolt_to_foot_inner >= WALL_MIN, (
-    f"inner bolt ({_inner_bolt_x}) edge too close to foot inner edge "
-    f"({_BRACKET_FOOT_X_MAX}); gap {_bolt_to_foot_inner:.2f} mm < "
-    f"WALL_MIN ({WALL_MIN})"
-)
-_bolt_to_foot_outer = (_outer_bolt_x - BRACKET_BOLT_HOLE_D / 2) - _BRACKET_FOOT_X_MIN
-assert _bolt_to_foot_outer >= WALL_MIN, (
-    f"outer bolt ({_outer_bolt_x}) edge too close to foot outer edge "
-    f"({_BRACKET_FOOT_X_MIN}); gap {_bolt_to_foot_outer:.2f} mm < "
-    f"WALL_MIN ({WALL_MIN})"
-)
-_inner_bolt_to_post = (_inner_bolt_x - BRACKET_BOLT_HOLE_D / 2) - _BRACKET_POST_X_MAX
-assert _inner_bolt_to_post >= WALL_MIN, (
-    f"inner bolt ({_inner_bolt_x}) outboard edge too close to post "
-    f"+X face ({_BRACKET_POST_X_MAX}); gap {_inner_bolt_to_post:.2f} "
-    f"mm < WALL_MIN ({WALL_MIN}); widen BRACKET_BOLT_SPACING_X or "
-    f"shrink BRACKET_POST_X"
-)
-_outer_bolt_to_post = _BRACKET_POST_X_MIN - (_outer_bolt_x + BRACKET_BOLT_HOLE_D / 2)
-assert _outer_bolt_to_post >= WALL_MIN, (
-    f"outer bolt ({_outer_bolt_x}) inboard edge too close to post "
-    f"-X face ({_BRACKET_POST_X_MIN}); gap {_outer_bolt_to_post:.2f} "
-    f"mm < WALL_MIN ({WALL_MIN})"
-)
-
-
 # --- Part functions ----------------------------------------------------
 
 def flag(
@@ -344,6 +246,20 @@ def flag(
     bore is a Ø8.4 clearance hole (real part has an M3 set screw on a
     flat). One Ø4 detect hole at radius `detect_hole_r` from axis at
     heading 180° (the -X side, where the sensor sits)."""
+    # Detect-hole wall sanity — the hole is subtracted negative space,
+    # so no part-pair claim reaches it. Over the arguments, so an
+    # override is guarded too.
+    _hole_to_bore = detect_hole_r - detect_hole_d / 2 - bore_d / 2
+    assert _hole_to_bore >= WALL_MIN, (
+        f"detect hole edge to bore edge wall {_hole_to_bore:.2f} mm < "
+        f"WALL_MIN ({WALL_MIN}); raise FLAG_DETECT_HOLE_R or shrink hole"
+    )
+    _hole_to_od = od / 2 - detect_hole_r - detect_hole_d / 2
+    assert _hole_to_od >= WALL_MIN, (
+        f"detect hole edge to disc OD wall {_hole_to_od:.2f} mm < "
+        f"WALL_MIN ({WALL_MIN}); raise FLAG_OD or lower FLAG_DETECT_HOLE_R"
+    )
+
     body = Cylinder(od / 2, thickness)
     body -= Cylinder(bore_d / 2, thickness * 3)
     body -= (
@@ -358,6 +274,14 @@ def sensor():
     Modeled as a body with a 3-mm-tall slot in Z between two prongs.
     Returned in turret-local coordinates (no `base` shift); caller
     multiplies the placement."""
+    # Prong tip must clear the shaft it reaches around.
+    _prong_tip_to_shaft = abs(_SENSOR_PRONG_TIP_X) - TURRET_SHAFT_D / 2
+    assert _prong_tip_to_shaft >= WALL_MIN, (
+        f"sensor prong tip ({_SENSOR_PRONG_TIP_X}) too close to shaft "
+        f"OD (Ø{TURRET_SHAFT_D}); gap {_prong_tip_to_shaft:.2f} mm < "
+        f"WALL_MIN ({WALL_MIN})"
+    )
+
     main_block = (
         Pos(_SENSOR_MAIN_CENTER_X, 0, _SENSOR_BODY_CENTER_Z)
         * Box(SENSOR_MAIN_X, SENSOR_BODY_Y, SENSOR_BODY_Z)
@@ -377,6 +301,44 @@ def bracket():
     """Printed L-bracket: foot bolts to cross-rail's top T-slot;
     vertical post rises to sensor body top. Sensor mounts to post's
     +X face (toward axis). Returned in turret-local coords."""
+    # Bolt-hole walls (subtracted negative space) plus the foot's
+    # clearance to the hub housing, which this unit mirrors as
+    # HOUSING_HALF_X to stay standalone. All bare: no part pair.
+    _foot_to_housing = abs(_BRACKET_FOOT_X_MAX) - HOUSING_HALF_X
+    assert _foot_to_housing >= WALL_MIN, (
+        f"bracket foot inner edge ({_BRACKET_FOOT_X_MAX}) too close to "
+        f"housing -X face (-{HOUSING_HALF_X}); gap {_foot_to_housing:.2f} "
+        f"mm < WALL_MIN ({WALL_MIN}); shift bracket further -X or shrink "
+        f"BRACKET_FOOT_X"
+    )
+    _inner_bolt_x = _BRACKET_FOOT_CENTER_X + _BRACKET_BOLT_HALF_X
+    _outer_bolt_x = _BRACKET_FOOT_CENTER_X - _BRACKET_BOLT_HALF_X
+    _bolt_to_foot_inner = _BRACKET_FOOT_X_MAX - (_inner_bolt_x + BRACKET_BOLT_HOLE_D / 2)
+    assert _bolt_to_foot_inner >= WALL_MIN, (
+        f"inner bolt ({_inner_bolt_x}) edge too close to foot inner edge "
+        f"({_BRACKET_FOOT_X_MAX}); gap {_bolt_to_foot_inner:.2f} mm < "
+        f"WALL_MIN ({WALL_MIN})"
+    )
+    _bolt_to_foot_outer = (_outer_bolt_x - BRACKET_BOLT_HOLE_D / 2) - _BRACKET_FOOT_X_MIN
+    assert _bolt_to_foot_outer >= WALL_MIN, (
+        f"outer bolt ({_outer_bolt_x}) edge too close to foot outer edge "
+        f"({_BRACKET_FOOT_X_MIN}); gap {_bolt_to_foot_outer:.2f} mm < "
+        f"WALL_MIN ({WALL_MIN})"
+    )
+    _inner_bolt_to_post = (_inner_bolt_x - BRACKET_BOLT_HOLE_D / 2) - _BRACKET_POST_X_MAX
+    assert _inner_bolt_to_post >= WALL_MIN, (
+        f"inner bolt ({_inner_bolt_x}) outboard edge too close to post "
+        f"+X face ({_BRACKET_POST_X_MAX}); gap {_inner_bolt_to_post:.2f} "
+        f"mm < WALL_MIN ({WALL_MIN}); widen BRACKET_BOLT_SPACING_X or "
+        f"shrink BRACKET_POST_X"
+    )
+    _outer_bolt_to_post = _BRACKET_POST_X_MIN - (_outer_bolt_x + BRACKET_BOLT_HOLE_D / 2)
+    assert _outer_bolt_to_post >= WALL_MIN, (
+        f"outer bolt ({_outer_bolt_x}) inboard edge too close to post "
+        f"-X face ({_BRACKET_POST_X_MIN}); gap {_outer_bolt_to_post:.2f} "
+        f"mm < WALL_MIN ({WALL_MIN})"
+    )
+
     foot = (
         Pos(_BRACKET_FOOT_CENTER_X, 0, _BRACKET_FOOT_CENTER_Z)
         * Box(BRACKET_FOOT_X, BRACKET_FOOT_Y, BRACKET_FOOT_Z)
@@ -433,6 +395,39 @@ def build_turret_homing_static() -> Assembly:
     """Static homing sub-assembly: sensor + bracket, in turret-local
     coordinates. Both bolt to the bench frame; only the flag (keyed
     to the hub shaft) revolves."""
+    # Drop-block clearance at REST tilt (see DROP_BLOCK_BOTTOM_Z above
+    # for why this is bare and pose-scoped rather than an
+    # assert_distance). The flag rides the rotor and the sensor/bracket
+    # are bench-mounted, but all three share one Z band against the
+    # platform that happens to be overhead.
+    assert DROP_BLOCK_BOTTOM_Z - _FLAG_TOP_Z >= 1.0, (
+        f"flag top ({_FLAG_TOP_Z}) too close to drop-block bottom "
+        f"({DROP_BLOCK_BOTTOM_Z}); gap {DROP_BLOCK_BOTTOM_Z - _FLAG_TOP_Z:.2f} mm < 1 mm"
+    )
+    assert DROP_BLOCK_BOTTOM_Z - _SENSOR_TOP_Z >= 1.0, (
+        f"sensor top ({_SENSOR_TOP_Z}) too close to drop-block bottom "
+        f"({DROP_BLOCK_BOTTOM_Z}); gap {DROP_BLOCK_BOTTOM_Z - _SENSOR_TOP_Z:.2f} mm < 1 mm"
+    )
+    # Bracket post top stays below drop-block bottom by ≥ 1 mm so the
+    # transit sweep at azimuth 180° clears the post (post X-range
+    # [-54, -40] overlaps the drop-block sweep annulus at radius 25-53).
+    assert DROP_BLOCK_BOTTOM_Z - _BRACKET_POST_TOP_Z >= 1.0, (
+        f"bracket post top ({_BRACKET_POST_TOP_Z}) too close to drop-block "
+        f"bottom ({DROP_BLOCK_BOTTOM_Z}); gap "
+        f"{DROP_BLOCK_BOTTOM_Z - _BRACKET_POST_TOP_Z:.2f} mm < 1 mm"
+    )
+
+    # Beam-to-hole alignment at home: the flag's detect hole must fall
+    # inside the sensor slot's X range. A parameter claim spanning both
+    # parts, so it belongs to a builder rather than either part
+    # function — and to this one because the parent turret calls the
+    # static and rotor builders directly, never the standalone fixture.
+    assert SENSOR_OUTER_X + SENSOR_MAIN_X <= -FLAG_DETECT_HOLE_R <= _SENSOR_PRONG_TIP_X, (
+        f"detect hole at x = -{FLAG_DETECT_HOLE_R} (azimuth 180°) outside "
+        f"slot X range [{_SENSOR_MAIN_X_MAX}, {_SENSOR_PRONG_TIP_X}]; "
+        f"adjust FLAG_DETECT_HOLE_R or SENSOR_PRONG_X"
+    )
+
     a = Assembly()
     # homing_sensor material left unset — opto-interrupter housing,
     # render.py overrides.
