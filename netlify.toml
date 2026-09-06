@@ -1,6 +1,10 @@
 [build]
   base = "subsite"
-  command = "bun run build"
+  # Non-production deploys (branch deploys, previews) ship X-Robots-Tag:
+  # noindex so a second copy never competes with the custom domain in
+  # search. netlify.toml [[headers]] are global to every context by
+  # design; _headers is per-deploy, hence the append.
+  command = "bun run build && { [ \"$CONTEXT\" = production ] || printf '\\n/*\\n  X-Robots-Tag: noindex\\n' >> ./_site/_headers; }"
   publish = "_site"
   ignore = "git diff --quiet HEAD^ HEAD -- . ../netlify.toml"
 
@@ -10,6 +14,21 @@
 
 [context.production.environment]
   ELEVENTY_ENV = "production"
+
+# Canonical host. Both of these serve the PRODUCTION deploy, so the noindex
+# above does not reach them — they were live duplicates of the custom domain.
+# `force` is required or the real file at the path wins.
+[[redirects]]
+  from = "https://live--sorted-studs.netlify.app/*"
+  to = "https://sorted-studs.cyberchitta.cc/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://sorted-studs.netlify.app/*"
+  to = "https://sorted-studs.cyberchitta.cc/:splat"
+  status = 301
+  force = true
 
 [[headers]]
   for = "/assets/exhibits/*"
