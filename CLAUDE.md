@@ -149,7 +149,7 @@ bin for manual review — fail-safe default throughout the design.
   the same slice as the geometry change.
 - **Subsite changes.** Edits stay uncommitted until the user signals
   "ready to publish." Publishing happens via a dedicated `live` branch
-  (orphan, no CAD history), independent of `main`/`staging` — see
+  (orphan, no CAD history), independent of `main` — see
   `_notes/state/subsite.md` for the branch topology and publish recipe.
 - **Commits.** Write the message straight into git (heredoc on stdin),
   with a pathspec on `git commit`. See the global `CLAUDE.md` — this repo
