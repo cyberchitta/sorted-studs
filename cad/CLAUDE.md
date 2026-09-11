@@ -463,9 +463,9 @@ drift is accepted — but only when both sides are actually written.
 
 Commit message convention, pathspec discipline and the notes commit
 cadence all come from the global `~/.claude/CLAUDE.md` and the
-`working-notes` skill; this repo has no local exception. In
-particular the message goes **straight into git**, never through a
-`.commit-msg` file.
+`working-notes` skill; this repo has no local exception — including
+the draft-first default (`.commit-msg`, then commit on a separate
+go-ahead) and the heredoc-on-stdin form when the commit is made.
 
 ## Feeding observations back to cad-khana
 
