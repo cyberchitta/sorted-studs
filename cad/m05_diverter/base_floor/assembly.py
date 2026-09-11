@@ -71,7 +71,11 @@ from ..params import COL_INTERIOR_SIDE, COLLAR_OD, RAIL_INNER_R, RAIL_SIZE
 MODULE = 1.5                          # printable spur module (low torque)
 PRESSURE_ANGLE_DEG = 20.0             # documentation only — cheap model has no teeth
 RING_TEETH = round(COLLAR_OD / MODULE)            # 92 — pitch D ≈ collar OD
-PINION_TEETH = 12                                  # small but printable at 20° PA
+# 17 T is the undercut floor for a 20° PA involute — and the tooth count
+# m02's rim-drive pinion settled on (`_notes/decisions/m02-rotor-drive.md`),
+# so the two modules share one printed pinion. The tip lands at r ≈ 96.2,
+# which is what pushed RAIL_INNER_R out to 100 (params.py).
+PINION_TEETH = 17
 RING_PITCH_D = RING_TEETH * MODULE                 # 138.0
 PINION_PITCH_D = PINION_TEETH * MODULE             # 18.0
 GEAR_RATIO = RING_TEETH / PINION_TEETH             # ≈ 7.67 : 1
@@ -83,7 +87,7 @@ MESH_BACKLASH = 0.2                   # extra center distance for FDM mesh play
 # pinion-vs-ring no-interference is robust; the `gear_mesh_backlash`
 # assert_distance in `build_drive_train` measures the placed gap and
 # is the authoritative mesh check.
-CENTER_DIST = (RING_PITCH_D + PINION_PITCH_D) / 2 + MESH_BACKLASH   # 78.2
+CENTER_DIST = (RING_PITCH_D + PINION_PITCH_D) / 2 + MESH_BACKLASH   # 81.95
 
 # Pitch ≈ collar OD: the ring gear must seat on the collar's bolt face.
 # Declared as a `ring_gear_collar_seat` assert_scalar in
@@ -92,7 +96,7 @@ CENTER_DIST = (RING_PITCH_D + PINION_PITCH_D) / 2 + MESH_BACKLASH   # 78.2
 
 # Tight constraint: the pinion's tip circle must stay inside the radial-
 # rail ring (rails start at RAIL_INNER_R). This is the packaging knife-
-# edge — the pinion is squeezed between the Ø138 collar and the Ø180
+# edge — the pinion is squeezed between the Ø138 collar and the Ø200
 # rail-inner ring. The rails are not parts of this sub-assembly, so
 # the claim lives at the tower root (`.._add_drive_train_checks`) as a
 # `grow_a_mm=ADDENDUM` assert_distance measuring from the tip circle
@@ -107,7 +111,7 @@ CENTER_DIST = (RING_PITCH_D + PINION_PITCH_D) / 2 + MESH_BACKLASH   # 78.2
 # rail-mounted motor wants, and they dip to z ≈ -7 reaching in to
 # r ≈ 83.5 — straight through the pinion's tip path. The ring gear
 # itself (r ≤ 69) always clears the saddle radially, but the pinion
-# (tip r ≈ 88.5) does not, so the whole mesh plane sits under the saddle
+# (tip r ≈ 96.2) does not, so the whole mesh plane sits under the saddle
 # and the ring gear reaches the collar via a short standoff. The
 # top-level `pinion`-vs-`bearing_spider` no-interference assert is the
 # guard that catches any future saddle-depth drift.
@@ -149,14 +153,14 @@ MOTOR_BOTTOM_Z = MOTOR_TOP_Z - MOTOR_BODY_H        # -65
 MOTOR_AZIMUTH_DEG = 210.0
 
 # Motor mount — radial arm under the chosen rail. Inner end covers the
-# motor footprint (motor reaches r ≈ CENTER_DIST + MOTOR_BODY_W/2 ≈ 99);
-# outer end overlaps the rail (r ≥ RAIL_INNER_R) to bolt. Central
-# clearance hole passes the bare output shaft (the pinion sits above
-# the mount).
+# motor footprint (motor spans r ≈ CENTER_DIST ∓ MOTOR_BODY_W/2 ≈ 61..103);
+# outer end overlaps the rail (r ≥ RAIL_INNER_R) by 10 mm to bolt.
+# Central clearance hole passes the bare output shaft (the pinion sits
+# above the mount).
 MOUNT_R_INNER = 52.0
-MOUNT_R_OUTER = 100.0
-MOUNT_R_CENTER = (MOUNT_R_INNER + MOUNT_R_OUTER) / 2   # 76
-MOUNT_L = MOUNT_R_OUTER - MOUNT_R_INNER                # 48
+MOUNT_R_OUTER = RAIL_INNER_R + 10.0                    # 110
+MOUNT_R_CENTER = (MOUNT_R_INNER + MOUNT_R_OUTER) / 2   # 81
+MOUNT_L = MOUNT_R_OUTER - MOUNT_R_INNER                # 58
 MOUNT_W = MOTOR_BODY_W + 4.0                           # 46.3 — straddles the motor
 MOUNT_SHAFT_HOLE_D = 12.0                              # clears the bare output shaft
 

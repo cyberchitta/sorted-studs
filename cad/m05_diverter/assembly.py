@@ -317,8 +317,8 @@ def _add_drive_train_checks(a: Assembly, base: int) -> Assembly:
     # Motor mount is a radial arm at z ∈ [-25, -20]; it bolts up into one
     # rail — the inner radial at the drive azimuth, whose bottom face it
     # meets at z = -20 — and clears the others + the column-side stack
-    # (all at z ≥ 0). The arm's outer end (r ≤ 100) reaches into that
-    # rail's r ∈ [90, 139.7] span; it touches no other rail at all, so
+    # (all at z ≥ 0). The arm's outer end (r ≤ 110) reaches into that
+    # rail's r ∈ [100, 139.7] span; it touches no other rail at all, so
     # only this one gets the contact claim.
     a = a.assert_tangent_contact(
         mount, _rail(base, f"radial_inner_{drive_rail_k}")

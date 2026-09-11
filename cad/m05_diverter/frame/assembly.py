@@ -109,7 +109,7 @@ INNER_HORIZ_LEN = EDGE_LEN_INNER - 2.0 * HOR_INNER_OFFSET
 # (see params.py docstring); the inner segment runs from the spider
 # saddle out to the inner-vertex bracket's inboard arm, the outer
 # segment from the inboard arm out to the outer-vertex bracket.
-RADIAL_INNER_LEN = RAIL_INNER_OUTER_END_R - RAIL_INNER_R          # ≈ 49.66
+RADIAL_INNER_LEN = RAIL_INNER_OUTER_END_R - RAIL_INNER_R          # ≈ 39.66
 RADIAL_OUTER_LEN = RAIL_OUTER_R - RAIL_OUTER_INNER_END_R          # ≈ 106.11
 
 

@@ -123,13 +123,15 @@ BRACKET_HOR_OFFSET = 22.0
 # compression between its two anchors — no rail-as-beam under
 # basket load.
 #
-# RAIL_INNER_R lower bound = ramp_mechanism's SPIDER_HUB_OD/2 (≈ 85.5
-# mm for the current column geometry) + a small clearance. Hardcoded
-# rather than derived because SPIDER_HUB_OD lives inside the ramp
-# sub-assembly; a cross-sub-assembly assert in the top-level
-# `assembly.py` catches drift if the spider hub grows past this.
+# RAIL_INNER_R has two lower bounds, both owned by sub-assemblies that
+# cannot be imported here: ramp_mechanism's SPIDER_HUB_OD/2 (≈ 85.5 mm)
+# + a small clearance, and — the binding one since 2026-09-11 — the
+# base-floor pinion's tip circle (17 T, module 1.5 → r ≈ 96.2), which
+# the tower root measures against the drive-azimuth rail as
+# `pinion_tip_rail_gap`. 100 leaves that gap ≈ 3.8 mm. Hardcoded
+# rather than derived; the tower-root asserts catch drift either way.
 RAIL_SIZE = 20.0
-RAIL_INNER_R = 90.0                                            # physical inner end of inner segment
+RAIL_INNER_R = 100.0                                           # physical inner end of inner segment
 RAIL_INNER_OUTER_END_R = R_VERT_INNER - BRACKET_HOR_OFFSET     # ≈ 139.66 — inner segment butts here
 RAIL_OUTER_INNER_END_R = R_VERT_INNER + BRACKET_HOR_OFFSET     # ≈ 183.66 — outer segment starts here
 RAIL_OUTER_R = R_VERT_OUTER - BRACKET_HOR_OFFSET               # ≈ 289.77 — physical outer end

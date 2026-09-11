@@ -15,9 +15,10 @@ Delivery is split into two decoupled jobs:
   above. Open = free end (-X) lifted up, brick slides toward the hinge
   (+X) and drops off. Gravity-biased to closed; actuator lifts to open.
 - **Ramp** — a fixed sloped plate inside the column at the +X wall,
-  just below the trap hinge. Catches the brick as it drops off the
-  open trap and delivers it through the exit opening to the target
-  basket (basket geometry lives in the basket sub-assembly).
+  just below the trap hinge, with a side wall along each edge so a
+  brick cannot leave it sideways. Catches the brick as it drops off
+  the open trap and delivers it through the exit opening to the
+  target basket (basket geometry lives in the basket sub-assembly).
 
 Decoupling trap motion from ramp trajectory: the ramp angle is a
 free design parameter sized for the basket, not coupled to the
@@ -133,8 +134,16 @@ BOSS_H_Z = 12.0
 # Ramp — fixed sloped plate, root below hinge knuckle, extends through exit
 RAMP_DEG = 25.0                               # slope below horizontal
 RAMP_T = 4.0
-RAMP_W = 70.0                                 # ≤ opening width minus side margin
+RAMP_W = 70.0                                 # channel width between the side walls
 RAMP_L = 112.0                                # length along slope direction
+# Side walls — outboard of the channel, full length, standing on the
+# plate. They keep a brick that lands off-centre from leaving the plate
+# sideways (2026-09-11 fabrication review). Outboard rather than inboard
+# so the channel stays the full RAMP_W; the cost is the outer width,
+# which is what the opening and the basket slot have to pass.
+RAMP_WALL_T = 2.0                             # ≥ FDM wall floor (1.5); takes brick impacts
+RAMP_WALL_H = 15.0                            # above the plate top — a brick height + margin
+RAMP_OUTER_W = RAMP_W + 2 * RAMP_WALL_T       # 74 — what the opening must pass
 RAMP_DROP_BELOW_HINGE = 10.0                  # Z offset below trap hinge
 RAMP_ROOT_X = COL_INTERIOR_SIDE / 2 - 2.0     # 43 — just inside +X wall
 RAMP_ROOT_Z = TRAP_HINGE_Z - RAMP_DROP_BELOW_HINGE  # 185
@@ -163,13 +172,25 @@ RAMP_TIP_Z = RAMP_ROOT_Z - RAMP_L * math.sin(_RAMP_DEG_RAD)
 # sliding on top of it. Ramp enters the wall at x = COL_OUTER_SIDE/2.
 _RAMP_WALL_OFFSET = COL_OUTER_SIDE / 2 - RAMP_ROOT_X
 _RAMP_WALL_Z = RAMP_ROOT_Z - _RAMP_WALL_OFFSET * math.tan(_RAMP_DEG_RAD)
-OPENING_MARGIN = 5.0
-OPENING_W = RAMP_W + 2 * OPENING_MARGIN       # 80
+OPENING_MARGIN = 5.0                          # vertical: below the plate, above the brick
+# Side margin is tighter than the vertical one: the hinge bosses cap the
+# opening at 2·(BOSS_Y_OFFSET − BOSS_Y/2) = 83 mm (asserted in `column`),
+# and the side walls spent the difference. 3 mm each side of a fixed
+# part through a printed cut is still comfortable.
+OPENING_SIDE_MARGIN = 3.0
+OPENING_W = RAMP_OUTER_W + 2 * OPENING_SIDE_MARGIN   # 80
+# Vertical rise of the wall top above the plate centreline, measured at
+# the column wall: the walls are tilted with the plate, so their top edge
+# sits (RAMP_T/2 + RAMP_WALL_H) perpendicular to it. The opening top is
+# centreline + MAX_BRICK_DIM + OPENING_MARGIN, so the wall tops clear the
+# cut by the full margin iff this rise ≤ MAX_BRICK_DIM (asserted in
+# `column`).
+_RAMP_WALL_TOP_RISE = (RAMP_T / 2 + RAMP_WALL_H) / math.cos(_RAMP_DEG_RAD)
 OPENING_Z_BOT = _RAMP_WALL_Z - RAMP_T - OPENING_MARGIN
 OPENING_Z_TOP = _RAMP_WALL_Z + MAX_BRICK_DIM + OPENING_MARGIN
 
 
-# Basket angular-slot width at ramp tip must admit the ramp width.
+# Basket angular-slot width at ramp tip must admit the ramp's outer width.
 # This is an UPPER BOUND on the real slot: basket/assembly.py shrinks
 # each basket's angular span below 360°/N so its radial walls clear
 # the radial-rail corridor, so the real slot at the tip is narrower
@@ -439,7 +460,13 @@ def column(role: str = "middle") -> Part:
     )
     assert OPENING_W / 2 <= BOSS_Y_OFFSET - BOSS_Y / 2, (
         f"Opening half-width ({OPENING_W/2:.1f} mm) overlaps boss inner edge "
-        f"({BOSS_Y_OFFSET - BOSS_Y/2:.1f} mm). Reduce RAMP_W or OPENING_MARGIN."
+        f"({BOSS_Y_OFFSET - BOSS_Y/2:.1f} mm). Reduce RAMP_W, RAMP_WALL_T or "
+        f"OPENING_SIDE_MARGIN."
+    )
+    assert _RAMP_WALL_TOP_RISE <= MAX_BRICK_DIM, (
+        f"Ramp side-wall top rises {_RAMP_WALL_TOP_RISE:.1f} mm above the "
+        f"plate centreline at the column wall, past the {MAX_BRICK_DIM:.0f} mm "
+        f"brick envelope the opening is cut for. Reduce RAMP_WALL_H."
     )
     assert COL_Z_TOP >= OPENING_Z_TOP + JOINT_ZONE_CLEARANCE, (
         f"COL_Z_TOP ({COL_Z_TOP}) too low — opening top "
@@ -561,17 +588,28 @@ def ramp() -> Part:
     Keeping the pose in the placement is what lets animated GLB
     exporters pick it up via per-frame TRS samplers, which only see
     ``PlacedPart.location`` and silently drop part-internal Locations.
+
+    Two side walls (``RAMP_WALL_T`` × ``RAMP_WALL_H`` above the plate)
+    stand outboard of the ``RAMP_W`` channel along the full length,
+    bottoms flush with the plate underside; the part's outer width is
+    ``RAMP_OUTER_W``. One printed body, plate down.
     """
     # Deliberately loose upper bound (see BASKET_SLOT_W_AT_TIP above —
     # the real slot is narrower, and the tight cross-boundary check is
     # the top level's basket-vs-ramp no-interference). Stays bare.
-    assert RAMP_W <= BASKET_SLOT_W_AT_TIP, (
-        f"RAMP_W ({RAMP_W:.1f} mm) > basket angular slot upper bound at "
-        f"ramp tip ({BASKET_SLOT_W_AT_TIP:.1f} mm at X={RAMP_TIP_X:.1f}, "
-        f"R_BASKET_INNER={R_BASKET_INNER:.1f}). Reduce RAMP_W, "
-        f"increase R_BASKET_INNER, or decrease N_BASKETS_PER_FLOOR."
+    assert RAMP_OUTER_W <= BASKET_SLOT_W_AT_TIP, (
+        f"RAMP_OUTER_W ({RAMP_OUTER_W:.1f} mm) > basket angular slot upper "
+        f"bound at ramp tip ({BASKET_SLOT_W_AT_TIP:.1f} mm at "
+        f"X={RAMP_TIP_X:.1f}, R_BASKET_INNER={R_BASKET_INNER:.1f}). Reduce "
+        f"RAMP_W / RAMP_WALL_T, increase R_BASKET_INNER, or decrease "
+        f"N_BASKETS_PER_FLOOR."
     )
-    return Box(RAMP_L, RAMP_W, RAMP_T)
+    plate = Box(RAMP_L, RAMP_W, RAMP_T)
+    wall_y = RAMP_W / 2 + RAMP_WALL_T / 2
+    wall_h = RAMP_T + RAMP_WALL_H
+    wall_z = RAMP_WALL_H / 2                  # bottom flush with the plate underside
+    wall = Box(RAMP_L, RAMP_WALL_T, wall_h)
+    return plate + Pos(0, +wall_y, wall_z) * wall + Pos(0, -wall_y, wall_z) * wall
 
 
 # --- Assembly -----------------------------------------------------------
