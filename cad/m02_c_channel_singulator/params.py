@@ -117,6 +117,11 @@ ROTOR_BOSS_OD = 20.0
 
 
 # --- Drive: NEMA 17 stepper + fixed stem -------------------------------
+# RETIRED IN PRINCIPLE 2026-09-11, not yet in geometry: the owner chose a
+# rim-supported, rim-driven rotor (ring gear on a flange below the base
+# rim, bearing to a base plate, off-axis pinion + motor below). This whole
+# section, `drive/`, the blind bore, and the rotor's open bottom retire
+# with that design slice. See `_notes/decisions/m02-rotor-drive.md`.
 
 # NEMA 17 compact short body (shortest commodity variant). Any
 # NEMA 17 up to ~48 mm body length still fits the cavity.
