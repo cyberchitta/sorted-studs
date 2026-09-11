@@ -8,11 +8,12 @@ builders import nothing from here — they emit no colour at all.
 Material is a physical property, not a render axis — see
 ``materials.py``.
 
-m02 has four named parts: ``rotor`` (rotates, MECHANISM),
-``stator`` (fixed structural shell, SECONDARY_STRUCTURE), ``stem``
-(fixed support post hidden inside the rotor cavity,
-SECONDARY_STRUCTURE), and ``motor`` (NEMA-17, outside the design
-system — keeps its cast-aluminium intrinsic).
+m02 has six named parts: ``rotor`` (rotates, MECHANISM), ``stator``
+(fixed structural shell, SECONDARY_STRUCTURE), ``base_plate`` (the
+foot ring the rotor bearing and motor hang from, SECONDARY_STRUCTURE),
+``pinion`` (rotates, MECHANISM), and two bought parts outside the
+design system — ``bearing`` (aluminium turntable) and ``motor``
+(NEMA-17) — which keep their material intrinsics.
 """
 
 from __future__ import annotations
@@ -36,9 +37,11 @@ ROLE_OF: dict[str, Role | None] = {
     # SECONDARY_STRUCTURE wins today (not designed to be swapped during
     # normal operation); re-tag CONSUMABLE if a stator-swap workflow
     # for different brick mixes becomes a real thing.
-    "stator": Role.SECONDARY_STRUCTURE,
-    "stem":   Role.SECONDARY_STRUCTURE,
-    "motor":  None,                          # NEMA-17 cast body — outside palette
+    "stator":     Role.SECONDARY_STRUCTURE,
+    "base_plate": Role.SECONDARY_STRUCTURE,
+    "pinion":     Role.MECHANISM,
+    "bearing":    None,                      # bought turntable — outside palette
+    "motor":      None,                      # NEMA-17 cast body — outside palette
 }
 
 

@@ -35,6 +35,17 @@ Anchors at-a-glance:
     LOAD ramp inlet         chain-local (+80, 0, +48)
     LOAD ramp outlet        chain-local (0, 0, +2)      (2 mm above LOAD top)
 
+**Amended 2026-09-11:** the m02 drive moved to a rim gear on a rim
+bearing (`_notes/decisions/m02-rotor-drive.md`). The motor now hangs
+under a Ø310 base plate at m02-local z ∈ [-24.5, -18.5] (world
+z ≈ 1043–1049), and nothing sits inside the rotor cavity any more,
+so the yoke-clears-the-motor rationale below is historical: the yoke
+and both columns now pass *through* the plate, bearing and rotor
+flange (nine `known_overlaps` alarms in `assembly.py`). The S1 mount
+becomes "plate on rail" (`m02-chain.md` §5) and the columns must end
+below the plate; that is the gantry slice's job, not a parameter
+tweak here.
+
 col2's Y is shifted +50 mm off the handoff sketch (which placed it
 at chain-local (+325, 0)) so the yoke axis from col1 (+145, +31) to
 col2 clears the m02 NEMA-17 motor body in +Y. At col2 = (+325, 0)

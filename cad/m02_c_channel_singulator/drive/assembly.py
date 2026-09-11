@@ -1,146 +1,249 @@
 """
-M02 C-channel singulator — drive sub-assembly.
+M02 C-channel singulator — drive sub-assembly (rim gear on a rim bearing).
 
-Hidden-drive architecture: NEMA 17 stepper sits INSIDE the rotor's
-interior cavity, with its shaft coupled directly to the rotor's
-top-cap boss. A fixed, non-rotating stem rises from the machine
-frame through the rotor's open bottom to a mount plate inside the
-cavity; the motor hangs from the plate by its four M3 face bolts
-(front face up, body hanging below).
+The rotor is supported at its rim and driven at its rim
+(`_notes/decisions/m02-rotor-drive.md`, 2026-09-11). Everything here
+hangs below the V-bottom plane, under the rotor's ring-gear flange:
 
-Two parts in this sub-assembly:
-
-  - stem  — fixed vertical post + top flange (the mount plate,
-            modeled as a wider disc on top of the shaft). Non-
-            rotating; threads into the frame below z=0.
-  - motor — NEMA 17 stub: square body + 5 mm round shaft. Body is
-            fixed (bolted to the stem flange). Shaft rotates with
-            the rotor — for static interference checks the rotation
-            is immaterial, so both are combined into one Part.
-
-The motor's front face (shaft-exit face) sits at MOUNT_Z; body
-hangs below to MOTOR_BASE_Z (negative, below the rotor base plane);
-shaft extends up to SHAFT_TIP_Z, landing inside the rotor's blind
-bore with ~3 mm axial margin so the shaft never bottoms out.
+  - base_plate — printed annulus, r ∈ [PLATE_R_IN, PLATE_R_OUT]. It is
+                 the stator foot ring of `m02-chain.md` §5 extended
+                 inward: the turntable bearing sits on its top face,
+                 the motor bolts to its underside through a pilot hole
+                 + four M3 clearance holes at the NEMA-17 pattern.
+  - bearing    — bought aluminium turntable, modelled as one annulus
+                 (BEARING_ID / OD / H). Upper ring bolts to the rotor
+                 flange, lower ring to the plate; both bolt circles
+                 are detail-layer.
+  - pinion     — printed; pitch cylinder (no teeth, like the m05 base
+                 floor) on a hub that reaches down to just above the
+                 plate so a transverse set screw has shaft to bite.
+                 Bored for the 5 mm motor shaft. Its own sub-assembly
+                 with a spin joint about its axis.
+  - motor      — NEMA 17 stub: body + pilot boss + shaft, front face
+                 up against the plate's underside.
 
 Coordinate frame:
     origin = rotor axis ∩ rotor base plane (shared with rotor/)
+    +X     = exit-arc azimuth (the pinion sits at MOTOR_AZIMUTH_DEG
+             = 180°, the -X side, away from the exit)
     +Z     = up
-    z=0    = rotor base / stator V-bottom. Stem passes through here.
+    z=0    = rotor base / stator V-bottom. Everything here is below.
 
-Standalone validation: both parts placed at their installed
-positions with a no-interference assertion between them — captures
-drift in MOUNT_Z / NEMA17_BODY_LEN that would park the motor body
-inside the mount flange. Rotor-vs-drive and stator-vs-drive checks
-live in the top-level ../assembly.py.
+Claims declared here (they propagate to the module root): bearing
+and motor rest on the plate (tangent contact), the pinion hub clears
+the plate top, the pinion bore clears the shaft, and the pinion's tip
+circle stays inside the skirt — the skirt is not a part yet, so that
+one is a recorded scalar. Rotor-vs-drive and stator-vs-drive claims
+live in ../assembly.py.
 
-Both parts are bought/standard hardware — not printed — so this unit
-has no `inspect()` calls and no command script.
+Printed parts: base_plate, pinion — see `printability.py`. The
+bearing and motor are bought.
 """
 
+import math
 
-from build123d import Box, Cylinder, Part, Pos
+from build123d import Axis, Box, Circle, Cylinder, Location, Part, Pos, Rot, extrude
 
-from cad_khana.mechanism.assembly import Assembly
+from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 
 from ..materials import material_of
 from ..params import (
-    MOTOR_BASE_Z,
-    MOUNT_Z,
+    ADDENDUM,
+    BEARING_BOTTOM_Z,
+    BEARING_H,
+    BEARING_ID,
+    BEARING_OD,
+    CENTER_DIST,
+    GEAR_RATIO,
+    MOTOR_AZIMUTH_DEG,
+    MOTOR_BOTTOM_Z,
+    MOTOR_FACE_Z,
+    MOTOR_SHAFT_BORE_CLEARANCE,
     NEMA17_BODY_LEN,
+    NEMA17_BOLT_HOLE_D,
+    NEMA17_BOLT_PATTERN,
+    NEMA17_PILOT_D,
+    NEMA17_PILOT_H,
     NEMA17_SHAFT_D,
     NEMA17_SHAFT_LEN,
     NEMA17_SIDE,
-    ROTOR_BOSS_OD,
-    SHAFT_TIP_Z,
-    STEM_ARM_W,
-    STEM_BOTTOM_Z,
-    STEM_FLANGE_DIA,
-    STEM_FLANGE_T,
-    STEM_OD,
-    STEM_OFFSET_X,
+    PINION_BOTTOM_Z,
+    PINION_FACE_W,
+    PINION_HUB_BOTTOM_Z,
+    PINION_HUB_OD,
+    PINION_HUB_PLATE_CLEAR,
+    PINION_PITCH_D,
+    PINION_TOP_Z,
+    PLATE_BOTTOM_Z,
+    PLATE_MOTOR_HOLE_D,
+    PLATE_R_IN,
+    PLATE_R_OUT,
+    PLATE_T,
+    PLATE_TOP_Z,
+    R_STATOR_OUTER_KINK,
+    STATOR_WALL_T,
 )
+
+
+WALL_MIN = 1.5
+
+# Measurement tolerance for bounds constructed from the same constant
+# as the geometry (cad/CLAUDE.md principle 6, corollary 2).
+_MEAS_TOL = 0.01
+
+# Pinion / motor axis in drive-local XY.
+_AZ = math.radians(MOTOR_AZIMUTH_DEG)
+PINION_AXIS_XY = (CENTER_DIST * math.cos(_AZ), CENTER_DIST * math.sin(_AZ))
+
+# Tip circle of the pinion — the outermost thing under the stator.
+PINION_TIP_R = CENTER_DIST + PINION_PITCH_D / 2.0 + ADDENDUM   # 147.2
 
 
 # --- Part functions ----------------------------------------------------
 
-def stem() -> Part:
-    """Offset rod + cantilever arm + centered mount plate.
+def base_plate(
+    *,
+    r_in: float = PLATE_R_IN,
+    r_out: float = PLATE_R_OUT,
+    t: float = PLATE_T,
+    motor_xy: tuple[float, float] = PINION_AXIS_XY,
+    motor_rot_deg: float = MOTOR_AZIMUTH_DEG,
+    pilot_hole_d: float = PLATE_MOTOR_HOLE_D,
+    bolt_pattern: float = NEMA17_BOLT_PATTERN,
+    bolt_hole_d: float = NEMA17_BOLT_HOLE_D,
+) -> Part:
+    """Flat annulus, top face at z=PLATE_TOP_Z, with the motor's pilot
+    hole and M3 pattern cut through at ``motor_xy`` (pattern square
+    aligned radially by ``motor_rot_deg``)."""
+    assert r_in < r_out and t > 0.0
+    # Bolt holes must stay clear of the pilot hole and of each other.
+    assert bolt_pattern / 2.0 - bolt_hole_d / 2.0 - pilot_hole_d / 2.0 >= WALL_MIN, (
+        "motor bolt holes break into the pilot hole"
+    )
+    plate = Pos(0, 0, PLATE_BOTTOM_Z) * extrude(
+        Circle(r_out) - Circle(r_in), amount=t,
+    )
+    cut_h = t + 2.0
+    holes = Cylinder(pilot_hole_d / 2.0, cut_h)
+    half = bolt_pattern / 2.0
+    for sx, sy in ((1, 1), (1, -1), (-1, 1), (-1, -1)):
+        holes += Pos(sx * half, sy * half, 0) * Cylinder(bolt_hole_d / 2.0, cut_h)
+    holes = (
+        Pos(motor_xy[0], motor_xy[1], PLATE_BOTTOM_Z + t / 2.0)
+        * Rot(0, 0, motor_rot_deg)
+        * holes
+    )
+    return plate - holes
 
-    - Rod: vertical cylinder at (STEM_OFFSET_X, 0), OD=STEM_OD,
-      spans STEM_BOTTOM_Z → MOUNT_Z. Clears the NEMA-17 body (which
-      occupies the axial column) and stays inside the cavity
-      apothem at every z along its length.
-    - Arm: narrow bar at z ∈ [MOUNT_Z, MOUNT_Z + STEM_FLANGE_T],
-      spanning x ∈ [0, STEM_OFFSET_X], joining the rod top to the
-      mount plate. Only material above z=MOUNT_Z (clears the motor
-      body below).
-    - Mount plate: disc centered on axis, OD=STEM_FLANGE_DIA × T,
-      bottom face at MOUNT_Z. Motor front face bolts into the
-      plate's bottom face (tangent contact).
-    """
-    shaft_len = MOUNT_Z - STEM_BOTTOM_Z
-    rod = Pos(STEM_OFFSET_X, 0, STEM_BOTTOM_Z + shaft_len / 2.0) * Cylinder(
-        STEM_OD / 2.0, shaft_len,
+
+def bearing(
+    *, od: float = BEARING_OD, id_: float = BEARING_ID, h: float = BEARING_H,
+) -> Part:
+    """Turntable bearing stub: one annulus, bottom face at
+    z=BEARING_BOTTOM_Z. Bought — not inspected."""
+    assert 0.0 < id_ < od
+    return Pos(0, 0, BEARING_BOTTOM_Z) * extrude(
+        Circle(od / 2.0) - Circle(id_ / 2.0), amount=h,
     )
-    arm = Pos(
-        STEM_OFFSET_X / 2.0, 0, MOUNT_Z + STEM_FLANGE_T / 2.0,
-    ) * Box(STEM_OFFSET_X, STEM_ARM_W, STEM_FLANGE_T)
-    plate = Pos(0, 0, MOUNT_Z + STEM_FLANGE_T / 2.0) * Cylinder(
-        STEM_FLANGE_DIA / 2.0, STEM_FLANGE_T,
+
+
+def pinion(
+    *,
+    pitch_d: float = PINION_PITCH_D,
+    face_w: float = PINION_FACE_W,
+    hub_od: float = PINION_HUB_OD,
+    bore_d: float = NEMA17_SHAFT_D + 2.0 * MOTOR_SHAFT_BORE_CLEARANCE,
+) -> Part:
+    """Pitch cylinder z ∈ [PINION_BOTTOM_Z, PINION_TOP_Z] on a hub
+    reaching down to PINION_HUB_BOTTOM_Z, bored through for the motor
+    shaft. Built on its own axis (pinion-local Z), so the spin joint
+    is the local Z axis."""
+    assert bore_d < hub_od - 2.0 * WALL_MIN, "hub wall too thin around the bore"
+    assert hub_od < pitch_d - 2.0 * ADDENDUM * 1.25, "hub wider than the root circle"
+    gear = Pos(0, 0, PINION_BOTTOM_Z) * extrude(Circle(pitch_d / 2.0), amount=face_w)
+    hub_h = PINION_BOTTOM_Z - PINION_HUB_BOTTOM_Z
+    hub = Pos(0, 0, PINION_HUB_BOTTOM_Z) * extrude(Circle(hub_od / 2.0), amount=hub_h)
+    total_h = PINION_TOP_Z - PINION_HUB_BOTTOM_Z
+    bore = Pos(0, 0, PINION_HUB_BOTTOM_Z - 1.0) * extrude(
+        Circle(bore_d / 2.0), amount=total_h + 2.0,
     )
-    # Clearance hole through the plate + arm. Sized to clear the
-    # rotor's descending boss (OD=ROTOR_BOSS_OD) plus 1 mm, not
-    # just the shaft — the boss passes down into the plate level
-    # at z=MOUNT_Z and must not touch the plate's inner rim.
-    shaft_clear_r = ROTOR_BOSS_OD / 2.0 + 1.0
-    shaft_hole = Pos(0, 0, MOUNT_Z + STEM_FLANGE_T / 2.0) * Cylinder(
-        shaft_clear_r, STEM_FLANGE_T + 2.0,
-    )
-    return (rod + arm + plate) - shaft_hole
+    return (gear + hub) - bore
 
 
 def motor() -> Part:
-    """NEMA 17 stub: square body + 5 mm round shaft.
-
-    Body: NEMA17_SIDE × NEMA17_SIDE × NEMA17_BODY_LEN, front face
-    (shaft-exit) at MOUNT_Z with the body hanging down.
-    Shaft: NEMA17_SHAFT_D round, pointing up from MOUNT_Z to
-    SHAFT_TIP_Z.
-    """
-    body = Pos(0, 0, MOTOR_BASE_Z + NEMA17_BODY_LEN / 2.0) * Box(
+    """NEMA 17 stub on its own axis: square body hanging below
+    MOTOR_FACE_Z, pilot boss and shaft rising from the face."""
+    body = Pos(0, 0, MOTOR_BOTTOM_Z + NEMA17_BODY_LEN / 2.0) * Box(
         NEMA17_SIDE, NEMA17_SIDE, NEMA17_BODY_LEN,
     )
-    shaft = Pos(0, 0, MOUNT_Z + NEMA17_SHAFT_LEN / 2.0) * Cylinder(
+    pilot = Pos(0, 0, MOTOR_FACE_Z + NEMA17_PILOT_H / 2.0) * Cylinder(
+        NEMA17_PILOT_D / 2.0, NEMA17_PILOT_H,
+    )
+    shaft = Pos(0, 0, MOTOR_FACE_Z + NEMA17_SHAFT_LEN / 2.0) * Cylinder(
         NEMA17_SHAFT_D / 2.0, NEMA17_SHAFT_LEN,
     )
-    return body + shaft
+    return body + pilot + shaft
 
 
 # --- Assembly ----------------------------------------------------------
 
+def build_pinion() -> Assembly:
+    """The pinion in its own frame (origin on its axis at z=0). The
+    parent places it at PINION_AXIS_XY and owns the spin joint."""
+    return Assembly().with_part("pinion", pinion(), material=material_of("pinion"))
+
+
 def build_drive() -> Assembly:
-    """Drive sub-assembly in drive-local frame (= m02-local). Parts
-    only — the stem/motor contact assert is declared at whichever
-    root runs ``check()`` (nested assertions are not evaluated)."""
+    """Drive sub-assembly in drive-local frame (= m02-local)."""
+    on_axis = Location((PINION_AXIS_XY[0], PINION_AXIS_XY[1], 0.0)) * Rot(
+        0, 0, MOTOR_AZIMUTH_DEG,
+    )
     return (
         Assembly()
-        .with_part(
-            "stem", stem(),
-            material=material_of("stem"),
+        .with_part("base_plate", base_plate(), material=material_of("base_plate"))
+        .with_part("bearing", bearing(), material=material_of("bearing"))
+        .with_part("motor", motor(), location=on_axis, material=material_of("motor"))
+        .with_subassembly(
+            "pinion",
+            build_pinion(),
+            location=on_axis,
+            joint=RevoluteJoint(
+                axis=Axis((0.0, 0.0, 0.0), (0.0, 0.0, 1.0)),
+                angle_deg=0.0,
+                frame="local",
+            ),
         )
-        .with_part(
-            "motor", motor(),
-            # `motor` is tagged None in the design system (NEMA-17 cast
-            # body — outside palette); falls through to the material's
-            # intrinsic color.
-            material=material_of("motor"),
+        # Where the chain's rail meets us, and how far the motor hangs.
+        .with_anchor("plate_top", Pos(0, 0, PLATE_TOP_Z))
+        .with_anchor("plate_bottom", Pos(0, 0, PLATE_BOTTOM_Z))
+        .with_anchor("motor_bottom", Pos(PINION_AXIS_XY[0], PINION_AXIS_XY[1], MOTOR_BOTTOM_Z))
+        # Rests: the bearing's lower ring on the plate top, the motor
+        # face on the plate underside (pilot and shaft inside the hole).
+        .assert_tangent_contact("bearing", "base_plate")
+        .assert_tangent_contact("motor", "base_plate")
+        # Pinion hub floats just above the plate; bore clears the shaft.
+        .assert_clearance(
+            "pinion.pinion", "base_plate", min_mm=PINION_HUB_PLATE_CLEAR - _MEAS_TOL,
         )
+        .assert_no_interference("pinion.pinion", "motor")
+        .assert_clearance(
+            "pinion.pinion", "motor", min_mm=MOTOR_SHAFT_BORE_CLEARANCE - _MEAS_TOL,
+        )
+        # Pinion and motor stay well clear of the bearing.
+        .assert_clearance("pinion.pinion", "bearing", min_mm=15.0)
+        .assert_clearance("motor", "bearing", min_mm=PLATE_T - _MEAS_TOL)
+        # The skirt (m02-chain.md §5) is not a part yet: its inner face
+        # is R_STATOR_OUTER_KINK − STATOR_WALL_T, and the pinion's tip
+        # circle must stay inside it with 1 mm to spare.
+        .assert_scalar(
+            "pinion_tip_inside_skirt",
+            PINION_TIP_R,
+            le=R_STATOR_OUTER_KINK - STATOR_WALL_T - 1.0,
+            detail="pinion tip radius vs the skirt's inner face, minus 1 mm",
+        )
+        .assert_scalar("gear_ratio", GEAR_RATIO, detail="ring / pinion teeth")
     )
 
 
-# Sanity: the motor's front face sits on the stem flange's top face.
-# These two faces are coincident (tangent contact), not overlapping;
-# assert_no_interference is the right check — tangent contact reads
-# as zero clearance but zero overlap volume.
-assembly = build_drive().assert_no_interference("stem", "motor")
+# Degenerate memoized master, so ``khana check <file>`` resolves.
+assembly = build_drive()

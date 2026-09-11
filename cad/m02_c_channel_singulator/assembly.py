@@ -4,35 +4,34 @@ M02 C-channel singulator — top-level assembly.
 Composes the sub-assemblies as subtrees (all share the m02-local
 frame, so every placement is identity) and runs the interference /
 clearance checks that span sub-assembly boundaries. Part identity is
-the dotted tree path (``rotor.rotor``, ``drive.stem``); attributes
-(role tags, materials) key on the leaf name inside each sub-module's
-builder. The rotor's spin DOF is declared at composition
-(``RevoluteJoint`` about the rotor-local Z axis, angle 0 in the
-static rest pose). Per-sub-system geometry and single-part
-printability stay in each sub-assembly's standalone mode.
+the dotted tree path (``rotor.rotor``, ``drive.base_plate``,
+``drive.pinion.pinion``); attributes (role tags, materials) key on
+the leaf name inside each sub-module's builder. The rotor's spin DOF
+is declared at composition (``RevoluteJoint`` about the rotor-local Z
+axis, angle 0 in the static rest pose); the pinion's is declared in
+``drive/``.
 
-Hidden-drive architecture: rotor is hollow, motor + support stem
-occupy the cavity. Clearance between the rotating rotor and the
-stationary drive is the critical invariant — shrinking the rotor
-cavity (or growing the motor body) must fail here.
+Rim-drive architecture (2026-09-11): the rotor carries a ring-gear
+flange below its base rim, rests on a turntable bearing on the base
+plate, and is driven by an off-axis pinion under the stator wall.
+The stack is documented in ``params.py``.
 
 Cross-boundary checks:
 
-- rotor ↔ stator — the V-gap. ≥ (ROTOR_STATOR_GAP − 0.5) mm.
-- rotor ↔ stem   — stem threads through the rotor's open bottom
-                   and up into the cavity; must not touch the
-                   spinning shell anywhere.
-- rotor ↔ motor  — motor body lives inside the cavity; shaft lives
-                   inside the boss bore. Tight envelope — asserted
-                   as no-interference only (clearance is <0.1 mm at
-                   the shaft-bore fit, below noise).
-- stator ↔ stem  — stem passes below the stator through the frame.
-- stator ↔ motor — motor lives inside the rotor's cavity, entirely
-                   inside the stator's footprint.
+- rotor ↔ stator   — the V-gap. ≥ (ROTOR_STATOR_GAP − 0.5) mm.
+- rotor ↔ pinion   — the gear mesh: pitch cylinders MESH_BACKLASH
+                     apart, close but not touching.
+- rotor ↔ bearing  — the flange underside rests on the bearing
+                     (tangent contact).
+- rotor ↔ plate    — separated by the bearing height.
+- rotor ↔ motor    — the motor hangs under the plate, well clear.
+- stator ↔ pinion  — the pinion runs PINION_TOP_CLEAR under the
+                     stator's bottom face.
+- stator ↔ drive   — nothing in the drive reaches z ≥ 0.
 
 Deferred:
 - exit_sensor ↔ stator exit arc (beam alignment)
-- frame mount ↔ stator / stem
+- skirt (m02-chain.md §5) from the stator kink down to the plate
 """
 
 
@@ -45,12 +44,21 @@ from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 from ..design_systems import DEFAULT_SCHEMA, paint
 from .design_systems import design_system
 from .drive import assembly as _drive
-from .params import ROTOR_STATOR_GAP
+from .params import (
+    BEARING_H,
+    MESH_BACKLASH,
+    PINION_TOP_CLEAR,
+    ROTOR_STATOR_GAP,
+)
 from .rotor import assembly as _rotor
 from .stator import assembly as _stator
 
 
 GAP_CLEARANCE_TOLERANCE = 0.5   # mm — catches a shrunk V-gap early
+
+# Measurement tolerance for bounds constructed from the same constant
+# as the geometry (cad/CLAUDE.md principle 6, corollary 2).
+_MEAS_TOL = 0.01
 
 
 # Cached because the degenerate ``assembly`` memo below and any
@@ -98,16 +106,26 @@ def build_m02(schema: str = DEFAULT_SCHEMA) -> Assembly:
             "rotor.rotor", "stator.stator",
             min_mm=ROTOR_STATOR_GAP - GAP_CLEARANCE_TOLERANCE,
         )
-        # Drive vs spinning rotor
-        .assert_no_interference("rotor.rotor", "drive.stem")
+        # Gear mesh: pitch cylinders sit MESH_BACKLASH apart. Measured
+        # against the whole rotor part — the flange OD is the closest
+        # thing to the pinion.
+        .assert_distance(
+            "rotor.rotor", "drive.pinion.pinion",
+            min_mm=MESH_BACKLASH - _MEAS_TOL, max_mm=MESH_BACKLASH + 0.1,
+            name="gear_mesh_backlash",
+        )
+        # Rotor rests on the bearing, which is BEARING_H above the plate.
+        .assert_tangent_contact("rotor.rotor", "drive.bearing")
+        .assert_clearance("rotor.rotor", "drive.base_plate", min_mm=BEARING_H - _MEAS_TOL)
         .assert_no_interference("rotor.rotor", "drive.motor")
-        # Drive vs fixed stator
-        .assert_no_interference("stator.stator", "drive.stem")
-        .assert_no_interference("stator.stator", "drive.motor")
-        # Motor body sits on stem flange (tangent contact). Re-declared
-        # here — drive's standalone assert rides along nested and is not
-        # evaluated by this root's ``check()``.
-        .assert_no_interference("drive.stem", "drive.motor"),
+        .assert_clearance("rotor.rotor", "drive.motor", min_mm=10.0)
+        # Pinion runs just under the stator's bottom face.
+        .assert_clearance(
+            "stator.stator", "drive.pinion.pinion", min_mm=PINION_TOP_CLEAR - _MEAS_TOL,
+        )
+        # Nothing in the drive reaches the stator (group form, declared
+        # after composition).
+        .assert_no_interference_between(["stator.stator"], "drive"),
         design_system(schema),
     )
 

@@ -14,8 +14,11 @@ scan-station drop path (Module 3).
 V1 is wall-only: a two-zone ring of thickness STATOR_WALL_T — V-
 slope from z=0 to z=STATOR_V_H, then vertical cylinder from
 STATOR_V_H to STATOR_WALL_H. The exit arc is cut through the full
-wall height. Floor, mounting flange, and frame interface land
-when the drive sub-assembly defines its base plate.
+wall height. The mounting interface is the skirt + foot ring of
+`_notes/decisions/m02-chain.md` §5: the foot ring is the drive's
+base plate (../drive/assembly.py, top at PLATE_TOP_Z = -18.5), so
+the skirt — not yet modelled — drops from the kink to that plate.
+No floor at z=0: the pinion runs under the wall at r 120–147.
 
 The wall's V-zone sits at V_HALF_ANGLE from vertical on both
 faces — a 45° overhang by the conventional build-plate metric.
@@ -44,29 +47,25 @@ from cad_khana.mechanism.assembly import Assembly
 from ..materials import material_of
 from ..params import (
     EXIT_ARC_DEG,
+    R_STATOR_INNER_BASE,
+    R_STATOR_INNER_KINK,
+    R_STATOR_OUTER_BASE,
+    R_STATOR_OUTER_KINK,
     ROTOR_BASE_DIAMETER,
-    ROTOR_STATOR_GAP,
     STATOR_V_H,
     STATOR_WALL_H,
+    STATOR_WALL_T,
     V_HALF_ANGLE_DEG,
 )
 
 
 # --- Derived geometry --------------------------------------------------
 
-STATOR_WALL_T = 3.0   # radial wall thickness
-
-# Inner face at the V-bottom sits ROTOR_STATOR_GAP radially outside
-# the rotor's base circumscribing-circle edge.
-R_STATOR_INNER_BASE = ROTOR_BASE_DIAMETER / 2.0 + ROTOR_STATOR_GAP
-
-# V-zone flank rises at V_HALF_ANGLE from vertical — matching the
-# rotor flank so the V is symmetric across the bottom. At
-# STATOR_V_H the wall kinks to vertical; radii stay constant above.
+# Wall radii (inner/outer at base and kink) and STATOR_WALL_T live in
+# ..params since 2026-09-11: the drive's base plate shares the skirt
+# OD (`R_STATOR_OUTER_KINK`), so they are an interface, not a
+# stator-private detail.
 _TAN_V = math.tan(math.radians(V_HALF_ANGLE_DEG))
-R_STATOR_INNER_KINK = R_STATOR_INNER_BASE + STATOR_V_H * _TAN_V
-R_STATOR_OUTER_BASE = R_STATOR_INNER_BASE + STATOR_WALL_T
-R_STATOR_OUTER_KINK = R_STATOR_INNER_KINK + STATOR_WALL_T
 
 # Downstream exit-arc wall: a radial paddle that plugs *one* edge of
 # the exit cut — the edge pieces are moving TOWARD as the rotor drags

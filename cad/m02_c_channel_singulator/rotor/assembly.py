@@ -1,10 +1,10 @@
 """
 M02 C-channel singulator — rotor sub-assembly (hollow shell).
 
-Crown-cut faceted frustum with a matched-taper interior cavity. The
-shell forms the rotating V wall; the cavity hides the drive — motor
-body and fixed support stem sit inside the spinning rotor, coaxial
-with its rotation axis (see ../drive/assembly.py).
+Crown-cut faceted frustum with a matched-taper interior cavity, on
+a flange below the base rim that is the rotor's bearing seat and
+ring gear (rim-supported, rim-driven — `_notes/decisions/
+m02-rotor-drive.md`; the drive itself is ../drive/assembly.py).
 
 Geometry:
     - Outer: lofted shell through three cross-sections —
@@ -21,21 +21,25 @@ Geometry:
       − top_cap_t (cavity opens here). Cavity is a simple tapered
       10-gon sized to stay inside the narrowest outer section.
     - Top cap: solid ROTOR_TOP_CAP_T thick above the cavity.
-    - Internal boss: ROTOR_BOSS_OD cylinder descending from the top
-      cap's underside into the cavity, with a shaft bore going up
-      through the boss and into the top cap (blind halfway through
-      the cap).
+    - Flange: annulus z ∈ [-ROTOR_FLANGE_T, 0], r ∈ [ROTOR_FLANGE_R_IN,
+      RING_PITCH_D/2]. Its OD is the ring gear's pitch cylinder
+      (= the base rim radius, so the rim continues straight down);
+      the teeth are a detail-layer concern, as on the m05 base
+      floor. Its underside seats the turntable bearing's upper ring
+      (r ∈ [BEARING_ID/2, BEARING_OD/2]) and is the bed face when
+      printing.
 
 Outside-ride still applies: bricks sit in the V between the rotor
 flank and the stator outer wall; nothing about the hollow interior
 changes that contact geometry.
 
-Printability note: the cavity is open at the bottom and closed at
-the top. A one-piece print expects breakaway support inside the
-cavity (removed through the open bottom after printing), OR a split
-at z = BOSS_BOTTOM_Z into a lower shell-only funnel + an upper
-cap+boss piece bonded together. Pick at slice time; the CAD model
-is the assembled geometry either way.
+Printability note: prints base-down — the flange's flat underside is
+the bed face and the ring teeth print in the first layers, which is
+where the X1C is most accurate. The cavity stays open at the base
+(through the flange's Ø150 bore) so the breakaway support under the
+90° cavity ceiling can come out; closing the base would seal that
+support in. Ø240 plus the m1.5 addendum is Ø243 at the tips, inside
+the 256 mm bed.
 
 Coordinate frame:
     origin = rotor axis ∩ base plane (widest section, at the
@@ -48,7 +52,6 @@ import math
 
 from build123d import (
     Circle,
-    Cylinder,
     Part,
     Plane,
     Polygon,
@@ -62,22 +65,18 @@ from cad_khana.mechanism.assembly import Assembly
 
 from ..materials import material_of
 from ..params import (
-    BOSS_BOTTOM_Z,
-    BOSS_TOP_Z,
-    MOTOR_SHAFT_BORE_CLEARANCE,
-    NEMA17_SHAFT_D,
+    RING_PITCH_D,
     ROTOR_BASE_DIAMETER,
-    ROTOR_BOSS_OD,
     ROTOR_FACET_COUNT,
     ROTOR_FACET_KINK_Z_FRAC,
     ROTOR_FACET_PEAK_BULGE,
     ROTOR_FACET_VALLEY_DENT,
+    ROTOR_FLANGE_R_IN,
+    ROTOR_FLANGE_T,
     ROTOR_HEIGHT,
     ROTOR_SHELL_WALL_T,
     ROTOR_TOP_CAP_T,
     ROTOR_TOP_DIAMETER,
-    SHAFT_BORE_BOTTOM_Z,
-    SHAFT_BORE_TOP_Z,
     V_HALF_ANGLE_DEG,
 )
 
@@ -99,12 +98,13 @@ def rotor(
     valley_dent: float = ROTOR_FACET_VALLEY_DENT,
     shell_wall_t: float = ROTOR_SHELL_WALL_T,
     top_cap_t: float = ROTOR_TOP_CAP_T,
-    boss_od: float = ROTOR_BOSS_OD,
-    shaft_bore_d: float = NEMA17_SHAFT_D + 2 * MOTOR_SHAFT_BORE_CLEARANCE,
+    flange_t: float = ROTOR_FLANGE_T,
+    flange_r_in: float = ROTOR_FLANGE_R_IN,
+    flange_r_out: float = RING_PITCH_D / 2.0,
 ) -> Part:
-    """Hollow crown-cut faceted frustum with top cap, internal
-    coupling boss, and blind shaft bore. Base at z=0, apex direction
-    +Z.
+    """Hollow crown-cut faceted frustum with top cap, on a ring-gear
+    flange below the base rim. Base rim at z=0, apex direction +Z,
+    flange below z=0.
 
     Outer shell lofts through three cross-sections (circle → 20-point
     star → 10-gon). The star's "peak" points align with top-polygon
@@ -114,11 +114,19 @@ def rotor(
     Build order:
       outer − cavity  →  shell + solid top cap (annulus below cap,
                          full section above).
-      + boss          →  cylindrical protrusion from cap underside
-                         into the cavity.
-      − shaft_bore    →  blind bore up through the boss into the
-                         top cap for the motor-shaft slip fit.
+      + flange        →  annulus under the rim; fuses to the shell's
+                         base edge (shell r ∈ [~117.5, 120] at z=0
+                         lies inside the flange's radial span).
+    The cavity is cut before the flange is added so its 1 mm
+    bottom pad cannot notch the flange's top face.
     """
+    # Guards the arguments: the flange must reach the shell's base
+    # edge or the two bodies never fuse, and the bearing seat needs
+    # the land inside its ID.
+    assert flange_r_out >= base_diameter / 2.0 - shell_wall_t, (
+        f"flange_r_out ({flange_r_out}) must reach the shell base edge"
+    )
+    assert 0.0 < flange_r_in < flange_r_out
     base_r = base_diameter / 2.0
     top_r = top_diameter / 2.0
     tan_flank = math.tan(math.radians(flank_angle_deg))
@@ -182,21 +190,12 @@ def rotor(
         taper=flank_angle_deg,
     )
 
-    # Boss descending from the top cap into the cavity.
-    boss = Pos(0, 0, (BOSS_BOTTOM_Z + BOSS_TOP_Z) / 2.0) * Cylinder(
-        boss_od / 2.0, BOSS_TOP_Z - BOSS_BOTTOM_Z,
+    # Flange: ring-gear pitch annulus under the rim, top face at z=0.
+    flange = Pos(0, 0, -flange_t) * extrude(
+        Circle(flange_r_out) - Circle(flange_r_in), amount=flange_t,
     )
 
-    # Shaft bore — open at boss bottom (SHAFT_BORE_BOTTOM_Z), blind
-    # SHAFT_BORE_TOP_Z below the rotor's outer top face.
-    bore_len = SHAFT_BORE_TOP_Z - SHAFT_BORE_BOTTOM_Z
-    # 1 mm poke below bore bottom to guarantee a clean open end.
-    bore = Pos(
-        0, 0,
-        SHAFT_BORE_BOTTOM_Z - 1.0 + (bore_len + 1.0) / 2.0,
-    ) * Cylinder(shaft_bore_d / 2.0, bore_len + 1.0)
-
-    return (outer - cavity) + boss - bore
+    return (outer - cavity) + flange
 
 
 # --- Assembly ----------------------------------------------------------

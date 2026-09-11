@@ -8,6 +8,16 @@ Cross-module inputs:
 - #channel_v_angle (_notes/specs/parameters.md) → V_HALF_ANGLE_DEG
 - #channel_wall_height                  → STATOR_WALL_H
 - #print_clearance                      → MOTOR_SHAFT_BORE_CLEARANCE
+
+Vertical stack below the V-bottom plane (z = 0), top to bottom — the
+rim drive of `_notes/decisions/m02-rotor-drive.md`:
+
+    z = 0                      rotor base rim / stator bottom / V-bottom
+    z ∈ [-10,   0]             rotor flange, ring-gear teeth on its OD
+    z ∈ [-9,   -1]             pinion face (meshes with the flange OD)
+    z ∈ [-18.5, -10]           turntable bearing (bought)
+    z ∈ [-24.5, -18.5]         base plate = stator foot ring (§5)
+    z ∈ [-64.5, -24.5]         NEMA 17 body, hanging under the plate
 """
 
 import math
@@ -94,8 +104,9 @@ EXIT_ARC_DEG = 360.0 / ROTOR_FACET_COUNT   # 36° at N=10
 
 # --- Rotor shell (hollow) ----------------------------------------------
 
-# Rotor is an FDM shell, not a solid. Cavity hides the drive: motor
-# body and stem sit inside the spinning rotor's interior.
+# Rotor is an FDM shell, not a solid. The cavity is open at the base so
+# the support under the cavity ceiling can come out after printing; it
+# no longer hides anything (the drive left the cavity 2026-09-11).
 
 # Radial wall thickness of the faceted shell, measured between matched-
 # taper inner and outer polygons at their circumscribing-circle
@@ -104,70 +115,113 @@ EXIT_ARC_DEG = 360.0 / ROTOR_FACET_COUNT   # 36° at N=10
 ROTOR_SHELL_WALL_T = 2.5
 
 # Thickness of the solid top cap (the brick-drop platform). 10 mm is
-# thick enough to be rigid across the cavity opening during printing
-# and gives a 5 mm-deep blind bore above the motor-shaft tip.
+# thick enough to be rigid across the cavity opening during printing.
 ROTOR_TOP_CAP_T = 10.0
 
-# Internal coupling boss — a cylinder descending from the underside
-# of the top cap into the cavity. Shaft bore runs up through the
-# boss and into the top cap (blind). OD gives ~7.5 mm of wall meat
-# around the 5 mm NEMA-17 shaft — room for a transverse M3 set screw
-# without cracking.
-ROTOR_BOSS_OD = 20.0
+
+# --- Stator wall + skirt radii -----------------------------------------
+
+# Radial wall thickness. Shared, not stator-private, because the base
+# plate's OD is the skirt's OD (`m02-chain.md` §5: the foot ring sits
+# at the kink radius, and the plate *is* the foot ring).
+STATOR_WALL_T = 3.0
+
+# Inner face at the V-bottom sits ROTOR_STATOR_GAP radially outside
+# the rotor's base circumscribing-circle edge; the V-cone kinks to
+# vertical at STATOR_V_H.
+R_STATOR_INNER_BASE = ROTOR_BASE_DIAMETER / 2.0 + ROTOR_STATOR_GAP
+R_STATOR_INNER_KINK = (
+    R_STATOR_INNER_BASE + STATOR_V_H * math.tan(math.radians(V_HALF_ANGLE_DEG))
+)
+R_STATOR_OUTER_BASE = R_STATOR_INNER_BASE + STATOR_WALL_T
+R_STATOR_OUTER_KINK = R_STATOR_INNER_KINK + STATOR_WALL_T     # 155
 
 
-# --- Drive: NEMA 17 stepper + fixed stem -------------------------------
-# RETIRED IN PRINCIPLE 2026-09-11, not yet in geometry: the owner chose a
-# rim-supported, rim-driven rotor (ring gear on a flange below the base
-# rim, bearing to a base plate, off-axis pinion + motor below). This whole
-# section, `drive/`, the blind bore, and the rotor's open bottom retire
-# with that design slice. See `_notes/decisions/m02-rotor-drive.md`.
+# --- Drive: rim gear on a rim bearing ----------------------------------
+# Decided 2026-09-11 (`_notes/decisions/m02-rotor-drive.md`). The rotor
+# grows a flange below its base rim carrying ring-gear teeth on its OD,
+# rides on a bought turntable bearing, and is driven from below by an
+# off-axis NEMA 17 + pinion hanging under the base plate. Replaces the
+# hidden direct drive (motor inside the cavity on a fixed stem).
 
-# NEMA 17 compact short body (shortest commodity variant). Any
-# NEMA 17 up to ~48 mm body length still fits the cavity.
+# Spur pair. Module 1.5 at 20° PA: the ring pitch diameter is the rotor
+# base diameter itself (so the flange's pitch cylinder continues the
+# rim straight down), which makes the tooth count an integer for every
+# chain stage (240 → 160, 300 → 200, 360 → 240). Module 2 was the
+# first instinct but a 16-tooth m2 pinion reaches r ≈ 154 and hits the
+# Ø310 skirt; at m1.5 a 17-tooth pinion (above the ~17 T undercut floor
+# at 20° PA) reaches r ≈ 147 with 5 mm to spare. The m05 base floor
+# runs m1.5 / 12 T — same module, so one pinion could serve both if m05
+# moves its rails out (17 T there pushes the tip 3.75 mm past the rail
+# ring; see `state/m05-diverter.md`).
+MODULE = 1.5
+PRESSURE_ANGLE_DEG = 20.0             # documentation — cheap model has no teeth
+PINION_TEETH = 17
+RING_TEETH = round(ROTOR_BASE_DIAMETER / MODULE)   # 160
+RING_PITCH_D = RING_TEETH * MODULE                 # 240.0
+PINION_PITCH_D = PINION_TEETH * MODULE             # 25.5
+GEAR_RATIO = RING_TEETH / PINION_TEETH             # ≈ 9.41 : 1
+ADDENDUM = MODULE                                  # tip = pitch + module
+MESH_BACKLASH = 0.2                   # extra centre distance for FDM mesh play
+
+# Pinion axis radius from the rotor axis, and its azimuth. Azimuth 180°
+# is the -X side: away from the exit arc (+X, the downstream stage) —
+# the chain rule "point the motor away from downstream", which for S1
+# is also the off-hub side.
+CENTER_DIST = (RING_PITCH_D + PINION_PITCH_D) / 2.0 + MESH_BACKLASH   # 132.95
+MOTOR_AZIMUTH_DEG = 180.0
+
+# Rotor flange: annulus below the base rim. OD is the ring pitch
+# cylinder; ID leaves a 7.5 mm land inboard of the bearing ID.
+ROTOR_FLANGE_T = 10.0                 # = ring-gear face width
+ROTOR_FLANGE_R_IN = 75.0
+
+# Pinion: pitch cylinder + a hub below it that reaches down to just
+# above the plate, so the set screw has shaft to bite on.
+PINION_FACE_W = 8.0
+PINION_TOP_CLEAR = 1.0                # pinion top below the stator bottom
+PINION_HUB_OD = 14.0
+PINION_HUB_PLATE_CLEAR = 0.5
+
+# Bought aluminium turntable ("lazy susan") bearing, nominal 8-inch
+# class. Stub dims — confirm against the part actually ordered; the
+# seat is parametric on these three numbers.
+BEARING_OD = 200.0
+BEARING_ID = 165.0
+BEARING_H = 8.5
+
+# Base plate: the §5 foot ring, extended inward to carry the bearing.
+# OD = skirt OD (Ø310 — exceeds the X1C's 256 mm bed exactly as the
+# stator wall already does; both want sector-splitting or a bigger
+# bed, open in `state/m02-singulator.md`).
+PLATE_T = 6.0
+PLATE_R_IN = ROTOR_FLANGE_R_IN
+PLATE_R_OUT = R_STATOR_OUTER_KINK
+
+# NEMA 17 compact short body (shortest commodity variant).
 NEMA17_SIDE = 42.3
 NEMA17_BODY_LEN = 40.0
 NEMA17_SHAFT_D = 5.0
 NEMA17_SHAFT_LEN = 22.0
 NEMA17_BOLT_PATTERN = 31.0   # M3 × 4 square spacing, shaft-exit face
+NEMA17_PILOT_D = 22.0        # centring boss on the shaft-exit face
+NEMA17_PILOT_H = 2.0
+NEMA17_BOLT_HOLE_D = 3.4     # M3 clearance through the plate
+PLATE_MOTOR_HOLE_D = NEMA17_PILOT_D + 1.0   # pilot boss clears the plate
 
-# Slip fit between NEMA-17 shaft and rotor's internal bore. Snug so a
-# single set screw (M3 transverse through the boss, captured against
-# the shaft's flat) locks the rotor to the shaft.
+# Slip fit between the NEMA-17 shaft and the pinion bore. Snug so a
+# single transverse M3 set screw through the hub locks the pinion.
 MOTOR_SHAFT_BORE_CLEARANCE = 0.1
 
-# Stem — a fixed vertical rod rising from the frame, through the
-# rotor's open bottom, to a mount plate inside the cavity. Motor
-# hangs from the plate (front face up, body below, shaft further
-# up). The rod is OFFSET from the rotor axis — it can't be coaxial
-# because the motor body occupies the axial column between
-# MOTOR_BASE_Z and MOUNT_Z. A short cantilever arm joins the rod
-# top to the centered mount plate above the motor.
-#
-# STEM_OFFSET_X picked so the rod sits clear of the NEMA-17 corner
-# (r ≈ 30) and well inside the rotor cavity apothem at z=MOUNT_Z
-# (apothem ≈ 48). Rod OD scaled down to 10 mm (steel shaft; stiff
-# enough for the 200 g cantilever motor + <3 kg rotor + bricks).
-STEM_OD = 10.0
-STEM_OFFSET_X = 38.0             # radial offset of rod from rotor axis
-STEM_BOTTOM_Z = -50.0            # deep in the frame; stub value for V1
-STEM_FLANGE_DIA = 50.0           # mount-plate disc OD (centered on axis)
-STEM_FLANGE_T = 5.0
-STEM_ARM_W = 15.0                # cantilever arm width (y-extent)
-
-# Derived vertical layout — anchored so the motor-shaft tip sits
-# 5 mm below the rotor's outer top face (blind bore depth).
-SHAFT_TIP_Z = ROTOR_HEIGHT - ROTOR_TOP_CAP_T / 2.0       # 55 (mid top cap)
-MOUNT_Z = SHAFT_TIP_Z - NEMA17_SHAFT_LEN                 # 33
-MOTOR_BASE_Z = MOUNT_Z - NEMA17_BODY_LEN                 # -7
-
-# Boss + blind-bore span. Boss starts AT the motor front face
-# (MOUNT_Z): any lower and the boss body would collide with the
-# motor body; any higher and the shaft bottom would hang exposed
-# below the boss. The bore spans the full boss height plus another
-# ROTOR_TOP_CAP_T/2 into the top-cap solid, giving ~3 mm of axial
-# headroom between the shaft tip and the blind end.
-BOSS_BOTTOM_Z = MOUNT_Z                                  # 33
-BOSS_TOP_Z = ROTOR_HEIGHT - ROTOR_TOP_CAP_T              # 50
-SHAFT_BORE_BOTTOM_Z = BOSS_BOTTOM_Z                      # 33 (open)
-SHAFT_BORE_TOP_Z = ROTOR_HEIGHT - ROTOR_TOP_CAP_T / 2.0  # 55 — blind
+# Derived vertical stack (see the module docstring).
+FLANGE_BOTTOM_Z = -ROTOR_FLANGE_T                          # -10
+BEARING_TOP_Z = FLANGE_BOTTOM_Z                            # -10
+BEARING_BOTTOM_Z = BEARING_TOP_Z - BEARING_H               # -18.5
+PLATE_TOP_Z = BEARING_BOTTOM_Z                             # -18.5
+PLATE_BOTTOM_Z = PLATE_TOP_Z - PLATE_T                     # -24.5
+MOTOR_FACE_Z = PLATE_BOTTOM_Z                              # -24.5
+MOTOR_BOTTOM_Z = MOTOR_FACE_Z - NEMA17_BODY_LEN            # -64.5
+SHAFT_TIP_Z = MOTOR_FACE_Z + NEMA17_SHAFT_LEN              # -2.5
+PINION_TOP_Z = -PINION_TOP_CLEAR                           # -1
+PINION_BOTTOM_Z = PINION_TOP_Z - PINION_FACE_W             # -9
+PINION_HUB_BOTTOM_Z = PLATE_TOP_Z + PINION_HUB_PLATE_CLEAR # -18

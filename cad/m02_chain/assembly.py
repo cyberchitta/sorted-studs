@@ -6,18 +6,24 @@ Composes the chain's structural skeleton — two column extensions
 S1 yoke crossbar (`yoke`) spanning between them at the S1 m02
 V-bottom plane — plus the LOAD ramp (`load_ramp`) and the S1 m02
 singulator as the `s1` subtree (part identity is the tree path:
-`s1.rotor.rotor`, `s1.drive.stem`, ...). Coordinate frame, anchors,
-and the deferred stator-mounting interface are documented in
-`params.py`.
+`s1.rotor.rotor`, `s1.drive.base_plate`, ...). Coordinate frame,
+anchors, and the deferred stator-mounting interface are documented
+in `params.py`.
 
 Cross-boundary checks (within the chain):
 
-- yoke ↔ m02 rotor / motor / stem — the yoke threads underneath
-  the V-bottom plane and inside the stator's inner footprint;
-  every chain skeleton part must clear every m02 internal part.
-- col1 / col2 ↔ m02 stator / rotor / motor / stem — the columns
-  end at the V-bottom plane; tangent contact at z=YOKE_TOP_Z_LOCAL
-  is allowed but no part may overlap volumetrically.
+- yoke / col1 / col2 ↔ m02 — the skeleton was drawn for the hidden
+  drive: the yoke threads under the V-bottom plane inside the
+  stator footprint and the columns end at that plane. Since the
+  rim drive (2026-09-11, `_notes/decisions/m02-rotor-drive.md`)
+  the rotor's ring-gear flange, the turntable bearing and the base
+  plate occupy z ∈ [-24.5, 0] under the rotor, and all three
+  skeleton parts run through them. Those nine pairs are declared
+  as `known_overlaps` regression alarms — the gantry slice that
+  re-hangs S1 on the base plate (§5/§6 of `m02-chain.md`) must
+  remove them, and they fail loudly when it does. Every other
+  skeleton ↔ m02 pair (motor, pinion, stator) is a live
+  no-interference claim.
 - LOAD ramp ↔ m02 stator — the ramp inlet sits in the chute-exit
   azimuth (chain -X side of S1); the ramp must NOT crash the
   outer stator wall outboard of the chute opening.
@@ -173,6 +179,21 @@ _S1_POSE = (
 
 _CHAIN_SKELETON = ("col1_ext", "col2_ext", "yoke", "load_ramp")
 
+# The skeleton predates the rim drive and runs through its stack (see
+# the module docstring). Positive regression alarms, not waivers: each
+# self-fails the day the gantry slice moves the skeleton clear.
+_RIM_DRIVE_REASON = (
+    "chain skeleton drawn for the hidden drive passes through the "
+    "rim-drive stack under S1 (rotor flange / bearing / base plate, "
+    "z in [-24.5, 0] m02-local); retire with the gantry slice — "
+    "_notes/decisions/m02-rotor-drive.md"
+)
+_RIM_DRIVE_OVERLAPS = [
+    (skel, f"s1.{part}", _RIM_DRIVE_REASON)
+    for skel in ("col1_ext", "col2_ext", "yoke")
+    for part in ("rotor.rotor", "drive.bearing", "drive.base_plate")
+]
+
 
 # Cached because the degenerate ``assembly`` memo below and any
 # composing parent (``cad/assembly.py``, ``cad/render.py``) each ask
@@ -235,7 +256,9 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
                 "outward or rework the deck mounting strategy"
             ),
         )
-        .assert_no_interference_between(_CHAIN_SKELETON, "s1")
+        .assert_no_interference_between(
+            _CHAIN_SKELETON, "s1", known_overlaps=_RIM_DRIVE_OVERLAPS,
+        )
         .assert_no_interference_within(_CHAIN_SKELETON),
         design_system(schema),
         skip=("s1",),
