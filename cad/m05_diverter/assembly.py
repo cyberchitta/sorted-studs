@@ -243,6 +243,20 @@ def _add_top_deck_checks(a: Assembly, top: int) -> Assembly:
     return a.assert_no_interference("top_acrylic", _rot(top, "column"))
 
 
+def _add_base_bearing_checks(a: Assembly, base: int) -> Assembly:
+    """The base column stands on the turntable, which stands on the
+    seat: two tangent rests that together are the rotating stack's
+    axial load path. Seat-on-turntable is declared once in
+    `ramp_mechanism.build_column_side_static` and propagates; the
+    column-on-turntable rest spans the static and rotating subtrees,
+    so it is declared here (as the standalone declares it at its own
+    root)."""
+    return a.assert_tangent_contact(
+        _brg(base, "ring_bearing"), _rot(base, "column"),
+        name="column_on_turntable",
+    )
+
+
 def _add_drive_train_checks(a: Assembly, base: int) -> Assembly:
     """Off-axis drive train (ring gear / pinion / motor / mount)
     clearance vs the base floor's column-side stack, ramp_mechanism, and
@@ -253,16 +267,22 @@ def _add_drive_train_checks(a: Assembly, base: int) -> Assembly:
     mtr = "drive_train.motor"
     mount = "drive_train.motor_mount"
 
-    # Ring gear bolts up to the base column's bottom collar (tangent at
-    # z = 0) and stacks just under the column-side bearing (z ∈ [0, 5]).
-    # No overlap with the bearing / spider — pure z stacking.
+    # Ring gear bolts up to the underside of the base column's bottom
+    # flange (tangent at z = BASE_COL_Z_BOT) and its standoff drops
+    # through the turntable's bore and the seat's bore to the mesh
+    # below the rails. No overlap with either — the seat bore is the
+    # tight one, so its radial gap is measured, not just non-negative.
     a = (
         a
         .assert_no_interference(ring, _rot(base, "column"))
         .assert_no_interference(ring, _brg(base, "ring_bearing"))
         .assert_no_interference(ring, _brg(base, "bearing_spider"))
-        # The ring's standoff top face seats on the collar's bottom
-        # face — that seat is the whole bolted interface, and a ring
+        .assert_distance(
+            ring, _brg(base, "bearing_spider"), min_mm=2.0,
+            name="ring_gear_standoff_seat_bore_gap",
+        )
+        # The ring's standoff top face seats on the flange's underside
+        # — that seat is the whole bolted interface, and a ring
         # hanging 3 mm below it would satisfy no-interference just as
         # well.
         .assert_tangent_contact(ring, _rot(base, "column"))
@@ -441,6 +461,9 @@ def build_tower(
     if with_top_deck:
         a = _add_top_deck_checks(a, floors[-1])
 
+    base_idx = next((idx for idx, role in floor_plan if role == "base"), None)
+    if base_idx is not None:
+        a = _add_base_bearing_checks(a, base_idx)
     if with_drive_train:
         a = _add_drive_train_checks(a, base_idx)
 

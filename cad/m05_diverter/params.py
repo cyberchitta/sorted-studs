@@ -80,6 +80,29 @@ COL_OUTER_SIDE = COL_INTERIOR_SIDE + 2 * COL_WALL_T  # 96
 COLLAR_CLEARANCE = 1.0
 COLLAR_OD = COL_OUTER_SIDE * math.sqrt(2) + 2 * COLLAR_CLEARANCE  # ≈ 138
 
+# Base-floor turntable bearing (2026-09-11). The base floor carries the
+# whole rotating stack's weight, so its bearing is a bought aluminium
+# turntable ("lazy susan", nominal 8-inch class) — the same part m02's
+# rim drive sits on (`cad/m02_c_channel_singulator/params.py` §Drive,
+# `_notes/decisions/m02-rotor-drive.md`), so one bought bearing serves
+# both modules. Stub dims — confirm against the part actually ordered;
+# the seat and the base flange are parametric on these three numbers.
+# Middle/top floors keep the printed radial-only ring bearing: they
+# carry no axial load (the stack stands on the base).
+TURNTABLE_OD = 200.0
+TURNTABLE_ID = 165.0
+TURNTABLE_H = 8.5
+# Base-floor z-stack (rail-top datum z = 0), bottom → top: the base
+# spider's hub is the turntable *seat*, top face at TURNTABLE_Z_BOT;
+# the turntable sits on it; the base column's bottom flange sits on
+# the turntable. Shared here because ramp_mechanism owns the seat,
+# the flange and the column bottom while base_floor owns the ring
+# gear that bolts to that flange's underside.
+TURNTABLE_Z_BOT = 8.0             # seat top = spider saddle top-plate z (asserted in the spider)
+TURNTABLE_Z_TOP = TURNTABLE_Z_BOT + TURNTABLE_H            # 16.5
+BASE_COL_Z_BOT = TURNTABLE_Z_TOP                            # base column bottom / ring-gear standoff top
+BASE_FLANGE_OD = TURNTABLE_OD + 4.0                         # 204 — covers the turntable's top ring
+
 # Hex circumradii (center → vertex). With Phase 1's rotation-aligned
 # layout, inner and outer hex vertices share azimuth (k+0.5)·60° =
 # basket boundaries; radial rails run along these directions and

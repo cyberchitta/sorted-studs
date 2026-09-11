@@ -19,8 +19,10 @@ to the column's periphery instead:
 - pinion — small gear on the motor output shaft, meshing with the ring
   gear. Modeled cheap as its pitch cylinder (no teeth); the real
   involute profile is a detail-layer concern.
-- ring_gear — printed annulus bolted up to the base column's bottom
-  collar face (z = 0), teeth on its OD. Modeled cheap as a pitch
+- ring_gear — printed annulus bolted up to the underside of the base
+  column's bottom flange (z = BASE_COL_Z_BOT, above the turntable), teeth
+  on its OD below the rails; the standoff between drops through the
+  turntable's and seat's bores. Modeled cheap as a pitch
   annulus with the same square brick-pass-through hole as the collar.
   The "separate bolted-on ring vs teeth integral to the printed collar
   OD" choice (see `_notes/state/m05-diverter.md`) is resolved here as the
@@ -48,8 +50,9 @@ Coordinate frame (matches ramp_mechanism / params):
     origin = column axis ∩ rail-top datum (z=0)
     +Z     = up
     +X     = radial outward toward the exit opening (azimuth 0°)
-    z=0    = rail top face (frame datum) = base collar bottom face
-    z<0    = below the floor — ring gear, pinion, mount, motor sit here
+    z=0    = rail top face (frame datum) = turntable seat bottom
+    z=16.5 = BASE_COL_Z_BOT — base flange underside, ring-gear standoff top
+    z<0    = below the floor — gear mesh, pinion, mount, motor sit here
 """
 
 import math
@@ -60,7 +63,9 @@ from build123d import Box, Cylinder, Part, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 
-from ..params import COL_INTERIOR_SIDE, COLLAR_OD, RAIL_INNER_R, RAIL_SIZE
+from ..params import (
+    BASE_COL_Z_BOT, COL_INTERIOR_SIDE, COLLAR_OD, RAIL_INNER_R, RAIL_SIZE,
+)
 
 
 # --- Gear train ---------------------------------------------------------
@@ -116,7 +121,9 @@ CENTER_DIST = (RING_PITCH_D + PINION_PITCH_D) / 2 + MESH_BACKLASH   # 81.95
 # top-level `pinion`-vs-`bearing_spider` no-interference assert is the
 # guard that catches any future saddle-depth drift.
 #
-#   z=0    rail top / base collar bottom / ring-gear standoff top
+#   z=16.5 base flange underside / ring-gear standoff top (BASE_COL_Z_BOT)
+#   z=8    turntable bottom / seat top (ramp_mechanism)
+#   z=0    rail top / seat bottom
 #   z=-7   spider-saddle bottom (ramp_mechanism) — mesh stays below
 #   z=-9   gear-mesh top (pinion top, ring-gear teeth top)
 #   z=-17  gear-mesh bottom / ring-gear bottom
@@ -128,7 +135,7 @@ GEAR_FACE_W = 8.0                                  # mesh face width
 MESH_Z_TOP = -9.0                                  # below the spider saddle (≈ -7)
 MESH_Z_BOT = MESH_Z_TOP - GEAR_FACE_W              # -17
 
-RING_GEAR_Z_TOP = 0.0                              # standoff bolts to base collar bottom
+RING_GEAR_Z_TOP = BASE_COL_Z_BOT                   # 16.5 — standoff bolts to the base flange underside
 RING_GEAR_Z_BOT = MESH_Z_BOT                       # -17 — annulus runs collar → teeth
 
 PINION_Z_TOP = MESH_Z_TOP                          # -9
@@ -192,9 +199,10 @@ def pinion() -> Part:
 
 
 def ring_gear() -> Part:
-    """Ring gear bolted to the base column's bottom collar face. The
-    upper section is a standoff (collar bottom z = 0 down to the saddle-
-    clearing mesh plane); the lower section carries the teeth. Cheap
+    """Ring gear bolted to the base column's bottom flange underside.
+    The upper section is a standoff (flange underside z = BASE_COL_Z_BOT
+    down through the turntable and seat bores to the saddle-clearing
+    mesh plane); the lower section carries the teeth. Cheap
     model: a single pitch-diameter annulus with the same square brick-
     pass hole as the collar (teeth omitted). Centered on the column axis."""
     h = RING_GEAR_Z_TOP - RING_GEAR_Z_BOT

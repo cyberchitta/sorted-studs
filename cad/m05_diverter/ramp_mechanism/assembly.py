@@ -34,10 +34,14 @@ geometry is uniform across all roles (a short ring at z_local = 0..5
 gripping the lower column's body where its rotating collar sits at
 z_lower_local = 220..225). Roles differ only in the column itself:
 
-- **base** — column body extends 0..273 in its own local frame, with
-  a bottom collar at 0..5 (motor + ring-gear interface; off-axis pinion
-  drives this collar via the base-floor bearing slot at z_world = 0).
-  Body, rotating collar at 220..225, top flange at 268..273.
+- **base** — column body extends BASE_COL_Z_BOT (16.5)..273 in its own
+  local frame, standing on a bought turntable bearing: the spider's hub
+  is the turntable seat (z 0..8), the turntable sits on it (8..16.5),
+  and the column's Ø204 bottom flange (16.5..21.5) sits on the
+  turntable. The base_floor ring gear bolts to that flange's underside
+  and reaches the off-axis pinion below the rails through the
+  turntable's and seat's bores. Rotating collar at 220..225, top flange
+  at 268..273.
 - **middle**, **top** — column body extends 53..273; bottom face at
   z = 53 mates with the lower column's top flange (z_lower_local =
   268..273) at z_world = N·220 + 273. No bottom collar. Top floor
@@ -78,6 +82,8 @@ from build123d import Box, Cylinder, Location, Part, Plane, Pos, Rot
 from cad_khana.mechanism.assembly import Assembly
 
 from ..params import (
+    BASE_COL_Z_BOT,
+    BASE_FLANGE_OD,
     BASKET_RIM_Z,
     COL_INTERIOR_SIDE,
     COL_OUTER_SIDE,
@@ -89,6 +95,10 @@ from ..params import (
     RAIL_INNER_R,
     RAIL_SIZE,
     R_BASKET_INNER,
+    TURNTABLE_ID,
+    TURNTABLE_OD,
+    TURNTABLE_Z_BOT,
+    TURNTABLE_Z_TOP,
 )
 
 
@@ -288,13 +298,14 @@ FLOOR_ROLES = ("base", "middle", "top")
 def _col_z_bot(role: str) -> float:
     """Bottom of the rotating column for a given floor role.
 
-    Base sits at the rail datum (z=0). Middle/top sit at the joint
-    plane (z=53); they meet the lower column's top flange tangent at
-    that plane. No clearance gap — the columns are designed to mate
-    face-to-face under gravity preload.
+    Base stands on the turntable (z = BASE_COL_Z_BOT = 16.5, see
+    params). Middle/top sit at the joint plane (z=53); they meet the
+    lower column's top flange tangent at that plane. No clearance gap
+    — the columns are designed to mate face-to-face under gravity
+    preload.
     """
     if role == "base":
-        return RAIL_TOP_Z
+        return BASE_COL_Z_BOT
     if role in ("middle", "top"):
         return LOWER_COL_TOP_Z_MAX
     raise ValueError(f"unknown floor role: {role!r} (expected one of {FLOOR_ROLES})")
@@ -307,6 +318,16 @@ RING_BEARING_OD = RING_BEARING_ID + 20.0
 N_SPIDER_SADDLES = 6
 SPIDER_HUB_ID = RING_BEARING_OD + 1.0
 SPIDER_HUB_OD = SPIDER_HUB_ID + 10.0
+
+# Base-role hub = the turntable seat: a wider, taller annulus whose top
+# face (TURNTABLE_Z_BOT) is flush with the saddle top plates, so the
+# turntable's bottom ring lands on one plane. Its bore passes the
+# base_floor ring gear's standoff (pitch Ø ≈ COLLAR_OD) with
+# SEAT_CLEARANCE radial; the tower root measures that gap.
+SEAT_CLEARANCE = 3.0
+SEAT_ID = COLLAR_OD + 2 * SEAT_CLEARANCE                   # ≈ 144
+SEAT_OD = TURNTABLE_OD + 4.0                               # 204 — 2 mm land outside the ring
+SEAT_T = TURNTABLE_Z_BOT                                   # 8
 
 EXT_SIDE = RAIL_SIZE                          # 2020 aluminum extrusion (== frame)
 
@@ -342,21 +363,41 @@ def bearing_spider(role: str = "middle") -> Part:
     Six integrated saddles grip the tops of radial 2020 aluminum
     extrusions; the extrusions carry the span out to the inner hex.
 
-    Geometry is **uniform across all roles** under the top-bearing
-    architecture: a short annular ring at z = 0..BEARING_T (5 mm) with
-    six saddles. The bearing this hub holds engages whatever column
-    passes through z = 0..5 — for middle/top that's the *lower*
-    column's rotating collar (mapped from z_lower_local 220..225);
-    for base it's the base column's own bottom collar.
+    The six saddles are **uniform across all roles**; the hub is not:
+
+    - middle / top — a short annular ring at z = 0..BEARING_T (5 mm)
+      holding the printed radial ring bearing, which engages the
+      *lower* column's rotating collar (mapped from z_lower_local
+      220..225).
+    - base — the turntable **seat**: annulus SEAT_ID..SEAT_OD at
+      z = 0..SEAT_T, top face flush with the saddle top plates, on
+      which the bought turntable (`ring_bearing("base")`) sits. The
+      base_floor ring gear's standoff passes down through its bore.
     """
+    if role == "base":
+        # The turntable must land on the seat, not on the saddle plates
+        # poking up through it; and the seat must cover the turntable's
+        # bottom ring. Parameter bounds over a bought part's footprint —
+        # bare, fired here where the seat is cut.
+        assert SEAT_T >= BEARING_Z_TOP + SADDLE_T_TOP, (
+            f"Seat top z={SEAT_T} sits below the saddle top plates "
+            f"(z={BEARING_Z_TOP + SADDLE_T_TOP}); the turntable would rock "
+            f"on six pads. Raise TURNTABLE_Z_BOT."
+        )
+        assert SEAT_ID <= TURNTABLE_ID and SEAT_OD >= TURNTABLE_OD, (
+            f"Seat annulus Ø{SEAT_ID:.1f}..Ø{SEAT_OD:.1f} does not cover the "
+            f"turntable's Ø{TURNTABLE_ID}..Ø{TURNTABLE_OD} ring."
+        )
+        hub_id, hub_od, hub_z_top = SEAT_ID, SEAT_OD, SEAT_T
+    else:
+        hub_id, hub_od, hub_z_top = SPIDER_HUB_ID, SPIDER_HUB_OD, BEARING_Z_TOP
     hub_z_bot = BEARING_Z_BOT
-    hub_z_top = BEARING_Z_TOP
     hub_t = hub_z_top - hub_z_bot
     hub_z_center = (hub_z_bot + hub_z_top) / 2
     ext_top_z = BEARING_Z_TOP                          # saddle clamps just above rail
 
-    hub_outer = Pos(0, 0, hub_z_center) * Cylinder(SPIDER_HUB_OD / 2, hub_t)
-    hub_inner = Pos(0, 0, hub_z_center) * Cylinder(SPIDER_HUB_ID / 2, hub_t * 2)
+    hub_outer = Pos(0, 0, hub_z_center) * Cylinder(hub_od / 2, hub_t)
+    hub_inner = Pos(0, 0, hub_z_center) * Cylinder(hub_id / 2, hub_t * 2)
     body = hub_outer - hub_inner
 
     saddle_w = EXT_SIDE + 2 * SADDLE_T_WALL
@@ -396,25 +437,37 @@ def bearing_spider(role: str = "middle") -> Part:
 
 
 def ring_bearing(role: str = "middle") -> Part:
-    """Stationary annular bearing at this floor's bracket level (z =
-    0..BEARING_T). Uniform across roles — see `bearing_spider` for the
-    per-role engagement story.
+    """The floor's bearing ring.
+
+    - middle / top — printed radial-only annulus at this floor's
+      bracket level (z = 0..BEARING_T), see `bearing_spider` for the
+      engagement story.
+    - base — **bought turntable** stub (TURNTABLE_OD / ID / H from
+      params, the same part as m02's rim drive): one annulus with its
+      bottom face on the seat at TURNTABLE_Z_BOT. Carries the stack's
+      axial load and its radial location. Not inspected — not printed.
     """
-    del role  # geometry is uniform; argument kept for symmetry / future role split
+    if role == "base":
+        z_center = (TURNTABLE_Z_BOT + TURNTABLE_Z_TOP) / 2
+        h = TURNTABLE_Z_TOP - TURNTABLE_Z_BOT
+        body = Pos(0, 0, z_center) * Cylinder(TURNTABLE_OD / 2, h)
+        hole = Pos(0, 0, z_center) * Cylinder(TURNTABLE_ID / 2, h * 2)
+        return body - hole
     z_center = (BEARING_Z_BOT + BEARING_Z_TOP) / 2
     body = Pos(0, 0, z_center) * Cylinder(RING_BEARING_OD / 2, BEARING_T)
     hole = Pos(0, 0, z_center) * Cylinder(RING_BEARING_ID / 2, BEARING_T * 2)
     return body - hole
 
 
-def _circular_feature(z_bot: float, z_top: float) -> Part:
-    """Annular feature on the column — circular OD = COLLAR_OD with the
-    column interior (square hole) removed. Used for the rotating
-    collar, the top joint flange, and the base column's bottom collar.
+def _circular_feature(z_bot: float, z_top: float, od: float = COLLAR_OD) -> Part:
+    """Annular feature on the column — circular OD (default COLLAR_OD)
+    with the column interior (square hole) removed. Used for the
+    rotating collar, the top joint flange, and the base column's
+    bottom flange (which takes the wider BASE_FLANGE_OD).
     """
     h = z_top - z_bot
     z_center = (z_top + z_bot) / 2
-    disc = Pos(0, 0, z_center) * Cylinder(COLLAR_OD / 2, h)
+    disc = Pos(0, 0, z_center) * Cylinder(od / 2, h)
     hole = Pos(0, 0, z_center) * Box(
         COL_INTERIOR_SIDE, COL_INTERIOR_SIDE, h * 2
     )
@@ -514,10 +567,13 @@ def column(role: str = "middle") -> Part:
 
     # Role-specific bottom feature.
     if role == "base":
-        # Bottom collar at z 0..5 — motor pinion engages a ring gear
-        # integrated with this collar's OD (gear teeth not modeled).
-        # No bas-relief here — the base column has no lower mate.
-        tube = tube + _circular_feature(BEARING_Z_BOT, BEARING_Z_TOP)
+        # Bottom flange at z 16.5..21.5, Ø BASE_FLANGE_OD — sits on the
+        # turntable's top ring; the base_floor ring gear bolts to its
+        # underside. No bas-relief here — the base column has no lower
+        # mate.
+        tube = tube + _circular_feature(
+            BASE_COL_Z_BOT, BASE_COL_Z_BOT + COLLAR_T, od=BASE_FLANGE_OD,
+        )
     else:
         # Middle/top: bottom face flange mating with the lower column's
         # top flange at z = LOWER_COL_TOP_Z_MAX (= 53). Same OD; the
@@ -658,11 +714,17 @@ def build_column_side_static(
 
     n_sp = "bearing_spider"
     n_rb = "ring_bearing"
-    return (
+    a = (
         Assembly()
         .with_part(n_sp, bearing_spider(role), material=_mt(n_sp))
         .with_part(n_rb, ring_bearing(role), material=_mt(n_rb))
     )
+    if role == "base":
+        # The turntable rests on the seat — that rest is the stack's
+        # whole axial load path, and no-interference alone would pass
+        # with the turntable floating above six saddle pads.
+        a = a.assert_tangent_contact(n_rb, n_sp, name="turntable_on_seat")
+    return a
 
 
 def build_column_side_rotating(
@@ -743,9 +805,8 @@ def make_assembly(role: str = "middle") -> Assembly:
         # Lower floor's column placed at -FLOOR_H. Modeled as `column("middle")`
         # for both middle (lower=base|middle) and top (lower=middle); the
         # difference between base and middle lower columns lives at
-        # z_lower_local = 0..5 (the bottom collar), which maps to
-        # z_local = -220..-215 — far below anything modeled in this
-        # frame. Using "middle" as the generic stand-in keeps this
+        # z_lower_local = 16.5..21.5 (the base flange), which maps to
+        # z_local ≈ -203 — far below anything modeled in this frame. Using "middle" as the generic stand-in keeps this
         # assembly role-independent of which floor the lower one is.
         a = (
             a
@@ -780,6 +841,14 @@ def make_assembly(role: str = "middle") -> Assembly:
         .assert_no_interference("rotating.trap_open", "ring_bearing")
         .assert_no_interference("rotating.trap_open", "rotating.ramp")
     )
+    if role == "base":
+        # The column's bottom flange rests on the turntable's top ring —
+        # the other half of the axial load path (seat contact is
+        # declared in `build_column_side_static`). Composed runs
+        # (tower) declare the same rest across their subtrees.
+        a = a.assert_tangent_contact(
+            "ring_bearing", "rotating.column", name="column_on_turntable",
+        )
     if role != "base":
         a = (
             a

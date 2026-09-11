@@ -54,11 +54,14 @@ waivers = {
     },
 }
 for role in FLOOR_ROLES:
-    for name, part in [
+    printed = [
         ("bearing_spider", bearing_spider(role)),
-        ("ring_bearing", ring_bearing(role)),
         ("column", column(role)),
-    ]:
+    ]
+    if role != "base":
+        # The base floor's ring bearing is the bought turntable stub.
+        printed.append(("ring_bearing", ring_bearing(role)))
+    for name, part in printed:
         inspect(
             part, method=method, out=f"outputs/{role}", name=name,
             waive=waivers.get(name),
