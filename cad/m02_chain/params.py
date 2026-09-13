@@ -4,8 +4,10 @@ The chain is a relocatable unit that hangs the m02 singulator(s) off
 column extensions rising from the m05 diverter's top deck and
 delivers bricks onto the m03 turret's LOAD platform. This file owns
 the chain-local frame and the cross-boundary constants mirrored from
-m05 / m03 / m02 (the chain must build standalone, so it cannot import
-the live values). `assembly.py` exports the mirrors' implied datums
+m05 / m03 (the chain must build standalone, so it cannot import their
+live values). m02 is different: the chain composes it, so m02's own
+`params.py` is imported, not mirrored — S1's axis is derived from the
+stator radius. `assembly.py` exports the mirrors' implied datums
 as belief anchors (`load_top`, `deck_top`, `col1_base`); the
 top-level `cad/assembly.py` asserts them coincident with the live
 units' own anchors, so a drifted mirror fails loudly there.
@@ -69,6 +71,8 @@ independent of the mounting choice.
 from __future__ import annotations
 
 import math
+
+from ..m02_c_channel_singulator.params import R_STATOR_OUTER_KINK
 
 
 # --- Mirror from cad/m05_diverter/params.py ----------------------------
@@ -145,15 +149,17 @@ OUTER_VERT_0_LOCAL_XY = (
 
 # --- S1 stage placement ------------------------------------------------
 
-# S1 m02 axis world location (see `_notes/decisions/m02-chain.md`).
-# The +360 in X comes from the chute-exit X (+205) + stator outer
-# radius at the V-cone top (R_STATOR_OUTER_KINK ≈ 155); +125 in Y
-# matches the LOAD centroid.
-S1_AXIS_WORLD_X = 360.0
-S1_AXIS_WORLD_Y = 125.0
+# S1 chute exit = LOAD ramp inlet — the handoff point the stage is
+# placed from. Held fixed: the ramp's run and pitch derive from it.
+CHUTE_EXIT_LOCAL = (80.0, 0.0, 48.0)        # (+205, +125, 1078) in world
+
+# S1 m02 axis (see `_notes/decisions/m02-chain.md`): one stator outer
+# radius outboard of the chute exit, so the exit-arc wall stands at the
+# handoff whatever the rotor size. With the chain heading of 180° the
+# m02-local +X exit points at chain-local −X.
 S1_AXIS_LOCAL_XY = (
-    S1_AXIS_WORLD_X - M03_TURRET_ARM_R,    # +235
-    S1_AXIS_WORLD_Y - M03_TURRET_ARM_R,    # 0
+    CHUTE_EXIT_LOCAL[0] + R_STATOR_OUTER_KINK,               # +235
+    CHUTE_EXIT_LOCAL[1],                                     # 0
 )
 
 # Yoke top face = S1 m02 V-bottom plane. The stator V-bottom sits at
@@ -239,8 +245,7 @@ YOKE_MID_XY = (
 # top face at the platform's reference plane). The brick contact
 # surface at the outlet sits 7 mm above the acrylic top — a small
 # drop onto the LOAD station.
-CHUTE_EXIT_LOCAL = (80.0, 0.0, 48.0)        # (+205, +125, 1078) in world
-RAMP_INLET_LOCAL = CHUTE_EXIT_LOCAL
+RAMP_INLET_LOCAL = CHUTE_EXIT_LOCAL         # defined with the S1 placement
 RAMP_FLOOR_T = 5.0
 RAMP_OUTLET_LOCAL = (0.0, 0.0, RAMP_FLOOR_T + 2.0)  # +7  (world z = 1037)
 
