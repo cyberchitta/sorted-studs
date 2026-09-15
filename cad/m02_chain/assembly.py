@@ -73,6 +73,10 @@ from .params import (
     DECK_TOP_Z_LOCAL,
     EXT_SIZE,
     M03_TURRET_ARM_R,
+    M05_AXIS_LOCAL_XY,
+    M05_TOP_DECK_APERTURE_D,
+    M05_TOP_DECK_OD,
+    M05_TOP_DECK_T,
     POST_TOP_Z_LOCAL,
     PROP_BAR_FAR,
     PROP_BAR_NEAR,
@@ -366,6 +370,65 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
     a = a.assert_no_interference_within(_SKELETON)
 
     return paint(a, design_system(schema), skip=_STAGE_NAMES)
+
+
+# --- Standalone fixture --------------------------------------------------
+
+def _post_stub(k: int) -> Part:
+    """m05's column k above the deck, as the chain believes it: a 2020
+    from the deck top to `POST_TOP_Z_LOCAL[k]`. Origin at the deck top
+    on the column axis."""
+    h = POST_TOP_Z_LOCAL[k] - DECK_TOP_Z_LOCAL
+    return Pos(0.0, 0.0, h / 2.0) * Box(EXT_SIZE, EXT_SIZE, h)
+
+
+def _deck_stub() -> Part:
+    """m05's top deck as a plain disc with its central aperture — no
+    post notches, no bolt holes. Origin at the deck top on the m05
+    axis."""
+    return Pos(0.0, 0.0, -M05_TOP_DECK_T / 2.0) * (
+        Cylinder(M05_TOP_DECK_OD / 2.0, M05_TOP_DECK_T)
+        - Cylinder(M05_TOP_DECK_APERTURE_D / 2.0, M05_TOP_DECK_T + 2.0)
+    )
+
+
+_STUBS = ("post_4", "post_5", "deck")
+
+
+def build_chain_standalone(schema: str = DEFAULT_SCHEMA) -> Assembly:
+    """The chain plus stand-ins for what it hangs on — m05's two
+    through-deck columns above the deck (`post_4`, `post_5`) and the
+    deck itself (`deck`), placed where the chain's mirrored constants
+    put them. For viewing the gantry with its posts and for checking
+    the chain's own beliefs are self-consistent: each prop bar and the
+    stem rest tangent on their post, the braces stand off V_4 and the
+    deck. The claims against m05's real columns and deck are the top
+    level's (`cad/assembly.py`); nothing composes this fixture.
+
+        khana check cad/m02_chain/assembly.py:build_chain_standalone
+        khana view  cad/m02_chain/assembly.py:build_chain_standalone
+    """
+    a = build_chain(schema)
+    for k in sorted(POST_TOP_Z_LOCAL):
+        x, y = m05_outer_vertex_local_xy(k)
+        a = a.with_part(f"post_{k}", _post_stub(k), location=Pos(x, y, DECK_TOP_Z_LOCAL))
+    a = a.with_part(
+        "deck", _deck_stub(),
+        location=Pos(M05_AXIS_LOCAL_XY[0], M05_AXIS_LOCAL_XY[1], DECK_TOP_Z_LOCAL),
+    )
+    for stage, k in PROP_POST.items():
+        a = a.assert_tangent_contact(f"{stage}_prop_bar", f"post_{k}", name=f"{stage}_prop_bar_on_post_{k}")
+    a = a.assert_tangent_contact("s2_stem", f"post_{ARM_POST}", name=f"s2_stem_on_post_{ARM_POST}")
+    for col in BRACE_COLS:
+        a = (
+            a
+            .assert_distance(f"brace_{col}", f"post_{ARM_POST}", min_mm=1.0, name=f"brace_{col}_clears_post")
+            .assert_distance(f"brace_{col}", "deck", min_mm=1.0, name=f"brace_{col}_clears_deck")
+        )
+    a = a.assert_no_interference_between(_STUBS, _SKELETON)
+    for s in STAGES:
+        a = a.assert_no_interference_between(_STUBS, s.name)
+    return a
 
 
 # Degenerate memoized master, so ``khana check <file>`` resolves

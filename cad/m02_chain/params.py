@@ -113,6 +113,12 @@ M05_R_VERT_OUTER = 311.769145362398
 M05_TOP_VERT_Z = 880.0
 M05_TOP_DECK_T = 10.0
 M05_DECK_TOP_Z = M05_TOP_VERT_Z + M05_TOP_DECK_T   # 890
+
+# Deck disc (`m05_diverter/assembly.py:TOP_DECK_OD` / `TOP_DECK_APERTURE_D`),
+# used only by the standalone fixture's deck stand-in — a drift here
+# changes the picture, not a claim (no anchor derives from it).
+M05_TOP_DECK_OD = 660.0
+M05_TOP_DECK_APERTURE_D = 150.0
 #
 # As with M05_R_VERT_OUTER: drift is caught by the `deck_top` belief
 # anchor derived from this value, against m05's live `deck_top` at the

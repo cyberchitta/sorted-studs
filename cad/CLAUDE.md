@@ -351,6 +351,7 @@ script for the rest:
 | `m03_scanner` (animated) | frame `t = 0` | `frame_sweep.py` — all 12 sampled frames |
 | `m03_scanner` (cones) | the cone-free product assembly | `khana check check_cones.py` — the sightline claims |
 | `cad/` (top level) | cross-unit interference, anchor coincidence, the gantry's rests on m05 | `khana check check_turret_envelope.py` — the chain vs the turret's loaded-platform sweep (a probe solid) |
+| `m02_chain` | the product: stages, ramp, gantry — no posts, no deck | `khana check assembly.py:build_chain_standalone` — the same plus stand-ins for m05's two posts and deck, the rests asserted against them; the target to `view` when you want the gantry on its posts |
 
 **Use the CLI, not bare `python`, for any command script.** The CLI
 defers failures to its own boundary so every call runs and every JSON
