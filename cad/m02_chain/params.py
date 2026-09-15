@@ -51,7 +51,7 @@ Anchors at-a-glance (chain-local; world = + (125, 125, 1030)):
 
     m05 deck top face         z = -140                 (world 890)
     LOAD ramp outlet          (74.5, 0, +7)            (world (199.5, 125, 1037))
-    S1 chute exit = inlet     (130, 0, +75)            (world (255, 125, 1105))
+    S1 chute exit = inlet     (130, 0, +65)            (world (255, 125, 1095))
     S1 axis                   (103, -153), V-bottom +65    (world (228, -28, 1095))
     S2 axis                   (0, -275),   V-bottom +209.5 (world (125, -150, 1239.5))
     S3 axis                   (-150, -330), V-bottom +354  (world (-25, -205, 1384))
