@@ -13,12 +13,11 @@ from cad_khana.printability.methods import FDM
 from .assembly import WALL_MIN, basket
 
 
-# Inspect the geometrically most interesting variant — N=9 MIDDLE,
-# which is the only basket with a column notch cut through its
-# interior rather than at a boundary.
+# Inspect the geometrically most interesting variant — the ramp-facing
+# N=6, the only basket with column channels cut on both boundaries.
 inspect(
-    basket(half_angle_deg=180.0 / 9, notch_middle=True),
+    basket(half_angle_deg=180.0 / 6, notch_left=True, notch_right=True),
     method=FDM(wall_min_mm=WALL_MIN),
     out="outputs",
-    name="basket_090_09",
+    name="basket_000_06",
 )

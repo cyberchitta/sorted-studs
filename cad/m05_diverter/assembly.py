@@ -480,7 +480,7 @@ def build_tower(
     `floor_plan` is a list of ``(idx, role)`` tuples in stacking order
     (lowest first). The exhibit variant passes a reduced plan; the
     production tower passes ``FLOOR_PLAN`` and gets the default
-    ``FLOOR_LAYOUT`` of 11 baskets per floor.
+    ``FLOOR_LAYOUT`` of 10 baskets per floor.
 
     `basket_layout` is either a single layout list shared across every
     floor (production / single-tier exhibits) or a

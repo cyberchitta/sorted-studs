@@ -6,8 +6,9 @@ walls and two radial side walls, sitting on a rotating-column
 floor. The floor is a **mixed layout** — baskets of four sizes
 (N=6 / 9 / 12 / 18, each with half-angle 180°/N) placed around
 the hex per `params.FLOOR_LAYOUT`, with the ramp-facing N=6 basket
-straddling +X and the remaining sections filled by N=9 triples,
-N=12 pairs, and an N=18 triple + (N=9, N=18) pair around the back.
+straddling +X, an N=9 pair either side of an empty 70°..110° slot,
+then N=12 pairs, an N=18 triple, and an (N=9, N=18) pair around
+the back — ten baskets per floor.
 
 Outer arc radius matches the top-deck acrylic disc OD/2 (330 mm)
 and inner arc radius matches the hex inner-face apothem (130 mm),
@@ -19,9 +20,8 @@ varied the lip radius from 129.9 mm at N=6 to 147.7 mm at N=18 —
 N=18 sat outboard of the tip and a near-vertical drop fell into
 the gap).
 
-Each basket's radial side walls (and in one case, its center) have
-open radial access channels around the through-columns at vertices
-V_k = (k+0.5)·60°.
+Each basket's radial side walls have open radial access channels
+around the through-columns at vertices V_k = (k+0.5)·60°.
 With outer and inner hex aligned, every vertex azimuth carries two
 columns — one at R_VERT_OUTER and one at R_VERT_INNER — so each
 flagged azimuth cuts the basket twice: from the inner arc out through
@@ -29,9 +29,11 @@ the inner column, and from the outer column out through the outer arc.
 These channels let a basket move horizontally around the continuous
 tower columns during installation and removal; closed column-footprint
 holes would force it to slide the full tower height instead. The notch
-set per basket is declared in `FLOOR_LAYOUT`:
-`left`/`right` for boundary columns, `middle` for the V_1 column
-that sits inside the N=9 MIDDLE basket's interior.
+set per basket is declared in `FLOOR_LAYOUT`: `left`/`right` for the
+boundary columns. A column can only ever sit on a boundary — a basket
+with a column notched through its *interior* (the former N=9 at 90°,
+around V_1) has walls on both sides of the channel and cannot be slid
+onto the floor at all, so that slot is empty (dropped 2026-09-15).
 
 Floor sits on the shared stage datum (z=0); rim at z=+BASKET_DEPTH_Z.
 Basket floor cantilevers past the outer-hex edge but still rests on
@@ -258,7 +260,6 @@ def basket(
     half_angle_deg: float,
     notch_left: bool = False,
     notch_right: bool = False,
-    notch_middle: bool = False,
 ) -> Part:
     """Wedge bucket with cylindrical-arc outer wall for one basket
     slot, centered on +X. Closed floor at z=BASKET_FLOOR_Z, open top
@@ -271,8 +272,6 @@ def basket(
     follows from the Rot applied at placement time):
       - notch_left   → -half_angle_deg (LEFT boundary = smaller world θ)
       - notch_right  → +half_angle_deg (RIGHT boundary = larger world θ)
-      - notch_middle → 0° (basket center — used only where V_k lands
-                       inside a basket, i.e. N=9 MIDDLE baskets)
     Each flagged notch subtracts two open radial access slots (see
     `_radial_access_channel_at`) from the wedge shell.
     """
@@ -294,7 +293,6 @@ def basket(
     for flagged, az in (
         (notch_right, +half_angle_deg),
         (notch_left, -half_angle_deg),
-        (notch_middle, 0.0),
     ):
         if not flagged:
             continue
@@ -353,7 +351,6 @@ def build_basket_ring(
                 half_angle_deg=180.0 / n_size,
                 notch_left="left" in notches,
                 notch_right="right" in notches,
-                notch_middle="middle" in notches,
             ),
             location=Rot(0, 0, center_deg),
             material=material_fn(name) if material_fn is not None else None,

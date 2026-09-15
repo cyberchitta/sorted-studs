@@ -4,7 +4,7 @@ M05 diverter — exhibit variant for the subsite article pane.
 A 3-floor tower with the production top-acrylic deck in place but
 most baskets stripped, so the rotating column + ramp + trap-door
 mechanism is visible *through* the structure. The production 4-floor
-× 11-basket assembly is opaque from any useful camera angle; this
+× 10-basket assembly is opaque from any useful camera angle; this
 variant is what the article shows.
 
 Reuses every per-floor composition helper from ``assembly.py`` via
@@ -55,8 +55,8 @@ EXHIBIT_BASKETS_BY_FLOOR = {
     ],
     2: [  # top — a second N=9 + a second N=18 on the back-right,
           # different azimuths from below so nothing stacks
-        ( 90.0,  9, {"middle"}),
         (260.0, 18, {"right"}),
+        (290.0,  9, {"left"}),
     ],
 }
 

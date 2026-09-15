@@ -184,25 +184,25 @@ RAIL_OUTER_R = R_VERT_OUTER - BRACKET_HOR_OFFSET               # ≈ 289.77 — 
 
 
 # Mixed floor layout. Each entry: (center_azimuth_deg, N_size, notch_set).
-# `notch_set` ⊆ {"left", "right", "middle"}; LEFT/RIGHT refer to the
-# basket's local frame (−/+ half-angle boundaries), MIDDLE to the
-# basket's own center azimuth (used only where a column sits inside a
-# basket's interior, i.e. N=9 MIDDLE baskets).
+# `notch_set` ⊆ {"left", "right"}; LEFT/RIGHT refer to the basket's
+# local frame (−/+ half-angle boundaries). A column may only ever sit
+# on a basket *boundary*: a basket with a column inside its interior
+# (the former N=9 "middle" notch at 90°, straddling V_1) cannot be
+# slid onto the floor past the continuous through-columns, so the
+# 70°..110° slot is left empty and V_1 stands in open air.
 #
 # Counterclockwise from the ramp (world +X = 0°):
 #   S1    [330°, 30°]   1× N=6 in front of ramp, notches L + R
-#   S2+3  [30°, 150°]   N=9 triple (L, M, R) spanning 2 hex sections
+#   S2+3  [30°, 150°]   N=9 pair (L at 50°, R at 130°); 70°..110° empty
 #   S4    [150°, 210°]  N=12 pair (L, R)
 #   S5    [210°, 270°]  N=18 triple (L, NONE, R)
 #   S6    [270°, 330°]  N=9 (L at V_4) + N=18 (R at V_5)
 #
 # Every outer-hex vertex V_k = (k+0.5)·60° lands on exactly the
-# notches it needs; V_1 (90°) is the sole vertex inside a basket
-# interior — absorbed by the N=9 MIDDLE notch on `basket_090_09`.
+# notches it needs; V_1 (90°) sits in the empty slot.
 FLOOR_LAYOUT = [
     (  0.0,  6, {"left", "right"}),
     ( 50.0,  9, {"left"}),
-    ( 90.0,  9, {"middle"}),
     (130.0,  9, {"right"}),
     (165.0, 12, {"left"}),
     (195.0, 12, {"right"}),
