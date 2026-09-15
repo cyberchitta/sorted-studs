@@ -30,8 +30,12 @@ so every chain-local position resolves to world by adding that offset.
 Placement — family P (owner 2026-09-15; `_notes/decisions/m02-chain.md`
 §4, found in `_notes/explorers/m02-family-choice.html`):
 
-    LOAD ramp   runs RAMP_RUN from LOAD at azimuth RAMP_AZIMUTH_DEG (φ)
-                to S1's chute exit
+    LOAD ramp   S1's chute exit sits RAMP_RUN from LOAD at azimuth
+                RAMP_AZIMUTH_DEG (φ); the ramp runs from there down to
+                an outlet RAMP_OUTLET_X out along the same line — just
+                outside the turret's loaded-platform sweep, so a
+                platform leaving LOAD with a brick never passes under
+                the lip
     S1 axis     one stator kink radius (R_STATOR_OUTER_KINK = 155) from
                 the chute exit, at PIVOT_THETA_DEG (θ) clockwise from
                 the ramp line; S1 heads (fires its chute) back at LOAD
@@ -46,7 +50,7 @@ Placement — family P (owner 2026-09-15; `_notes/decisions/m02-chain.md`
 Anchors at-a-glance (chain-local; world = + (125, 125, 1030)):
 
     m05 deck top face         z = -140                 (world 890)
-    LOAD ramp outlet          (0, 0, +7)               (world z 1037)
+    LOAD ramp outlet          (74.5, 0, +7)            (world (199.5, 125, 1037))
     S1 chute exit = inlet     (130, 0, +75)            (world (255, 125, 1105))
     S1 axis                   (103, -153), V-bottom +65    (world (228, -28, 1095))
     S2 axis                   (0, -275),   V-bottom +209.5 (world (125, -150, 1239.5))
@@ -126,6 +130,18 @@ M03_TURRET_ARM_R = 125.0
 # World z of the LOAD platform top face (derived in `cad/assembly.py`
 # from m05 deck top + turret floor offset).
 M03_LOAD_TOP_Z = 1030.0
+
+# The platform's acrylic square (`m03_scanner/params.py:
+# PLATFORM_ACRYLIC_SIZE`). With the arm radius it gives the corner
+# circle the loaded platforms sweep about the hub — the outer radius of
+# the probe in `cad/check_turret_envelope.py`, which also takes its
+# clearance from TURRET_SWEEP_CLEAR here so the ramp outlet and the
+# check agree by construction.
+M03_PLATFORM_SIZE = 120.0
+M03_PLATFORM_CORNER_R = math.hypot(
+    M03_TURRET_ARM_R + M03_PLATFORM_SIZE / 2.0, M03_PLATFORM_SIZE / 2.0,
+)                                                                     # ≈ 194.5
+TURRET_SWEEP_CLEAR = 5.0
 
 
 # --- Chain world pose --------------------------------------------------
@@ -286,24 +302,47 @@ S1, S2, S3 = STAGES
 
 # --- LOAD ramp ---------------------------------------------------------
 
+# Outlet: on the ramp line, RAMP_OUTLET_X out from the LOAD centroid —
+# the loaded platform's corner circle plus the sweep clearance, so the
+# lip stands just outside everything a platform leaving LOAD (brick on
+# board) sweeps. Decided 2026-09-15 (owner; the alternative was to
+# raise the outlet above the brick envelope): until then the outlet
+# hung over the platform's centre, 7 mm up, and a 30 mm brick under
+# the lip was dragged when the platform indexed away. The corner
+# circle, not the platform's edge midpoint (60), sets it: the trailing
+# corner sweeps through the ramp line at r 194.5 as the platform
+# leaves. The lip is therefore 14.5 mm outside the platform's edge —
+# the brick has to carry itself onto the platform (the 7 mm fall at
+# the ramp's exit speed) and slide in toward the cameras' centre.
+# That landing is unmodelled and unverifiable before a bench exists.
+#
 # Outlet z is offset RAMP_FLOOR_T + 2 mm above the LOAD platform top
 # face so the ramp's BOTTOM face clears the platform acrylic by 2 mm
 # (the acrylic insert occupies platform-local z ∈ [-4, 0], with the
 # top face at the platform's reference plane). The brick contact
-# surface at the outlet sits 7 mm above the acrylic top — a small
-# drop onto the LOAD station.
+# surface at the outlet sits 7 mm above the acrylic top.
 RAMP_FLOOR_T = 5.0
-RAMP_OUTLET_LOCAL = (0.0, 0.0, RAMP_FLOOR_T + 2.0)  # +7  (world z = 1037)
+RAMP_OUTLET_X = M03_PLATFORM_CORNER_R + TURRET_SWEEP_CLEAR - M03_TURRET_ARM_R   # ≈ 74.5
+RAMP_OUTLET_LOCAL = (
+    RAMP_OUTLET_X * math.cos(math.radians(RAMP_AZIMUTH_DEG)),
+    RAMP_OUTLET_X * math.sin(math.radians(RAMP_AZIMUTH_DEG)),
+    RAMP_FLOOR_T + 2.0,                                               # +7  (world z = 1037)
+)
 RAMP_INLET_LOCAL = (*S1.chute_exit_xy, S1.chute_exit_z)               # (130, 0, 75)
 
+RAMP_PLAN_RUN = RAMP_RUN - RAMP_OUTLET_X                              # ≈ 55.5
 RAMP_DZ = RAMP_INLET_LOCAL[2] - RAMP_OUTLET_LOCAL[2]                  # 68
-RAMP_PITCH_DEG = math.degrees(math.atan2(RAMP_DZ, RAMP_RUN))          # ≈ 27.6
-RAMP_SLOPE_LEN = math.sqrt(RAMP_RUN**2 + RAMP_DZ**2)                  # ≈ 146.7
+RAMP_PITCH_DEG = math.degrees(math.atan2(RAMP_DZ, RAMP_PLAN_RUN))     # ≈ 50.8
+RAMP_SLOPE_LEN = math.sqrt(RAMP_PLAN_RUN**2 + RAMP_DZ**2)             # ≈ 87.8
 
 # Pitch window — placeholders, not measured friction (LEGO on PLA
-# static friction angle is ~20–25°; 30° was the earlier target).
+# static friction angle is ~20–25°; 30° was the earlier target). The
+# ceiling was 40 until the outlet moved out (2026-09-15), which put the
+# pitch at ≈ 51; widened to 55 as the same kind of placeholder, not as
+# a measurement — what a brick does leaving a ramp this steep is a
+# bench question.
 RAMP_PITCH_MIN_DEG = 20.0
-RAMP_PITCH_MAX_DEG = 40.0
+RAMP_PITCH_MAX_DEG = 55.0
 
 # At family P the chute faces sideways to the ramp (S1 heads at 80°,
 # the ramp runs at 180°): the brick leaves the rotor wall *tangentially*

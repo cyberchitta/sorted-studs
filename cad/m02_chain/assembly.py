@@ -31,6 +31,8 @@ Claims within the chain:
   touches.
 - ramp ↔ S1 stator: the ramp inlet sits in the chute-exit azimuth and
   must not crash the outer stator wall; ramp pitch inside its window.
+  (The outlet's clearance from the turret's loaded sweep is the
+  envelope check's, below — it is why the outlet sits where it does.)
 
 m05 column tops + top deck and m03 turret parts are EXTERNAL to the
 chain — cross-unit asserts live in `cad/assembly.py`, and the
@@ -126,7 +128,11 @@ def _load_ramp(s: Stage) -> Part:
     radius about the axis) removed, so the stator wall is the ramp's
     inner side. The cut is a vertical cylinder in the chain frame,
     which is why the part is built in place rather than in a tilted
-    ramp-local frame and placed afterwards.
+    ramp-local frame and placed afterwards. The outlet end is trimmed
+    to the vertical plane through the outlet: the chute's side walls
+    stand normal to the floor, and at a 51° pitch their top corners
+    would otherwise reach 15 mm back past the lip, over the turret's
+    loaded sweep (the envelope check found exactly that).
     """
     yaw = Rot(0, 0, RAMP_AZIMUTH_DEG)
     slope = Pos(*RAMP_OUTLET_LOCAL) * yaw * Rot(0, -RAMP_PITCH_DEG, 0) * _chute(RAMP_SLOPE_LEN)
@@ -135,7 +141,9 @@ def _load_ramp(s: Stage) -> Part:
     cut = Pos(s.axis_xy[0], s.axis_xy[1], s.vbot_z) * Cylinder(
         R_STATOR_OUTER_KINK + RAMP_STATOR_CLEAR, 4.0 * RAMP_WALL_H + 2.0 * RAMP_FLOOR_T + 200.0,
     )
-    return (slope + landing) - cut
+    big = 4.0 * RAMP_SLOPE_LEN
+    end_trim = Pos(*RAMP_OUTLET_LOCAL) * yaw * Pos(-big / 2.0, 0.0, 0.0) * Box(big, big, big)
+    return (slope + landing) - cut - end_trim
 
 
 # --- Placement helpers -------------------------------------------------
@@ -317,7 +325,7 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
         a
         .assert_scalar(
             "ramp_pitch_deg", RAMP_PITCH_DEG, ge=RAMP_PITCH_MIN_DEG, le=RAMP_PITCH_MAX_DEG,
-            detail="LOAD ramp pitch; 20/40 are placeholders, not measured friction",
+            detail="LOAD ramp pitch; 20/55 are placeholders, not measured friction",
         )
         .assert_distance(
             "load_ramp", "s1.stator.stator", min_mm=RAMP_STATOR_CLEAR - _MEAS_TOL,

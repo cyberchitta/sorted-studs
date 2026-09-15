@@ -10,8 +10,8 @@ claim, because the probe solid lives only here (nothing imports a
 check module, so no export ever carries it).
 
 The claim (owner 2026-09-14, `_notes/decisions/m02-chain.md` §11.6):
-every part of the m02 chain but the LOAD ramp stays SWEEP_CLEAR clear
-of the volume the turret sweeps — the probe is two tiers in one
+every part of the m02 chain — the LOAD ramp included since 2026-09-15 —
+stays TURRET_SWEEP_CLEAR clear of the volume the turret sweeps — the probe is two tiers in one
 solid: the turret hardware's own swept cylinder (hub to the platforms'
 outer corners, deck to the rest-pose hardware top) over the full
 turn, plus the *loaded* sweep — a platform square swept anticlockwise
@@ -22,12 +22,13 @@ so it stays at hardware height, as the explorer modelled it. This is
 what set S1's raise (`m02_chain/params.py:S1_VBOT_WORLD_Z`); here the
 geometry measures it, radially as well as vertically.
 
-The LOAD ramp is excluded on purpose: its outlet hangs 7 mm above the
-LOAD platform inside the sweep by design (that is the handoff). What
-that means for a platform leaving LOAD with a brick under the ramp's
-lip is not modelled anywhere — `_notes/state/m02-singulator.md` §Open
-carries it. The hardware top is the turret's rest-pose bounding box
-(the DUMP lifter's raised pose is not sampled).
+The LOAD ramp was excluded until 2026-09-15, when its outlet hung 7 mm
+over the platform's centre inside the sweep. It now ends outside the
+loaded platforms' corner circle by the same clearance
+(`m02_chain/params.py:RAMP_OUTLET_X` is derived from the same
+constants this probe is built from), so the ramp is held to the claim
+like every other part. The hardware top is the turret's rest-pose
+bounding box (the DUMP lifter's raised pose is not sampled).
 """
 
 from __future__ import annotations
@@ -40,17 +41,16 @@ from cad_khana.mechanism.assembly import Assembly
 
 from .assembly import M03_ROT_DEG, build_top
 from .design_systems import DEFAULT_SCHEMA
+from .m02_chain.params import TURRET_SWEEP_CLEAR
 from .m03_scanner.params import (
     BRICK_SETTLED_H,
     PLATFORM_ACRYLIC_SIZE,
     TURRET_ARM_R,
 )
 
-SWEEP_CLEAR = 5.0
 PLATFORM_CORNER_R = math.hypot(TURRET_ARM_R + PLATFORM_ACRYLIC_SIZE / 2.0, PLATFORM_ACRYLIC_SIZE / 2.0)
 PLATFORM_INNER_R = TURRET_ARM_R - PLATFORM_ACRYLIC_SIZE / 2.0          # 65
 LOADED_ARC_DEG = 270.0     # LOAD (0°) → IMAGE → IDLE → DUMP (270°), anticlockwise
-EXCLUDED = ("load_ramp",)
 
 
 def _probe(hw_h: float, loaded_h: float) -> Part:
@@ -105,10 +105,8 @@ def build_turret_envelope_check(schema: str = DEFAULT_SCHEMA) -> Assembly:
         .assert_scalar("turret_hub_xy_x", hub.X, detail=f"dump centroid at ({dump.X:.1f}, {dump.Y:.1f})")
     )
     for pp in chain.assembly.placed_parts:
-        if pp.name in EXCLUDED:
-            continue
         a = a.assert_clearance(
-            "turret_loaded_envelope", f"m02_chain.{pp.name}", min_mm=SWEEP_CLEAR,
+            "turret_loaded_envelope", f"m02_chain.{pp.name}", min_mm=TURRET_SWEEP_CLEAR,
         )
     return a
 
