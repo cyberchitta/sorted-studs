@@ -431,6 +431,9 @@ ARM_TOP_Z_LOCAL = S2.plate_bottom_z                                  # +185 (wor
 # direction — structure pass finding 2). 280 rather than the pass's
 # 325: at the stem's height the brace ends beside the stem run into
 # it, 45 mm lower they clear it (explorer `brace=5&braceH=280` clean).
+# Accepted by the owner 2026-09-15; the structure pass's braced figures
+# (~0.25 mm, ~24 Hz) were for a node at 325 and have not been
+# re-figured for the longer free length above 280.
 # Each end is trimmed BRACE_END_TRIM along the member so it stands
 # clear of the post and the deck — the end joints (a gusset or corner
 # bracket) are open work; the trims are the gaps they will bridge.
