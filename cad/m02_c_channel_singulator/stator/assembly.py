@@ -219,10 +219,14 @@ def stator(
     # Downstream paddle — profile in the XZ plane traces the stator's
     # own outer envelope on the outside (sloped V-face below v_h, then
     # vertical cylinder above) and the rotor's cone + gap on the
-    # inside. Extruded into +Y (or −Y for CW sign) so the y=0 face
-    # becomes the paddle's cut-boundary face after the Z-rotation;
-    # the rest of the paddle lives in the solid half of the stator,
-    # fused into a single printable part.
+    # inside. `extrude` off Plane.XZ goes −Y, so for the CCW sign the
+    # paddle body lies at y ∈ [−t, 0] and, after the Z-rotation to the
+    # +arc/2 edge, stands *inside* the exit wedge with its far face on
+    # the cut plane (the CW sign mirrors it). It plugs the opening's
+    # downstream edge, one wall thickness in — the exit floor's span
+    # (EXIT_FLOOR_SPAN_DEG) stops short of that face. (Until 2026-09-15
+    # this comment said the paddle lived in the wall's solid half; the
+    # solid says otherwise, probed at r 124 — inside from 16.6° to 18°.)
     r_rotor_base = ROTOR_BASE_DIAMETER / 2.0
     r_wall_inner_bot = r_rotor_base + exit_wall_rotor_gap
     r_wall_inner_top = (r_rotor_base - height * _TAN_V) + exit_wall_rotor_gap
