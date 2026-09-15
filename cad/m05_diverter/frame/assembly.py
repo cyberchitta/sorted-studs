@@ -272,6 +272,8 @@ def build_through_columns(
     z_bot: float = -VERT_EXT_BELOW,
     z_top: float = FLOOR_H,
     material_fn: Callable[[str], str | None] | None = None,
+    *,
+    outer_z_top: dict[int, float] | None = None,
 ) -> Assembly:
     """The twelve vertical 2020 corner columns spanning [z_bot, z_top]
     as a sub-`Assembly`: six at the outer-hex vertices and six at the
@@ -291,11 +293,21 @@ def build_through_columns(
 
     Names: `outer_vert_k` and `inner_vert_k` for k in 0..5 (no floor
     subtree — these are global to the tower).
+
+    `outer_z_top` overrides the top z of individual *outer* columns
+    (keyed by vertex index k): the tower passes the two through-deck
+    posts (`params.THROUGH_DECK_POSTS`) that continue above the deck
+    as the m02 gantry's posts. Same extrusion, same footprint, same
+    name — only the length differs.
     """
     a = Assembly()
-    length = z_top - z_bot
-    z_center = (z_bot + z_top) / 2.0
-    column = Pos(0, 0, z_center) * Box(EXT_SIZE, EXT_SIZE, length)
+    outer_z_top = outer_z_top or {}
+
+    def _column(top: float) -> Part:
+        length = top - z_bot
+        return Pos(0, 0, (z_bot + top) / 2.0) * Box(EXT_SIZE, EXT_SIZE, length)
+
+    column = _column(z_top)
     for k in range(6):
         v_angle = (k + 0.5) * 60.0
         cos_v = math.cos(math.radians(v_angle))
@@ -308,9 +320,12 @@ def build_through_columns(
             vx = r_vert * cos_v
             vy = r_vert * sin_v
             n = f"{ring}_vert_{k}"
+            body = column
+            if ring == "outer" and k in outer_z_top:
+                body = _column(outer_z_top[k])
             a = a.with_part(
                 n,
-                column,
+                body,
                 location=Pos(vx, vy, 0.0) * Rot(0, 0, v_angle),
                 material=material_fn(n) if material_fn is not None else None,
             )

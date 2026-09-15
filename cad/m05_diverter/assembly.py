@@ -31,7 +31,17 @@ builders (role differences are builder parameters) and placed by one
   below the base floor's rail datum (`base_floor.build_drive_train`).
   The ring gear bolts to the base column's bottom collar; no central
   drive shaft — Lego falls through the column axis.
-- `top_acrylic` — clear disc capping the tower (root part).
+- `top_acrylic` — clear disc capping the tower (root part). At the
+  two through-deck post vertices (`params.THROUGH_DECK_POSTS`) it is
+  notched from the rim so the column and the bracket's vertical arm
+  pass through.
+- `top_cap` — the two outer-vertex brackets under the deck at the
+  post vertices: the same printed part the floors use, in the same
+  relationship to the deck as to a floor's rails (hub + arms under
+  the plate, vertical arm rising past it to clamp the column above).
+  The other four outer vertices and all six inner ones keep the deck
+  resting on the column top; their top-cap bracket variant is still
+  open (`_notes/state/m05-diverter.md` §Top deck).
 
 Part identity is the dotted tree path
 (`rotating_stack.f0.column`); floor identity lives in the `f{idx}`
@@ -69,7 +79,7 @@ import math
 from pathlib import Path
 
 
-from build123d import Axis, Color, Cylinder, Pos
+from build123d import Axis, Box, Color, Cylinder, Part, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 
@@ -83,7 +93,13 @@ from .design_systems import (
 )
 from .materials import material_of
 from .frame import assembly as _frame
-from .params import FLOOR_H, FLOOR_LAYOUT, R_VERT_OUTER
+from .outer_vertex_bracket.assembly import (
+    BRACKET_Z_TOP,
+    EXT_SIZE,
+    PLATE_T as OUTER_BRACKET_PLATE_T,
+    bracket as outer_bracket,
+)
+from .params import FLOOR_H, FLOOR_LAYOUT, R_VERT_OUTER, THROUGH_DECK_POSTS
 from .ramp_mechanism import assembly as _ramp
 
 
@@ -101,6 +117,17 @@ from .ramp_mechanism import assembly as _ramp
 TOP_DECK_OD = 660.0       # circumscribes column outer corners (~322 mm) + ~8 mm clearance
 TOP_DECK_T = 10.0
 TOP_DECK_APERTURE_D = 150.0  # clears top column's rotating collar (OD 138 at z 880..885)
+
+# Through-deck posts: the deck is notched at each post vertex so the
+# 2020 column and the bracket's vertical arm (on the column's outward
+# face, 6 mm plate) pass through with this much clearance per side.
+# The arm sits at r ≈ 322..328 under a Ø660 deck (rim at 330), so a
+# closed hole would leave a ~1 mm sliver of acrylic — the cut runs
+# out through the rim instead. Closing it back to a hole is a deck OD
+# change (+20 would do), which is the owner's call: the disc is a
+# bought sheet.
+TOP_DECK_POST_CLEAR = 1.0
+_NOTCH_RUNOUT = 40.0         # past the rim; anything ≥ 330 - 312 = 18 opens it
 
 
 # --- Floor plan --------------------------------------------------------
@@ -163,18 +190,67 @@ def _build_floor_static(role: str, basket_layout) -> Assembly:
 _TOP_DECK_COLOR = Color(0.95, 0.97, 0.98, 0.25)
 
 
-def _add_top_deck(a: Assembly, *, top_z: float) -> Assembly:
-    """Clear-acrylic cap disc; bottom face tangent to through-column tops."""
+def _post_vertex_pose(k: int, z: float):
+    """Outer vertex k's bracket frame at height z: local +X inward,
+    as `frame.build_floor_horizontals` places every vertex bracket."""
+    v_angle = (k + 0.5) * 60.0
+    return Pos(
+        R_VERT_OUTER * math.cos(math.radians(v_angle)),
+        R_VERT_OUTER * math.sin(math.radians(v_angle)),
+        z,
+    ) * Rot(0, 0, v_angle + 180.0)
+
+
+def _post_notch() -> Part:
+    """Deck cut-out at a post vertex, in the bracket's local frame
+    (centred on the column axis, +X inward, -X outward to the rim):
+    clears the column's inward face by TOP_DECK_POST_CLEAR, the
+    bracket's vertical arm on the outward face by the same, and runs
+    out through the rim."""
+    x_in = EXT_SIZE / 2 + TOP_DECK_POST_CLEAR
+    x_out = -(EXT_SIZE / 2 + OUTER_BRACKET_PLATE_T + TOP_DECK_POST_CLEAR + _NOTCH_RUNOUT)
+    w = EXT_SIZE + 2 * TOP_DECK_POST_CLEAR
+    return Pos((x_in + x_out) / 2, 0, 0) * Box(x_in - x_out, w, TOP_DECK_T * 2)
+
+
+def _add_top_deck(
+    a: Assembly, *, top_z: float, posts: dict[int, float],
+) -> Assembly:
+    """Clear-acrylic cap disc; bottom face tangent to through-column
+    tops, notched at each through-deck post vertex."""
     top_deck = (
         Cylinder(TOP_DECK_OD / 2, TOP_DECK_T)
         - Cylinder(TOP_DECK_APERTURE_D / 2, TOP_DECK_T * 2)
     )
+    # The disc is placed at z = top_z + T/2, so cut in deck-local z.
+    for k in posts:
+        top_deck = top_deck - _post_vertex_pose(k, 0.0) * _post_notch()
     return a.with_part(
         "top_acrylic", top_deck,
         location=Pos(0, 0, top_z + TOP_DECK_T / 2),
         color=_TOP_DECK_COLOR,
         material=material_of("top_acrylic"),
     )
+
+
+def _add_top_cap(
+    a: Assembly, *, top_z: float, posts: dict[int, float],
+) -> Assembly:
+    """The through-form vertex bracket under the deck at each post
+    vertex, as subtree `top_cap`: hub top face tangent to the deck's
+    underside (the rails' bottom-face relationship, `BRACKET_Z_TOP`),
+    vertical arm rising through the notch to clamp the column above
+    the deck. Leaf names match the floors' so the tag maps apply."""
+    cap = Assembly()
+    for k in posts:
+        name = f"outer_vertex_bracket_{k}"
+        cap = cap.with_part(
+            name,
+            outer_bracket(),
+            location=_post_vertex_pose(k, top_z - BRACKET_Z_TOP),
+            material=material_of(name),
+        )
+    return a.with_subassembly("top_cap", cap)
 
 
 # --- Cross-check helpers -----------------------------------------------
@@ -223,21 +299,48 @@ def _add_floor_pair_checks(a: Assembly, lower: int, upper: int) -> Assembly:
     )
 
 
-def _add_top_deck_checks(a: Assembly, top: int) -> Assembly:
+def _add_top_deck_checks(
+    a: Assembly, top: int, posts: dict[int, float],
+) -> Assembly:
     """Disc rests on the through-column tops (tangent contact at
     z = top_z) and clears the top floor's central column body +
     rotating collar through its central aperture. Inner-hex
     through-columns sit at r ≈ 162, well inside the disc OD/2=330 and
-    well outside the aperture R=75."""
+    well outside the aperture R=75.
+
+    At a through-deck post vertex the column does not end at the
+    deck, so the rest moves to the bracket under it: the notch clears
+    the column by TOP_DECK_POST_CLEAR (measured, so a drifted notch
+    or a rotated column reads as a number), the deck sits on the
+    bracket's hub + arms, and the bracket's vertical arm threads the
+    notch without touching it."""
     for k in range(6):
+        col = f"columns.outer_vert_{k}"
+        a = a.assert_no_interference("top_acrylic", col)
+        if k in posts:
+            brk = f"top_cap.outer_vertex_bracket_{k}"
+            a = (
+                a
+                # Constructed at exactly TOP_DECK_POST_CLEAR; the bound
+                # sits a measurement tolerance below (cad/CLAUDE.md §6).
+                .assert_distance(
+                    "top_acrylic", col,
+                    min_mm=TOP_DECK_POST_CLEAR - 0.01,
+                    name=f"deck_notch_clears_outer_vert_{k}",
+                )
+                .assert_tangent_contact("top_acrylic", brk)
+                .assert_no_interference(brk, col)
+                .assert_no_interference(brk, f"columns.inner_vert_{k}")
+            )
+        else:
+            # …and it must actually *sit* on the rest: the disc is
+            # unsupported between columns, so one short column is a
+            # disc resting on one point fewer. A gap passes
+            # no-interference.
+            a = a.assert_tangent_contact("top_acrylic", col)
         a = (
             a
-            .assert_no_interference("top_acrylic", f"columns.outer_vert_{k}")
             .assert_no_interference("top_acrylic", f"columns.inner_vert_{k}")
-            # …and it must actually *sit* on all twelve: the disc is
-            # unsupported between them, so one short column is a disc
-            # resting on eleven points. A gap passes no-interference.
-            .assert_tangent_contact("top_acrylic", f"columns.outer_vert_{k}")
             .assert_tangent_contact("top_acrylic", f"columns.inner_vert_{k}")
         )
     return a.assert_no_interference("top_acrylic", _rot(top, "column"))
@@ -369,6 +472,7 @@ def build_tower(
     basket_layout=FLOOR_LAYOUT,
     with_top_deck: bool = True,
     with_drive_train: bool = True,
+    through_posts: dict[int, float] | None = None,
 ) -> Assembly:
     """Compose a hex-tower diverter assembly with cross-floor +
     drive-train + top-deck checks, parameterised on which floors,
@@ -388,19 +492,29 @@ def build_tower(
     `with_top_deck` and `with_drive_train` strip those features for
     the exhibit. Drive-train assertions and top-deck assertions are
     skipped accordingly — they reference parts that wouldn't exist.
+
+    `through_posts` maps outer-vertex index → height above the deck
+    top for columns that continue through the deck as the m02
+    gantry's posts (`params.THROUGH_DECK_POSTS` in production; the
+    exhibits pass none). Requires the top deck.
     """
+    posts = dict(through_posts or {})
+    if posts and not with_top_deck:
+        raise ValueError("through_posts need the top deck to pass through")
     def _layout_for(idx: int):
         if isinstance(basket_layout, dict):
             return basket_layout[idx]
         return basket_layout
 
     top_z = (max(idx for idx, _ in floor_plan) + 1) * FLOOR_H
+    deck_top_z = top_z + TOP_DECK_T
 
     a = Assembly().with_subassembly(
         "columns",
         _frame.build_through_columns(
             z_bot=-_frame.VERT_EXT_BELOW, z_top=top_z,
             material_fn=material_of,
+            outer_z_top={k: deck_top_z + h for k, h in posts.items()},
         ),
     )
 
@@ -426,7 +540,9 @@ def build_tower(
         )
 
     if with_top_deck:
-        a = _add_top_deck(a, top_z=top_z)
+        a = _add_top_deck(a, top_z=top_z, posts=posts)
+        if posts:
+            a = _add_top_cap(a, top_z=top_z, posts=posts)
 
     # The rotating stack — every floor's column / hinge pin / ramp /
     # trap parts — is one rigid body driven by a single revolute joint
@@ -459,7 +575,7 @@ def build_tower(
         a = _add_floor_pair_checks(a, floors[i], floors[i + 1])
 
     if with_top_deck:
-        a = _add_top_deck_checks(a, floors[-1])
+        a = _add_top_deck_checks(a, floors[-1], posts)
 
     base_idx = next((idx for idx, role in floor_plan if role == "base"), None)
     if base_idx is not None:
@@ -507,8 +623,8 @@ def build_m05(schema: str = DEFAULT_SCHEMA) -> Assembly:
     variants); this is the production floor plan plus the two anchors
     peers derive their placement from.
     """
-    return (
-        build_tower(FLOOR_PLAN, schema=schema)
+    a = (
+        build_tower(FLOOR_PLAN, schema=schema, through_posts=THROUGH_DECK_POSTS)
         .with_anchor("deck_top", Pos(0, 0, _DECK_TOP_Z))
         .with_anchor(
             "outer_vert_0_top",
@@ -519,6 +635,15 @@ def build_m05(schema: str = DEFAULT_SCHEMA) -> Assembly:
             ),
         )
     )
+    # Post tops: the m02 gantry derives its post-top joints from these
+    # (`outer_vert_4_top` at deck + 470, `outer_vert_5_top` at deck +
+    # 181) instead of mirroring the heights.
+    for k, h in THROUGH_DECK_POSTS.items():
+        a = a.with_anchor(
+            f"outer_vert_{k}_top",
+            _post_vertex_pose(k, _DECK_TOP_Z + h),
+        )
+    return a
 
 
 # Degenerate memoized master, so ``khana check <file>`` resolves

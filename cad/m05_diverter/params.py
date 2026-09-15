@@ -103,6 +103,23 @@ TURNTABLE_Z_TOP = TURNTABLE_Z_BOT + TURNTABLE_H            # 16.5
 BASE_COL_Z_BOT = TURNTABLE_Z_TOP                            # base column bottom / ring-gear standoff top
 BASE_FLANGE_OD = TURNTABLE_OD + 4.0                         # 204 — covers the turntable's top ring
 
+# Through-deck posts (2026-09-15, owner). The m02 singulator chain's
+# gantry stands on two of the outer-hex through-columns *continued
+# through the top deck* — no foot joint, no separate post: V_4
+# (azimuth 270°, carries S3 + hopper and S2's T arm) and V_5 (330°,
+# props S1). Keyed by outer-vertex index k (azimuth (k + 0.5)·60°),
+# value = column height above the deck's TOP face. Every other m05
+# part stays identical at all six vertices; what differs at these two
+# is the column length, a notch in the deck, and a vertex bracket
+# under the deck in the through form the middle floors use
+# (`assembly.py` §Top deck). Heights from the gantry structure pass —
+# `_notes/handoff/m02-gantry-spine.md` §Structure pass, hand statics,
+# unverified; `_notes/decisions/m02-chain.md` §6 owns the layout.
+THROUGH_DECK_POSTS: dict[int, float] = {
+    4: 470.0,
+    5: 181.0,
+}
+
 # Hex circumradii (center → vertex). With Phase 1's rotation-aligned
 # layout, inner and outer hex vertices share azimuth (k+0.5)·60° =
 # basket boundaries; radial rails run along these directions and
