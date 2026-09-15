@@ -27,7 +27,11 @@ Cross-boundary checks:
 - rotor ↔ motor    — the motor hangs under the plate, well clear.
 - stator ↔ pinion  — the pinion runs PINION_TOP_CLEAR under the
                      stator's bottom face.
-- stator ↔ drive   — nothing in the drive reaches z ≥ 0.
+- stator ↔ drive   — nothing in the drive reaches the wall; the exit
+                     floor's rib rests tangent on the base plate.
+- exit floor ↔ rotor — the tongue's inner edge stays
+                     EXIT_FLOOR_GEAR_CLEAR outside the ring gear's tip
+                     circle (the pitch cylinder grown by ADDENDUM).
 
 Deferred:
 - exit_sensor ↔ stator exit arc (beam alignment)
@@ -45,6 +49,7 @@ from ..design_systems import DEFAULT_SCHEMA, paint
 from .design_systems import design_system
 from .drive import assembly as _drive
 from .params import (
+    ADDENDUM,
     MOTOR_AZIMUTH_DEG,
     BEARING_H,
     MESH_BACKLASH,
@@ -133,9 +138,20 @@ def build_m02(
         .assert_clearance(
             "stator.stator", "drive.pinion.pinion", min_mm=PINION_TOP_CLEAR - _MEAS_TOL,
         )
-        # Nothing in the drive reaches the stator (group form, declared
+        # Exit floor: inner edge outside the ring gear's tips (the cheap
+        # rotor is the pitch cylinder — grow it by the addendum), rib
+        # standing on the plate.
+        .assert_no_interference("rotor.rotor", "stator.exit_floor")
+        .assert_distance(
+            "stator.exit_floor", "rotor.rotor",
+            min_mm=_stator.EXIT_FLOOR_GEAR_CLEAR - _MEAS_TOL, grow_b_mm=ADDENDUM,
+            name="exit_floor_clears_ring_gear_tips",
+        )
+        .assert_tangent_contact("stator.exit_floor", "drive.base_plate")
+        # Nothing in the drive reaches the stator subtree except at that
+        # rest (a tangent pair carries no overlap; group form, declared
         # after composition).
-        .assert_no_interference_between(["stator.stator"], "drive"),
+        .assert_no_interference_between("stator", "drive"),
         design_system(schema),
     )
 

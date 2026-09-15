@@ -8,8 +8,9 @@ builders import nothing from here — they emit no colour at all.
 Material is a physical property, not a render axis — see
 ``materials.py``.
 
-m02 has six named parts: ``rotor`` (rotates, MECHANISM), ``stator``
-(fixed structural shell, SECONDARY_STRUCTURE), ``base_plate`` (the
+m02 has seven named parts: ``rotor`` (rotates, MECHANISM), ``stator``
+(fixed structural shell, SECONDARY_STRUCTURE), ``exit_floor`` (the
+tongue under the exit arc, SECONDARY_STRUCTURE), ``base_plate`` (the
 foot ring the rotor bearing and motor hang from, SECONDARY_STRUCTURE),
 ``pinion`` (rotates, MECHANISM), and two bought parts outside the
 design system — ``bearing`` (aluminium turntable) and ``motor``
@@ -38,6 +39,7 @@ ROLE_OF: dict[str, Role | None] = {
     # normal operation); re-tag CONSUMABLE if a stator-swap workflow
     # for different brick mixes becomes a real thing.
     "stator":     Role.SECONDARY_STRUCTURE,
+    "exit_floor": Role.SECONDARY_STRUCTURE,
     "base_plate": Role.SECONDARY_STRUCTURE,
     "pinion":     Role.MECHANISM,
     "bearing":    None,                      # bought turntable — outside palette

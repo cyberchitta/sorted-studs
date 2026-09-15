@@ -12,6 +12,7 @@ from __future__ import annotations
 MATERIAL_OF: dict[str, str | None] = {
     "rotor":      "pla_matte",
     "stator":     "pla_matte",
+    "exit_floor": "pla_matte",
     "base_plate": "pla_matte",
     "pinion":     "pla_matte",
     "bearing":    "aluminium",

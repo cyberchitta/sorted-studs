@@ -10,7 +10,7 @@ runs the per-part `inspect()` pass and its waivers.
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
-from .assembly import WALL_MIN, stator
+from .assembly import WALL_MIN, exit_floor, stator
 
 
 # Both wall faces sit at 45° from vertical (= 45° from horizontal).
@@ -37,4 +37,11 @@ inspect(
         "45° flanks already need. Truncating it would put a ledge at "
         "the exact circle bricks slide through.",
     },
+)
+
+# Exit floor: printed top face down (the brick surface on the bed),
+# rib rising — a flat plate with a vertical arc wall, nothing
+# overhangs.
+inspect(
+    exit_floor(), method=FDM(up_axis=(0, 0, -1)), out="outputs", name="exit_floor",
 )

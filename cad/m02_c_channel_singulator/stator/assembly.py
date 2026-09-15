@@ -20,6 +20,19 @@ base plate (../drive/assembly.py, top at PLATE_TOP_Z = -18.5), so
 the skirt — not yet modelled — drops from the kink to that plate.
 No floor at z=0: the pinion runs under the wall at r 120–147.
 
+The exit floor (`exit_floor`, a second part, 2026-09-15): before it,
+a brick leaving the V at the exit had nothing under it but the base
+plate 18.5 mm down — an uncut shelf out to r 155 that the brick
+landed on and stayed on. The tongue is a flat sector at the V-bottom
+plane spanning the exit wedge from just outside the ring gear's
+tips to the skirt radius, so a brick slides out of the V and off the
+stage instead of dropping into its own footprint (S1's ramp starts
+flush with it, 1 mm outside; S2 / S3 deliver off its edge onto the
+rotor below). An arc rib under its outer edge stands on the base
+plate. Separate from the stator on purpose: printed with it, in the
+stator's inverted orientation, it would be a ~100 mm bridge over the
+open wedge.
+
 The wall's V-zone sits at V_HALF_ANGLE from vertical on both
 faces — a 45° overhang by the conventional build-plate metric.
 Expect to print either with support on the outside, or inverted
@@ -40,17 +53,20 @@ Cross-boundary rotor↔stator clearance runs in ../assembly.py.
 
 import math
 
-from build123d import Axis, Box, Part, Plane, Polygon, Pos, Rot, extrude, revolve
+from build123d import Axis, Box, Cylinder, Part, Plane, Polygon, Pos, Rot, extrude, revolve
 
 from cad_khana.mechanism.assembly import Assembly
 
 from ..materials import material_of
 from ..params import (
+    ADDENDUM,
     EXIT_ARC_DEG,
+    PLATE_TOP_Z,
     R_STATOR_INNER_BASE,
     R_STATOR_INNER_KINK,
     R_STATOR_OUTER_BASE,
     R_STATOR_OUTER_KINK,
+    RING_PITCH_D,
     ROTOR_BASE_DIAMETER,
     STATOR_V_H,
     STATOR_WALL_H,
@@ -92,6 +108,37 @@ EXIT_WALL_ROTOR_GAP = 3.0           # radial gap rotor-cone → paddle inner edg
 EXIT_WALL_SIDE_SIGN = +1            # +1: CCW rotor, -1: CW rotor
 
 WALL_MIN = 1.5
+
+# Exit floor. Top face at z = 0 (the V-bottom plane, flush with the
+# stator's inner base edge at r 122 so the brick meets no step);
+# inner edge EXIT_FLOOR_GEAR_CLEAR outside the ring gear's tip
+# circle (the flange's pitch cylinder + ADDENDUM — the cheap rotor
+# has no teeth, so ../assembly.py measures it grown by ADDENDUM);
+# outer edge at the skirt radius, where the chain's ramp cut takes
+# over 1 mm further out. Angular span: the exit wedge less
+# EXIT_FLOOR_SIDE_CLEAR (at the inner radius) from each face it must
+# not touch — the wall's cut face on the upstream side, and on the
+# downstream side the paddle's face, which stands *inside* the wedge
+# EXIT_WALL_T in from the cut (the extrude goes −Y off Plane.XZ, so
+# the paddle plugs the opening's edge rather than the wall's solid
+# half), so that edge is a further EXIT_WALL_T in. The rib stands from
+# the plate top to the tongue's underside, inboard of the skirt, 2°
+# inside the tongue's edges.
+EXIT_FLOOR_T = 4.0
+EXIT_FLOOR_GEAR_CLEAR = 2.0
+EXIT_FLOOR_R_IN = RING_PITCH_D / 2.0 + ADDENDUM + EXIT_FLOOR_GEAR_CLEAR   # 123.5
+EXIT_FLOOR_R_OUT = R_STATOR_OUTER_KINK                                    # 155
+EXIT_FLOOR_SIDE_CLEAR = 1.5
+_UPSTREAM_EDGE_DEG = EXIT_ARC_DEG / 2.0 - math.degrees(EXIT_FLOOR_SIDE_CLEAR / EXIT_FLOOR_R_IN)          # ≈ 17.3
+_DOWNSTREAM_EDGE_DEG = EXIT_ARC_DEG / 2.0 - math.degrees((EXIT_WALL_T + EXIT_FLOOR_SIDE_CLEAR) / EXIT_FLOOR_R_IN)   # ≈ 15.9
+# (from, to) in degrees about +X, the paddle side per EXIT_WALL_SIDE_SIGN.
+EXIT_FLOOR_SPAN_DEG = (
+    (-_UPSTREAM_EDGE_DEG, _DOWNSTREAM_EDGE_DEG) if EXIT_WALL_SIDE_SIGN > 0
+    else (-_DOWNSTREAM_EDGE_DEG, _UPSTREAM_EDGE_DEG)
+)
+EXIT_FLOOR_RIB_R_IN = 145.0
+EXIT_FLOOR_RIB_R_OUT = 153.0
+EXIT_FLOOR_RIB_INSET_DEG = 2.0
 
 
 # --- Part functions ----------------------------------------------------
@@ -200,13 +247,57 @@ def stator(
     return (wall - wedge) + downstream_wall
 
 
+def _sector(r_in: float, r_out: float, span_deg: tuple[float, float], z0: float, h: float) -> Part:
+    """Annular sector from ``span_deg[0]`` to ``span_deg[1]`` about +Z
+    (degrees from +X), z from z0 to z0 + h. Built with ``align=None`` —
+    a CENTER-aligned arc cylinder centres its bounding box, which moves
+    the apex off the axis — and placed before the boolean, because
+    ``Location * Compound`` yields a list."""
+    lo, hi = span_deg
+    outer = Rot(0, 0, lo) * Pos(0, 0, z0) * Cylinder(r_out, h, arc_size=hi - lo, align=None)
+    inner = Pos(0, 0, z0 - 1.0) * Cylinder(r_in, h + 2.0, align=None)
+    return outer - inner
+
+
+def exit_floor(
+    *,
+    r_in: float = EXIT_FLOOR_R_IN,
+    r_out: float = EXIT_FLOOR_R_OUT,
+    t: float = EXIT_FLOOR_T,
+    span_deg: tuple[float, float] = EXIT_FLOOR_SPAN_DEG,
+    rib_r_in: float = EXIT_FLOOR_RIB_R_IN,
+    rib_r_out: float = EXIT_FLOOR_RIB_R_OUT,
+    rib_inset_deg: float = EXIT_FLOOR_RIB_INSET_DEG,
+    z_bottom: float = PLATE_TOP_Z,
+) -> Part:
+    """The exit-floor tongue: a flat sector with its top face at z = 0
+    spanning the exit wedge (asymmetric — see EXIT_FLOOR_SPAN_DEG), plus
+    an arc rib under its outer edge from `z_bottom` (the base plate
+    top) up to the tongue. About +X like the exit arc."""
+    assert rib_r_out <= r_out and rib_r_in >= r_in, "rib must sit under the tongue"
+    lo, hi = span_deg
+    assert lo < hi and 2.0 * rib_inset_deg < hi - lo, "rib must sit inside the tongue's span"
+    tongue = _sector(r_in, r_out, span_deg, -t, t)
+    rib_h = -t - z_bottom
+    assert rib_h > 0.0, "the plate top must be below the tongue"
+    rib = _sector(rib_r_in, rib_r_out, (lo + rib_inset_deg, hi - rib_inset_deg), z_bottom, rib_h)
+    return tongue + rib
+
+
 # --- Assembly ----------------------------------------------------------
 
 def build_stator() -> Assembly:
     """Stator sub-assembly in stator-local frame (= m02-local: origin
-    on the rotor axis at the V-bottom). Single fixed part."""
-    return Assembly().with_part(
-        "stator", stator(), material=material_of("stator"),
+    on the rotor axis at the V-bottom): the wall and the exit floor.
+    The tongue clears the wall's cut faces and the paddle laterally;
+    its rests and its gear clearance are the unit root's (they involve
+    the drive and the rotor)."""
+    return (
+        Assembly()
+        .with_part("stator", stator(), material=material_of("stator"))
+        .with_part("exit_floor", exit_floor(), material=material_of("exit_floor"))
+        .assert_no_interference("exit_floor", "stator")
+        .assert_clearance("exit_floor", "stator", min_mm=EXIT_FLOOR_SIDE_CLEAR - 0.01)
     )
 
 
