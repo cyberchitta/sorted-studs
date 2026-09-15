@@ -123,9 +123,8 @@ TOP_DECK_APERTURE_D = 150.0  # clears top column's rotating collar (OD 138 at z 
 # face, 6 mm plate) pass through with this much clearance per side.
 # The arm sits at r ≈ 322..328 under a Ø660 deck (rim at 330), so a
 # closed hole would leave a ~1 mm sliver of acrylic — the cut runs
-# out through the rim instead. Closing it back to a hole is a deck OD
-# change (+20 would do), which is the owner's call: the disc is a
-# bought sheet.
+# out through the rim instead. Decided (owner 2026-09-15): the OD
+# stays 660 and the two notches stay open; no thin outer strip.
 TOP_DECK_POST_CLEAR = 1.0
 _NOTCH_RUNOUT = 40.0         # past the rim; anything ≥ 330 - 312 = 18 opens it
 
