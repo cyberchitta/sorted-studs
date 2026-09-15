@@ -1,10 +1,11 @@
 """
 sorted-studs — top-level integration assembly.
 
-Slice (2026-05-26): m05 diverter + m03 scanner (rig + turret) + m02
-chain (S1 stage + column extensions + LOAD ramp). The chain delivers
-bricks onto the m03 turret's LOAD station; the turret rotates them
-through IMAGE → IDLE → DUMP over the m05 hub axis.
+m05 diverter + m03 scanner (rig + turret) + m02 chain (three
+singulator stages, the gantry that carries them on two of m05's
+through-deck columns, and the LOAD ramp). The chain delivers bricks
+onto the m03 turret's LOAD station; the turret rotates them through
+IMAGE → IDLE → DUMP over the m05 hub axis.
 
 Constraints landed in this slice:
 
@@ -20,9 +21,15 @@ Constraints landed in this slice:
     face sits on the diverter top deck's top face at world z =
     `TOP_VERT_Z + TOP_DECK_T = 890`.
 
-Cross-module no-interference is asserted (every turret part vs every
-m05 part). Within-module assertions are validated by each module's
-own `khana check`.
+Cross-module no-interference is asserted (every pair of units), the
+units' beliefs about the shared datums are asserted coincident, and
+the gantry's rests on m05 — prop bars across the column ends, S2's
+stem on V_4's face, the braces' clearances to the columns and the
+deck — are declared here, the level that composes both. The turret's
+loaded-platform envelope against the chain is a probe fixture, so it
+lives in `check_turret_envelope.py` (a check module: `khana check` it
+separately; this file never carries the probe). Within-module
+assertions are validated by each module's own `khana check`.
 
 Coordinate frame (world):
     +X = operator's right
@@ -51,18 +58,30 @@ from __future__ import annotations
 
 from functools import cache
 
-from build123d import Location, Pos
+import math
+
+from build123d import Location, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 
 from .design_systems import DEFAULT_SCHEMA
 from .m02_chain.assembly import build_chain
+from .m02_chain.params import BRACE_COLS, PROP_POST
 from .m03_scanner.assembly import build_m03
 from .m05_diverter.assembly import build_m05
 
 
 # m05 at world identity — its local frame IS the world frame.
 _M05_POSE = Location()
+
+# Turret rotation ψ (owner's lever, 2026-09-15): the whole m03 unit —
+# and the chain hanging off its LOAD station — turned about the m05
+# hub axis (the DUMP centroid, which the placement pins there). 0 at
+# family P (`_notes/decisions/m02-chain.md` §4, §11.8). The chain's
+# mirrored beliefs (`m02_chain/params.py`) assume 0: a non-zero ψ
+# moves the live anchors and the coincidence asserts below go red,
+# which is the mirrors asking to be updated.
+M03_ROT_DEG = 0.0
 
 
 # Cached because the degenerate ``assembly`` memo below and any
@@ -112,11 +131,16 @@ def build_top(schema: str = DEFAULT_SCHEMA) -> Assembly:
     deck_top = m05.anchor("deck_top").position
     dump = m03.anchor("dump_centroid").position
     floor_bottom = m03.anchor("floor_bottom").position
+    # Rotate m03 by ψ about the DUMP centroid, then translate DUMP onto
+    # the hub axis: world = T + R(ψ)·local with T = hub − R(ψ)·dump.
+    psi = math.radians(M03_ROT_DEG)
+    dump_rx = dump.X * math.cos(psi) - dump.Y * math.sin(psi)
+    dump_ry = dump.X * math.sin(psi) + dump.Y * math.cos(psi)
     m03_pose = Pos(
-        deck_top.X - dump.X,
-        deck_top.Y - dump.Y,
+        deck_top.X - dump_rx,
+        deck_top.Y - dump_ry,
         deck_top.Z - floor_bottom.Z,
-    )
+    ) * Rot(0, 0, M03_ROT_DEG)
 
     # m02 chain placement: the chain's `load_top` anchor must land on
     # m03's live `load_top` (the LOAD platform top centroid the chain
@@ -131,7 +155,7 @@ def build_top(schema: str = DEFAULT_SCHEMA) -> Assembly:
         load_top_world.Z - chain_load_local.Z,
     )
 
-    return (
+    a = (
         Assembly()
         .with_subassembly("m05", m05, location=_M05_POSE)
         .with_subassembly("m03", m03, location=m03_pose)
@@ -139,7 +163,9 @@ def build_top(schema: str = DEFAULT_SCHEMA) -> Assembly:
         # Every cross-unit pair (m03 × m05, chain × m05, chain × m03),
         # each unit addressed by its subtree path. Within-unit pairs are
         # covered by each unit's own standalone `khana check` (nested
-        # assertions are root-only and not evaluated here).
+        # assertions are root-only and not evaluated here). The
+        # gantry's rests on m05 are tangent (no overlap), so they
+        # coexist with the group form.
         .assert_no_interference_between("m03", "m05")
         .assert_no_interference_between("m02_chain", "m05")
         .assert_no_interference_between("m02_chain", "m03")
@@ -151,10 +177,41 @@ def build_top(schema: str = DEFAULT_SCHEMA) -> Assembly:
         # left to drift: its pose is *derived* from the live anchors
         # above.)
         .assert_anchors_coincident("m02_chain.deck_top", "m05.deck_top")
-        .assert_anchors_coincident(
-            "m02_chain.col1_base", "m05.outer_vert_0_top"
-        )
     )
+    # The chain's posts are m05's columns continued through the deck:
+    # where the chain needs each column to end must be where m05 ends
+    # it, and the prop bar across the column's end must actually rest
+    # on it (a gap passes no-interference just as well).
+    for stage, k in PROP_POST.items():
+        a = (
+            a
+            .assert_anchors_coincident(
+                f"m02_chain.post_top_{k}", f"m05.outer_vert_{k}_top"
+            )
+            .assert_tangent_contact(
+                f"m02_chain.{stage}_prop_bar", f"m05.columns.outer_vert_{k}",
+                name=f"{stage}_prop_bar_on_outer_vert_{k}",
+            )
+        )
+    # S2's stem butts V_4's face; the braces stand clear of the post
+    # they leave, the columns they land beside and the deck they land
+    # on — the gaps their (open) end joints bridge, measured.
+    a = a.assert_tangent_contact(
+        "m02_chain.s2_stem", "m05.columns.outer_vert_4",
+        name="s2_stem_on_outer_vert_4",
+    )
+    for col in BRACE_COLS:
+        brace = f"m02_chain.brace_{col}"
+        a = (
+            a
+            .assert_distance(brace, "m05.columns.outer_vert_4", min_mm=1.0,
+                             name=f"brace_{col}_clears_post")
+            .assert_distance(brace, f"m05.columns.outer_vert_{col}", min_mm=1.0,
+                             name=f"brace_{col}_clears_outer_vert_{col}")
+            .assert_distance(brace, "m05.top_acrylic", min_mm=1.0,
+                             name=f"brace_{col}_over_deck")
+        )
+    return a
 
 
 # Degenerate memoized master, so ``khana check cad/assembly.py``

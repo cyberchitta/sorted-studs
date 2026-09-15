@@ -45,6 +45,7 @@ from ..design_systems import DEFAULT_SCHEMA, paint
 from .design_systems import design_system
 from .drive import assembly as _drive
 from .params import (
+    MOTOR_AZIMUTH_DEG,
     BEARING_H,
     MESH_BACKLASH,
     PINION_TOP_CLEAR,
@@ -75,8 +76,17 @@ _MEAS_TOL = 0.01
 # geometry twice. That mistake is invisible — same output, double the
 # work — so ``cache_info().misses`` is the only thing that shows it.
 @cache
-def build_m02(schema: str = DEFAULT_SCHEMA) -> Assembly:
+def build_m02(
+    schema: str = DEFAULT_SCHEMA,
+    motor_azimuth_deg: float = MOTOR_AZIMUTH_DEG,
+) -> Assembly:
     """The singulator unit, painted under ``schema``.
+
+    ``motor_azimuth_deg`` places the drive's motor / pinion around the
+    rotor axis (default: away from the exit arc). The chain passes a
+    per-stage value where a stage's gantry member would otherwise run
+    into its motor; the unit's own claims (mesh, rests, clearances)
+    hold at any azimuth.
 
     Sub-assembly builders emit no colour; this root paints the finished
     tree once. ``paint`` also carries the design-system coverage check
@@ -99,7 +109,7 @@ def build_m02(schema: str = DEFAULT_SCHEMA) -> Assembly:
             ),
         )
         .with_subassembly("stator", _stator.build_stator())
-        .with_subassembly("drive", _drive.build_drive())
+        .with_subassembly("drive", _drive.build_drive(motor_azimuth_deg))
         # V-gap
         .assert_no_interference("rotor.rotor", "stator.stator")
         .assert_clearance(

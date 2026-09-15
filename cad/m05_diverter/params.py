@@ -112,12 +112,18 @@ BASE_FLANGE_OD = TURNTABLE_OD + 4.0                         # 204 — covers the
 # part stays identical at all six vertices; what differs at these two
 # is the column length, a notch in the deck, and a vertex bracket
 # under the deck in the through form the middle floors use
-# (`assembly.py` §Top deck). Heights from the gantry structure pass —
-# `_notes/handoff/m02-gantry-spine.md` §Structure pass, hand statics,
-# unverified; `_notes/decisions/m02-chain.md` §6 owns the layout.
+# (`assembly.py` §Top deck). Each height is the propped stage's plate
+# underside less the 2020 prop bar lying across the column's end
+# (`cad/m02_chain/params.py:POST_H_ABOVE_DECK`: S1 V-bottom 1095 →
+# 1095 − 24.5 − 20 − 890; S3 at 1384 likewise) — mirrored here so m05
+# builds standalone, and asserted coincident with the chain's
+# `post_top_k` belief anchors in `cad/assembly.py`, so drift fails
+# there. Layout: `_notes/decisions/m02-chain.md` §6; sizing: the
+# structure pass in `_notes/handoff/m02-gantry-spine.md` (hand
+# statics, unverified — it quoted the plate underside, 181 / 470).
 THROUGH_DECK_POSTS: dict[int, float] = {
-    4: 470.0,
-    5: 181.0,
+    4: 449.5,
+    5: 160.5,
 }
 
 # Hex circumradii (center → vertex). With Phase 1's rotation-aligned

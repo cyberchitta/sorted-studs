@@ -50,6 +50,16 @@ WALL_MIN = 1.5
 # dominate this for acrylic sizing.
 BRICK_SPHERE_DIA = 80.0
 
+# Height a *settled* brick reaches on a flat platform (owner
+# 2026-09-14): the LOAD platform's loaded envelope for anything that
+# passes over the turret's sweep — the m02 chain's S1 stands over it.
+# Replaces the any-orientation sphere for that one clearance; the
+# sphere still sizes apertures and the camera rig. Asserted, with
+# 5 mm clearance, by `cad/check_turret_envelope.py`; it set S1's raise
+# (`cad/m02_chain/params.py:S1_VBOT_WORLD_Z`) and nothing else
+# (`_notes/decisions/m02-chain.md` §11.6).
+BRICK_SETTLED_H = 30.0
+
 
 # --- Acrylic platform stock spec ---------------------------------------
 #

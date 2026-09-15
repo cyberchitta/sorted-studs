@@ -1,224 +1,255 @@
 """
 m02 chain — top-level standalone assembly.
 
-Composes the chain's structural skeleton — two column extensions
-(`col1_ext`, `col2_ext`) rising from the m05 top deck plane, and an
-S1 yoke crossbar (`yoke`) spanning between them at the S1 m02
-V-bottom plane — plus the LOAD ramp (`load_ramp`) and the S1 m02
-singulator as the `s1` subtree (part identity is the tree path:
-`s1.rotor.rotor`, `s1.drive.base_plate`, ...). Coordinate frame,
-anchors, and the deferred stator-mounting interface are documented
-in `params.py`.
+Composes the three singulator stages as the `s1` / `s2` / `s3`
+subtrees (part identity is the tree path: `s2.rotor.rotor`,
+`s3.drive.base_plate`, …), the LOAD ramp (`load_ramp`) from S1's
+chute exit down to the m03 LOAD platform, and the gantry that carries
+the stages on m05's two through-deck columns: S1's prop bar
+(`s1_prop_bar`, across V_5's end), S3's prop bar and cross
+(`s3_prop_bar`, `s3_cross_a`, `s3_cross_b`, across V_4's end), S2's T
+arm (`s2_stem` off V_4's face, `s2_tee` under S2's plate) and the two
+braces from V_4 down to the deck at V_3 and V_5 (`brace_3`,
+`brace_5`). Coordinate frame, the placement family, the stage table
+and the gantry sizes are in `params.py`.
 
-Cross-boundary checks (within the chain):
+The posts themselves are m05's columns (`m05_diverter/params.py:
+THROUGH_DECK_POSTS`), so they are not modelled here: the chain
+exports where it needs their tops (`post_top_4`, `post_top_5`) and the
+top-level `cad/assembly.py` asserts those coincident with m05's live
+column tops and declares the rests (bar on post end, stem on post
+face) and the braces' clearances — claims that span both units.
 
-- yoke / col1 / col2 ↔ m02 — the skeleton was drawn for the hidden
-  drive: the yoke threads under the V-bottom plane inside the
-  stator footprint and the columns end at that plane. Since the
-  rim drive (2026-09-11, `_notes/decisions/m02-rotor-drive.md`)
-  the rotor's ring-gear flange, the turntable bearing and the base
-  plate occupy z ∈ [-24.5, 0] under the rotor, and all three
-  skeleton parts run through them. Those nine pairs are declared
-  as `known_overlaps` regression alarms — the gantry slice that
-  re-hangs S1 on the base plate (§5/§6 of `m02-chain.md`) must
-  remove them, and they fail loudly when it does. Every other
-  skeleton ↔ m02 pair (motor, pinion, stator) is a live
-  no-interference claim.
-- LOAD ramp ↔ m02 stator — the ramp inlet sits in the chute-exit
-  azimuth (chain -X side of S1); the ramp must NOT crash the
-  outer stator wall outboard of the chute opening.
+Claims within the chain:
+
+- stage ↔ stage: the upper plate clears the lower rotor's apex by
+  STAGE_CLEAR (measured), and no part of one stage touches another.
+- gantry ↔ stages: each prop bar and the T bar rest tangent under
+  their plate; no gantry member touches a stage's motor, bearing,
+  rotor or stator (S2's and S3's motors are swung for exactly this).
+- gantry ↔ gantry: the stem butts the T bar (tangent); nothing else
+  touches.
+- ramp ↔ S1 stator: the ramp inlet sits in the chute-exit azimuth and
+  must not crash the outer stator wall; ramp pitch inside its window.
 
 m05 column tops + top deck and m03 turret parts are EXTERNAL to the
-chain — cross-unit asserts live in `cad/assembly.py`.
+chain — cross-unit asserts live in `cad/assembly.py`, and the
+turret's loaded-platform envelope in `cad/check_turret_envelope.py`.
 
-The m02 stator-mounting interface (handoff sub-task 2) is DEFERRED;
-the stator sits at its geometric S1 position with no plate / clamp /
-cradle modeled. See `params.py` module docstring.
-
-Composition strategy:
-
-The m02 unit is imported as a plain package member
-(`..m02_c_channel_singulator.assembly`) and composed as the `s1`
-subtree at its chain-local pose. The subtree keeps m02's own
-color/material bindings (no re-skin — the values come from the same
-shared palette machinery); m02's within-unit assertions ride along
-nested and are not evaluated by the chain's `check()` — the m02
-standalone `khana check` validates them.
+The stator-mounting interface (the skirt / bowl that seats the stage
+on its bars) is still open: each stage's base plate is the stand-in
+that rests on the bars.
 """
 
 from __future__ import annotations
 
+import math
 from functools import cache
 
-from build123d import Box, Part, Pos, Rot
+from build123d import Box, Cylinder, Location, Part, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 
 from ..design_systems import DEFAULT_SCHEMA, paint
 from ..m02_c_channel_singulator.assembly import build_m02
+from ..m02_c_channel_singulator.params import ROTOR_BASE_DIAMETER
 from .design_systems import design_system
 from .materials import material_of
 from .params import (
-    COL1_LOCAL_XY,
+    ARM_POST,
+    ARM_STEM_FACE_DEG,
+    ARM_STEM_LEN,
+    ARM_STEM_REACH,
+    ARM_TEE_LEN,
+    ARM_TOP_Z_LOCAL,
+    BAR_DEPTH,
+    BRACE_COLS,
+    BRACE_END_TRIM,
+    BRACE_H_ABOVE_DECK,
+    CHUTE_LAND_R,
+    CROSS_HALF_LEN,
     DECK_TOP_Z_LOCAL,
-    COL1_ROT_DEG,
-    COL2_LOCAL_XY,
-    COL_LEN,
-    COL_Z_BOT_LOCAL,
-    COL_Z_TOP_LOCAL,
     EXT_SIZE,
     M03_TURRET_ARM_R,
-    M05_TOP_DECK_OD_HALF,
+    POST_TOP_Z_LOCAL,
+    PROP_BAR_FAR,
+    PROP_BAR_NEAR,
+    PROP_POST,
+    RAMP_AZIMUTH_DEG,
     RAMP_FLOOR_T,
+    RAMP_LANDING_LEN,
     RAMP_OUTLET_LOCAL,
     RAMP_PITCH_DEG,
+    RAMP_PITCH_MAX_DEG,
+    RAMP_PITCH_MIN_DEG,
     RAMP_SLOPE_LEN,
+    RAMP_STATOR_CLEAR,
     RAMP_WALL_H,
     RAMP_WALL_T,
     RAMP_WIDTH,
-    S1_AXIS_LOCAL_XY,
-    S1_M02_HEADING_DEG,
-    S1_VBOT_Z_LOCAL,
-    YOKE_ANGLE_DEG,
-    YOKE_LEN,
-    YOKE_MID_XY,
-    YOKE_TOP_Z_LOCAL,
+    STAGE_CLEAR,
+    STAGES,
+    Stage,
+    m05_outer_vertex_local_xy,
 )
+from ..m02_c_channel_singulator.params import R_STATOR_OUTER_KINK
+
+# Constructed-equals-bound tolerance (cad/CLAUDE.md principle 6).
+_MEAS_TOL = 0.01
+
 
 # --- Part builders -----------------------------------------------------
 
-def _column_ext() -> Part:
-    """20×20×COL_LEN 2020 extrusion, centered at origin, axis +Z."""
-    return Box(EXT_SIZE, EXT_SIZE, COL_LEN)
+def _bar(length: float) -> Part:
+    """2020 extrusion, centered at origin, long axis +X."""
+    return Box(length, EXT_SIZE, EXT_SIZE)
 
 
-def _yoke_crossbar() -> Part:
-    """20×20×YOKE_LEN 2020 extrusion, centered at origin, axis +X
-    in part-local. Placement rotates and translates to the chain-local
-    yoke position."""
-    return Box(YOKE_LEN, EXT_SIZE, EXT_SIZE)
-
-
-def _load_ramp() -> Part:
-    """Open chute — flat floor plate + two side walls. Built in a
-    ramp-local frame with origin at the OUTLET centerline on the floor
-    TOP surface, +X pointing up the slope toward the inlet, +Y across
-    the ramp's width, +Z normal to the floor (out of the brick contact
-    surface). Placement rotates by -RAMP_PITCH_DEG about Y (tilting
-    +X up into +Z) and translates the outlet origin to chain-local
-    RAMP_OUTLET_LOCAL.
-    """
-    # Floor — top face at z=0, body below.
-    floor = Box(RAMP_SLOPE_LEN, RAMP_WIDTH, RAMP_FLOOR_T)
-    floor = Pos(RAMP_SLOPE_LEN / 2.0, 0.0, -RAMP_FLOOR_T / 2.0) * floor
-
-    # Side walls — built off the floor's +Y / -Y edges, rising in +Z.
-    wall = Box(RAMP_SLOPE_LEN, RAMP_WALL_T, RAMP_WALL_H)
-    wall_pos = (
-        Pos(
-            RAMP_SLOPE_LEN / 2.0,
-            (RAMP_WIDTH - RAMP_WALL_T) / 2.0,
-            RAMP_WALL_H / 2.0,
-        )
-        * wall
-    )
-    wall_neg = (
-        Pos(
-            RAMP_SLOPE_LEN / 2.0,
-            -(RAMP_WIDTH - RAMP_WALL_T) / 2.0,
-            RAMP_WALL_H / 2.0,
-        )
-        * wall
-    )
+def _chute(length: float) -> Part:
+    """Open chute segment — flat floor plate + two side walls — in a
+    segment-local frame: origin at the near end's centerline on the
+    floor TOP surface, +X along the segment, +Y across its width, +Z
+    normal to the floor (out of the brick contact surface)."""
+    floor = Pos(length / 2.0, 0.0, -RAMP_FLOOR_T / 2.0) * Box(length, RAMP_WIDTH, RAMP_FLOOR_T)
+    wall = Box(length, RAMP_WALL_T, RAMP_WALL_H)
+    wall_pos = Pos(length / 2.0, (RAMP_WIDTH - RAMP_WALL_T) / 2.0, RAMP_WALL_H / 2.0) * wall
+    wall_neg = Pos(length / 2.0, -(RAMP_WIDTH - RAMP_WALL_T) / 2.0, RAMP_WALL_H / 2.0) * wall
     return floor + wall_pos + wall_neg
+
+
+def _load_ramp(s: Stage) -> Part:
+    """The LOAD ramp, built **in chain-local coordinates** (placed at
+    identity): the slope from the outlet up to S1's chute exit, a flat
+    landing continuing RAMP_LANDING_LEN past the exit at the exit
+    height so the whole exit arc has floor under it, and the stator
+    cut — everything within RAMP_STATOR_CLEAR of S1's stator (kink
+    radius about the axis) removed, so the stator wall is the ramp's
+    inner side. The cut is a vertical cylinder in the chain frame,
+    which is why the part is built in place rather than in a tilted
+    ramp-local frame and placed afterwards.
+    """
+    yaw = Rot(0, 0, RAMP_AZIMUTH_DEG)
+    slope = Pos(*RAMP_OUTLET_LOCAL) * yaw * Rot(0, -RAMP_PITCH_DEG, 0) * _chute(RAMP_SLOPE_LEN)
+    inlet = (*s.chute_exit_xy, s.chute_exit_z)
+    landing = Pos(*inlet) * yaw * _chute(RAMP_LANDING_LEN)
+    cut = Pos(s.axis_xy[0], s.axis_xy[1], s.vbot_z) * Cylinder(
+        R_STATOR_OUTER_KINK + RAMP_STATOR_CLEAR, 4.0 * RAMP_WALL_H + 2.0 * RAMP_FLOOR_T + 200.0,
+    )
+    return (slope + landing) - cut
+
+
+# --- Placement helpers -------------------------------------------------
+
+def _stage_pose(s: Stage) -> Location:
+    """m02-local origin (rotor axis at the V-bottom) at the stage's
+    axis and V-bottom, m02-local +X (the chute) turned to the heading."""
+    return Pos(s.axis_xy[0], s.axis_xy[1], s.vbot_z) * Rot(0, 0, s.heading_deg)
+
+
+def _horizontal_bar_pose(
+    a: tuple[float, float], b: tuple[float, float], top_z: float,
+) -> tuple[Location, float]:
+    """Pose + length for a flat 2020 whose centreline runs a → b in
+    plan with its top face at `top_z`."""
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    length = math.hypot(dx, dy)
+    loc = Pos((a[0] + b[0]) / 2.0, (a[1] + b[1]) / 2.0, top_z - EXT_SIZE / 2.0) * Rot(
+        0, 0, math.degrees(math.atan2(dy, dx)),
+    )
+    return loc, length
+
+
+def _prop_bar(s: Stage) -> tuple[Location, float]:
+    """S's prop bar: post-side end PROP_BAR_NEAR before the axis (over
+    the post's whole end face), far end PROP_BAR_FAR past it, along the
+    post → axis line, top face at the plate underside."""
+    post = m05_outer_vertex_local_xy(PROP_POST[s.name])
+    ax = s.axis_xy
+    d = math.hypot(ax[0] - post[0], ax[1] - post[1])
+    u = ((ax[0] - post[0]) / d, (ax[1] - post[1]) / d)
+    near = (ax[0] - PROP_BAR_NEAR * u[0], ax[1] - PROP_BAR_NEAR * u[1])
+    far = (ax[0] + PROP_BAR_FAR[s.name] * u[0], ax[1] + PROP_BAR_FAR[s.name] * u[1])
+    return _horizontal_bar_pose(near, far, s.plate_bottom_z)
+
+
+def _cross_half(s: Stage, side: float) -> tuple[Location, float]:
+    """One half of S's cross: square off the prop bar's face (side ±1),
+    from EXT_SIZE/2 off the axis line out to the ring's edge."""
+    post = m05_outer_vertex_local_xy(PROP_POST[s.name])
+    ax = s.axis_xy
+    d = math.hypot(ax[0] - post[0], ax[1] - post[1])
+    u = ((ax[0] - post[0]) / d, (ax[1] - post[1]) / d)
+    n = (-u[1] * side, u[0] * side)
+    a = (ax[0] + (EXT_SIZE / 2.0) * n[0], ax[1] + (EXT_SIZE / 2.0) * n[1])
+    b = (ax[0] + (EXT_SIZE / 2.0 + CROSS_HALF_LEN) * n[0], ax[1] + (EXT_SIZE / 2.0 + CROSS_HALF_LEN) * n[1])
+    return _horizontal_bar_pose(a, b, s.plate_bottom_z)
+
+
+def _stem() -> tuple[Location, float]:
+    """S2's stem: from V_4's face (EXT_SIZE/2 off the post axis along
+    the face normal) to the T bar's near face."""
+    post = m05_outer_vertex_local_xy(ARM_POST)
+    n = (math.cos(math.radians(ARM_STEM_FACE_DEG)), math.sin(math.radians(ARM_STEM_FACE_DEG)))
+    a = (post[0] + (EXT_SIZE / 2.0) * n[0], post[1] + (EXT_SIZE / 2.0) * n[1])
+    b = (a[0] + ARM_STEM_LEN * n[0], a[1] + ARM_STEM_LEN * n[1])
+    return _horizontal_bar_pose(a, b, ARM_TOP_Z_LOCAL)
+
+
+def _tee() -> tuple[Location, float]:
+    """S2's T bar: centred ARM_STEM_REACH from the post axis along the
+    stem, square to it."""
+    post = m05_outer_vertex_local_xy(ARM_POST)
+    n = (math.cos(math.radians(ARM_STEM_FACE_DEG)), math.sin(math.radians(ARM_STEM_FACE_DEG)))
+    c = (post[0] + ARM_STEM_REACH * n[0], post[1] + ARM_STEM_REACH * n[1])
+    t = (-n[1], n[0])
+    a = (c[0] - (ARM_TEE_LEN / 2.0) * t[0], c[1] - (ARM_TEE_LEN / 2.0) * t[1])
+    b = (c[0] + (ARM_TEE_LEN / 2.0) * t[0], c[1] + (ARM_TEE_LEN / 2.0) * t[1])
+    return _horizontal_bar_pose(a, b, ARM_TOP_Z_LOCAL)
+
+
+def _brace(col: int) -> tuple[Location, float]:
+    """Diagonal from V_4 at BRACE_H_ABOVE_DECK down to the deck top at
+    outer vertex `col`, trimmed BRACE_END_TRIM at both ends."""
+    post = m05_outer_vertex_local_xy(ARM_POST)
+    foot = m05_outer_vertex_local_xy(col)
+    top = (post[0], post[1], DECK_TOP_Z_LOCAL + BRACE_H_ABOVE_DECK)
+    bot = (foot[0], foot[1], DECK_TOP_Z_LOCAL)
+    v = (bot[0] - top[0], bot[1] - top[1], bot[2] - top[2])
+    full = math.sqrt(v[0] ** 2 + v[1] ** 2 + v[2] ** 2)
+    d = (v[0] / full, v[1] / full, v[2] / full)
+    length = full - 2.0 * BRACE_END_TRIM
+    c = (top[0] + (full / 2.0) * d[0], top[1] + (full / 2.0) * d[1], top[2] + (full / 2.0) * d[2])
+    az = math.degrees(math.atan2(d[1], d[0]))
+    el = math.degrees(math.asin(d[2]))
+    # Yaw about Z after pitching the bar's +X down to the elevation
+    # (Ry(-el) maps +X to (cos el, 0, sin el)); its Y stays horizontal.
+    return Pos(*c) * Rot(0, 0, az) * Rot(0, -el, 0), length
 
 
 # --- Compose -----------------------------------------------------------
 
-# Column placements. col1 rotated 30° about Z to match m05
-# `outer_vert_0`'s orientation (one face aligned with the bracket
-# plate convention). col2 rotated to the yoke angle so its faces
-# align with the yoke crossbar end.
-_COL1_LOC = (
-    Pos(COL1_LOCAL_XY[0], COL1_LOCAL_XY[1], (COL_Z_BOT_LOCAL + COL_Z_TOP_LOCAL) / 2.0)
-    * Rot(0, 0, COL1_ROT_DEG)
+_GANTRY = (
+    "s1_prop_bar", "s3_prop_bar", "s3_cross_a", "s3_cross_b",
+    "s2_stem", "s2_tee", "brace_3", "brace_5",
 )
-_COL2_LOC = (
-    Pos(COL2_LOCAL_XY[0], COL2_LOCAL_XY[1], (COL_Z_BOT_LOCAL + COL_Z_TOP_LOCAL) / 2.0)
-    * Rot(0, 0, YOKE_ANGLE_DEG)
-)
-
-# Yoke placement. Box's long axis is +X (length YOKE_LEN). Rotate by
-# YOKE_ANGLE_DEG about Z, translate to YOKE_MID_XY at z =
-# YOKE_TOP_Z_LOCAL - EXT_SIZE/2 (top face at YOKE_TOP_Z_LOCAL).
-_YOKE_LOC = (
-    Pos(YOKE_MID_XY[0], YOKE_MID_XY[1], YOKE_TOP_Z_LOCAL - EXT_SIZE / 2.0)
-    * Rot(0, 0, YOKE_ANGLE_DEG)
-)
-
-# LOAD ramp placement. Tilt about ramp-local Y by -RAMP_PITCH_DEG so
-# +X tilts up into +Z, then translate to chain-local outlet.
-_RAMP_LOC = (
-    Pos(*RAMP_OUTLET_LOCAL)
-    * Rot(0, -RAMP_PITCH_DEG, 0)
-)
-
-# S1 m02 pose. Translate to S1 axis at the V-bottom plane, then
-# rotate by S1_M02_HEADING_DEG about Z so the chute fires in chain-local
-# -X (toward LOAD).
-_S1_POSE = (
-    Pos(S1_AXIS_LOCAL_XY[0], S1_AXIS_LOCAL_XY[1], S1_VBOT_Z_LOCAL)
-    * Rot(0, 0, S1_M02_HEADING_DEG)
-)
-
-
-# Chain skeleton parts, asserted against m02 internals at S1 and
-# against each other. m02's internal pairs (rotor↔stator, rotor↔stem,
-# etc.) are covered by m02's standalone `khana check` — its assertions
-# ride along nested and are not evaluated here.
-
-_CHAIN_SKELETON = ("col1_ext", "col2_ext", "yoke", "load_ramp")
-
-# The skeleton predates the rim drive and runs through its stack (see
-# the module docstring). Positive regression alarms, not waivers: each
-# self-fails the day the gantry slice moves the skeleton clear.
-_RIM_DRIVE_REASON = (
-    "chain skeleton drawn for the hidden drive passes through the "
-    "rim-drive stack under S1 (rotor flange / bearing / base plate, "
-    "z in [-24.5, 0] m02-local); retire with the gantry slice — "
-    "_notes/decisions/m02-rotor-drive.md"
-)
-_RIM_DRIVE_OVERLAPS = [
-    (skel, f"s1.{part}", _RIM_DRIVE_REASON)
-    for skel in ("col1_ext", "col2_ext", "yoke")
-    for part in ("rotor.rotor", "drive.bearing", "drive.base_plate")
-]
+_SKELETON = ("load_ramp",) + _GANTRY
+_STAGE_NAMES = tuple(s.name for s in STAGES)
 
 
 # Cached because the degenerate ``assembly`` memo below and any
 # composing parent (``cad/assembly.py``, ``cad/render.py``) each ask
-# for the same schema, and the build is seconds of OCCT work. Replaces
-# import-time memoization: the memo line is now free, and a parent
-# calling the builder gets the same object rather than rebuilding.
-# Safe to share — ``Assembly`` is a frozen dataclass and every
-# ``with_*`` returns a copy.
-#
-# Call it with the schema **explicit** everywhere, including the memo
-# below: ``@cache`` keys on the call signature, so ``build_x()`` and
-# ``build_x(DEFAULT_SCHEMA)`` are two entries that build identical
-# geometry twice. That mistake is invisible — same output, double the
-# work — so ``cache_info().misses`` is the only thing that shows it.
+# for the same schema, and the build is seconds of OCCT work. Safe to
+# share — ``Assembly`` is a frozen dataclass and every ``with_*``
+# returns a copy. Call it with the schema **explicit** everywhere,
+# including the memo below (``@cache`` keys on the call signature).
 @cache
 def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
-    """The m02 chain — singulator at S1 plus the skeleton that carries
-    it — painted under ``schema``.
+    """The m02 chain — three singulator stages, the LOAD ramp and the
+    gantry — painted under ``schema``.
 
-    Painted with ``skip=("s1",)``: the singulator subtree arrives from
-    ``build_m02(schema)`` already painted against m02's own tag dict,
-    and the chain's dict covers only its four skeleton parts. Without
-    the skip this walk would look m02's part names up here and report
-    every one as untagged. (That split is why the coverage check this
-    replaces had a hand-written ``startswith("s1.")`` filter.)
+    Painted with ``skip=`` the three stage subtrees: each arrives from
+    ``build_m02(schema, …)`` already painted against m02's own tag
+    dict, and the chain's dict covers only its own members.
 
     The anchors are chain-local *belief* anchors. The chain builds
     standalone from mirrored m05/m03 constants (``params.py``); these
@@ -227,42 +258,106 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
     mirror stops coinciding there and fails loudly. ``load_top`` is the
     chain-local origin by construction (the top level derives the
     chain's world pose from m03's live ``load_top``); ``deck_top`` is
-    the hub-axis point on the m05 deck top face; ``col1_base`` is where
-    col1's base center must meet m05's ``outer_vert_0_top``.
+    the hub-axis point on the m05 deck top face; ``post_top_k`` is
+    where the chain needs m05's outer column k to end.
     """
     def mat(name: str) -> dict:
         return {"material": material_of(name)}
 
-    return paint(
-        Assembly()
-        .with_part("col1_ext", _column_ext(), location=_COL1_LOC, **mat("col1_ext"))
-        .with_part("col2_ext", _column_ext(), location=_COL2_LOC, **mat("col2_ext"))
-        .with_part("yoke", _yoke_crossbar(), location=_YOKE_LOC, **mat("yoke"))
-        .with_part("load_ramp", _load_ramp(), location=_RAMP_LOC, **mat("load_ramp"))
-        .with_subassembly("s1", build_m02(schema), location=_S1_POSE)
+    a = Assembly()
+    for s in STAGES:
+        a = a.with_subassembly(
+            s.name, build_m02(schema, s.motor_azimuth_deg), location=_stage_pose(s),
+        )
+    s1, s2, s3 = STAGES
+    a = a.with_part("load_ramp", _load_ramp(s1), **mat("load_ramp"))
+    for name, (loc, length) in (
+        ("s1_prop_bar", _prop_bar(s1)),
+        ("s3_prop_bar", _prop_bar(s3)),
+        ("s3_cross_a", _cross_half(s3, +1.0)),
+        ("s3_cross_b", _cross_half(s3, -1.0)),
+        ("s2_stem", _stem()),
+        ("s2_tee", _tee()),
+        ("brace_3", _brace(BRACE_COLS[0])),
+        ("brace_5", _brace(BRACE_COLS[1])),
+    ):
+        a = a.with_part(name, _bar(length), location=loc, **mat(name))
+
+    a = (
+        a
         .with_anchor("load_top", Pos(0, 0, 0))
-        .with_anchor(
-            "deck_top",
-            Pos(-M03_TURRET_ARM_R, -M03_TURRET_ARM_R, DECK_TOP_Z_LOCAL),
-        )
-        .with_anchor("col1_base", Pos(*COL1_LOCAL_XY, DECK_TOP_Z_LOCAL))
-        .assert_scalar(
-            "col2_outboard_of_deck",
-            COL2_LOCAL_XY[0] + M03_TURRET_ARM_R,
-            ge=M05_TOP_DECK_OD_HALF,
-            detail=(
-                "col2 world X must sit outboard of the m05 top-deck "
-                f"OD/2 ({M05_TOP_DECK_OD_HALF}); otherwise move col2 "
-                "outward or rework the deck mounting strategy"
-            ),
-        )
-        .assert_no_interference_between(
-            _CHAIN_SKELETON, "s1", known_overlaps=_RIM_DRIVE_OVERLAPS,
-        )
-        .assert_no_interference_within(_CHAIN_SKELETON),
-        design_system(schema),
-        skip=("s1",),
+        .with_anchor("deck_top", Pos(-M03_TURRET_ARM_R, -M03_TURRET_ARM_R, DECK_TOP_Z_LOCAL))
     )
+    for k, z in POST_TOP_Z_LOCAL.items():
+        a = a.with_anchor(f"post_top_{k}", Pos(*m05_outer_vertex_local_xy(k), z))
+
+    # Stage over stage: the plate clears the lower rotor's apex by
+    # STAGE_CLEAR (constructed from the same constant → tolerance
+    # below the bound), the chute lands its brick on the lower rotor,
+    # and no part of one stage touches another.
+    for up, dn in ((s2, s1), (s3, s2)):
+        a = (
+            a
+            .assert_clearance(
+                f"{up.name}.drive.base_plate", f"{dn.name}.rotor.rotor",
+                min_mm=STAGE_CLEAR - _MEAS_TOL,
+                name=f"{up.name}_plate_over_{dn.name}_rotor",
+            )
+            .assert_no_interference_between(up.name, dn.name)
+        )
+    a = a.assert_no_interference_between(s3.name, s1.name)
+    a = a.assert_scalar(
+        "chute_land_r", CHUTE_LAND_R, ge=0.0, le=ROTOR_BASE_DIAMETER / 2.0,
+        detail="upper chute exit's distance from the lower axis: on the lower rotor",
+    )
+
+    # Ramp: pitch inside the window; wraps S1's stator wall at the cut
+    # clearance (constructed from the same constant → tolerance below).
+    a = (
+        a
+        .assert_scalar(
+            "ramp_pitch_deg", RAMP_PITCH_DEG, ge=RAMP_PITCH_MIN_DEG, le=RAMP_PITCH_MAX_DEG,
+            detail="LOAD ramp pitch; 20/40 are placeholders, not measured friction",
+        )
+        .assert_distance(
+            "load_ramp", "s1.stator.stator", min_mm=RAMP_STATOR_CLEAR - _MEAS_TOL,
+            name="ramp_wraps_s1_stator",
+        )
+    )
+
+    # Gantry rests: each bar tangent under its plate.
+    for bar, stage in (
+        ("s1_prop_bar", s1), ("s3_prop_bar", s3),
+        ("s3_cross_a", s3), ("s3_cross_b", s3), ("s2_tee", s2),
+    ):
+        a = a.assert_tangent_contact(bar, f"{stage.name}.drive.base_plate")
+    # The stem butts the T bar's near face; the cross halves butt the
+    # prop bar's faces.
+    a = (
+        a
+        .assert_tangent_contact("s2_stem", "s2_tee")
+        .assert_tangent_contact("s3_cross_a", "s3_prop_bar")
+        .assert_tangent_contact("s3_cross_b", "s3_prop_bar")
+    )
+    # The swung motors are what keeps these pairs apart — measure them.
+    a = (
+        a
+        .assert_clearance("s2_stem", "s2.drive.motor", min_mm=5.0)
+        .assert_clearance("s3_cross_a", "s3.drive.motor", min_mm=5.0)
+        .assert_clearance("s3_cross_b", "s3.drive.motor", min_mm=5.0)
+        .assert_clearance("s1_prop_bar", "s1.drive.motor", min_mm=5.0)
+        .assert_clearance("s3_prop_bar", "s3.drive.motor", min_mm=5.0)
+    )
+
+    # Nothing of the skeleton touches a stage except at the declared
+    # rests (tangent pairs carry no overlap, so the group forms hold);
+    # nothing in the skeleton touches itself except at the T and cross
+    # joints (same).
+    for s in STAGES:
+        a = a.assert_no_interference_between(_SKELETON, s.name)
+    a = a.assert_no_interference_within(_SKELETON)
+
+    return paint(a, design_system(schema), skip=_STAGE_NAMES)
 
 
 # Degenerate memoized master, so ``khana check <file>`` resolves

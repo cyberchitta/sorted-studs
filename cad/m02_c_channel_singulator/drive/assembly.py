@@ -193,14 +193,33 @@ def build_pinion() -> Assembly:
     return Assembly().with_part("pinion", pinion(), material=material_of("pinion"))
 
 
-def build_drive() -> Assembly:
-    """Drive sub-assembly in drive-local frame (= m02-local)."""
-    on_axis = Location((PINION_AXIS_XY[0], PINION_AXIS_XY[1], 0.0)) * Rot(
-        0, 0, MOTOR_AZIMUTH_DEG,
+def pinion_axis_xy(motor_azimuth_deg: float = MOTOR_AZIMUTH_DEG) -> tuple[float, float]:
+    """Pinion / motor axis in m02-local XY for a given motor azimuth."""
+    az = math.radians(motor_azimuth_deg)
+    return (CENTER_DIST * math.cos(az), CENTER_DIST * math.sin(az))
+
+
+def build_drive(motor_azimuth_deg: float = MOTOR_AZIMUTH_DEG) -> Assembly:
+    """Drive sub-assembly in drive-local frame (= m02-local).
+
+    ``motor_azimuth_deg`` is where the motor / pinion sit around the
+    rotor axis (default ``params.MOTOR_AZIMUTH_DEG``, away from the
+    exit arc). It is a per-*instance* choice — the mesh is the same
+    at every azimuth — that the m02 chain sets per stage to keep a
+    motor clear of that stage's gantry member (S2's stem, S3's cross
+    bar; ``cad/m02_chain/params.py`` §Gantry).
+    """
+    axis_xy = pinion_axis_xy(motor_azimuth_deg)
+    on_axis = Location((axis_xy[0], axis_xy[1], 0.0)) * Rot(
+        0, 0, motor_azimuth_deg,
     )
     return (
         Assembly()
-        .with_part("base_plate", base_plate(), material=material_of("base_plate"))
+        .with_part(
+            "base_plate",
+            base_plate(motor_xy=axis_xy, motor_rot_deg=motor_azimuth_deg),
+            material=material_of("base_plate"),
+        )
         .with_part("bearing", bearing(), material=material_of("bearing"))
         .with_part("motor", motor(), location=on_axis, material=material_of("motor"))
         .with_subassembly(
@@ -216,7 +235,7 @@ def build_drive() -> Assembly:
         # Where the chain's rail meets us, and how far the motor hangs.
         .with_anchor("plate_top", Pos(0, 0, PLATE_TOP_Z))
         .with_anchor("plate_bottom", Pos(0, 0, PLATE_BOTTOM_Z))
-        .with_anchor("motor_bottom", Pos(PINION_AXIS_XY[0], PINION_AXIS_XY[1], MOTOR_BOTTOM_Z))
+        .with_anchor("motor_bottom", Pos(axis_xy[0], axis_xy[1], MOTOR_BOTTOM_Z))
         # Rests: the bearing's lower ring on the plate top, the motor
         # face on the plate underside (pilot and shaft inside the hole).
         .assert_tangent_contact("bearing", "base_plate")

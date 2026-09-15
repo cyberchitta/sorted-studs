@@ -1,104 +1,111 @@
 """Shared interface constants for the m02 singulator chain.
 
-The chain is a relocatable unit that hangs the m02 singulator(s) off
-column extensions rising from the m05 diverter's top deck and
-delivers bricks onto the m03 turret's LOAD platform. This file owns
-the chain-local frame and the cross-boundary constants mirrored from
-m05 / m03 (the chain must build standalone, so it cannot import their
-live values). m02 is different: the chain composes it, so m02's own
-`params.py` is imported, not mirrored — S1's axis is derived from the
-stator radius. `assembly.py` exports the mirrors' implied datums
-as belief anchors (`load_top`, `deck_top`, `col1_base`); the
-top-level `cad/assembly.py` asserts them coincident with the live
-units' own anchors, so a drifted mirror fails loudly there.
+The chain is a relocatable unit: three m02 singulator stages — S1 at
+the LOAD handoff, S2 and S3 upstream of it, each dropping its bricks
+onto the stage below — the gantry that carries them on two of the m05
+diverter's outer through-columns, and the LOAD ramp that delivers S1's
+output onto the m03 turret's LOAD platform. This file owns the
+chain-local frame, the placement family, the derived stage table, the
+gantry sizes, and the cross-boundary constants mirrored from m05 / m03
+(the chain must build standalone, so it cannot import their live
+values). m02 is different: the chain composes it, so m02's own
+`params.py` is imported, not mirrored. `assembly.py` exports the
+mirrors' implied datums as belief anchors (`load_top`, `deck_top`,
+`post_top_4`, `post_top_5`); the top-level `cad/assembly.py` asserts
+them coincident with the live units' own anchors, so a drifted mirror
+fails loudly there.
 
 Coordinate frame (chain-local):
     origin = LOAD platform top-face centroid (= world (+125, +125, 1030)
              after the top-level pose applies)
-    +X     = away from the diverter hub, into the singulator chain
-             (= world +X)
-    +Y     = parallel to the turret cross-rail (= world +Y)
+    +X     = world +X
+    +Y     = world +Y
     +Z     = up
     z = 0  = LOAD platform top face
 
-The top-level `cad/assembly.py` places the chain with one transform
-`Pos(+125, +125, 1030)`, so every chain-local position resolves to
-world by adding that offset.
+The top-level `cad/assembly.py` places the chain with one translation
+`Pos(+125, +125, 1030)` (no rotation: the m03 turret rotation ψ is 0),
+so every chain-local position resolves to world by adding that offset.
 
-Anchors at-a-glance:
+Placement — family P (owner 2026-09-15; `_notes/decisions/m02-chain.md`
+§4, found in `_notes/explorers/m02-family-choice.html`):
 
-    m05 deck top face       chain-local z = -140  (world 890)
-    m05 outer_vert_0 top    chain-local (+145, +31, -140)
-    col1 extension          chain-local (+145, +31), z ∈ [-140, +38]
-    col2 outboard stub      chain-local (+325, +50), z ∈ [-140, +38]
-    S1 yoke crossbar top    chain-local z = +38
-    S1 m02 V-bottom         chain-local (+235, 0, +38)  (world (+360, +125, 1068))
-    S1 chute exit (handoff) chain-local (+80, 0, +48)   (world (+205, +125, 1078))
-    LOAD ramp inlet         chain-local (+80, 0, +48)
-    LOAD ramp outlet        chain-local (0, 0, +2)      (2 mm above LOAD top)
+    LOAD ramp   runs RAMP_RUN from LOAD at azimuth RAMP_AZIMUTH_DEG (φ)
+                to S1's chute exit
+    S1 axis     one stator kink radius (R_STATOR_OUTER_KINK = 155) from
+                the chute exit, at PIVOT_THETA_DEG (θ) clockwise from
+                the ramp line; S1 heads (fires its chute) back at LOAD
+    S2, S3      one CHAIN_CHORD upstream of the stage below, the chain
+                bending CHAIN_BEND_DEG per hop toward the m05 axis; each
+                heads at the stage below, so headings derive
+    z           S1's V-bottom at S1_VBOT_WORLD_Z (the turret-envelope
+                raise, decided); each higher stage STAGE_PITCH above the
+                one below, so its plate clears the lower rotor's apex by
+                STAGE_CLEAR
 
-**Amended 2026-09-11:** the m02 drive moved to a rim gear on a rim
-bearing (`_notes/decisions/m02-rotor-drive.md`). The motor now hangs
-under a Ø310 base plate at m02-local z ∈ [-24.5, -18.5] (world
-z ≈ 1043–1049), and nothing sits inside the rotor cavity any more,
-so the yoke-clears-the-motor rationale below is historical: the yoke
-and both columns now pass *through* the plate, bearing and rotor
-flange (nine `known_overlaps` alarms in `assembly.py`). The S1 mount
-becomes "plate on rail" (`m02-chain.md` §5) and the columns must end
-below the plate; that is the gantry slice's job, not a parameter
-tweak here.
+Anchors at-a-glance (chain-local; world = + (125, 125, 1030)):
 
-col2's Y is shifted +50 mm off the handoff sketch (which placed it
-at chain-local (+325, 0)) so the yoke axis from col1 (+145, +31) to
-col2 clears the m02 NEMA-17 motor body in +Y. At col2 = (+325, 0)
-the yoke axis ran through the motor's +Y face at the 7-mm
-yoke/motor z-overlap (yoke z [+18, +38] vs motor z [+31, +71]).
-With col2 = (+325, +50), yoke-to-motor perpendicular clearance is
-~8 mm.
+    m05 deck top face         z = -140                 (world 890)
+    LOAD ramp outlet          (0, 0, +7)               (world z 1037)
+    S1 chute exit = inlet     (130, 0, +75)            (world (255, 125, 1105))
+    S1 axis                   (103, -153), V-bottom +65    (world (228, -28, 1095))
+    S2 axis                   (0, -275),   V-bottom +209.5 (world (125, -150, 1239.5))
+    S3 axis                   (-150, -330), V-bottom +354  (world (-25, -205, 1384))
+    V_5, S1's post            (145, -281); top +20.5   (world 1050.5 = 160.5 over the deck)
+    V_4, S3's post + S2's arm (-125, -437); top +309.5 (world 1339.5 = 449.5 over the deck)
 
-This slice DEFERS the m02 stator-mounting interface (handoff
-sub-task 2): the m02 stator sits at its geometric S1 position but
-NO plate / clamp / cradle bridges yoke top to stator V-bottom rim
-yet. The stator's outer wall at z = 0 has only a 3-mm-wide rim
-ring; gripping it (Option B: chain-side clamps) needs a curved
-cradle, and Option A (m02-internal `frame/` flange) needs an
-m02 sub-assembly edit. Both interact with the rotor/motor/stem
-clearances inside the stator's inner footprint and earn a
-separate slice. The chain's columns + yoke + LOAD ramp are
-independent of the mounting choice.
+Gantry (owner 2026-09-14/15, `m02-chain.md` §6; sizes from the
+structure pass in `_notes/handoff/m02-gantry-spine.md`, hand statics):
+S1 is propped on V_5 and S3 on V_4 — the m05 column continues through
+the deck (`m05_diverter/params.py:THROUGH_DECK_POSTS`) and a 2020 prop
+bar lies across its end, under the stage's base plate, from the post
+side over the axis to a far end that adds nothing to the raise (S1)
+or the ring's far edge (S3, which also takes a cross for the hopper
+load). S2 hangs on one T arm: a 2020 stem square off V_4's +Y face to
+a 2020 T bar under S2's plate. V_4 is braced at BRACE_H_ABOVE_DECK by
+two 2020 diagonals down to the deck at V_3 and V_5. Post tops are the
+bars' undersides — one bar depth below each propped plate.
 """
 
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
 
-from ..m02_c_channel_singulator.params import R_STATOR_OUTER_KINK
+from ..m02_c_channel_singulator.params import (
+    EXIT_ARC_DEG,
+    MOTOR_AZIMUTH_DEG,
+    PLATE_BOTTOM_Z,
+    PLATE_R_IN,
+    R_STATOR_OUTER_KINK,
+    ROTOR_BASE_DIAMETER,
+    ROTOR_HEIGHT,
+)
 
 
 # --- Mirror from cad/m05_diverter/params.py ----------------------------
 
-# Outer-hex circumradius (center → vertex) for the m05 frame. The
-# closest m05 through-column to the S1 m02 axis is `outer_vert_0` at
-# azimuth 30° (= world (+R_VERT_OUTER · cos 30°, +R_VERT_OUTER · sin
-# 30°) ≈ (+270, +156)) — the chain's primary support column extension
-# rises from this vertex.
+# Outer-hex circumradius (center → vertex) for the m05 frame; vertex
+# k sits at azimuth (k + 0.5)·60° about the m05 axis. The chain's
+# posts are the outer columns at V_4 (270°) and V_5 (330°), continued
+# through the deck.
 M05_R_VERT_OUTER = 311.769145362398
 
 # m05's `_APOTHEM_TO_VERTEX = 2 / sqrt(3)` × R_HEX_OUTER (= 270). The
-# literal is reproduced here so the chain stays standalone.
-#
-# Drift is caught by the `col1_base` belief anchor, which is derived
-# from this value and checked against m05's live `outer_vert_0_top` in
-# the top-level `cad/assembly.py`. A local `assert` against a
-# recomputed `270 * 2/sqrt(3)` would only catch a transcription typo
-# here — both sides being local literals, it cannot see m05 move.
+# literal is reproduced here so the chain stays standalone. Drift is
+# caught by the `post_top_4` / `post_top_5` belief anchors, which are
+# derived from this value and checked against m05's live
+# `outer_vert_{k}_top` anchors in the top-level `cad/assembly.py`. A
+# local `assert` against a recomputed `270 * 2/sqrt(3)` would only
+# catch a transcription typo here — both sides being local literals,
+# it cannot see m05 move.
 
 
 # --- Mirror from cad/m05_diverter/assembly.py --------------------------
 
-# Top of m05 through-columns (= `TOP_VERT_Z = 4 * FLOOR_H`). Top deck
-# bottom face sits flush with the column tops; deck top face is
-# TOP_DECK_T higher.
+# Top of m05's ten short through-columns (= `TOP_VERT_Z = 4 * FLOOR_H`).
+# Top deck bottom face sits flush with those column tops; deck top face
+# is TOP_DECK_T higher. (The two post columns continue above it.)
 M05_TOP_VERT_Z = 880.0
 M05_TOP_DECK_T = 10.0
 M05_DECK_TOP_Z = M05_TOP_VERT_Z + M05_TOP_DECK_T   # 890
@@ -112,19 +119,21 @@ M05_DECK_TOP_Z = M05_TOP_VERT_Z + M05_TOP_DECK_T   # 890
 
 # Turret arm radius (hub axis → station centroid). The LOAD station
 # sits at turret-local (+TURRET_ARM_R, 0); the chain origin = LOAD
-# platform centroid in world.
+# platform centroid in world. The turret hub is at world (0, +125),
+# the m05 axis at world (0, 0).
 M03_TURRET_ARM_R = 125.0
 
-# World z of the LOAD platform top face (= top-level `_TURRET_WORLD_Z`,
-# derived in `cad/assembly.py` from m05 deck top + turret floor offset).
+# World z of the LOAD platform top face (derived in `cad/assembly.py`
+# from m05 deck top + turret floor offset).
 M03_LOAD_TOP_Z = 1030.0
 
 
 # --- Chain world pose --------------------------------------------------
 
-# World location of chain-local origin. `cad/assembly.py` splices the
-# chain at `Pos(*CHAIN_WORLD_POSE_XYZ)` (no rotation — chain-local axes
-# match world axes).
+# World location of chain-local origin. `cad/assembly.py` derives the
+# chain's pose from m03's live `load_top`; this is what the mirrors
+# say it is (ψ = 0 — a turret rotation would move it, and the belief
+# anchors would then stop coinciding).
 CHAIN_WORLD_POSE_XYZ = (
     M03_TURRET_ARM_R,                      # +125
     M03_TURRET_ARM_R,                      # +125
@@ -132,127 +141,180 @@ CHAIN_WORLD_POSE_XYZ = (
 )
 
 
-# --- m05 anchors expressed in chain-local coordinates ------------------
+# --- m05 datums expressed in chain-local coordinates -------------------
 
 # m05 deck top face plane (world z = 890) → chain-local z.
 DECK_TOP_Z_LOCAL = M05_DECK_TOP_Z - M03_LOAD_TOP_Z                    # -140
 
-# m05 `outer_vert_0` axis is at world (+R_VERT_OUTER·cos 30°,
-# +R_VERT_OUTER·sin 30°) ≈ (+270.0, +155.88). In chain-local:
-_OUTER_VERT_0_WORLD_X = M05_R_VERT_OUTER * math.cos(math.radians(30.0))
-_OUTER_VERT_0_WORLD_Y = M05_R_VERT_OUTER * math.sin(math.radians(30.0))
-OUTER_VERT_0_LOCAL_XY = (
-    _OUTER_VERT_0_WORLD_X - M03_TURRET_ARM_R,   # ≈ +145.0
-    _OUTER_VERT_0_WORLD_Y - M03_TURRET_ARM_R,   # ≈ +30.88
-)
+# m05 axis (world (0, 0)) in chain-local XY.
+M05_AXIS_LOCAL_XY = (-M03_TURRET_ARM_R, -M03_TURRET_ARM_R)           # (-125, -125)
 
 
-# --- S1 stage placement ------------------------------------------------
-
-# S1 chute exit = LOAD ramp inlet — the handoff point the stage is
-# placed from. Held fixed: the ramp's run and pitch derive from it.
-CHUTE_EXIT_LOCAL = (80.0, 0.0, 48.0)        # (+205, +125, 1078) in world
-
-# S1 m02 axis (see `_notes/decisions/m02-chain.md`): one stator outer
-# radius outboard of the chute exit, so the exit-arc wall stands at the
-# handoff whatever the rotor size. With the chain heading of 180° the
-# m02-local +X exit points at chain-local −X.
-S1_AXIS_LOCAL_XY = (
-    CHUTE_EXIT_LOCAL[0] + R_STATOR_OUTER_KINK,               # +235
-    CHUTE_EXIT_LOCAL[1],                                     # 0
-)
-
-# Yoke top face = S1 m02 V-bottom plane. The stator V-bottom sits at
-# m02-local z = 0; chain places m02 at chain-local z = YOKE_TOP_Z_LOCAL
-# so the V-bottom plane and yoke top face plane coincide. The stator's
-# mounting bridge (deferred this slice) would sit on this same plane.
-YOKE_TOP_Z_LOCAL = 38.0
-S1_VBOT_Z_LOCAL = YOKE_TOP_Z_LOCAL                            # +38
-S1_VBOT_WORLD_Z = M03_LOAD_TOP_Z + S1_VBOT_Z_LOCAL            # 1068
-
-# S1 m02 splice pose (chain-local). The m02 internal frame fires its
-# chute in m02-local +X; we rotate by 180° about Z so the chute fires
-# in chain-local -X, toward the LOAD platform.
-S1_M02_HEADING_DEG = 180.0
+def m05_outer_vertex_local_xy(k: int) -> tuple[float, float]:
+    """Chain-local XY of m05 outer vertex k (azimuth (k + 0.5)·60°
+    about the m05 axis at circumradius M05_R_VERT_OUTER)."""
+    az = math.radians((k + 0.5) * 60.0)
+    return (
+        M05_AXIS_LOCAL_XY[0] + M05_R_VERT_OUTER * math.cos(az),
+        M05_AXIS_LOCAL_XY[1] + M05_R_VERT_OUTER * math.sin(az),
+    )
 
 
-# --- Column extensions (chain primary structure) -----------------------
+# --- Placement family P (owner 2026-09-15) -----------------------------
 
-# 2020 aluminum extrusion — matches m05's EXT_SIZE.
-EXT_SIZE = 20.0
-
-# col1: extension above m05 outer_vert_0. Spans the deck-top plane
-# (z = DECK_TOP_Z_LOCAL = -140, butting against outer_vert_0's top
-# face and resting on the deck) up to the yoke top face plane
-# (z = YOKE_TOP_Z_LOCAL = +38). Length ≈ 178 mm. Rotated by 30° about
-# Z to match m05's outer_vert_0 azimuth orientation (one face aligned
-# with the bracket plate convention).
-COL1_LOCAL_XY = OUTER_VERT_0_LOCAL_XY                        # ≈ (+145, +31)
-COL1_ROT_DEG = 30.0
-COL_Z_BOT_LOCAL = DECK_TOP_Z_LOCAL                           # -140
-COL_Z_TOP_LOCAL = YOKE_TOP_Z_LOCAL                           # +38
-COL_LEN = COL_Z_TOP_LOCAL - COL_Z_BOT_LOCAL                  # 178
-
-# col2: new outboard 2020 stub. Picked so the yoke from col1 to col2
-# clears the m02 motor body in +Y (see module docstring). Sits in
-# +Y +X direction from S1. Outside the m05 top-deck OD/2 = 330; needs
-# a small outboard outrigger off col1 at z = DECK_TOP_Z_LOCAL to anchor
-# its base — the outrigger is DEFERRED this slice (modeled as col2
-# starting at the deck plane with no separate base part).
-COL2_LOCAL_XY = (
-    S1_AXIS_LOCAL_XY[0] + 90.0,                              # +325
-    S1_AXIS_LOCAL_XY[1] + 50.0,                              # +50
-)
-
-# col2 must land outboard of the m05 top-deck OD/2 — declared as the
-# `col2_outboard_of_deck` assert_scalar in `build_chain`, so the
-# measured world X is recorded and diffable rather than crashing an
-# import. (The deck is m05's part, so this is a scalar claim, not a
-# part-pair distance.)
-M05_TOP_DECK_OD_HALF = 330.0
+PIVOT_THETA_DEG = 100.0     # θ: S1 axis clockwise from the ramp line about the chute exit
+RAMP_AZIMUTH_DEG = 0.0      # φ: the LOAD ramp comes in from this azimuth about LOAD
+CHAIN_BEND_DEG = 30.0       # per hop, toward the m05 axis
+CHAIN_CHORD = 160.0         # axis-to-axis, both hops
+RAMP_RUN = 130.0            # LOAD centroid → S1 chute exit, in plan
+N_STAGES = 3
 
 
-# --- Yoke crossbar -----------------------------------------------------
+# --- Vertical stack ----------------------------------------------------
 
-# 2020 horizontal extrusion spanning col1 ↔ col2, with top face at
-# YOKE_TOP_Z_LOCAL. The axis runs from col1's center to col2's center;
-# length reserves enough at each end to butt cleanly against both
-# columns' rotated cross-sections. col1 is rotated 30° (relative to
-# the yoke axis the relative angle is ≈ 24°), so the col1 corner
-# extends 10·(cos 24° + sin 24°) ≈ 13.2 mm along the yoke axis from
-# col1 center. col2 rotated by the yoke angle has corner extent
-# 10 mm. Reserve 20 mm per end (= EXT_SIZE) for both columns' worst-
-# case rotated corners — single value, slightly conservative on col2.
-_YOKE_DX = COL2_LOCAL_XY[0] - COL1_LOCAL_XY[0]               # +180
-_YOKE_DY = COL2_LOCAL_XY[1] - COL1_LOCAL_XY[1]               # ≈ +19.12
-YOKE_AXIAL_DISTANCE = math.sqrt(_YOKE_DX**2 + _YOKE_DY**2)   # ≈ 181.0
-YOKE_LEN = YOKE_AXIAL_DISTANCE - 2.0 * EXT_SIZE              # ≈ 141.0
-YOKE_ANGLE_DEG = math.degrees(math.atan2(_YOKE_DY, _YOKE_DX))  # ≈ +6.06
-YOKE_MID_XY = (
-    (COL1_LOCAL_XY[0] + COL2_LOCAL_XY[0]) / 2.0,             # +235
-    (COL1_LOCAL_XY[1] + COL2_LOCAL_XY[1]) / 2.0,             # ≈ +40.44
-)
+# S1's V-bottom. Decided (owner 2026-09-15): the turret-envelope raise
+# at family P with the short prop bar. Derivation, explorer arithmetic:
+# S1's base plate stands over the LOAD platform's own brick, so its
+# underside must clear the turret hardware top (world 1035) plus the
+# settled-brick envelope (`m03_scanner/params.py:BRICK_SETTLED_H`, 30)
+# by 5 mm: 1035 + 30 + 5 - PLATE_BOTTOM_Z (-24.5) = 1094.5 → 1095.
+# `cad/check_turret_envelope.py` measures that clearance against the
+# real geometry; this number is the chosen input, not the check.
+S1_VBOT_WORLD_Z = 1095.0
+S1_VBOT_Z_LOCAL = S1_VBOT_WORLD_Z - M03_LOAD_TOP_Z                   # +65
+
+# The chute exit sits this far above the V-bottom (the stator's exit
+# arc opening; unchanged from the 2026-05 chain).
+CHUTE_EXIT_ABOVE_VBOT = 10.0
+
+# Stage pitch: the upper stage's plate underside clears the lower
+# rotor's apex (ROTOR_HEIGHT above the lower V-bottom) by STAGE_CLEAR.
+# Holds while the upper plate disc reaches over the lower axis, which
+# a CHAIN_CHORD of one kink radius plus a few mm guarantees — the
+# chute then lands its brick CHUTE_LAND_R from the lower axis.
+STAGE_CLEAR = 30.0
+STAGE_PITCH = ROTOR_HEIGHT - PLATE_BOTTOM_Z + STAGE_CLEAR            # 144.5
+CHUTE_LAND_R = CHAIN_CHORD - R_STATOR_OUTER_KINK                     # 5
+
+
+# --- Stage table -------------------------------------------------------
+
+def _rot2(v: tuple[float, float], deg: float) -> tuple[float, float]:
+    a = math.radians(deg)
+    return (
+        v[0] * math.cos(a) - v[1] * math.sin(a),
+        v[0] * math.sin(a) + v[1] * math.cos(a),
+    )
+
+
+@dataclass(frozen=True)
+class Stage:
+    """One singulator stage in chain-local coordinates."""
+
+    name: str
+    axis_xy: tuple[float, float]
+    heading_deg: float          # azimuth the chute fires (m02-local +X)
+    vbot_z: float               # stator V-bottom plane (m02-local z = 0)
+    motor_azimuth_deg: float    # m02-local; passed to build_m02
+
+    @property
+    def chute_exit_xy(self) -> tuple[float, float]:
+        h = math.radians(self.heading_deg)
+        return (
+            self.axis_xy[0] + R_STATOR_OUTER_KINK * math.cos(h),
+            self.axis_xy[1] + R_STATOR_OUTER_KINK * math.sin(h),
+        )
+
+    @property
+    def chute_exit_z(self) -> float:
+        return self.vbot_z + CHUTE_EXIT_ABOVE_VBOT
+
+    @property
+    def plate_bottom_z(self) -> float:
+        return self.vbot_z + PLATE_BOTTOM_Z
+
+
+# Per-stage motor swing, m02-local degrees added to MOTOR_AZIMUTH_DEG
+# (180 = away from the exit). S2's stem leaves V_4's +Y face and would
+# run into S2's motor at 180; S3's cross bar, perpendicular to its prop
+# bar, would pass under S3's motor at 180. Both swing +30 (explorer
+# `propMotor` was 0 at P because it assumed a 5° post rotation the m05
+# column cannot have; `assembly.py` asserts the clearances).
+MOTOR_SWING_DEG = {"s1": 0.0, "s2": 30.0, "s3": 30.0}
+
+
+def _stage_table() -> tuple[Stage, ...]:
+    az = RAMP_AZIMUTH_DEG
+    chute = (
+        RAMP_RUN * math.cos(math.radians(az)),
+        RAMP_RUN * math.sin(math.radians(az)),
+    )
+    t = math.radians(PIVOT_THETA_DEG)
+    u = _rot2((math.cos(t), -math.sin(t)), az)      # chute exit → S1 axis
+    s1 = (chute[0] + R_STATOR_OUTER_KINK * u[0], chute[1] + R_STATOR_OUTER_KINK * u[1])
+    # Bend toward the m05 axis: the sign of the perpendicular that
+    # points from S1 at the m05 axis.
+    perp = (-u[1], u[0])
+    to_hub = (M05_AXIS_LOCAL_XY[0] - s1[0], M05_AXIS_LOCAL_XY[1] - s1[1])
+    hub_sign = 1.0 if perp[0] * to_hub[0] + perp[1] * to_hub[1] >= 0 else -1.0
+    axes = [s1]
+    for i in range(1, N_STAGES):
+        d = _rot2(u, i * hub_sign * CHAIN_BEND_DEG)
+        prev = axes[-1]
+        axes.append((prev[0] + CHAIN_CHORD * d[0], prev[1] + CHAIN_CHORD * d[1]))
+    stages = []
+    for i, axis in enumerate(axes):
+        name = f"s{i + 1}"
+        if i == 0:
+            hd = math.degrees(math.atan2(-u[1], -u[0]))
+        else:
+            dn = axes[i - 1]
+            hd = math.degrees(math.atan2(dn[1] - axis[1], dn[0] - axis[0]))
+        stages.append(Stage(
+            name=name,
+            axis_xy=axis,
+            heading_deg=hd,
+            vbot_z=S1_VBOT_Z_LOCAL + i * STAGE_PITCH,
+            motor_azimuth_deg=MOTOR_AZIMUTH_DEG + MOTOR_SWING_DEG[name],
+        ))
+    return tuple(stages)
+
+
+STAGES: tuple[Stage, ...] = _stage_table()
+S1, S2, S3 = STAGES
 
 
 # --- LOAD ramp ---------------------------------------------------------
 
-# 30° was the conservative LEGO-on-PLA friction-angle target. The
-# achieved pitch is atan(41/80) ≈ 27.1° — under the target but still
-# well above the empirical LEGO-on-PLA static friction angle (~20–25°).
 # Outlet z is offset RAMP_FLOOR_T + 2 mm above the LOAD platform top
 # face so the ramp's BOTTOM face clears the platform acrylic by 2 mm
 # (the acrylic insert occupies platform-local z ∈ [-4, 0], with the
 # top face at the platform's reference plane). The brick contact
 # surface at the outlet sits 7 mm above the acrylic top — a small
 # drop onto the LOAD station.
-RAMP_INLET_LOCAL = CHUTE_EXIT_LOCAL         # defined with the S1 placement
 RAMP_FLOOR_T = 5.0
 RAMP_OUTLET_LOCAL = (0.0, 0.0, RAMP_FLOOR_T + 2.0)  # +7  (world z = 1037)
+RAMP_INLET_LOCAL = (*S1.chute_exit_xy, S1.chute_exit_z)               # (130, 0, 75)
 
-RAMP_DX = RAMP_INLET_LOCAL[0] - RAMP_OUTLET_LOCAL[0]         # 80
-RAMP_DZ = RAMP_INLET_LOCAL[2] - RAMP_OUTLET_LOCAL[2]         # 41
-RAMP_PITCH_DEG = math.degrees(math.atan2(RAMP_DZ, RAMP_DX))  # ≈ 27.1
-RAMP_SLOPE_LEN = math.sqrt(RAMP_DX**2 + RAMP_DZ**2)          # ≈ 89.9
+RAMP_DZ = RAMP_INLET_LOCAL[2] - RAMP_OUTLET_LOCAL[2]                  # 68
+RAMP_PITCH_DEG = math.degrees(math.atan2(RAMP_DZ, RAMP_RUN))          # ≈ 27.6
+RAMP_SLOPE_LEN = math.sqrt(RAMP_RUN**2 + RAMP_DZ**2)                  # ≈ 146.7
+
+# Pitch window — placeholders, not measured friction (LEGO on PLA
+# static friction angle is ~20–25°; 30° was the earlier target).
+RAMP_PITCH_MIN_DEG = 20.0
+RAMP_PITCH_MAX_DEG = 40.0
+
+# At family P the chute faces sideways to the ramp (S1 heads at 80°,
+# the ramp runs at 180°): the brick leaves the rotor wall *tangentially*
+# down the ramp axis (10° off it), through an exit arc that lies along
+# the ramp rather than across it. So the ramp is a tangential catch:
+# its inner side is S1's stator wall — the ramp is cut back to
+# RAMP_STATOR_CLEAR outside the kink radius about S1's axis — and a
+# flat landing at the exit height continues past the exit centre to
+# the far end of the exit arc, so the whole opening has floor under it.
+RAMP_STATOR_CLEAR = 1.0
+RAMP_LANDING_LEN = R_STATOR_OUTER_KINK * math.sin(math.radians(EXIT_ARC_DEG / 2.0))   # ≈ 47.9
 
 # 100 mm wide — gives the brick a generous lateral catch envelope
 # (BRICK_SPHERE_DIA = 80 mm; the rotor-tangential drift from the
@@ -262,3 +324,65 @@ RAMP_SLOPE_LEN = math.sqrt(RAMP_DX**2 + RAMP_DZ**2)          # ≈ 89.9
 RAMP_WIDTH = 100.0
 RAMP_WALL_H = 20.0
 RAMP_WALL_T = 4.0
+
+
+# --- Gantry ------------------------------------------------------------
+
+# 2020 aluminum extrusion — matches m05's EXT_SIZE.
+EXT_SIZE = 20.0
+BAR_DEPTH = EXT_SIZE            # bars lie flat under the plates
+
+# Which m05 outer column props which stage (owner 2026-09-14).
+PROP_POST = {"s1": 5, "s3": 4}
+ARM_POST = 4                    # S2's T arm leaves V_4
+
+# Prop bar: along the post → axis line, from the ring's outer edge on
+# the post side (so it covers the post's whole end face) over the axis
+# to `far` past it. S1's far end is the longest reach that stays clear
+# of the turret's loaded sweep — the explorer's r 104 (`plat=short`,
+# 2026-09-15) put the bar's far corner 0.3 mm outside the LOAD
+# platform's corner circle, an in/out test with no margin; r 96 gives
+# the 5 mm `check_turret_envelope.py` asks for, and still leaves 21 mm
+# of ring past the plate's hole (r 75) for the far bolt. S3's is the
+# ring's far edge less a margin (explorer: r 142).
+PROP_BAR_NEAR = R_STATOR_OUTER_KINK                                  # 155
+PROP_BAR_FAR = {"s1": 96.0, "s3": 142.0}
+# S3's cross: two half-bars square off the prop bar's faces, out to
+# the ring's edge, for the 3 kg hopper (owner 2026-09-15). Each runs
+# from the prop bar's face (EXT_SIZE/2 off the axis line) to the edge.
+CROSS_HALF_LEN = R_STATOR_OUTER_KINK - EXT_SIZE / 2.0                 # 145
+
+# S2's T arm: stem square off V_4's +Y face (the m05 column's faces are
+# at 0 / 90 / 180 / 270 — it is the column, not a rotatable post), to
+# a T bar under S2's plate whose centreline is ARM_STEM_REACH from the
+# post axis; the stem butts the bar's near face. Explorer at P: reach
+# 204 post → axis, the axis 125 off the stem line, bar 310.
+ARM_STEM_FACE_DEG = 90.0
+ARM_STEM_REACH = 170.0
+ARM_STEM_LEN = ARM_STEM_REACH - EXT_SIZE                              # 150: face to bar face
+ARM_TEE_LEN = 310.0
+
+# Post tops: the propped plate's underside less the bar lying across
+# the post's end. m05 mirrors these as `THROUGH_DECK_POSTS` (height
+# above its deck top); the anchors below catch drift either way.
+POST_TOP_Z_LOCAL = {
+    PROP_POST["s1"]: S1.plate_bottom_z - BAR_DEPTH,                   # +20.5  (world 1050.5)
+    PROP_POST["s3"]: S3.plate_bottom_z - BAR_DEPTH,                   # +309.5 (world 1339.5)
+}
+POST_H_ABOVE_DECK = {k: z - DECK_TOP_Z_LOCAL for k, z in POST_TOP_Z_LOCAL.items()}  # 160.5 / 449.5
+
+# S2's stem sits with its top at S2's plate underside — "S2's bracket
+# at 325 above the deck" in the structure pass.
+ARM_TOP_Z_LOCAL = S2.plate_bottom_z                                  # +185 (world 1215)
+
+# Brace: one 2020 diagonal from V_4 at BRACE_H_ABOVE_DECK down to the
+# deck at each of V_3 and V_5 (a V pair resists the moment in every
+# direction — structure pass finding 2). 280 rather than the pass's
+# 325: at the stem's height the brace ends beside the stem run into
+# it, 45 mm lower they clear it (explorer `brace=5&braceH=280` clean).
+# Each end is trimmed BRACE_END_TRIM along the member so it stands
+# clear of the post and the deck — the end joints (a gusset or corner
+# bracket) are open work; the trims are the gaps they will bridge.
+BRACE_H_ABOVE_DECK = 280.0
+BRACE_COLS = (3, 5)
+BRACE_END_TRIM = 40.0
