@@ -205,9 +205,15 @@ N_STAGES = 3
 S1_VBOT_WORLD_Z = 1095.0
 S1_VBOT_Z_LOCAL = S1_VBOT_WORLD_Z - M03_LOAD_TOP_Z                   # +65
 
-# The chute exit sits this far above the V-bottom (the stator's exit
-# arc opening; unchanged from the 2026-05 chain).
-CHUTE_EXIT_ABOVE_VBOT = 10.0
+# The chute exit's height above the V-bottom. 0 since 2026-09-15: the
+# stator's exit floor (`m02_c_channel_singulator/stator/assembly.py:
+# exit_floor`) is a tongue at the V-bottom plane out to the kink
+# radius, and S1's ramp starts flush with it 1 mm further out, so a
+# brick slides from the V onto the ramp with no step. (Was 10, a
+# 2026-05 leftover from before the rim drive put a plate under the
+# exit — with it the ramp floor began 10 mm above anything a brick at
+# the V-bottom could reach.)
+CHUTE_EXIT_ABOVE_VBOT = 0.0
 
 # Stage pitch: the upper stage's plate underside clears the lower
 # rotor's apex (ROTOR_HEIGHT above the lower V-bottom) by STAGE_CLEAR.

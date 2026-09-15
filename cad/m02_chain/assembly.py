@@ -335,6 +335,14 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
             "load_ramp", "s1.stator.stator", min_mm=RAMP_STATOR_CLEAR - _MEAS_TOL,
             name="ramp_wraps_s1_stator",
         )
+        # The seam: the ramp's landing starts RAMP_STATOR_CLEAR outside
+        # the stator's exit floor, flush with its top (CHUTE_EXIT_ABOVE_VBOT
+        # = 0) — a hairline in plan, never a step up.
+        .assert_distance(
+            "load_ramp", "s1.stator.exit_floor",
+            min_mm=RAMP_STATOR_CLEAR - _MEAS_TOL, max_mm=RAMP_STATOR_CLEAR + 0.5,
+            name="ramp_meets_exit_floor",
+        )
     )
 
     # Gantry rests: each bar tangent under its plate.
