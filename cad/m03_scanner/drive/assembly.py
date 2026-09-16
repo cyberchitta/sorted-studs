@@ -619,8 +619,12 @@ def build_turret_drive_standalone() -> Assembly:
     # against `turret.frame.floor_cross_x`: the bolt dips 6 mm into the
     # T-slot opening, hollow only on the detailed V-slot — this
     # standalone's solid `cross_rail_stub` would false-fail it.
+    # The motor body hangs below the bracket plate over the inner bolt:
+    # the head must clear it to be driven at all. First evaluated
+    # 2026-09-16 (`check_detail.py:build_drive_detailed`) — red.
     for bolt in _DETAIL_FOOT_BOLTS:
         a = a.assert_no_interference(bolt, "static.drive_bracket")
+        a = a.assert_no_interference(bolt, "static.drive_motor")
     return a
 
 
