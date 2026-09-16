@@ -435,6 +435,16 @@ def build_turret() -> Assembly:
     # stub). A foot floating above the rail passes no-interference;
     # this is what says the joint closes.
     t = t.assert_tangent_contact("drive.drive_bracket", "frame.floor_cross_x")
+    # …and resting on it *alone*: tangent contact is blind to the foot
+    # running off the rail's +X end onto the side rail's top (same z).
+    # The foot grew outboard on 2026-09-16 (both bolts past the wall)
+    # to within ~3 mm of the cross-rail end; the corner gap is the
+    # directed distance the foot must keep from the +X side rail.
+    t = t.assert_distance(
+        "drive.drive_bracket", "frame.floor_right_y",
+        along="X", min_mm=_frame.CORNER_GAP,
+        name="drive_foot_on_cross_rail",
+    )
     # Same joint, servo side — the dump-servo bracket's foot rests on
     # the same cross-rail. Was a `_BRACKET_PLATE_BOTTOM_Z == RAIL_TOP_Z`
     # constant comparison inside dump_servo; the standalone asserts it

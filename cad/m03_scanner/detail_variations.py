@@ -40,12 +40,7 @@ from build123d import Location, Part, Pos, Rot
 from cad_khana.mechanism.assembly import Assembly, DetailOverride
 
 
-from .drive.assembly import (
-    BRACKET_BOLT_SPACING_X,
-    BRACKET_FOOT_Z,
-    BRACKET_WALL_T,
-    BRACKET_WALL_X_MIN,
-)
+from .drive.assembly import BRACKET_BOLT_XS, BRACKET_FOOT_Z
 from .params import (
     TURRET_ARM_R,
     TURRET_FRAME_CROSS_Y,
@@ -126,9 +121,9 @@ def default_detail(assembly: Assembly) -> dict[str, Part]:
 # canonical pose) lands on z = -162. Default Cylinder/SHCS axis is +Z,
 # matches the bolt's "head up" orientation here without rotation.
 _FOOT_BOLT_HEAD_Z = TURRET_FRAME_FLOOR_Z + _MEMBER / 2 + BRACKET_FOOT_Z   # = -162
-_FOOT_BOLT_CTR_X = BRACKET_WALL_X_MIN + BRACKET_WALL_T / 2                # bracket foot centerline
-_FOOT_BOLT_DX = BRACKET_BOLT_SPACING_X / 2                                 # = 17.5
 _FOOT_BOLT_Y = TURRET_FRAME_CROSS_Y                                        # bolts on the cross-rail centerline
+# Bolt X positions come from the bracket's own hole pattern
+# (`BRACKET_BOLT_XS`, inner then outer) — one source, no mirror.
 
 # Bolt length: 8 mm foot pass-through + 6 mm slot engagement = 14 mm.
 # Stock M5×14 SHCS. The 6 mm slot-side reach is sized to fit within the
@@ -148,9 +143,9 @@ def _drive_foot_bolts(
     without duplication here.
     """
     overrides: dict[str, DetailOverride] = {}
-    for sx, label in ((-1, "inner"), (+1, "outer")):
+    for bolt_x, label in zip(BRACKET_BOLT_XS, ("inner", "outer")):
         bolt = (
-            Pos(_FOOT_BOLT_CTR_X + sx * _FOOT_BOLT_DX, _FOOT_BOLT_Y, _FOOT_BOLT_HEAD_Z)
+            Pos(bolt_x, _FOOT_BOLT_Y, _FOOT_BOLT_HEAD_Z)
             * SocketHeadCapScrew(
                 size="M5-0.8",
                 length=_FOOT_BOLT_LENGTH_MM,

@@ -39,8 +39,10 @@ Members (4 functional + 2 stubs):
                           31 × 31 mm pattern, Ø22 centering boss).
                           Hangs below the bracket plate with shaft
                           pointing +Z up.
-  * drive_bracket       — printed L-bracket: foot bolts into the
-                          cross-rail's top T-slot at y = 0; vertical
+  * drive_bracket       — printed Z-bracket: foot bolts into the
+                          cross-rail's top T-slot at y = 0 with both
+                          M5 heads outboard of the wall (key access
+                          from above with the motor mounted); vertical
                           wall rises outboard of the motor body in +X
                           direction; horizontal cantilever plate
                           extends inboard over the motor and hosts the
@@ -268,21 +270,42 @@ _BRACKET_PLATE_CENTER_X = (BRACKET_PLATE_X_MIN + BRACKET_PLATE_X_MAX) / 2
 BRACKET_PLATE_X_LEN = BRACKET_PLATE_X_MAX - BRACKET_PLATE_X_MIN
 BRACKET_PLATE_Y = BRACKET_WALL_Y                           # depth
 
-# Foot. Spans wall outboard ± 30 mm in X to give two M5 bolt holes
-# spaced 35 mm along the rail T-slot.
-BRACKET_FOOT_X = 60.0
+# Foot. A short toe inboard of the wall, then the foot runs outboard
+# past two M5 bolt holes along the rail's T-slot — both bolts OUTBOARD
+# of the wall. The original layout straddled the wall (one bolt each
+# side, 35 mm apart); the inboard bolt then sat in the 5 mm strip
+# between the motor body and the wall, where an M5 head (Ø8.7 × 5)
+# neither fits nor can be driven with the motor mounted. Found red the
+# first time the detail tier was checked (2026-09-16); moved outboard
+# the same day. With both heads outboard, a hex key comes straight
+# down past the wall's outboard face with the motor in place.
+#
+# Loads are small: the belt pull at z ≈ -86 tips the bracket inboard
+# about the toe's inner edge, and the two outboard bolts hold it in
+# tension at 22 / 40 mm lever arms — tens of newtons on an M5.
+BRACKET_FOOT_TOE_X = 10.0                                  # inboard of the wall
 BRACKET_FOOT_Y = BRACKET_WALL_Y                            # depth = 50
 BRACKET_FOOT_Z = 8.0                                       # vertical
-_BRACKET_FOOT_CENTER_X = _BRACKET_WALL_CENTER_X
-_BRACKET_FOOT_X_MIN = _BRACKET_FOOT_CENTER_X - BRACKET_FOOT_X / 2
-_BRACKET_FOOT_X_MAX = _BRACKET_FOOT_CENTER_X + BRACKET_FOOT_X / 2
 _BRACKET_FOOT_BOTTOM_Z = RAIL_TOP_Z                        # = -120
 _BRACKET_FOOT_TOP_Z = _BRACKET_FOOT_BOTTOM_Z + BRACKET_FOOT_Z  # = -112
 _BRACKET_FOOT_CENTER_Z = (_BRACKET_FOOT_BOTTOM_Z + _BRACKET_FOOT_TOP_Z) / 2
 
 BRACKET_BOLT_HOLE_D = 5.5                                  # M5 clearance
-BRACKET_BOLT_SPACING_X = 35.0
-_BRACKET_BOLT_HALF_X = BRACKET_BOLT_SPACING_X / 2
+BRACKET_BOLT_HEAD_D = 8.7                                  # ISO 4762 M5 head (bd_warehouse)
+BRACKET_BOLT_KEY_CLEARANCE_X = 2.0                         # head edge to wall face
+BRACKET_BOLT_SPACING_X = 18.0
+BRACKET_BOLT_INNER_X = (
+    BRACKET_WALL_X_MAX + BRACKET_BOLT_HEAD_D / 2 + BRACKET_BOLT_KEY_CLEARANCE_X
+)                                                          # ≈ +106.1
+BRACKET_BOLT_OUTER_X = BRACKET_BOLT_INNER_X + BRACKET_BOLT_SPACING_X  # ≈ +124.1
+BRACKET_BOLT_XS = (BRACKET_BOLT_INNER_X, BRACKET_BOLT_OUTER_X)  # inner, outer
+BRACKET_FOOT_END_MARGIN_X = 5.0                            # hole edge to foot end
+_BRACKET_FOOT_X_MIN = BRACKET_WALL_X_MIN - BRACKET_FOOT_TOE_X          # ≈ +74.75
+_BRACKET_FOOT_X_MAX = (
+    BRACKET_BOLT_OUTER_X + BRACKET_BOLT_HOLE_D / 2 + BRACKET_FOOT_END_MARGIN_X
+)                                                          # ≈ +131.85
+BRACKET_FOOT_X = _BRACKET_FOOT_X_MAX - _BRACKET_FOOT_X_MIN
+_BRACKET_FOOT_CENTER_X = (_BRACKET_FOOT_X_MIN + _BRACKET_FOOT_X_MAX) / 2
 
 
 # --- Part functions ----------------------------------------------------
@@ -377,35 +400,29 @@ def bracket():
         f"motor body outboard face {_MOTOR_BODY_OUTBOARD_X:.2f}; gap "
         f"{_wall_to_motor:.2f} mm < WALL_MIN ({WALL_MIN})"
     )
-    # Foot bolt pattern fits inside foot footprint (X-direction).
-    _foot_bolt_outer_x = (
-        _BRACKET_FOOT_CENTER_X + _BRACKET_BOLT_HALF_X + BRACKET_BOLT_HOLE_D / 2
+    # Both bolt heads stand outboard of the wall with hex-key clearance
+    # from above (by construction; guard the derivation).
+    _inner_head_edge_x = BRACKET_BOLT_INNER_X - BRACKET_BOLT_HEAD_D / 2
+    assert _inner_head_edge_x >= BRACKET_WALL_X_MAX + BRACKET_BOLT_KEY_CLEARANCE_X - 1e-9, (
+        f"inner bolt head edge {_inner_head_edge_x:.2f} closer than "
+        f"{BRACKET_BOLT_KEY_CLEARANCE_X} mm to the wall outboard face "
+        f"{BRACKET_WALL_X_MAX:.2f}"
     )
-    assert _foot_bolt_outer_x + WALL_MIN <= _BRACKET_FOOT_X_MAX, (
-        f"foot bolt outer edge {_foot_bolt_outer_x:.2f} too close to foot "
-        f"X+ end face {_BRACKET_FOOT_X_MAX:.2f}; raise BRACKET_FOOT_X or "
-        f"shrink BRACKET_BOLT_SPACING_X"
+    # Two heads don't touch each other along the slot.
+    assert BRACKET_BOLT_SPACING_X >= BRACKET_BOLT_HEAD_D + WALL_MIN, (
+        f"bolt spacing {BRACKET_BOLT_SPACING_X} leaves no gap between "
+        f"Ø{BRACKET_BOLT_HEAD_D} heads"
     )
-    # Foot bolt inner edge clears the wall footprint (so bolt heads can
-    # drop in from above without the wall in the way).
-    _inner_bolt_x = _BRACKET_FOOT_CENTER_X - _BRACKET_BOLT_HALF_X
-    assert _inner_bolt_x < BRACKET_WALL_X_MIN - BRACKET_BOLT_HOLE_D / 2, (
-        f"inner bolt at x = {_inner_bolt_x:.2f} sits inside the wall "
-        f"footprint [{BRACKET_WALL_X_MIN:.2f}, {BRACKET_WALL_X_MAX:.2f}]; "
-        f"bolt head won't have clearance from above"
-    )
+    # The foot's inner edge is the tipping fulcrum; keep a real toe.
+    assert BRACKET_FOOT_TOE_X >= WALL_MIN
 
     foot = (
         Pos(_BRACKET_FOOT_CENTER_X, 0, _BRACKET_FOOT_CENTER_Z)
         * Box(BRACKET_FOOT_X, BRACKET_FOOT_Y, BRACKET_FOOT_Z)
     )
-    for sx in (-1, 1):
+    for bolt_x in BRACKET_BOLT_XS:
         foot -= (
-            Pos(
-                _BRACKET_FOOT_CENTER_X + sx * _BRACKET_BOLT_HALF_X,
-                0,
-                _BRACKET_FOOT_CENTER_Z,
-            )
+            Pos(bolt_x, 0, _BRACKET_FOOT_CENTER_Z)
             * Cylinder(BRACKET_BOLT_HOLE_D / 2, BRACKET_FOOT_Z * 3)
         )
 
@@ -619,9 +636,11 @@ def build_turret_drive_standalone() -> Assembly:
     # against `turret.frame.floor_cross_x`: the bolt dips 6 mm into the
     # T-slot opening, hollow only on the detailed V-slot — this
     # standalone's solid `cross_rail_stub` would false-fail it.
-    # The motor body hangs below the bracket plate over the inner bolt:
-    # the head must clear it to be driven at all. First evaluated
-    # 2026-09-16 (`check_detail.py:build_drive_detailed`) — red.
+    # The motor body hangs below the plate inboard of the wall; both
+    # heads stand outboard of it. Red on the original straddle layout
+    # the first time it was evaluated (2026-09-16,
+    # `check_detail.py:build_drive_detailed`: inner head 1 mm into the
+    # motor body); green since the bolts moved outboard the same day.
     for bolt in _DETAIL_FOOT_BOLTS:
         a = a.assert_no_interference(bolt, "static.drive_bracket")
         a = a.assert_no_interference(bolt, "static.drive_motor")
