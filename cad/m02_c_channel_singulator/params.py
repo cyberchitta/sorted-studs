@@ -16,8 +16,14 @@ rim drive of `_notes/decisions/m02-rotor-drive.md`:
     z ∈ [-10,   0]             rotor flange, ring-gear teeth on its OD
     z ∈ [-9,   -1]             pinion face (meshes with the flange OD)
     z ∈ [-18.5, -10]           turntable bearing (bought)
-    z ∈ [-24.5, -18.5]         base plate = stator foot ring (§5)
-    z ∈ [-64.5, -24.5]         NEMA 17 body, hanging under the plate
+    z ∈ [-24.5, -18.5]         bowl floor = stator foot ring (§5)
+    z ∈ [-64.5, -24.5]         NEMA 17 body, hanging under the floor
+
+The bowl (2026-09-16, `_notes/decisions/m02-chain.md` §5): the floor
+and a cylindrical skirt at the kink radius rising from it to
+SKIRT_TOP_Z are one printed part in `drive/` (it carries the bearing
+and the motor). The stator wall is a separate liner that sits on the
+skirt's top edge by a flange at the same height — see SKIRT_TOP_Z.
 """
 
 import math
@@ -190,13 +196,33 @@ BEARING_OD = 200.0
 BEARING_ID = 165.0
 BEARING_H = 8.5
 
-# Base plate: the §5 foot ring, extended inward to carry the bearing.
-# OD = skirt OD (Ø310 — exceeds the X1C's 256 mm bed exactly as the
-# stator wall already does; both want sector-splitting or a bigger
-# bed, open in `state/m02-singulator.md`).
+# Bowl floor ("plate" in every derived name below): the §5 foot ring,
+# extended inward to carry the bearing. OD = skirt OD (Ø310 — exceeds
+# the X1C's 256 mm bed exactly as the stator wall already does; both
+# print in thirds, seams open in `state/m02-singulator.md`).
 PLATE_T = 6.0
 PLATE_R_IN = ROTOR_FLANGE_R_IN
 PLATE_R_OUT = R_STATOR_OUTER_KINK
+
+# Skirt: the bowl's wall, STATOR_WALL_T thick, on the floor's rim,
+# rising to SKIRT_TOP_Z. Its inner face is the kink radius, so the
+# stator's V-cone (outer face r = R_STATOR_OUTER_BASE + z·tan V) meets
+# that face exactly at SKIRT_TOP_Z — the stator carries a flat flange
+# there, out to R_STATOR_OUTER_KINK, that rests on the skirt's top
+# edge, and its cone seats on that edge's inner corner (self-centring).
+# Why two parts and not one bowl: each prints without support in its
+# own orientation (the bowl floor-down, the liner inverted as before),
+# and the Ø310 thirds seams of the two rings can be staggered.
+SKIRT_R_IN = PLATE_R_OUT - STATOR_WALL_T                    # 152 = R_STATOR_INNER_KINK
+SKIRT_TOP_Z = (SKIRT_R_IN - R_STATOR_OUTER_BASE) / math.tan(math.radians(V_HALF_ANGLE_DEG))   # 27
+
+# Exit floor (the tongue, a stator part) — shared because the skirt is
+# slotted for it: the wedge cut through the skirt stops
+# EXIT_FLOOR_SIDE_CLEAR under the tongue's underside, leaving a stub
+# of skirt below it in the exit arc.
+EXIT_FLOOR_T = 4.0
+EXIT_FLOOR_SIDE_CLEAR = 1.5
+SKIRT_CUT_BOTTOM_Z = -EXIT_FLOOR_T - EXIT_FLOOR_SIDE_CLEAR    # -5.5
 
 # NEMA 17 compact short body (shortest commodity variant).
 NEMA17_SIDE = 42.3
@@ -206,8 +232,17 @@ NEMA17_SHAFT_LEN = 22.0
 NEMA17_BOLT_PATTERN = 31.0   # M3 × 4 square spacing, shaft-exit face
 NEMA17_PILOT_D = 22.0        # centring boss on the shaft-exit face
 NEMA17_PILOT_H = 2.0
-NEMA17_BOLT_HOLE_D = 3.4     # M3 clearance through the plate
-PLATE_MOTOR_HOLE_D = NEMA17_PILOT_D + 1.0   # pilot boss clears the plate
+NEMA17_BOLT_HOLE_D = 3.4     # M3 clearance through the floor
+# The M3 heads are counterbored flush into the floor's top face: at
+# CENTER_DIST the pattern's two outboard corners reach r ≈ 149.3, and
+# an M3 socket head (Ø5.5) standing on the floor would touch the
+# skirt's inner face at r 152. Recessed, the heads also clear the
+# rotor flange above and need no room; the counterbore's rim nicks
+# the skirt's foot by ~0.3 mm over its 3 mm depth at those two
+# corners, which the bowl builder guards and accepts.
+NEMA17_BOLT_CBORE_D = 6.0    # M3 SHCS head Ø5.5 + 0.5
+NEMA17_BOLT_CBORE_DEPTH = 3.0   # = head height, flush
+PLATE_MOTOR_HOLE_D = NEMA17_PILOT_D + 1.0   # pilot boss clears the floor
 
 # Slip fit between the NEMA-17 shaft and the pinion bore. Snug so a
 # single transverse M3 set screw through the hub locks the pinion.

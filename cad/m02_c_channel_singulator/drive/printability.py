@@ -11,10 +11,24 @@ are not inspected.
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
-from .assembly import WALL_MIN, base_plate, pinion
+from .assembly import WALL_MIN, bowl, pinion
 
 
-inspect(base_plate(), method=FDM(wall_min_mm=WALL_MIN), out="outputs", name="base_plate")
+# The bowl prints floor-down: skirt and slot faces are vertical. The
+# only down-facing area above the bed is the skirt foot's first layer
+# over the rims of the two outboard M3 counterbores, which reach
+# 0.26 mm past the skirt's inner face (params NEMA17_BOLT_CBORE_D).
+inspect(
+    bowl(), method=FDM(wall_min_mm=WALL_MIN), out="outputs", name="bowl",
+    waive={
+        "overhang_max": "0.83 mm² at 90° (measured 2026-09-16): two "
+        "circular segments of the Ø6 counterbores about the motor "
+        "pattern's outboard corners (r ≈ 149.3) that lie past the "
+        "skirt's inner face at r 152 — sagitta 0.26 mm, chord ≈ 2.4 mm "
+        "each. The skirt's first layer bridges that sliver; nothing "
+        "else in the part faces down.",
+    },
+)
 # The pinion prints gear-face down (hub up): the step from the pitch
 # cylinder down to the hub is then a top face, not a 90° overhang.
 inspect(

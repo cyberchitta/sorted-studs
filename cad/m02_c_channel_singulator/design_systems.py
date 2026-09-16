@@ -10,8 +10,9 @@ Material is a physical property, not a render axis — see
 
 m02 has seven named parts: ``rotor`` (rotates, MECHANISM), ``stator``
 (fixed structural shell, SECONDARY_STRUCTURE), ``exit_floor`` (the
-tongue under the exit arc, SECONDARY_STRUCTURE), ``base_plate`` (the
-foot ring the rotor bearing and motor hang from, SECONDARY_STRUCTURE),
+tongue under the exit arc, SECONDARY_STRUCTURE), ``bowl`` (the floor
+and skirt the rotor bearing, motor and stator liner sit on,
+SECONDARY_STRUCTURE),
 ``pinion`` (rotates, MECHANISM), and two bought parts outside the
 design system — ``bearing`` (aluminium turntable) and ``motor``
 (NEMA-17) — which keep their material intrinsics.
@@ -40,7 +41,7 @@ ROLE_OF: dict[str, Role | None] = {
     # for different brick mixes becomes a real thing.
     "stator":     Role.SECONDARY_STRUCTURE,
     "exit_floor": Role.SECONDARY_STRUCTURE,
-    "base_plate": Role.SECONDARY_STRUCTURE,
+    "bowl":       Role.SECONDARY_STRUCTURE,
     "pinion":     Role.MECHANISM,
     "bearing":    None,                      # bought turntable — outside palette
     "motor":      None,                      # NEMA-17 cast body — outside palette

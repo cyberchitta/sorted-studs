@@ -11,14 +11,17 @@ around. An angular arc on the +X side is cut away — pieces
 reaching the exit fall off the outer edge under gravity into the
 scan-station drop path (Module 3).
 
-V1 is wall-only: a two-zone ring of thickness STATOR_WALL_T — V-
-slope from z=0 to z=STATOR_V_H, then vertical cylinder from
-STATOR_V_H to STATOR_WALL_H. The exit arc is cut through the full
-wall height. The mounting interface is the skirt + foot ring of
-`_notes/decisions/m02-chain.md` §5: the foot ring is the drive's
-base plate (../drive/assembly.py, top at PLATE_TOP_Z = -18.5), so
-the skirt — not yet modelled — drops from the kink to that plate.
-No floor at z=0: the pinion runs under the wall at r 120–147.
+A two-zone ring of thickness STATOR_WALL_T — V-slope from z=0 to
+z=STATOR_V_H, then vertical cylinder from STATOR_V_H to
+STATOR_WALL_H. The exit arc is cut through the full wall height. The
+mounting interface (`_notes/decisions/m02-chain.md` §5, 2026-09-16):
+the wall is a liner that sits on the drive's bowl — its outer cone
+face stops at the skirt's inner radius at SKIRT_TOP_Z and steps out
+to a flat flange (r SKIRT_R_IN…R_STATOR_OUTER_KINK) resting on the
+skirt's top edge; the cone seats on that edge's inner corner, which
+centres it. Above the flange the cylinder zone is the wall's own.
+No floor at z=0: the pinion runs under the wall at r 120–147, over
+the bowl's floor 18.5 mm down.
 
 The exit floor (`exit_floor`, a second part, 2026-09-15): before it,
 a brick leaving the V at the exit had nothing under it but the base
@@ -33,11 +36,11 @@ plate. Separate from the stator on purpose: printed with it, in the
 stator's inverted orientation, it would be a ~100 mm bridge over the
 open wedge.
 
-The wall's V-zone sits at V_HALF_ANGLE from vertical on both
-faces — a 45° overhang by the conventional build-plate metric.
-Expect to print either with support on the outside, or inverted
-(top-down on bed) so each layer is smaller than the one below it.
-The cylindrical upper zone is trivially printable.
+Print orientation: inverted (top face on the bed), so the cylinder
+zone rises from the bed, the flange's underside becomes an upward
+step, and the V-cone hangs inward at 45° with no support — the
+brick-facing inner cone is the overhung face. `printability.py`
+inspects it that way (`up_axis=(0, 0, -1)`).
 
 Coordinate frame:
     origin = rotor axis ∩ V-bottom level (shared with rotor/)
@@ -61,6 +64,8 @@ from ..materials import material_of
 from ..params import (
     ADDENDUM,
     EXIT_ARC_DEG,
+    EXIT_FLOOR_SIDE_CLEAR,
+    EXIT_FLOOR_T,
     PLATE_TOP_Z,
     R_STATOR_INNER_BASE,
     R_STATOR_INNER_KINK,
@@ -68,6 +73,8 @@ from ..params import (
     R_STATOR_OUTER_KINK,
     RING_PITCH_D,
     ROTOR_BASE_DIAMETER,
+    SKIRT_R_IN,
+    SKIRT_TOP_Z,
     STATOR_V_H,
     STATOR_WALL_H,
     STATOR_WALL_T,
@@ -122,13 +129,13 @@ WALL_MIN = 1.5
 # EXIT_WALL_T in from the cut (the extrude goes −Y off Plane.XZ, so
 # the paddle plugs the opening's edge rather than the wall's solid
 # half), so that edge is a further EXIT_WALL_T in. The rib stands from
-# the plate top to the tongue's underside, inboard of the skirt, 2°
-# inside the tongue's edges.
-EXIT_FLOOR_T = 4.0
+# the bowl's floor to the tongue's underside, 1 mm inboard of the
+# skirt's inner face (EXIT_FLOOR_RIB_SKIRT_CLEAR), 2° inside the
+# tongue's edges. EXIT_FLOOR_T and EXIT_FLOOR_SIDE_CLEAR live in
+# ..params: the skirt's wedge slot is cut from them.
 EXIT_FLOOR_GEAR_CLEAR = 2.0
 EXIT_FLOOR_R_IN = RING_PITCH_D / 2.0 + ADDENDUM + EXIT_FLOOR_GEAR_CLEAR   # 123.5
 EXIT_FLOOR_R_OUT = R_STATOR_OUTER_KINK                                    # 155
-EXIT_FLOOR_SIDE_CLEAR = 1.5
 _UPSTREAM_EDGE_DEG = EXIT_ARC_DEG / 2.0 - math.degrees(EXIT_FLOOR_SIDE_CLEAR / EXIT_FLOOR_R_IN)          # ≈ 17.3
 _DOWNSTREAM_EDGE_DEG = EXIT_ARC_DEG / 2.0 - math.degrees((EXIT_WALL_T + EXIT_FLOOR_SIDE_CLEAR) / EXIT_FLOOR_R_IN)   # ≈ 15.9
 # (from, to) in degrees about +X, the paddle side per EXIT_WALL_SIDE_SIGN.
@@ -136,9 +143,15 @@ EXIT_FLOOR_SPAN_DEG = (
     (-_UPSTREAM_EDGE_DEG, _DOWNSTREAM_EDGE_DEG) if EXIT_WALL_SIDE_SIGN > 0
     else (-_DOWNSTREAM_EDGE_DEG, _UPSTREAM_EDGE_DEG)
 )
-EXIT_FLOOR_RIB_R_IN = 145.0
-EXIT_FLOOR_RIB_R_OUT = 153.0
+EXIT_FLOOR_RIB_SKIRT_CLEAR = 1.0
+EXIT_FLOOR_RIB_R_OUT = SKIRT_R_IN - EXIT_FLOOR_RIB_SKIRT_CLEAR             # 151
+EXIT_FLOOR_RIB_R_IN = EXIT_FLOOR_RIB_R_OUT - 8.0                          # 143
 EXIT_FLOOR_RIB_INSET_DEG = 2.0
+
+# The flange the wall rests on: its inner corner is where the outer
+# cone face reaches the skirt's inner radius, at SKIRT_TOP_Z.
+_FLANGE_R_IN = SKIRT_R_IN
+_FLANGE_Z = SKIRT_TOP_Z
 
 
 # --- Part functions ----------------------------------------------------
@@ -159,10 +172,12 @@ def stator(
     """Two-zone ring wall around +Z with an exit-arc wedge cut through,
     plus a radial one-way paddle at the downstream edge of that cut.
 
-    Cross-section in the XZ plane is a 6-vertex polygon (reduces to
-    4 vertices when v_h == height). Inner and outer faces slope at
-    V_HALF_ANGLE from vertical up to z=v_h, then go vertical up to
-    z=height. Revolved around Z to form the full wall. A radial
+    Cross-section in the XZ plane is a 7-vertex polygon (5 when
+    v_h == height). Inner and outer faces slope at V_HALF_ANGLE from
+    vertical; the outer face stops at the skirt's inner radius
+    (z = SKIRT_TOP_Z) and steps out to the flange that rests on the
+    bowl's skirt, then goes vertical to z=height; the inner face
+    kinks to vertical at z=v_h. Revolved around Z. A radial
     wedge centered on +X (spanning ±exit_arc_deg/2) is then
     subtracted to produce the exit opening. Finally a trapezoidal
     paddle is unioned on at the downstream edge of the cut (sign
@@ -176,20 +191,27 @@ def stator(
     assert 0.0 < v_h <= height, (
         f"v_h ({v_h}) must be positive and not exceed height ({height})"
     )
+    # The flange sits below the kink and inside the outer kink radius:
+    # the outer cone reaches r_out_base + SKIRT_TOP_Z·tan V there.
+    assert 0.0 < _FLANGE_Z < v_h and _FLANGE_R_IN < r_out_kink, (
+        f"flange at z {_FLANGE_Z} / r {_FLANGE_R_IN} must lie under the "
+        f"kink (z {v_h}, r {r_out_kink})"
+    )
 
     profile_pts: list[tuple[float, float]] = [
         (r_in_base, 0.0),
         (r_out_base, 0.0),
+        (_FLANGE_R_IN, _FLANGE_Z),
+        (r_out_kink, _FLANGE_Z),
     ]
     if v_h < height:
         profile_pts += [
-            (r_out_kink, v_h),
             (r_out_kink, height),
             (r_in_kink, height),
             (r_in_kink, v_h),
         ]
     else:
-        # Pure-V variant: skip the cylindrical zone entirely.
+        # Pure-V variant: no cylindrical zone above the kink.
         profile_pts += [
             (r_out_kink, height),
             (r_in_kink, height),
@@ -233,14 +255,10 @@ def stator(
     paddle_pts: list[tuple[float, float]] = [
         (r_wall_inner_bot, 0.0),
         (r_out_base, 0.0),
+        (_FLANGE_R_IN, _FLANGE_Z),
+        (r_out_kink, _FLANGE_Z),
+        (r_out_kink, height),
     ]
-    if v_h < height:
-        paddle_pts += [
-            (r_out_kink, v_h),
-            (r_out_kink, height),
-        ]
-    else:
-        paddle_pts.append((r_out_kink, height))
     paddle_pts.append((r_wall_inner_top, height))
     paddle_profile = Plane.XZ * Polygon(*paddle_pts, align=None)
     paddle = extrude(paddle_profile, amount=exit_wall_t)
@@ -276,9 +294,16 @@ def exit_floor(
 ) -> Part:
     """The exit-floor tongue: a flat sector with its top face at z = 0
     spanning the exit wedge (asymmetric — see EXIT_FLOOR_SPAN_DEG), plus
-    an arc rib under its outer edge from `z_bottom` (the base plate
-    top) up to the tongue. About +X like the exit arc."""
+    an arc rib under its outer edge from `z_bottom` (the bowl's floor
+    top) up to the tongue. About +X like the exit arc. The tongue
+    passes through the skirt's wedge slot; the rib stands inboard of
+    the skirt's inner face (measured at the unit root only as a
+    no-interference, since the rib's rest on the floor makes the pair
+    a contact pair — so the margin is guarded here)."""
     assert rib_r_out <= r_out and rib_r_in >= r_in, "rib must sit under the tongue"
+    assert rib_r_out + EXIT_FLOOR_RIB_SKIRT_CLEAR <= SKIRT_R_IN + 1e-9, (
+        f"rib outer radius {rib_r_out} runs into the skirt's inner face {SKIRT_R_IN}"
+    )
     lo, hi = span_deg
     assert lo < hi and 2.0 * rib_inset_deg < hi - lo, "rib must sit inside the tongue's span"
     tongue = _sector(r_in, r_out, span_deg, -t, t)

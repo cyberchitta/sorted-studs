@@ -4,7 +4,7 @@ M02 C-channel singulator — top-level assembly.
 Composes the sub-assemblies as subtrees (all share the m02-local
 frame, so every placement is identity) and runs the interference /
 clearance checks that span sub-assembly boundaries. Part identity is
-the dotted tree path (``rotor.rotor``, ``drive.base_plate``,
+the dotted tree path (``rotor.rotor``, ``drive.bowl``,
 ``drive.pinion.pinion``); attributes (role tags, materials) key on
 the leaf name inside each sub-module's builder. The rotor's spin DOF
 is declared at composition (``RevoluteJoint`` about the rotor-local Z
@@ -23,19 +23,21 @@ Cross-boundary checks:
                      apart, close but not touching.
 - rotor ↔ bearing  — the flange underside rests on the bearing
                      (tangent contact).
-- rotor ↔ plate    — separated by the bearing height.
-- rotor ↔ motor    — the motor hangs under the plate, well clear.
+- rotor ↔ bowl     — separated by the bearing height.
+- rotor ↔ motor    — the motor hangs under the floor, well clear.
 - stator ↔ pinion  — the pinion runs PINION_TOP_CLEAR under the
                      stator's bottom face.
-- stator ↔ drive   — nothing in the drive reaches the wall; the exit
-                     floor's rib rests tangent on the base plate.
+- stator ↔ bowl    — the wall's flange rests on the skirt's top edge
+                     (tangent contact); nothing else in the drive
+                     reaches the wall.
+- exit floor ↔ bowl — the tongue's rib rests tangent on the floor;
+                     the tongue passes through the skirt's slot.
 - exit floor ↔ rotor — the tongue's inner edge stays
                      EXIT_FLOOR_GEAR_CLEAR outside the ring gear's tip
                      circle (the pitch cylinder grown by ADDENDUM).
 
 Deferred:
 - exit_sensor ↔ stator exit arc (beam alignment)
-- skirt (m02-chain.md §5) from the stator kink down to the plate
 """
 
 
@@ -131,7 +133,7 @@ def build_m02(
         )
         # Rotor rests on the bearing, which is BEARING_H above the plate.
         .assert_tangent_contact("rotor.rotor", "drive.bearing")
-        .assert_clearance("rotor.rotor", "drive.base_plate", min_mm=BEARING_H - _MEAS_TOL)
+        .assert_clearance("rotor.rotor", "drive.bowl", min_mm=BEARING_H - _MEAS_TOL)
         .assert_no_interference("rotor.rotor", "drive.motor")
         .assert_clearance("rotor.rotor", "drive.motor", min_mm=10.0)
         # Pinion runs just under the stator's bottom face.
@@ -147,10 +149,14 @@ def build_m02(
             min_mm=_stator.EXIT_FLOOR_GEAR_CLEAR - _MEAS_TOL, grow_b_mm=ADDENDUM,
             name="exit_floor_clears_ring_gear_tips",
         )
-        .assert_tangent_contact("stator.exit_floor", "drive.base_plate")
-        # Nothing in the drive reaches the stator subtree except at that
-        # rest (a tangent pair carries no overlap; group form, declared
-        # after composition).
+        .assert_tangent_contact("stator.exit_floor", "drive.bowl")
+        # The liner's flange rests on the skirt's top edge (its cone
+        # seats on the edge's inner corner at the same z — a line
+        # contact, zero overlap).
+        .assert_tangent_contact("stator.stator", "drive.bowl")
+        # Nothing in the drive reaches the stator subtree except at
+        # those rests (a tangent pair carries no overlap; group form,
+        # declared after composition).
         .assert_no_interference_between("stator", "drive"),
         design_system(schema),
     )

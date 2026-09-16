@@ -3,7 +3,7 @@ m02 chain — top-level standalone assembly.
 
 Composes the three singulator stages as the `s1` / `s2` / `s3`
 subtrees (part identity is the tree path: `s2.rotor.rotor`,
-`s3.drive.base_plate`, …), the LOAD ramp (`load_ramp`) from S1's
+`s3.drive.bowl`, …), the LOAD ramp (`load_ramp`) from S1's
 chute exit down to the m03 LOAD platform, and the gantry that carries
 the stages on m05's two through-deck columns: S1's prop bar
 (`s1_prop_bar`, across V_5's end), S3's prop bar and cross
@@ -38,9 +38,9 @@ m05 column tops + top deck and m03 turret parts are EXTERNAL to the
 chain — cross-unit asserts live in `cad/assembly.py`, and the
 turret's loaded-platform envelope in `cad/check_turret_envelope.py`.
 
-The stator-mounting interface (the skirt / bowl that seats the stage
-on its bars) is still open: each stage's base plate is the stand-in
-that rests on the bars.
+Each stage rests on its bars by its bowl's floor (`drive.bowl`, the
+floor + skirt of `m02-chain.md` §5, 2026-09-16); the bolt patterns
+between floor and bars are detail-layer, not modelled.
 """
 
 from __future__ import annotations
@@ -311,7 +311,7 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
         a = (
             a
             .assert_clearance(
-                f"{up.name}.drive.base_plate", f"{dn.name}.rotor.rotor",
+                f"{up.name}.drive.bowl", f"{dn.name}.rotor.rotor",
                 min_mm=STAGE_CLEAR - _MEAS_TOL,
                 name=f"{up.name}_plate_over_{dn.name}_rotor",
             )
@@ -350,7 +350,7 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
         ("s1_prop_bar", s1), ("s3_prop_bar", s3),
         ("s3_cross_a", s3), ("s3_cross_b", s3), ("s2_tee", s2),
     ):
-        a = a.assert_tangent_contact(bar, f"{stage.name}.drive.base_plate")
+        a = a.assert_tangent_contact(bar, f"{stage.name}.drive.bowl")
     # The stem butts the T bar's near face; the cross halves butt the
     # prop bar's faces.
     a = (

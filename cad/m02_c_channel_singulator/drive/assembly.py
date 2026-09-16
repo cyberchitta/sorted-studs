@@ -5,11 +5,17 @@ The rotor is supported at its rim and driven at its rim
 (`_notes/decisions/m02-rotor-drive.md`, 2026-09-11). Everything here
 hangs below the V-bottom plane, under the rotor's ring-gear flange:
 
-  - base_plate — printed annulus, r ∈ [PLATE_R_IN, PLATE_R_OUT]. It is
-                 the stator foot ring of `m02-chain.md` §5 extended
-                 inward: the turntable bearing sits on its top face,
-                 the motor bolts to its underside through a pilot hole
-                 + four M3 clearance holes at the NEMA-17 pattern.
+  - bowl       — printed: a floor annulus, r ∈ [PLATE_R_IN, PLATE_R_OUT],
+                 with a cylindrical skirt on its rim rising to
+                 SKIRT_TOP_Z (`m02-chain.md` §5, 2026-09-16). The floor
+                 is the stator foot ring extended inward: the turntable
+                 bearing sits on its top face, the motor bolts to its
+                 underside through a pilot hole + four M3 clearance
+                 holes at the NEMA-17 pattern. The stator wall is a
+                 liner resting on the skirt's top edge. The skirt is
+                 slotted through the exit arc for the stator's tongue,
+                 down to SKIRT_CUT_BOTTOM_Z; below that a stub of skirt
+                 keeps the ring beam closed.
   - bearing    — bought aluminium turntable, modelled as one annulus
                  (BEARING_ID / OD / H). Upper ring bolts to the rotor
                  flange, lower ring to the plate; both bolt circles
@@ -30,19 +36,20 @@ Coordinate frame:
     z=0    = rotor base / stator V-bottom. Everything here is below.
 
 Claims declared here (they propagate to the module root): bearing
-and motor rest on the plate (tangent contact), the pinion hub clears
-the plate top, the pinion bore clears the shaft, and the pinion's tip
-circle stays inside the skirt — the skirt is not a part yet, so that
-one is a recorded scalar. Rotor-vs-drive and stator-vs-drive claims
-live in ../assembly.py.
+and motor rest on the floor (tangent contact), the pinion hub clears
+the floor, the pinion bore clears the shaft, and the pinion's tip
+circle stays inside the skirt — recorded as a scalar, because the
+measured distance pinion↔bowl is the 0.5 mm floor gap, not the
+radial one. Rotor-vs-drive and stator-vs-drive claims live in
+../assembly.py.
 
-Printed parts: base_plate, pinion — see `printability.py`. The
-bearing and motor are bought.
+Printed parts: bowl (floor down, no support), pinion — see
+`printability.py`. The bearing and motor are bought.
 """
 
 import math
 
-from build123d import Axis, Box, Circle, Cylinder, Location, Part, Pos, Rot, extrude
+from build123d import Axis, Box, Circle, Cylinder, Location, Part, Polygon, Pos, Rot, extrude
 
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 
@@ -50,6 +57,7 @@ from ..materials import material_of
 from ..params import (
     ADDENDUM,
     BEARING_BOTTOM_Z,
+    EXIT_ARC_DEG,
     BEARING_H,
     BEARING_ID,
     BEARING_OD,
@@ -60,6 +68,8 @@ from ..params import (
     MOTOR_FACE_Z,
     MOTOR_SHAFT_BORE_CLEARANCE,
     NEMA17_BODY_LEN,
+    NEMA17_BOLT_CBORE_D,
+    NEMA17_BOLT_CBORE_DEPTH,
     NEMA17_BOLT_HOLE_D,
     NEMA17_BOLT_PATTERN,
     NEMA17_PILOT_D,
@@ -80,7 +90,9 @@ from ..params import (
     PLATE_R_OUT,
     PLATE_T,
     PLATE_TOP_Z,
-    R_STATOR_OUTER_KINK,
+    SKIRT_CUT_BOTTOM_Z,
+    SKIRT_R_IN,
+    SKIRT_TOP_Z,
     STATOR_WALL_T,
 )
 
@@ -101,39 +113,95 @@ PINION_TIP_R = CENTER_DIST + PINION_PITCH_D / 2.0 + ADDENDUM   # 147.2
 
 # --- Part functions ----------------------------------------------------
 
-def base_plate(
+def bowl(
     *,
     r_in: float = PLATE_R_IN,
     r_out: float = PLATE_R_OUT,
     t: float = PLATE_T,
+    skirt_r_in: float = SKIRT_R_IN,
+    skirt_top_z: float = SKIRT_TOP_Z,
+    skirt_cut_bottom_z: float = SKIRT_CUT_BOTTOM_Z,
+    exit_arc_deg: float = EXIT_ARC_DEG,
     motor_xy: tuple[float, float] = PINION_AXIS_XY,
     motor_rot_deg: float = MOTOR_AZIMUTH_DEG,
     pilot_hole_d: float = PLATE_MOTOR_HOLE_D,
     bolt_pattern: float = NEMA17_BOLT_PATTERN,
     bolt_hole_d: float = NEMA17_BOLT_HOLE_D,
+    bolt_cbore_d: float = NEMA17_BOLT_CBORE_D,
+    bolt_cbore_depth: float = NEMA17_BOLT_CBORE_DEPTH,
 ) -> Part:
-    """Flat annulus, top face at z=PLATE_TOP_Z, with the motor's pilot
+    """Floor annulus (top face at z=PLATE_TOP_Z) with the motor's pilot
     hole and M3 pattern cut through at ``motor_xy`` (pattern square
-    aligned radially by ``motor_rot_deg``)."""
+    aligned radially by ``motor_rot_deg``, heads counterbored flush
+    from the top), and a skirt on its rim
+    from the floor top to ``skirt_top_z``, slotted through the exit
+    arc from ``skirt_cut_bottom_z`` up for the stator's tongue.
+
+    Prints floor-down: the skirt is a plain vertical wall and the
+    slot's faces are vertical, so nothing overhangs.
+    """
     assert r_in < r_out and t > 0.0
+    assert skirt_r_in < r_out and skirt_top_z > PLATE_TOP_Z, "skirt must stand on the floor's rim"
+    assert PLATE_TOP_Z < skirt_cut_bottom_z < skirt_top_z, "the tongue slot must stay inside the skirt"
+    assert r_out - skirt_r_in >= WALL_MIN, "skirt wall too thin"
     # Bolt holes must stay clear of the pilot hole and of each other.
     assert bolt_pattern / 2.0 - bolt_hole_d / 2.0 - pilot_hole_d / 2.0 >= WALL_MIN, (
         "motor bolt holes break into the pilot hole"
     )
+    # The pattern's outboard corners (radially aligned square: corner
+    # at (+half, ±half) from the axis) must keep the through-hole
+    # inside the skirt's inner face and the counterbore inside the
+    # floor's outer edge by a wall. The counterbore may nick the
+    # skirt's foot (see params NEMA17_BOLT_CBORE_D), the hole may not.
+    half = bolt_pattern / 2.0
+    _corner_r = math.hypot(math.hypot(*motor_xy) + half, half)
+    assert _corner_r + bolt_hole_d / 2.0 <= skirt_r_in, (
+        f"motor bolt hole (edge r {_corner_r + bolt_hole_d / 2.0:.2f}) runs under the skirt (r {skirt_r_in})"
+    )
+    assert _corner_r + bolt_cbore_d / 2.0 + WALL_MIN <= r_out, (
+        "motor bolt counterbore breaks out of the floor's rim"
+    )
+    assert 0.0 < bolt_cbore_depth <= t - WALL_MIN, "counterbore leaves no floor under the head"
     plate = Pos(0, 0, PLATE_BOTTOM_Z) * extrude(
         Circle(r_out) - Circle(r_in), amount=t,
     )
+    skirt = Pos(0, 0, PLATE_TOP_Z) * extrude(
+        Circle(r_out) - Circle(skirt_r_in), amount=skirt_top_z - PLATE_TOP_Z,
+    )
+    # Exit-arc slot through the skirt — the same isoceles cutter the
+    # stator wall uses (duplicated, not imported: cad/CLAUDE.md
+    # principle 2), from the slot bottom up past the skirt's top.
+    h = math.radians(exit_arc_deg / 2.0)
+    r_cut = (r_out + 10.0) / math.cos(h)
+    wedge_sketch = Polygon(
+        (0.0, 0.0),
+        (r_cut * math.cos(-h), r_cut * math.sin(-h)),
+        (r_cut * math.cos(+h), r_cut * math.sin(+h)),
+        align=None,
+    )
+    wedge = Pos(0, 0, skirt_cut_bottom_z) * extrude(
+        wedge_sketch, amount=skirt_top_z - skirt_cut_bottom_z + 1.0,
+    )
     cut_h = t + 2.0
     holes = Cylinder(pilot_hole_d / 2.0, cut_h)
-    half = bolt_pattern / 2.0
     for sx, sy in ((1, 1), (1, -1), (-1, 1), (-1, -1)):
         holes += Pos(sx * half, sy * half, 0) * Cylinder(bolt_hole_d / 2.0, cut_h)
+        # Counterbore from the floor's top face down, so the head sits
+        # flush; the cutter extends 1 mm above the top face.
+        holes += Pos(sx * half, sy * half, t / 2.0 - bolt_cbore_depth / 2.0 + 0.5) * Cylinder(
+            bolt_cbore_d / 2.0, bolt_cbore_depth + 1.0,
+        )
     holes = (
         Pos(motor_xy[0], motor_xy[1], PLATE_BOTTOM_Z + t / 2.0)
         * Rot(0, 0, motor_rot_deg)
         * holes
     )
-    return plate - holes
+    # Holes before the skirt: the two outboard counterbores reach
+    # ~0.3 mm under the skirt's foot, and the foot's first layer
+    # bridging that rim is the design (printability waives it with
+    # the measured area); a cutter through the standing skirt would
+    # notch its face instead.
+    return ((plate - holes) + skirt) - wedge
 
 
 def bearing(
@@ -216,9 +284,9 @@ def build_drive(motor_azimuth_deg: float = MOTOR_AZIMUTH_DEG) -> Assembly:
     return (
         Assembly()
         .with_part(
-            "base_plate",
-            base_plate(motor_xy=axis_xy, motor_rot_deg=motor_azimuth_deg),
-            material=material_of("base_plate"),
+            "bowl",
+            bowl(motor_xy=axis_xy, motor_rot_deg=motor_azimuth_deg),
+            material=material_of("bowl"),
         )
         .with_part("bearing", bearing(), material=material_of("bearing"))
         .with_part("motor", motor(), location=on_axis, material=material_of("motor"))
@@ -235,14 +303,15 @@ def build_drive(motor_azimuth_deg: float = MOTOR_AZIMUTH_DEG) -> Assembly:
         # Where the chain's rail meets us, and how far the motor hangs.
         .with_anchor("plate_top", Pos(0, 0, PLATE_TOP_Z))
         .with_anchor("plate_bottom", Pos(0, 0, PLATE_BOTTOM_Z))
+        .with_anchor("skirt_top", Pos(0, 0, SKIRT_TOP_Z))
         .with_anchor("motor_bottom", Pos(axis_xy[0], axis_xy[1], MOTOR_BOTTOM_Z))
-        # Rests: the bearing's lower ring on the plate top, the motor
-        # face on the plate underside (pilot and shaft inside the hole).
-        .assert_tangent_contact("bearing", "base_plate")
-        .assert_tangent_contact("motor", "base_plate")
-        # Pinion hub floats just above the plate; bore clears the shaft.
+        # Rests: the bearing's lower ring on the floor top, the motor
+        # face on the floor underside (pilot and shaft inside the hole).
+        .assert_tangent_contact("bearing", "bowl")
+        .assert_tangent_contact("motor", "bowl")
+        # Pinion hub floats just above the floor; bore clears the shaft.
         .assert_clearance(
-            "pinion.pinion", "base_plate", min_mm=PINION_HUB_PLATE_CLEAR - _MEAS_TOL,
+            "pinion.pinion", "bowl", min_mm=PINION_HUB_PLATE_CLEAR - _MEAS_TOL,
         )
         .assert_no_interference("pinion.pinion", "motor")
         .assert_clearance(
@@ -251,13 +320,13 @@ def build_drive(motor_azimuth_deg: float = MOTOR_AZIMUTH_DEG) -> Assembly:
         # Pinion and motor stay well clear of the bearing.
         .assert_clearance("pinion.pinion", "bearing", min_mm=15.0)
         .assert_clearance("motor", "bearing", min_mm=PLATE_T - _MEAS_TOL)
-        # The skirt (m02-chain.md §5) is not a part yet: its inner face
-        # is R_STATOR_OUTER_KINK − STATOR_WALL_T, and the pinion's tip
-        # circle must stay inside it with 1 mm to spare.
+        # The pinion's tip circle stays inside the skirt with 1 mm to
+        # spare. A scalar, not a measured clearance: the pinion↔bowl
+        # distance is the 0.5 mm hub-to-floor gap asserted above.
         .assert_scalar(
             "pinion_tip_inside_skirt",
             PINION_TIP_R,
-            le=R_STATOR_OUTER_KINK - STATOR_WALL_T - 1.0,
+            le=SKIRT_R_IN - 1.0,
             detail="pinion tip radius vs the skirt's inner face, minus 1 mm",
         )
         .assert_scalar("gear_ratio", GEAR_RATIO, detail="ring / pinion teeth")

@@ -13,11 +13,12 @@ from cad_khana.printability.methods import FDM
 from .assembly import WALL_MIN, exit_floor, stator
 
 
-# Both wall faces sit at 45° from vertical (= 45° from horizontal).
-# Set threshold with a small margin so V1 lands "passing" — real
-# prints will likely need either outside support or an inverted
-# orientation; split at a later revision.
-method = FDM(wall_min_mm=WALL_MIN, overhang_max_deg=50.0)
+# Printed inverted (top face on the bed): the cylinder zone and the
+# flange rise from the bed, the V-cone hangs inward at 45° — the
+# brick-facing inner face is the overhung one, at the 50° threshold
+# with a small margin. Upright, the flange's underside would be a 90°
+# ledge.
+method = FDM(wall_min_mm=WALL_MIN, overhang_max_deg=50.0, up_axis=(0, 0, -1))
 inspect(
     stator(), method=method, out="outputs", name="stator",
     waive={
@@ -33,9 +34,9 @@ inspect(
         "STATOR_WALL_T (3.0) measured perpendicular to the cone; the "
         "inner edge tapering to zero at the V-bottom is the trough "
         "geometry itself (see the frame note in the module docstring) "
-        "and is covered by the same support/inverted print plan the "
-        "45° flanks already need. Truncating it would put a ledge at "
-        "the exact circle bricks slide through.",
+        "and prints as the topmost edge in the inverted orientation. "
+        "Truncating it would put a ledge at the exact circle bricks "
+        "slide through.",
     },
 )
 
