@@ -182,6 +182,18 @@ def m05_outer_vertex_local_xy(k: int) -> tuple[float, float]:
     )
 
 
+def m05_column_rot_deg(k: int) -> float:
+    """Yaw of m05 outer column k about its own axis: the frame turns
+    each column to its vertex azimuth (`m05_diverter/frame/assembly.py`
+    places `outer_vert_k` with `Rot(0, 0, v_angle)`), so its four
+    faces sit at (k + 0.5)·60° + {0, 90, 180, 270}. V_4's come out
+    axis-aligned (270 ≡ 0 mod 90); V_5's sit at 60 / 150 / 240 / 330.
+    Mirrored so the printed post seats' sockets and the standalone
+    stubs take the column's real orientation; drift shows at the top
+    level as a seat overlapping its column."""
+    return (k + 0.5) * 60.0
+
+
 # --- Placement family P (owner 2026-09-15) -----------------------------
 
 PIVOT_THETA_DEG = 100.0     # θ: S1 axis clockwise from the ramp line about the chute exit
@@ -434,9 +446,50 @@ ARM_TOP_Z_LOCAL = S2.plate_bottom_z                                  # +185 (wor
 # Accepted by the owner 2026-09-15; the structure pass's braced figures
 # (~0.25 mm, ~24 Hz) were for a node at 325 and have not been
 # re-figured for the longer free length above 280.
-# Each end is trimmed BRACE_END_TRIM along the member so it stands
-# clear of the post and the deck — the end joints (a gusset or corner
-# bracket) are open work; the trims are the gaps they will bridge.
 BRACE_H_ABOVE_DECK = 280.0
 BRACE_COLS = (3, 5)
-BRACE_END_TRIM = 40.0
+
+# Brace ends (2026-09-17). Each brace meets its columns at a compound
+# angle — the V_4 → V_k run is 30° off every column face in plan and
+# the member descends at ~42° — so no standard 90° corner bracket or
+# single-axis hinge joint lands on it. The ends are printed sockets
+# (`joints/assembly.py`: a collar on V_4 with a U-channel per brace,
+# a foot block on the deck at each V_k) and the brace's two end faces
+# are cut VERTICAL, each at a fixed horizontal distance from the
+# column axis it is nearest, so the end bears full-face on a vertical
+# stop in the socket. The head stop sits past V_4's collar along the
+# 30° ray (16 / cos 30° = 18.5); the foot stop keeps the brace's low
+# corner above the deck (its underside meets the deck plane 14.9 out
+# from the foot's axis) and past V_5's through-deck vertex bracket
+# (`m05.top_cap.outer_vertex_bracket_5`), whose vertical arm rises 50
+# above the deck on the column's OUTWARD face — clear from 15 out
+# along the brace's ray (probed 2026-09-17), so the V_5 foot block
+# starts at BRACE_FOOT_START_H and takes no collar. V_3 has no post
+# above the deck: its foot block runs over the column axis (an
+# end-tap bolt through the deck is the detail-layer fastening) with
+# a flange behind it.
+BRACE_HEAD_STOP_H = 25.0
+BRACE_FOOT_STOP_H = 30.0
+BRACE_FOOT_START_H = {3: 0.0, 5: 15.0}
+
+
+def brace_run(col: int) -> tuple[float, float, float]:
+    """(azimuth from V_4 toward V_col in degrees, descent angle in
+    degrees, horizontal run) of the brace to outer vertex `col`."""
+    post = m05_outer_vertex_local_xy(ARM_POST)
+    foot = m05_outer_vertex_local_xy(col)
+    dx, dy = foot[0] - post[0], foot[1] - post[1]
+    run = math.hypot(dx, dy)
+    return (
+        math.degrees(math.atan2(dy, dx)),
+        math.degrees(math.atan2(BRACE_H_ABOVE_DECK, run)),
+        run,
+    )
+
+
+def prop_bar_azimuth_deg(stage: Stage) -> float:
+    """Azimuth of the stage's prop bar, post → axis, chain-local."""
+    post = m05_outer_vertex_local_xy(PROP_POST[stage.name])
+    return math.degrees(math.atan2(
+        stage.axis_xy[1] - post[1], stage.axis_xy[0] - post[0],
+    ))

@@ -49,9 +49,19 @@ _GANTRY = (
     "s1_prop_bar", "s3_prop_bar", "s3_cross_a", "s3_cross_b",
     "s2_stem", "s2_tee", "brace_3", "brace_5",
 )
+# Bought 2020 corner brackets — frame hardware, with the members.
+_BRACKETS = (
+    "s2_stem_bracket_top", "s2_stem_bracket_left", "s2_stem_bracket_right",
+    "s2_tee_bracket_left", "s2_tee_bracket_right",
+    "s3_cross_bracket_a1", "s3_cross_bracket_a2", "s3_cross_bracket_b1", "s3_cross_bracket_b2",
+)
+# Printed joints (`joints.py`): the post seats, the brace collar and
+# the brace feet.
+_PRINTED_JOINTS = ("s1_post_seat", "s3_post_seat", "brace_head", "brace_foot_3", "brace_foot_5")
 
 ROLE_OF: dict[str, Role | None] = {
-    **{name: Role.PRIMARY_STRUCTURE for name in _GANTRY},
+    **{name: Role.PRIMARY_STRUCTURE for name in _GANTRY + _BRACKETS},
+    **{name: Role.SECONDARY_STRUCTURE for name in _PRINTED_JOINTS},
     "stator_plate": Role.SECONDARY_STRUCTURE,
     "load_ramp":    Role.SECONDARY_STRUCTURE,
 }
@@ -64,7 +74,7 @@ MODULE_OF: dict[str, Module | None] = {
     # onto the diverter's columns and deck. Tag DIVERTER for the
     # bauhaus palette's wayfinding to read correctly (blue extrusions
     # rise out of the diverter blue base).
-    **{name: Module.DIVERTER for name in _GANTRY},
+    **{name: Module.DIVERTER for name in _GANTRY + _BRACKETS + _PRINTED_JOINTS},
     # Stator support + ramp are singulator-side hardware.
     "stator_plate": Module.SINGULATOR,
     "load_ramp":    Module.SINGULATOR,

@@ -8,17 +8,25 @@ chute exit down to the m03 LOAD platform, and the gantry that carries
 the stages on m05's two through-deck columns: S1's prop bar
 (`s1_prop_bar`, across V_5's end), S3's prop bar and cross
 (`s3_prop_bar`, `s3_cross_a`, `s3_cross_b`, across V_4's end), S2's T
-arm (`s2_stem` off V_4's face, `s2_tee` under S2's plate) and the two
+arm (`s2_stem` off V_4's face, `s2_tee` under S2's plate), the two
 braces from V_4 down to the deck at V_3 and V_5 (`brace_3`,
-`brace_5`). Coordinate frame, the placement family, the stage table
-and the gantry sizes are in `params.py`.
+`brace_5`), and the joints (2026-09-17, `joints.py`): a printed seat
+on each post's end cradling its prop bar askew (`s1_post_seat`,
+`s3_post_seat`), a printed collar on V_4 socketing both braces
+(`brace_head`), a printed foot block on the deck at each brace's low
+end (`brace_foot_3`, `brace_foot_5`), and bought 2020 corner brackets
+wherever two members meet square: the stem on V_4's face
+(`s2_stem_bracket_{top,left,right}`), the stem's T (`s2_tee_bracket_*`)
+and S3's cross (`s3_cross_bracket_*`). Coordinate frame, the placement
+family, the stage table and the gantry sizes are in `params.py`.
 
 The posts themselves are m05's columns (`m05_diverter/params.py:
 THROUGH_DECK_POSTS`), so they are not modelled here: the chain
 exports where it needs their tops (`post_top_4`, `post_top_5`) and the
 top-level `cad/assembly.py` asserts those coincident with m05's live
 column tops and declares the rests (bar on post end, stem on post
-face) and the braces' clearances — claims that span both units.
+face, seats and collar around the columns, feet on the deck) — claims
+that span both units.
 
 Claims within the chain:
 
@@ -27,8 +35,10 @@ Claims within the chain:
 - gantry ↔ stages: each prop bar and the T bar rest tangent under
   their plate; no gantry member touches a stage's motor, bearing,
   rotor or stator (S2's and S3's motors are swung for exactly this).
-- gantry ↔ gantry: the stem butts the T bar (tangent); nothing else
-  touches.
+- gantry ↔ gantry: the stem butts the T bar (tangent); each brace
+  sits in its head and foot sockets (tangent: end face on the stop,
+  underside on the channel floor); each seat cradles its bar; each
+  bracket touches both members it joins; nothing else touches.
 - ramp ↔ S1 stator: the ramp inlet sits in the chute-exit azimuth and
   must not crash the outer stator wall; ramp pitch inside its window.
   (The outlet's clearance from the turret's loaded sweep is the
@@ -40,7 +50,10 @@ turret's loaded-platform envelope in `cad/check_turret_envelope.py`.
 
 Each stage rests on its bars by its bowl's floor (`drive.bowl`, the
 floor + skirt of `m02-chain.md` §5, 2026-09-16); the bolt patterns
-between floor and bars are detail-layer, not modelled.
+between floor and bars, and every joint's fasteners (T-nut bolts
+through the seat and socket walls, the end-tap M5 down through each
+prop bar into its column, the foot bolts through the deck), are
+detail-layer, not modelled.
 """
 
 from __future__ import annotations
@@ -48,7 +61,7 @@ from __future__ import annotations
 import math
 from functools import cache
 
-from build123d import Box, Cylinder, Location, Part, Pos, Rot
+from build123d import Box, Cylinder, Keep, Location, Part, Plane, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 
@@ -56,6 +69,7 @@ from ..design_systems import DEFAULT_SCHEMA, paint
 from ..m02_c_channel_singulator.assembly import build_m02
 from ..m02_c_channel_singulator.params import ROTOR_BASE_DIAMETER
 from .design_systems import design_system
+from .joints import brace_foot, brace_head, corner_bracket, post_seat
 from .materials import material_of
 from .params import (
     ARM_POST,
@@ -66,7 +80,9 @@ from .params import (
     ARM_TOP_Z_LOCAL,
     BAR_DEPTH,
     BRACE_COLS,
-    BRACE_END_TRIM,
+    BRACE_FOOT_START_H,
+    BRACE_FOOT_STOP_H,
+    BRACE_HEAD_STOP_H,
     BRACE_H_ABOVE_DECK,
     CHUTE_LAND_R,
     CROSS_HALF_LEN,
@@ -96,7 +112,10 @@ from .params import (
     STAGE_CLEAR,
     STAGES,
     Stage,
+    brace_run,
+    m05_column_rot_deg,
     m05_outer_vertex_local_xy,
+    prop_bar_azimuth_deg,
 )
 from ..m02_c_channel_singulator.params import R_STATOR_OUTER_KINK
 
@@ -219,31 +238,125 @@ def _tee() -> tuple[Location, float]:
     return _horizontal_bar_pose(a, b, ARM_TOP_Z_LOCAL)
 
 
-def _brace(col: int) -> tuple[Location, float]:
+def _brace(col: int) -> Part:
     """Diagonal from V_4 at BRACE_H_ABOVE_DECK down to the deck top at
-    outer vertex `col`, trimmed BRACE_END_TRIM at both ends."""
+    outer vertex `col`, built **in chain-local coordinates** (placed
+    at identity) because its two end faces are cut by *vertical*
+    planes — BRACE_HEAD_STOP_H out from V_4's axis and
+    BRACE_FOOT_STOP_H out from V_col's — so each bears full-face on
+    the vertical stop in its printed socket (`joints.py`)."""
     post = m05_outer_vertex_local_xy(ARM_POST)
     foot = m05_outer_vertex_local_xy(col)
+    az, el, run = brace_run(col)
     top = (post[0], post[1], DECK_TOP_Z_LOCAL + BRACE_H_ABOVE_DECK)
-    bot = (foot[0], foot[1], DECK_TOP_Z_LOCAL)
-    v = (bot[0] - top[0], bot[1] - top[1], bot[2] - top[2])
-    full = math.sqrt(v[0] ** 2 + v[1] ** 2 + v[2] ** 2)
-    d = (v[0] / full, v[1] / full, v[2] / full)
-    length = full - 2.0 * BRACE_END_TRIM
-    c = (top[0] + (full / 2.0) * d[0], top[1] + (full / 2.0) * d[1], top[2] + (full / 2.0) * d[2])
-    az = math.degrees(math.atan2(d[1], d[0]))
-    el = math.degrees(math.asin(d[2]))
-    # Yaw about Z after pitching the bar's +X down to the elevation
-    # (Ry(-el) maps +X to (cos el, 0, sin el)); its Y stays horizontal.
-    return Pos(*c) * Rot(0, 0, az) * Rot(0, -el, 0), length
+    full = math.hypot(run, BRACE_H_ABOVE_DECK)
+    c, s = math.cos(math.radians(az)), math.sin(math.radians(az))
+    # Yaw about Z after pitching +X down by the descent (Ry(el) maps
+    # +X to (cos el, 0, -sin el)); the bar's Y stays horizontal. Over-
+    # long by a bar each end, then cut to the two stops.
+    prism = (
+        Pos(*top) * Rot(0, 0, az) * Rot(0, el, 0)
+        * Pos(full / 2.0, 0.0, 0.0) * Box(full + 2.0 * EXT_SIZE, EXT_SIZE, EXT_SIZE)
+    )
+    head_stop = Plane(
+        origin=(top[0] + BRACE_HEAD_STOP_H * c, top[1] + BRACE_HEAD_STOP_H * s, 0.0),
+        z_dir=(c, s, 0.0),
+    )
+    foot_stop = Plane(
+        origin=(foot[0] - BRACE_FOOT_STOP_H * c, foot[1] - BRACE_FOOT_STOP_H * s, 0.0),
+        z_dir=(-c, -s, 0.0),
+    )
+    return prism.split(head_stop, keep=Keep.TOP).split(foot_stop, keep=Keep.TOP)
+
+
+# --- Joint placements ----------------------------------------------------
+
+def _seat_pose(s: Stage) -> Location:
+    """The seat's origin is the column's end face on its axis."""
+    k = PROP_POST[s.name]
+    x, y = m05_outer_vertex_local_xy(k)
+    return Pos(x, y, POST_TOP_Z_LOCAL[k])
+
+
+def _head_pose() -> Location:
+    x, y = m05_outer_vertex_local_xy(ARM_POST)
+    return Pos(x, y, DECK_TOP_Z_LOCAL + BRACE_H_ABOVE_DECK)
+
+
+def _foot_pose(col: int) -> Location:
+    x, y = m05_outer_vertex_local_xy(col)
+    return Pos(x, y, DECK_TOP_Z_LOCAL)
+
+
+def _bracket_pose(
+    corner: tuple[float, float, float],
+    leg_a: tuple[float, float, float],
+    leg_b: tuple[float, float, float],
+) -> Location:
+    """A corner bracket with its corner line through `corner`, leg A
+    along `leg_a` (on the face whose normal is `leg_b`) and leg B
+    along `leg_b`."""
+    return Plane(origin=corner, x_dir=leg_a, z_dir=leg_b).location
+
+
+def _bracket_poses(s2: Stage, s3: Stage) -> dict[str, Location]:
+    """Every corner bracket, keyed by part name: three where the stem
+    meets V_4's face (top, and both sides — the bottom corner is the
+    brace collar's), two in the stem's T, four at S3's cross."""
+    post = m05_outer_vertex_local_xy(ARM_POST)
+    f = math.radians(ARM_STEM_FACE_DEG)
+    n = (math.cos(f), math.sin(f))          # V_4's face normal = the stem
+    t = (-n[1], n[0])                        # along the face
+    face = (post[0] + (EXT_SIZE / 2.0) * n[0], post[1] + (EXT_SIZE / 2.0) * n[1])
+    tee_near = (post[0] + (EXT_SIZE / 2.0 + ARM_STEM_LEN) * n[0],
+                post[1] + (EXT_SIZE / 2.0 + ARM_STEM_LEN) * n[1])
+    poses = {
+        "s2_stem_bracket_top": _bracket_pose(
+            (face[0], face[1], ARM_TOP_Z_LOCAL), (n[0], n[1], 0.0), (0.0, 0.0, 1.0),
+        ),
+    }
+    for side, name in ((+1.0, "left"), (-1.0, "right")):
+        poses[f"s2_stem_bracket_{name}"] = _bracket_pose(
+            (face[0] + side * (EXT_SIZE / 2.0) * t[0], face[1] + side * (EXT_SIZE / 2.0) * t[1],
+             ARM_TOP_Z_LOCAL - EXT_SIZE / 2.0),
+            (side * t[0], side * t[1], 0.0), (n[0], n[1], 0.0),
+        )
+        poses[f"s2_tee_bracket_{name}"] = _bracket_pose(
+            (tee_near[0] + side * (EXT_SIZE / 2.0) * t[0], tee_near[1] + side * (EXT_SIZE / 2.0) * t[1],
+             ARM_TOP_Z_LOCAL - EXT_SIZE / 2.0),
+            (side * t[0], side * t[1], 0.0), (-n[0], -n[1], 0.0),
+        )
+    # S3's cross: each half butts the prop bar's face EXT_SIZE/2 off
+    # the axis line; brackets in both inside corners of each junction.
+    post3 = m05_outer_vertex_local_xy(PROP_POST[s3.name])
+    ax = s3.axis_xy
+    d = math.hypot(ax[0] - post3[0], ax[1] - post3[1])
+    u = ((ax[0] - post3[0]) / d, (ax[1] - post3[1]) / d)
+    for side, half in ((+1.0, "a"), (-1.0, "b")):
+        nrm = (-u[1] * side, u[0] * side)
+        for along, tag in ((+1.0, "1"), (-1.0, "2")):
+            poses[f"s3_cross_bracket_{half}{tag}"] = _bracket_pose(
+                (ax[0] + (EXT_SIZE / 2.0) * (nrm[0] + along * u[0]),
+                 ax[1] + (EXT_SIZE / 2.0) * (nrm[1] + along * u[1]),
+                 s3.plate_bottom_z - EXT_SIZE / 2.0),
+                (along * u[0], along * u[1], 0.0), (nrm[0], nrm[1], 0.0),
+            )
+    return poses
 
 
 # --- Compose -----------------------------------------------------------
 
-_GANTRY = (
+_MEMBERS = (
     "s1_prop_bar", "s3_prop_bar", "s3_cross_a", "s3_cross_b",
     "s2_stem", "s2_tee", "brace_3", "brace_5",
 )
+_PRINTED_JOINTS = ("s1_post_seat", "s3_post_seat", "brace_head", "brace_foot_3", "brace_foot_5")
+_BRACKETS = (
+    "s2_stem_bracket_top", "s2_stem_bracket_left", "s2_stem_bracket_right",
+    "s2_tee_bracket_left", "s2_tee_bracket_right",
+    "s3_cross_bracket_a1", "s3_cross_bracket_a2", "s3_cross_bracket_b1", "s3_cross_bracket_b2",
+)
+_GANTRY = _MEMBERS + _PRINTED_JOINTS + _BRACKETS
 _SKELETON = ("load_ramp",) + _GANTRY
 _STAGE_NAMES = tuple(s.name for s in STAGES)
 
@@ -290,10 +403,36 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
         ("s3_cross_b", _cross_half(s3, -1.0)),
         ("s2_stem", _stem()),
         ("s2_tee", _tee()),
-        ("brace_3", _brace(BRACE_COLS[0])),
-        ("brace_5", _brace(BRACE_COLS[1])),
     ):
         a = a.with_part(name, _bar(length), location=loc, **mat(name))
+    for col in BRACE_COLS:
+        a = a.with_part(f"brace_{col}", _brace(col), **mat(f"brace_{col}"))
+
+    # Joints. Seats and the brace sockets are printed; the brackets
+    # are bought 2020 corner brackets.
+    for s in (s1, s3):
+        a = a.with_part(
+            f"{s.name}_post_seat",
+            post_seat(prop_bar_azimuth_deg(s), m05_column_rot_deg(PROP_POST[s.name])),
+            location=_seat_pose(s), **mat(f"{s.name}_post_seat"),
+        )
+    a = a.with_part(
+        "brace_head",
+        brace_head(
+            tuple(brace_run(col)[:2] for col in BRACE_COLS),
+            BRACE_HEAD_STOP_H, m05_column_rot_deg(ARM_POST),
+        ),
+        location=_head_pose(), **mat("brace_head"),
+    )
+    for col in BRACE_COLS:
+        az, el, _ = brace_run(col)
+        a = a.with_part(
+            f"brace_foot_{col}",
+            brace_foot(az + 180.0, el, BRACE_FOOT_STOP_H, BRACE_FOOT_START_H[col], flange=(col == 3)),
+            location=_foot_pose(col), **mat(f"brace_foot_{col}"),
+        )
+    for name, loc in _bracket_poses(s2, s3).items():
+        a = a.with_part(name, corner_bracket(), location=loc, **mat(name))
 
     a = (
         a
@@ -369,10 +508,48 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
         .assert_clearance("s3_prop_bar", "s3.drive.motor", min_mm=5.0)
     )
 
+    # Joints. Each seat cradles its bar and stands under the bowl's
+    # floor (its top is the plate underside — the saddle); each brace
+    # sits in its head and foot sockets; each bracket touches both
+    # members it joins. The seats and the collar keep the swung
+    # motors' 5 mm; the collar clears the stem above it (280 + the
+    # brace's half-diagonal + the wall against the stem's underside
+    # at 305 — measured, not constructed).
+    for s in (s1, s3):
+        seat = f"{s.name}_post_seat"
+        a = (
+            a
+            .assert_tangent_contact(seat, f"{s.name}_prop_bar")
+            .assert_tangent_contact(seat, f"{s.name}.drive.bowl")
+            .assert_clearance(seat, f"{s.name}.drive.motor", min_mm=5.0)
+        )
+    for col in BRACE_COLS:
+        a = (
+            a
+            .assert_tangent_contact("brace_head", f"brace_{col}")
+            .assert_tangent_contact(f"brace_foot_{col}", f"brace_{col}")
+        )
+    a = a.assert_distance("brace_head", "s2_stem", min_mm=5.0, name="brace_head_under_stem")
+    for name in ("top", "left", "right"):
+        a = a.assert_tangent_contact(f"s2_stem_bracket_{name}", "s2_stem")
+        if name != "top":
+            a = (
+                a
+                .assert_tangent_contact(f"s2_tee_bracket_{name}", "s2_stem")
+                .assert_tangent_contact(f"s2_tee_bracket_{name}", "s2_tee")
+            )
+    for half in ("a", "b"):
+        for tag in ("1", "2"):
+            a = (
+                a
+                .assert_tangent_contact(f"s3_cross_bracket_{half}{tag}", "s3_prop_bar")
+                .assert_tangent_contact(f"s3_cross_bracket_{half}{tag}", f"s3_cross_{half}")
+            )
+
     # Nothing of the skeleton touches a stage except at the declared
     # rests (tangent pairs carry no overlap, so the group forms hold);
-    # nothing in the skeleton touches itself except at the T and cross
-    # joints (same).
+    # nothing in the skeleton touches itself except at the T, cross
+    # and socket joints (same).
     for s in STAGES:
         a = a.assert_no_interference_between(_SKELETON, s.name)
     a = a.assert_no_interference_within(_SKELETON)
@@ -385,7 +562,8 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
 def _post_stub(k: int) -> Part:
     """m05's column k above the deck, as the chain believes it: a 2020
     from the deck top to `POST_TOP_Z_LOCAL[k]`. Origin at the deck top
-    on the column axis."""
+    on the column axis; the fixture yaws it to the column's real
+    face orientation (`m05_column_rot_deg`)."""
     h = POST_TOP_Z_LOCAL[k] - DECK_TOP_Z_LOCAL
     return Pos(0.0, 0.0, h / 2.0) * Box(EXT_SIZE, EXT_SIZE, h)
 
@@ -409,8 +587,9 @@ def build_chain_standalone(schema: str = DEFAULT_SCHEMA) -> Assembly:
     deck itself (`deck`), placed where the chain's mirrored constants
     put them. For viewing the gantry with its posts and for checking
     the chain's own beliefs are self-consistent: each prop bar and the
-    stem rest tangent on their post, the braces stand off V_4 and the
-    deck. The claims against m05's real columns and deck are the top
+    stem rest tangent on their post, the seats, the collar and the
+    stem's brackets sit on the posts, the braces stand off V_4 and the
+    deck while their feet stand on it. The claims against m05's real columns and deck are the top
     level's (`cad/assembly.py`); nothing composes this fixture.
 
         khana check cad/m02_chain/assembly.py:build_chain_standalone
@@ -419,20 +598,37 @@ def build_chain_standalone(schema: str = DEFAULT_SCHEMA) -> Assembly:
     a = build_chain(schema)
     for k in sorted(POST_TOP_Z_LOCAL):
         x, y = m05_outer_vertex_local_xy(k)
-        a = a.with_part(f"post_{k}", _post_stub(k), location=Pos(x, y, DECK_TOP_Z_LOCAL))
+        a = a.with_part(
+            f"post_{k}", _post_stub(k),
+            location=Pos(x, y, DECK_TOP_Z_LOCAL) * Rot(0, 0, m05_column_rot_deg(k)),
+        )
     a = a.with_part(
         "deck", _deck_stub(),
         location=Pos(M05_AXIS_LOCAL_XY[0], M05_AXIS_LOCAL_XY[1], DECK_TOP_Z_LOCAL),
     )
     for stage, k in PROP_POST.items():
-        a = a.assert_tangent_contact(f"{stage}_prop_bar", f"post_{k}", name=f"{stage}_prop_bar_on_post_{k}")
-    a = a.assert_tangent_contact("s2_stem", f"post_{ARM_POST}", name=f"s2_stem_on_post_{ARM_POST}")
+        a = (
+            a
+            .assert_tangent_contact(f"{stage}_prop_bar", f"post_{k}", name=f"{stage}_prop_bar_on_post_{k}")
+            .assert_tangent_contact(f"{stage}_post_seat", f"post_{k}", name=f"{stage}_post_seat_on_post_{k}")
+        )
+    a = (
+        a
+        .assert_tangent_contact("s2_stem", f"post_{ARM_POST}", name=f"s2_stem_on_post_{ARM_POST}")
+        .assert_tangent_contact("brace_head", f"post_{ARM_POST}", name=f"brace_head_on_post_{ARM_POST}")
+    )
+    for name in ("top", "left", "right"):
+        a = a.assert_tangent_contact(
+            f"s2_stem_bracket_{name}", f"post_{ARM_POST}", name=f"s2_stem_bracket_{name}_on_post_{ARM_POST}",
+        )
     for col in BRACE_COLS:
         a = (
             a
             .assert_distance(f"brace_{col}", f"post_{ARM_POST}", min_mm=1.0, name=f"brace_{col}_clears_post")
             .assert_distance(f"brace_{col}", "deck", min_mm=1.0, name=f"brace_{col}_clears_deck")
+            .assert_tangent_contact(f"brace_foot_{col}", "deck", name=f"brace_foot_{col}_on_deck")
         )
+    a = a.assert_distance("brace_foot_5", "post_5", min_mm=1.0, name="brace_foot_5_clears_post_5")
     a = a.assert_no_interference_between(_STUBS, _SKELETON)
     for s in STAGES:
         a = a.assert_no_interference_between(_STUBS, s.name)

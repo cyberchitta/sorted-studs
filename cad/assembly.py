@@ -193,13 +193,36 @@ def build_top(schema: str = DEFAULT_SCHEMA) -> Assembly:
                 name=f"{stage}_prop_bar_on_outer_vert_{k}",
             )
         )
-    # S2's stem butts V_4's face; the braces stand clear of the post
-    # they leave, the columns they land beside and the deck they land
-    # on — the gaps their (open) end joints bridge, measured.
-    a = a.assert_tangent_contact(
-        "m02_chain.s2_stem", "m05.columns.outer_vert_4",
-        name="s2_stem_on_outer_vert_4",
+    # The chain's printed post seats socket over the columns' ends
+    # (the chain mirrors each column's yaw — a drift shows here as a
+    # seat cutting its column).
+    for stage, k in PROP_POST.items():
+        a = a.assert_tangent_contact(
+            f"m02_chain.{stage}_post_seat", f"m05.columns.outer_vert_{k}",
+            name=f"{stage}_post_seat_on_outer_vert_{k}",
+        )
+    # S2's stem butts V_4's face and its three brackets sit on it; the
+    # brace collar rings V_4 at the node; the braces themselves stand
+    # clear of the post they leave, the columns they land beside and
+    # the deck — the gaps their sockets bridge, measured — and their
+    # feet stand on the deck, V_5's clear of the post and of the
+    # through-deck vertex bracket's arm rising beside it.
+    a = (
+        a
+        .assert_tangent_contact(
+            "m02_chain.s2_stem", "m05.columns.outer_vert_4",
+            name="s2_stem_on_outer_vert_4",
+        )
+        .assert_tangent_contact(
+            "m02_chain.brace_head", "m05.columns.outer_vert_4",
+            name="brace_head_on_outer_vert_4",
+        )
     )
+    for name in ("top", "left", "right"):
+        a = a.assert_tangent_contact(
+            f"m02_chain.s2_stem_bracket_{name}", "m05.columns.outer_vert_4",
+            name=f"s2_stem_bracket_{name}_on_outer_vert_4",
+        )
     for col in BRACE_COLS:
         brace = f"m02_chain.brace_{col}"
         a = (
@@ -210,7 +233,16 @@ def build_top(schema: str = DEFAULT_SCHEMA) -> Assembly:
                              name=f"brace_{col}_clears_outer_vert_{col}")
             .assert_distance(brace, "m05.top_acrylic", min_mm=1.0,
                              name=f"brace_{col}_over_deck")
+            .assert_tangent_contact(f"m02_chain.brace_foot_{col}", "m05.top_acrylic",
+                                    name=f"brace_foot_{col}_on_deck")
         )
+    a = (
+        a
+        .assert_distance("m02_chain.brace_foot_5", "m05.columns.outer_vert_5", min_mm=1.0,
+                         name="brace_foot_5_clears_outer_vert_5")
+        .assert_distance("m02_chain.brace_foot_5", "m05.top_cap.outer_vertex_bracket_5", min_mm=1.0,
+                         name="brace_foot_5_clears_vertex_bracket_5")
+    )
     return a
 
 

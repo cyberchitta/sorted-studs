@@ -1,7 +1,8 @@
 """m02 chain — per-part materials.
 
 Chain-own parts only: the gantry members are 2020 aluminum
-extrusion; the stator support plate and the LOAD ramp are
+extrusion, their corner brackets die-cast; the joint parts that take
+the compound angles, the stator support plate and the LOAD ramp are
 FDM-printed. The `s1` m02 subtree carries m02's own materials
 (bound in `cad/m02_c_channel_singulator/materials.py`).
 """
@@ -13,6 +14,16 @@ MATERIAL_OF: dict[str, str | None] = {
     **{name: "aluminium_anodized" for name in (
         "s1_prop_bar", "s3_prop_bar", "s3_cross_a", "s3_cross_b",
         "s2_stem", "s2_tee", "brace_3", "brace_5",
+    )},
+    # Bought 2020 corner brackets (die-cast).
+    **{name: "cast_aluminium_dark" for name in (
+        "s2_stem_bracket_top", "s2_stem_bracket_left", "s2_stem_bracket_right",
+        "s2_tee_bracket_left", "s2_tee_bracket_right",
+        "s3_cross_bracket_a1", "s3_cross_bracket_a2", "s3_cross_bracket_b1", "s3_cross_bracket_b2",
+    )},
+    # Printed joints (`joints.py`).
+    **{name: "pla_matte" for name in (
+        "s1_post_seat", "s3_post_seat", "brace_head", "brace_foot_3", "brace_foot_5",
     )},
     "stator_plate": "pla_matte",
     "load_ramp":    "pla_matte",
