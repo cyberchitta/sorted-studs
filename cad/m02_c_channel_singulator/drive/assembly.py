@@ -5,7 +5,7 @@ The rotor is supported at its rim and driven at its rim
 (`_notes/decisions/m02-rotor-drive.md`, 2026-09-11). Everything here
 hangs below the V-bottom plane, under the rotor's ring-gear flange:
 
-  - bowl       — printed: a floor annulus, r ∈ [PLATE_R_IN, PLATE_R_OUT],
+  - bowl_0..2  — printed, in thirds (`../seams.py`): a floor annulus, r ∈ [PLATE_R_IN, PLATE_R_OUT],
                  with a cylindrical skirt on its rim rising to
                  SKIRT_TOP_Z (`m02-chain.md` §5, 2026-09-16). The floor
                  is the stator foot ring extended inward: the turntable
@@ -15,7 +15,10 @@ hangs below the V-bottom plane, under the rotor's ring-gear flange:
                  liner resting on the skirt's top edge. The skirt is
                  slotted through the exit arc for the stator's tongue,
                  down to SKIRT_CUT_BOTTOM_Z; below that a stub of skirt
-                 keeps the ring beam closed.
+                 keeps the ring beam closed. Split at three radial
+                 seams (phase per instance, clear of the exit arc and
+                 the motor — asserted in ``build_drive``), each sector
+                 carrying a bolted ear at both seams outside the skirt.
   - bearing    — bought aluminium turntable, modelled as one annulus
                  (BEARING_ID / OD / H). Upper ring bolts to the rotor
                  flange, lower ring to the plate; both bolt circles
@@ -43,7 +46,7 @@ measured distance pinion↔bowl is the 0.5 mm floor gap, not the
 radial one. Rotor-vs-drive and stator-vs-drive claims live in
 ../assembly.py.
 
-Printed parts: bowl (floor down, no support), pinion — see
+Printed parts: the three bowl sectors (floor down, no support), pinion — see
 `printability.py`. The bearing and motor are bought.
 """
 
@@ -54,9 +57,11 @@ from build123d import Axis, Box, Circle, Cylinder, Location, Part, Polygon, Pos,
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 
 from ..materials import material_of
+from ..seams import SEAM_COUNT, SEAM_EAR_T, angular_gap_deg, sector_index, seam_azimuths, split_ring
 from ..params import (
     ADDENDUM,
     BEARING_BOTTOM_Z,
+    BOWL_SEAM_PHASE_DEG,
     EXIT_ARC_DEG,
     BEARING_H,
     BEARING_ID,
@@ -204,6 +209,37 @@ def bowl(
     return ((plate - holes) + skirt) - wedge
 
 
+def bowl_sectors(
+    *,
+    phase_deg: float = BOWL_SEAM_PHASE_DEG,
+    motor_azimuth_deg: float = MOTOR_AZIMUTH_DEG,
+) -> list[Part]:
+    """The bowl for a motor at ``motor_azimuth_deg``, cut into
+    SEAM_COUNT sectors at ``phase_deg`` with ears the full height of
+    floor and skirt. Sector k is ``bowl_k``."""
+    az = math.radians(motor_azimuth_deg)
+    whole = bowl(
+        motor_xy=(CENTER_DIST * math.cos(az), CENTER_DIST * math.sin(az)),
+        motor_rot_deg=motor_azimuth_deg,
+    )
+    return split_ring(
+        whole, phase_deg=phase_deg, r_out=PLATE_R_OUT, ear_z=(PLATE_BOTTOM_Z, SKIRT_TOP_Z),
+    )
+
+
+def bowl_part(k: int) -> str:
+    """Leaf name of bowl sector k."""
+    return f"bowl_{k}"
+
+
+BOWL_PARTS = tuple(bowl_part(k) for k in range(SEAM_COUNT))
+
+
+def bowl_part_at(az_deg: float, phase_deg: float = BOWL_SEAM_PHASE_DEG) -> str:
+    """Leaf name of the bowl sector under m02-local azimuth ``az_deg``."""
+    return bowl_part(sector_index(az_deg, phase_deg))
+
+
 def bearing(
     *, od: float = BEARING_OD, id_: float = BEARING_ID, h: float = BEARING_H,
 ) -> Part:
@@ -267,7 +303,10 @@ def pinion_axis_xy(motor_azimuth_deg: float = MOTOR_AZIMUTH_DEG) -> tuple[float,
     return (CENTER_DIST * math.cos(az), CENTER_DIST * math.sin(az))
 
 
-def build_drive(motor_azimuth_deg: float = MOTOR_AZIMUTH_DEG) -> Assembly:
+def build_drive(
+    motor_azimuth_deg: float = MOTOR_AZIMUTH_DEG,
+    seam_phase_deg: float = BOWL_SEAM_PHASE_DEG,
+) -> Assembly:
     """Drive sub-assembly in drive-local frame (= m02-local).
 
     ``motor_azimuth_deg`` is where the motor / pinion sit around the
@@ -276,18 +315,32 @@ def build_drive(motor_azimuth_deg: float = MOTOR_AZIMUTH_DEG) -> Assembly:
     at every azimuth — that the m02 chain sets per stage to keep a
     motor clear of that stage's gantry member (S2's stem, S3's cross
     bar; ``cad/m02_chain/params.py`` §Gantry).
+
+    ``seam_phase_deg`` is where the bowl's thirds seams fall — also
+    per instance, since they must miss that stage's gantry bar ends
+    (the chain's §Seams). Guarded here against the two things the
+    unit itself owns: the exit arc (slot and tongue) and the motor.
     """
+    ear_deg = math.degrees(2.0 * SEAM_EAR_T / PLATE_R_OUT)
+    # The motor body's angular half-width about the rotor axis.
+    motor_half_deg = math.degrees(math.atan2(NEMA17_SIDE / 2.0, CENTER_DIST - NEMA17_SIDE / 2.0))
+    for seam in seam_azimuths(seam_phase_deg):
+        assert angular_gap_deg(seam, 0.0) >= EXIT_ARC_DEG / 2.0 + ear_deg, (
+            f"bowl seam at {seam:.1f}° runs into the exit arc's slot"
+        )
+        assert angular_gap_deg(seam, motor_azimuth_deg) >= motor_half_deg + ear_deg, (
+            f"bowl seam at {seam:.1f}° runs through the motor at {motor_azimuth_deg:.1f}°"
+        )
     axis_xy = pinion_axis_xy(motor_azimuth_deg)
     on_axis = Location((axis_xy[0], axis_xy[1], 0.0)) * Rot(
         0, 0, motor_azimuth_deg,
     )
-    return (
-        Assembly()
-        .with_part(
-            "bowl",
-            bowl(motor_xy=axis_xy, motor_rot_deg=motor_azimuth_deg),
-            material=material_of("bowl"),
-        )
+    a = Assembly()
+    for k, sector in enumerate(bowl_sectors(phase_deg=seam_phase_deg, motor_azimuth_deg=motor_azimuth_deg)):
+        a = a.with_part(bowl_part(k), sector, material=material_of(bowl_part(k)))
+    motor_sector = bowl_part_at(motor_azimuth_deg, seam_phase_deg)
+    a = (
+        a
         .with_part("bearing", bearing(), material=material_of("bearing"))
         .with_part("motor", motor(), location=on_axis, material=material_of("motor"))
         .with_subassembly(
@@ -305,14 +358,9 @@ def build_drive(motor_azimuth_deg: float = MOTOR_AZIMUTH_DEG) -> Assembly:
         .with_anchor("plate_bottom", Pos(0, 0, PLATE_BOTTOM_Z))
         .with_anchor("skirt_top", Pos(0, 0, SKIRT_TOP_Z))
         .with_anchor("motor_bottom", Pos(axis_xy[0], axis_xy[1], MOTOR_BOTTOM_Z))
-        # Rests: the bearing's lower ring on the floor top, the motor
-        # face on the floor underside (pilot and shaft inside the hole).
-        .assert_tangent_contact("bearing", "bowl")
-        .assert_tangent_contact("motor", "bowl")
-        # Pinion hub floats just above the floor; bore clears the shaft.
-        .assert_clearance(
-            "pinion.pinion", "bowl", min_mm=PINION_HUB_PLATE_CLEAR - _MEAS_TOL,
-        )
+        # The motor face rests on its sector's floor underside (pilot
+        # and shaft inside the hole); the bore clears the shaft.
+        .assert_tangent_contact("motor", motor_sector)
         .assert_no_interference("pinion.pinion", "motor")
         .assert_clearance(
             "pinion.pinion", "motor", min_mm=MOTOR_SHAFT_BORE_CLEARANCE - _MEAS_TOL,
@@ -322,7 +370,7 @@ def build_drive(motor_azimuth_deg: float = MOTOR_AZIMUTH_DEG) -> Assembly:
         .assert_clearance("motor", "bearing", min_mm=PLATE_T - _MEAS_TOL)
         # The pinion's tip circle stays inside the skirt with 1 mm to
         # spare. A scalar, not a measured clearance: the pinion↔bowl
-        # distance is the 0.5 mm hub-to-floor gap asserted above.
+        # distance is the 0.5 mm hub-to-floor gap asserted below.
         .assert_scalar(
             "pinion_tip_inside_skirt",
             PINION_TIP_R,
@@ -331,6 +379,21 @@ def build_drive(motor_azimuth_deg: float = MOTOR_AZIMUTH_DEG) -> Assembly:
         )
         .assert_scalar("gear_ratio", GEAR_RATIO, detail="ring / pinion teeth")
     )
+    for k, part in enumerate(BOWL_PARTS):
+        a = (
+            a
+            # The bearing's lower ring spans every seam: it rests on
+            # each sector (and, bolted, is what splices the floor).
+            .assert_tangent_contact("bearing", part)
+            # Pinion hub floats just above the floor.
+            .assert_clearance(
+                "pinion.pinion", part, min_mm=PINION_HUB_PLATE_CLEAR - _MEAS_TOL,
+            )
+            # Each seam: the two sectors' faces and ears meet on the
+            # seam plane.
+            .assert_tangent_contact(part, BOWL_PARTS[(k + 1) % SEAM_COUNT])
+        )
+    return a
 
 
 # Degenerate memoized master, so ``khana check <file>`` resolves.

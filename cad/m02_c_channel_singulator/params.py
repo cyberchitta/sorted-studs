@@ -224,6 +224,19 @@ EXIT_FLOOR_T = 4.0
 EXIT_FLOOR_SIDE_CLEAR = 1.5
 SKIRT_CUT_BOTTOM_Z = -EXIT_FLOOR_T - EXIT_FLOOR_SIDE_CLEAR    # -5.5
 
+# Thirds seams (`seams.py`; 2026-09-17). Both Ø310 rings print as
+# three sectors. Phases are m02-local degrees from the exit arc's
+# centre, and per-instance like MOTOR_AZIMUTH_DEG:
+# - the liner's seams (75 / −165 / −45) need only miss the exit arc —
+#   24° clear of the ±21° the wedge and paddle take — so one phase
+#   serves every stage and the liner stays the same part everywhere;
+# - the bowl's must also miss the motor pattern and every gantry bar
+#   end under the floor, and stay staggered from the liner's, so the
+#   chain passes one per stage (`cad/m02_chain/params.py` §Seams). The
+#   default is S1's.
+LINER_SEAM_PHASE_DEG = 75.0
+BOWL_SEAM_PHASE_DEG = 41.0
+
 # NEMA 17 compact short body (shortest commodity variant).
 NEMA17_SIDE = 42.3
 NEMA17_BODY_LEN = 40.0

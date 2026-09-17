@@ -4,7 +4,7 @@ M02 C-channel singulator — top-level assembly.
 Composes the sub-assemblies as subtrees (all share the m02-local
 frame, so every placement is identity) and runs the interference /
 clearance checks that span sub-assembly boundaries. Part identity is
-the dotted tree path (``rotor.rotor``, ``drive.bowl``,
+the dotted tree path (``rotor.rotor``, ``drive.bowl_0``,
 ``drive.pinion.pinion``); attributes (role tags, materials) key on
 the leaf name inside each sub-module's builder. The rotor's spin DOF
 is declared at composition (``RevoluteJoint`` about the rotor-local Z
@@ -27,9 +27,11 @@ Cross-boundary checks:
 - rotor ↔ motor    — the motor hangs under the floor, well clear.
 - stator ↔ pinion  — the pinion runs PINION_TOP_CLEAR under the
                      stator's bottom face.
-- stator ↔ bowl    — the wall's flange rests on the skirt's top edge
-                     (tangent contact); nothing else in the drive
-                     reaches the wall.
+- stator ↔ bowl    — each liner sector's flange rests on the skirt's
+                     top edge of every bowl sector it overlaps (tangent
+                     contact); nothing else in the drive reaches the
+                     wall. The two rings' thirds seams are staggered
+                     (asserted, SEAM_STAGGER_MIN_DEG).
 - exit floor ↔ bowl — the tongue's rib rests tangent on the floor;
                      the tongue passes through the skirt's slot.
 - exit floor ↔ rotor — the tongue's inner edge stays
@@ -51,6 +53,8 @@ from ..design_systems import DEFAULT_SCHEMA, paint
 from .design_systems import design_system
 from .drive import assembly as _drive
 from .params import (
+    BOWL_SEAM_PHASE_DEG,
+    LINER_SEAM_PHASE_DEG,
     ADDENDUM,
     MOTOR_AZIMUTH_DEG,
     BEARING_H,
@@ -59,6 +63,7 @@ from .params import (
     ROTOR_STATOR_GAP,
 )
 from .rotor import assembly as _rotor
+from .seams import SEAM_COUNT, angular_gap_deg, sector_index, seam_azimuths
 from .stator import assembly as _stator
 
 
@@ -67,6 +72,11 @@ GAP_CLEARANCE_TOLERANCE = 0.5   # mm — catches a shrunk V-gap early
 # Measurement tolerance for bounds constructed from the same constant
 # as the geometry (cad/CLAUDE.md principle 6, corollary 2).
 _MEAS_TOL = 0.01
+
+# The bowl's seams stay at least this far round from the liner's, so
+# no seam line runs through both rings (the stagger is what makes two
+# parts worth having — `m02-chain.md` §5).
+SEAM_STAGGER_MIN_DEG = 25.0
 
 
 # Cached because the degenerate ``assembly`` memo below and any
@@ -86,6 +96,7 @@ _MEAS_TOL = 0.01
 def build_m02(
     schema: str = DEFAULT_SCHEMA,
     motor_azimuth_deg: float = MOTOR_AZIMUTH_DEG,
+    bowl_seam_phase_deg: float = BOWL_SEAM_PHASE_DEG,
 ) -> Assembly:
     """The singulator unit, painted under ``schema``.
 
@@ -93,7 +104,8 @@ def build_m02(
     rotor axis (default: away from the exit arc). The chain passes a
     per-stage value where a stage's gantry member would otherwise run
     into its motor; the unit's own claims (mesh, rests, clearances)
-    hold at any azimuth.
+    hold at any azimuth. ``bowl_seam_phase_deg`` is the same kind of
+    per-stage choice for the bowl's thirds seams (``seams.py``).
 
     Sub-assembly builders emit no colour; this root paints the finished
     tree once. ``paint`` also carries the design-system coverage check
@@ -101,7 +113,10 @@ def build_m02(
     tagged, and a missing one names all offenders at build time instead
     of crashing the import.
     """
-    return paint(
+    bowl_seams = seam_azimuths(bowl_seam_phase_deg)
+    liner_seams = seam_azimuths(LINER_SEAM_PHASE_DEG)
+    stagger = min(angular_gap_deg(b, l) for b in bowl_seams for l in liner_seams)
+    a = (
         Assembly()
         # Spin DOF declared from the start (angle 0 = static rest pose).
         # ``frame="local"``: the axis is the rotor's own Z — identical to
@@ -116,12 +131,10 @@ def build_m02(
             ),
         )
         .with_subassembly("stator", _stator.build_stator())
-        .with_subassembly("drive", _drive.build_drive(motor_azimuth_deg))
-        # V-gap
-        .assert_no_interference("rotor.rotor", "stator.stator")
-        .assert_clearance(
-            "rotor.rotor", "stator.stator",
-            min_mm=ROTOR_STATOR_GAP - GAP_CLEARANCE_TOLERANCE,
+        .with_subassembly("drive", _drive.build_drive(motor_azimuth_deg, bowl_seam_phase_deg))
+        .assert_scalar(
+            "seam_stagger_deg", stagger, ge=SEAM_STAGGER_MIN_DEG,
+            detail="closest bowl seam to a liner seam, degrees round the axis",
         )
         # Gear mesh: pitch cylinders sit MESH_BACKLASH apart. Measured
         # against the whole rotor part — the flange OD is the closest
@@ -133,13 +146,8 @@ def build_m02(
         )
         # Rotor rests on the bearing, which is BEARING_H above the plate.
         .assert_tangent_contact("rotor.rotor", "drive.bearing")
-        .assert_clearance("rotor.rotor", "drive.bowl", min_mm=BEARING_H - _MEAS_TOL)
         .assert_no_interference("rotor.rotor", "drive.motor")
         .assert_clearance("rotor.rotor", "drive.motor", min_mm=10.0)
-        # Pinion runs just under the stator's bottom face.
-        .assert_clearance(
-            "stator.stator", "drive.pinion.pinion", min_mm=PINION_TOP_CLEAR - _MEAS_TOL,
-        )
         # Exit floor: inner edge outside the ring gear's tips (the cheap
         # rotor is the pitch cylinder — grow it by the addendum), rib
         # standing on the plate.
@@ -149,17 +157,45 @@ def build_m02(
             min_mm=_stator.EXIT_FLOOR_GEAR_CLEAR - _MEAS_TOL, grow_b_mm=ADDENDUM,
             name="exit_floor_clears_ring_gear_tips",
         )
-        .assert_tangent_contact("stator.exit_floor", "drive.bowl")
-        # The liner's flange rests on the skirt's top edge (its cone
-        # seats on the edge's inner corner at the same z — a line
-        # contact, zero overlap).
-        .assert_tangent_contact("stator.stator", "drive.bowl")
-        # Nothing in the drive reaches the stator subtree except at
-        # those rests (a tangent pair carries no overlap; group form,
-        # declared after composition).
-        .assert_no_interference_between("stator", "drive"),
-        design_system(schema),
+        .assert_tangent_contact(
+            "stator.exit_floor", f"drive.{_drive.bowl_part_at(0.0, bowl_seam_phase_deg)}",
+        )
     )
+    for part in _stator.STATOR_PARTS:
+        a = (
+            a
+            # V-gap
+            .assert_no_interference("rotor.rotor", f"stator.{part}")
+            .assert_clearance(
+                "rotor.rotor", f"stator.{part}",
+                min_mm=ROTOR_STATOR_GAP - GAP_CLEARANCE_TOLERANCE,
+            )
+            # Pinion runs just under the stator's bottom face.
+            .assert_clearance(
+                f"stator.{part}", "drive.pinion.pinion", min_mm=PINION_TOP_CLEAR - _MEAS_TOL,
+            )
+        )
+    for part in _drive.BOWL_PARTS:
+        a = a.assert_clearance("rotor.rotor", f"drive.{part}", min_mm=BEARING_H - _MEAS_TOL)
+    # Each liner sector's flange rests on the skirt's top edge of every
+    # bowl sector it overlaps round the axis (its cone seats on the
+    # edge's inner corner at the same z — a line contact, zero overlap).
+    span = 360.0 / SEAM_COUNT
+    for i, liner in enumerate(_stator.STATOR_PARTS):
+        for j, bowl in enumerate(_drive.BOWL_PARTS):
+            if _arc_overlap_deg(LINER_SEAM_PHASE_DEG + i * span, bowl_seam_phase_deg + j * span, span) > 0.0:
+                a = a.assert_tangent_contact(f"stator.{liner}", f"drive.{bowl}")
+    # Nothing in the drive reaches the stator subtree except at those
+    # rests (a tangent pair carries no overlap; group form, declared
+    # after composition).
+    a = a.assert_no_interference_between("stator", "drive")
+    return paint(a, design_system(schema))
+
+
+def _arc_overlap_deg(a0: float, b0: float, span: float) -> float:
+    """Angular overlap of the arcs [a0, a0+span] and [b0, b0+span]."""
+    d = (b0 - a0) % 360.0
+    return max(0.0, span - min(d, 360.0 - d))
 
 
 # Degenerate memoized master, so ``khana check <file>`` resolves

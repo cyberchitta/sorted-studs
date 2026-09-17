@@ -36,6 +36,14 @@ plate. Separate from the stator on purpose: printed with it, in the
 stator's inverted orientation, it would be a ~100 mm bridge over the
 open wedge.
 
+Thirds (`../seams.py`, 2026-09-17): the wall prints as three sectors,
+``stator_0..2``, split at LINER_SEAM_PHASE_DEG — clear of the exit arc,
+which is all the liner has to miss, so every stage's liner is the same
+three parts. Each sector carries a bolted ear at both seams on the
+cylinder zone's outer face, z SKIRT_TOP_Z…height, above the bowl's
+skirt; the bowl's own seams are staggered from these (asserted in
+``../assembly.py``).
+
 Print orientation: inverted (top face on the bed), so the cylinder
 zone rises from the bed, the flange's underside becomes an upward
 step, and the V-cone hangs inward at 45° with no support — the
@@ -61,11 +69,13 @@ from build123d import Axis, Box, Cylinder, Part, Plane, Polygon, Pos, Rot, extru
 from cad_khana.mechanism.assembly import Assembly
 
 from ..materials import material_of
+from ..seams import SEAM_COUNT, SEAM_EAR_T, angular_gap_deg, seam_azimuths, sector_index, split_ring
 from ..params import (
     ADDENDUM,
     EXIT_ARC_DEG,
     EXIT_FLOOR_SIDE_CLEAR,
     EXIT_FLOOR_T,
+    LINER_SEAM_PHASE_DEG,
     PLATE_TOP_Z,
     R_STATOR_INNER_BASE,
     R_STATOR_INNER_KINK,
@@ -313,6 +323,23 @@ def exit_floor(
     return tongue + rib
 
 
+def stator_sectors(*, phase_deg: float = LINER_SEAM_PHASE_DEG, height: float = STATOR_WALL_H) -> list[Part]:
+    """The wall cut into SEAM_COUNT sectors at ``phase_deg``, ears on
+    the cylinder zone above the skirt. Sector k is ``stator_k``."""
+    return split_ring(
+        stator(height=height), phase_deg=phase_deg, r_out=R_STATOR_OUTER_KINK,
+        ear_z=(SKIRT_TOP_Z, height),
+    )
+
+
+def stator_part(k: int) -> str:
+    """Leaf name of liner sector k."""
+    return f"stator_{k}"
+
+
+STATOR_PARTS = tuple(stator_part(k) for k in range(SEAM_COUNT))
+
+
 # --- Assembly ----------------------------------------------------------
 
 def build_stator() -> Assembly:
@@ -321,12 +348,25 @@ def build_stator() -> Assembly:
     The tongue clears the wall's cut faces and the paddle laterally;
     its rests and its gear clearance are the unit root's (they involve
     the drive and the rotor)."""
-    return (
-        Assembly()
-        .with_part("stator", stator(), material=material_of("stator"))
-        .with_part("exit_floor", exit_floor(), material=material_of("exit_floor"))
-        .assert_no_interference("exit_floor", "stator")
-        .assert_clearance("exit_floor", "stator", min_mm=EXIT_FLOOR_SIDE_CLEAR - 0.01)
+    ear_deg = math.degrees(2.0 * SEAM_EAR_T / R_STATOR_OUTER_KINK)
+    for seam in seam_azimuths(LINER_SEAM_PHASE_DEG):
+        assert angular_gap_deg(seam, 0.0) >= EXIT_ARC_DEG / 2.0 + ear_deg, (
+            f"liner seam at {seam:.1f}° runs into the exit arc"
+        )
+    a = Assembly()
+    for k, sector in enumerate(stator_sectors()):
+        a = a.with_part(stator_part(k), sector, material=material_of(stator_part(k)))
+    a = a.with_part("exit_floor", exit_floor(), material=material_of("exit_floor"))
+    for k, part in enumerate(STATOR_PARTS):
+        a = (
+            a
+            .assert_no_interference("exit_floor", part)
+            .assert_tangent_contact(part, STATOR_PARTS[(k + 1) % SEAM_COUNT])
+        )
+    # The tongue's side clearance is to the sector spanning the exit.
+    exit_sector = stator_part(sector_index(0.0, LINER_SEAM_PHASE_DEG))
+    return a.assert_clearance(
+        "exit_floor", exit_sector, min_mm=EXIT_FLOOR_SIDE_CLEAR - 0.01,
     )
 
 

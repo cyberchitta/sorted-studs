@@ -3,7 +3,7 @@ m02 chain — top-level standalone assembly.
 
 Composes the three singulator stages as the `s1` / `s2` / `s3`
 subtrees (part identity is the tree path: `s2.rotor.rotor`,
-`s3.drive.bowl`, …), the LOAD ramp (`load_ramp`) from S1's
+`s3.drive.bowl_0`, …), the LOAD ramp (`load_ramp`) from S1's
 chute exit down to the m03 LOAD platform, and the gantry that carries
 the stages on m05's two through-deck columns: S1's prop bar
 (`s1_prop_bar`, across V_5's end), S3's prop bar and cross
@@ -48,8 +48,9 @@ m05 column tops + top deck and m03 turret parts are EXTERNAL to the
 chain — cross-unit asserts live in `cad/assembly.py`, and the
 turret's loaded-platform envelope in `cad/check_turret_envelope.py`.
 
-Each stage rests on its bars by its bowl's floor (`drive.bowl`, the
-floor + skirt of `m02-chain.md` §5, 2026-09-16); the bolt patterns
+Each stage rests on its bars by its bowl's floor (`drive.bowl_0..2`, the
+floor + skirt of `m02-chain.md` §5, 2026-09-16, printed in thirds —
+each bar rests on the sector(s) its ends lie under); the bolt patterns
 between floor and bars, and every joint's fasteners (T-nut bolts
 through the seat and socket walls, the end-tap M5 down through each
 prop bar into its column, the foot bolts through the deck), are
@@ -67,6 +68,9 @@ from cad_khana.mechanism.assembly import Assembly
 
 from ..design_systems import DEFAULT_SCHEMA, paint
 from ..m02_c_channel_singulator.assembly import build_m02
+from ..m02_c_channel_singulator.drive.assembly import BOWL_PARTS, bowl_part_at
+from ..m02_c_channel_singulator.seams import angular_gap_deg, seam_azimuths, sector_index
+from ..m02_c_channel_singulator.stator.assembly import STATOR_PARTS
 from ..m02_c_channel_singulator.params import ROTOR_BASE_DIAMETER
 from .design_systems import design_system
 from .joints import brace_foot, brace_head, corner_bracket, post_seat
@@ -79,6 +83,7 @@ from .params import (
     ARM_TEE_LEN,
     ARM_TOP_Z_LOCAL,
     BAR_DEPTH,
+    BOWL_SEAM_BAR_CLEAR_MIN_DEG,
     BRACE_COLS,
     BRACE_FOOT_START_H,
     BRACE_FOOT_STOP_H,
@@ -117,7 +122,7 @@ from .params import (
     m05_outer_vertex_local_xy,
     prop_bar_azimuth_deg,
 )
-from ..m02_c_channel_singulator.params import R_STATOR_OUTER_KINK
+from ..m02_c_channel_singulator.params import LINER_SEAM_PHASE_DEG, PLATE_R_IN, R_STATOR_OUTER_KINK
 
 # Constructed-equals-bound tolerance (cad/CLAUDE.md principle 6).
 _MEAS_TOL = 0.01
@@ -358,6 +363,42 @@ _BRACKETS = (
 )
 _GANTRY = _MEMBERS + _PRINTED_JOINTS + _BRACKETS
 _SKELETON = ("load_ramp",) + _GANTRY
+
+# The bars that rest under a stage's floor.
+_RESTS = (
+    ("s1_prop_bar", "s1"), ("s3_prop_bar", "s3"),
+    ("s3_cross_a", "s3"), ("s3_cross_b", "s3"), ("s2_tee", "s2"),
+)
+
+
+def _stage_local_az(s: Stage, xy: tuple[float, float]) -> float:
+    """m02-local azimuth of chain-local point ``xy`` about stage s."""
+    return math.degrees(math.atan2(xy[1] - s.axis_xy[1], xy[0] - s.axis_xy[0])) - s.heading_deg
+
+
+def _bar_end_azimuths(bar: str, s: Stage) -> list[float]:
+    """m02-local azimuths of the bar's ends that lie under s's floor
+    (outside the floor's hole)."""
+    loc, length = {
+        "s1_prop_bar": lambda: _prop_bar(s),
+        "s3_prop_bar": lambda: _prop_bar(s),
+        "s3_cross_a": lambda: _cross_half(s, +1.0),
+        "s3_cross_b": lambda: _cross_half(s, -1.0),
+        "s2_tee": _tee,
+    }[bar]()
+    p = loc.position
+    yaw = math.radians(loc.orientation.Z)
+    out = []
+    for sign in (-1.0, 1.0):
+        xy = (p.X + sign * length / 2.0 * math.cos(yaw), p.Y + sign * length / 2.0 * math.sin(yaw))
+        if math.hypot(xy[0] - s.axis_xy[0], xy[1] - s.axis_xy[1]) > PLATE_R_IN:
+            out.append(_stage_local_az(s, xy))
+    return out
+
+
+def _s1_exit_liner() -> str:
+    """The liner sector the LOAD ramp wraps: the one spanning S1's exit."""
+    return STATOR_PARTS[sector_index(0.0, LINER_SEAM_PHASE_DEG)]
 _STAGE_NAMES = tuple(s.name for s in STAGES)
 
 
@@ -392,7 +433,8 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
     a = Assembly()
     for s in STAGES:
         a = a.with_subassembly(
-            s.name, build_m02(schema, s.motor_azimuth_deg), location=_stage_pose(s),
+            s.name, build_m02(schema, s.motor_azimuth_deg, s.bowl_seam_phase_deg),
+            location=_stage_pose(s),
         )
     s1, s2, s3 = STAGES
     a = a.with_part("load_ramp", _load_ramp(s1), **mat("load_ramp"))
@@ -447,15 +489,13 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
     # below the bound), the chute lands its brick on the lower rotor,
     # and no part of one stage touches another.
     for up, dn in ((s2, s1), (s3, s2)):
-        a = (
-            a
-            .assert_clearance(
-                f"{up.name}.drive.bowl", f"{dn.name}.rotor.rotor",
+        for part in BOWL_PARTS:
+            a = a.assert_clearance(
+                f"{up.name}.drive.{part}", f"{dn.name}.rotor.rotor",
                 min_mm=STAGE_CLEAR - _MEAS_TOL,
-                name=f"{up.name}_plate_over_{dn.name}_rotor",
+                name=f"{up.name}_{part}_over_{dn.name}_rotor",
             )
-            .assert_no_interference_between(up.name, dn.name)
-        )
+        a = a.assert_no_interference_between(up.name, dn.name)
     a = a.assert_no_interference_between(s3.name, s1.name)
     a = a.assert_scalar(
         "chute_land_r", CHUTE_LAND_R, ge=0.0, le=ROTOR_BASE_DIAMETER / 2.0,
@@ -471,7 +511,7 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
             detail="LOAD ramp pitch; 20/55 are placeholders, not measured friction",
         )
         .assert_distance(
-            "load_ramp", "s1.stator.stator", min_mm=RAMP_STATOR_CLEAR - _MEAS_TOL,
+            "load_ramp", f"s1.stator.{_s1_exit_liner()}", min_mm=RAMP_STATOR_CLEAR - _MEAS_TOL,
             name="ramp_wraps_s1_stator",
         )
         # The seam: the ramp's landing starts RAMP_STATOR_CLEAR outside
@@ -485,11 +525,29 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
     )
 
     # Gantry rests: each bar tangent under its plate.
-    for bar, stage in (
-        ("s1_prop_bar", s1), ("s3_prop_bar", s3),
-        ("s3_cross_a", s3), ("s3_cross_b", s3), ("s2_tee", s2),
-    ):
-        a = a.assert_tangent_contact(bar, f"{stage.name}.drive.bowl")
+    # Gantry rests: each bar tangent under the bowl sector(s) its ends
+    # lie under (a bar crosses no seam between its ends: the seams are
+    # radial and every bar runs through, or within 9 mm of, the axis,
+    # inside the floor's hole) — and no bowl seam lands on a bar end.
+    ends_by_stage: dict[str, list[float]] = {s.name: [] for s in STAGES}
+    by_name = {s.name: s for s in STAGES}
+    for bar, stage_name in _RESTS:
+        stage = by_name[stage_name]
+        for az in _bar_end_azimuths(bar, stage):
+            ends_by_stage[stage.name].append(az)
+            a = a.assert_tangent_contact(
+                bar, f"{stage.name}.drive.{bowl_part_at(az, stage.bowl_seam_phase_deg)}",
+            )
+    for s in STAGES:
+        clear = min(
+            angular_gap_deg(seam, end) - math.degrees((EXT_SIZE / 2.0) / R_STATOR_OUTER_KINK)
+            for seam in seam_azimuths(s.bowl_seam_phase_deg)
+            for end in ends_by_stage[s.name]
+        )
+        a = a.assert_scalar(
+            f"{s.name}_bowl_seams_clear_of_bar_ends_deg", clear, ge=BOWL_SEAM_BAR_CLEAR_MIN_DEG,
+            detail="closest bowl seam to a gantry bar end's side, degrees at the rim",
+        )
     # The stem butts the T bar's near face; the cross halves butt the
     # prop bar's faces.
     a = (
@@ -520,7 +578,10 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
         a = (
             a
             .assert_tangent_contact(seat, f"{s.name}_prop_bar")
-            .assert_tangent_contact(seat, f"{s.name}.drive.bowl")
+            .assert_tangent_contact(
+                seat,
+                f"{s.name}.drive.{bowl_part_at(_stage_local_az(s, m05_outer_vertex_local_xy(PROP_POST[s.name])), s.bowl_seam_phase_deg)}",
+            )
             .assert_clearance(seat, f"{s.name}.drive.motor", min_mm=5.0)
         )
     for col in BRACE_COLS:

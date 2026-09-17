@@ -256,6 +256,7 @@ class Stage:
     heading_deg: float          # azimuth the chute fires (m02-local +X)
     vbot_z: float               # stator V-bottom plane (m02-local z = 0)
     motor_azimuth_deg: float    # m02-local; passed to build_m02
+    bowl_seam_phase_deg: float  # m02-local; passed to build_m02
 
     @property
     def chute_exit_xy(self) -> tuple[float, float]:
@@ -281,6 +282,26 @@ class Stage:
 # `propMotor` was 0 at P because it assumed a 5° post rotation the m05
 # column cannot have; `assembly.py` asserts the clearances).
 MOTOR_SWING_DEG = {"s1": 0.0, "s2": 30.0, "s3": 30.0}
+
+
+# --- Seams ---------------------------------------------------------------
+
+# Per-stage phase of the bowl's thirds seams, m02-local degrees from
+# the exit arc's centre (`m02_c_channel_singulator/seams.py`,
+# 2026-09-17). A seam must not land where a gantry member ends under
+# the floor — a bar end is a point load on one sector's floor edge,
+# where the ring beam is already cut — nor through the exit slot or
+# the motor (the unit guards those two), and it stays staggered from
+# the liner's fixed seams at 75 / −165 / −45 (the unit asserts ≥ 25°).
+# Stage-local end azimuths, found by search 2026-09-17: S1 its prop
+# bar's post end −152 and far end +28; S2 the T bar's ends −47 / +127
+# and the stem's end at the T; S3 its prop bar −97 / +83 and the cross
+# halves' outer ends −7 / +173. The chosen phases put every seam ≥ 9°
+# (≈ 24 mm at the rim) past the nearest member's side; one phase for
+# all three would have left 5°. `assembly.py` records each stage's
+# worst case as `sN_bowl_seams_clear_of_bar_ends_deg`.
+BOWL_SEAM_PHASE_DEG = {"s1": 41.0, "s2": 31.0, "s3": 38.0}
+BOWL_SEAM_BAR_CLEAR_MIN_DEG = 5.0
 
 
 def _stage_table() -> tuple[Stage, ...]:
@@ -316,6 +337,7 @@ def _stage_table() -> tuple[Stage, ...]:
             heading_deg=hd,
             vbot_z=S1_VBOT_Z_LOCAL + i * STAGE_PITCH,
             motor_azimuth_deg=MOTOR_AZIMUTH_DEG + MOTOR_SWING_DEG[name],
+            bowl_seam_phase_deg=BOWL_SEAM_PHASE_DEG[name],
         ))
     return tuple(stages)
 

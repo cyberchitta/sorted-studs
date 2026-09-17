@@ -8,11 +8,11 @@ builders import nothing from here — they emit no colour at all.
 Material is a physical property, not a render axis — see
 ``materials.py``.
 
-m02 has seven named parts: ``rotor`` (rotates, MECHANISM), ``stator``
-(fixed structural shell, SECONDARY_STRUCTURE), ``exit_floor`` (the
-tongue under the exit arc, SECONDARY_STRUCTURE), ``bowl`` (the floor
-and skirt the rotor bearing, motor and stator liner sit on,
-SECONDARY_STRUCTURE),
+m02's named parts: ``rotor`` (rotates, MECHANISM), ``stator_0..2``
+(the liner's thirds — fixed structural shell, SECONDARY_STRUCTURE),
+``exit_floor`` (the tongue under the exit arc, SECONDARY_STRUCTURE),
+``bowl_0..2`` (the thirds of the floor and skirt the rotor bearing,
+motor and stator liner sit on, SECONDARY_STRUCTURE),
 ``pinion`` (rotates, MECHANISM), and two bought parts outside the
 design system — ``bearing`` (aluminium turntable) and ``motor``
 (NEMA-17) — which keep their material intrinsics.
@@ -39,9 +39,13 @@ ROLE_OF: dict[str, Role | None] = {
     # SECONDARY_STRUCTURE wins today (not designed to be swapped during
     # normal operation); re-tag CONSUMABLE if a stator-swap workflow
     # for different brick mixes becomes a real thing.
-    "stator":     Role.SECONDARY_STRUCTURE,
+    "stator_0":   Role.SECONDARY_STRUCTURE,
+    "stator_1":   Role.SECONDARY_STRUCTURE,
+    "stator_2":   Role.SECONDARY_STRUCTURE,
     "exit_floor": Role.SECONDARY_STRUCTURE,
-    "bowl":       Role.SECONDARY_STRUCTURE,
+    "bowl_0":     Role.SECONDARY_STRUCTURE,
+    "bowl_1":     Role.SECONDARY_STRUCTURE,
+    "bowl_2":     Role.SECONDARY_STRUCTURE,
     "pinion":     Role.MECHANISM,
     "bearing":    None,                      # bought turntable — outside palette
     "motor":      None,                      # NEMA-17 cast body — outside palette
