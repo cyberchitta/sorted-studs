@@ -28,7 +28,12 @@ flagged azimuth cuts the basket twice: from the inner arc out through
 the inner column, and from the outer column out through the outer arc.
 These channels let a basket move horizontally around the continuous
 tower columns during installation and removal; closed column-footprint
-holes would force it to slide the full tower height instead. The notch
+holes would force it to slide the full tower height instead. *Only half
+of that holds today* (probe 2026-09-18): drawn out along its own axis,
+a basket clears the inner columns but hits the outer ones at 5–15 mm of
+travel — the outer channel's inboard end is in the way. Basket removal
+is an open design item. Each channel is lined on its cavity side
+(see `basket()`), so no floor opening beside a column reaches a brick. The notch
 set per basket is declared in `FLOOR_LAYOUT`: `left`/`right` for the
 boundary columns. A column can only ever sit on a boundary — a basket
 with a column notched through its *interior* (the former N=9 at 90°,
@@ -173,6 +178,7 @@ def _radial_access_channel_at(
     azimuth_deg: float,
     radius_start: float,
     radius_end: float,
+    grow: float = 0.0,
 ) -> Part:
     """Full-height radial slot between two radii at `azimuth_deg`.
 
@@ -180,10 +186,13 @@ def _radial_access_channel_at(
     either vertex bracket's 6 mm clamp plate. It intentionally reaches
     a basket arc: the printed walls hand off to the clamp face without
     trapping a continuous tower column inside an enclosed floor hole.
+
+    `grow` pads the slot by that much on every side — `basket()` uses
+    it to keep a lining wall between the slot and the cavity.
     """
     z_margin = 10.0
     height = BASKET_DEPTH_Z + 2 * z_margin
-    length = radius_end - radius_start
+    length = radius_end - radius_start + 2 * grow
     radius_mid = (radius_start + radius_end) / 2.0
     vx = radius_mid * math.cos(math.radians(azimuth_deg))
     vy = radius_mid * math.sin(math.radians(azimuth_deg))
@@ -191,7 +200,7 @@ def _radial_access_channel_at(
     return (
         Pos(vx, vy, z_center)
         * Rot(0, 0, azimuth_deg)
-        * Box(length, ACCESS_CHANNEL_W, height)
+        * Box(length, ACCESS_CHANNEL_W + 2 * grow, height)
     )
 
 
@@ -285,28 +294,44 @@ def basket(
         z_bot + BASKET_WALL_T, z_top + 1.0,
         inset=BASKET_WALL_T,
     )
-    body = outer - cavity
     # Two columns per flagged azimuth: open the inner one to the inner
     # arc and the outer one to the outer arc. The channels overlap the
     # complete column footprints with clearance, so no enclosed floor
     # holes remain.
+    #
+    # Each channel is lined with a BASKET_WALL_T wall on its cavity
+    # side: the cavity is carved short of the channel before the
+    # channel itself is cut. Unlined, the cavity opened straight into
+    # the channel, and the channel has no floor — a brick could fall
+    # out through the gap between the inner post and the inner arc
+    # (~20 × 17 mm) or the clamp-plate allowance beside either post.
+    # The lining sits inboard of the channel, so it never crosses a
+    # post's path out of the basket.
+    radial_clearance = COLUMN_SIDE / 2 + COLUMN_CLEARANCE
+    channels = []
     for flagged, az in (
         (notch_right, +half_angle_deg),
         (notch_left, -half_angle_deg),
     ):
         if not flagged:
             continue
-        radial_clearance = COLUMN_SIDE / 2 + COLUMN_CLEARANCE
-        body = body - _radial_access_channel_at(
+        channels.append((
             az,
             R_VERT_OUTER - radial_clearance,
             R_BASKET_OUTER + OUTER_ARC_OVERSHOOT,
-        )
-        body = body - _radial_access_channel_at(
+        ))
+        channels.append((
             az,
             R_BASKET_INNER - INNER_ARC_OVERSHOOT,
             R_VERT_INNER + radial_clearance,
+        ))
+    for az, r0, r1 in channels:
+        cavity = cavity - _radial_access_channel_at(
+            az, r0, r1, grow=BASKET_WALL_T,
         )
+    body = outer - cavity
+    for az, r0, r1 in channels:
+        body = body - _radial_access_channel_at(az, r0, r1)
     return body
 
 
