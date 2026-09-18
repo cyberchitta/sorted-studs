@@ -16,16 +16,13 @@ from __future__ import annotations
 
 
 from .design_systems import basename_of
-from .params import FLOOR_LAYOUT
+from .params import all_basket_names
 
 
 # --- Basket name expansion --------------------------------------------
 
 def _basket_basenames() -> list[str]:
-    return [
-        f"basket_{int(round(center_deg)):03d}_{n_size:02d}"
-        for center_deg, n_size, _notches in FLOOR_LAYOUT
-    ]
+    return all_basket_names()
 
 
 MATERIAL_OF: dict[str, str | None] = {

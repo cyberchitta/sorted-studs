@@ -99,7 +99,7 @@ from .outer_vertex_bracket.assembly import (
     PLATE_T as OUTER_BRACKET_PLATE_T,
     bracket as outer_bracket,
 )
-from .params import FLOOR_H, FLOOR_LAYOUT, R_VERT_OUTER, THROUGH_DECK_POSTS
+from .params import FLOOR_H, FLOOR_LAYOUTS, R_VERT_OUTER, THROUGH_DECK_POSTS
 from .ramp_mechanism import assembly as _ramp
 
 
@@ -154,7 +154,14 @@ def _build_floor_static(role: str, basket_layout) -> Assembly:
     the size-keyed luminance ramp — see ``basket_color_of``), and
     `bearing` (spider + ring bearing). The caller places the whole
     floor at `Pos(0, 0, idx·FLOOR_H)`; floor identity is the caller's
-    `f{idx}` subtree name."""
+    `f{idx}` subtree name.
+
+    The baskets-at-rest claims against this floor's rails and bearing
+    are declared here, where the layout is known, so every floor of the
+    tower is checked in its own layout — `single_floor.py` sees only
+    the reference one. Columns are tower-global; the baskets' claims
+    against them are `check_basket_removal.py` (rest is its first
+    step)."""
     return (
         Assembly()
         .with_subassembly(
@@ -176,6 +183,8 @@ def _build_floor_static(role: str, basket_layout) -> Assembly:
                 role, material_fn=material_of,
             ),
         )
+        .assert_no_interference_between("baskets", "rails")
+        .assert_no_interference_between("baskets", "bearing")
     )
 
 
@@ -468,7 +477,7 @@ def build_tower(
     floor_plan: list[tuple[int, str]],
     *,
     schema: str = DEFAULT_SCHEMA,
-    basket_layout=FLOOR_LAYOUT,
+    basket_layout=FLOOR_LAYOUTS,
     with_top_deck: bool = True,
     with_drive_train: bool = True,
     through_posts: dict[int, float] | None = None,
@@ -480,13 +489,12 @@ def build_tower(
     `floor_plan` is a list of ``(idx, role)`` tuples in stacking order
     (lowest first). The exhibit variant passes a reduced plan; the
     production tower passes ``FLOOR_PLAN`` and gets the default
-    ``FLOOR_LAYOUT`` of 12 baskets per floor.
+    ``FLOOR_LAYOUTS``, a different basket layout on every floor.
 
     `basket_layout` is either a single layout list shared across every
-    floor (production / single-tier exhibits) or a
-    ``dict[floor_idx, layout]`` keyed by floor index for per-floor
-    overrides (the article exhibit, which stages different sizes on
-    different floors).
+    floor or a ``dict[floor_idx, layout]`` keyed by floor index —
+    production (`FLOOR_LAYOUTS`) and the article exhibit, which stages
+    a few named baskets per floor.
 
     `with_top_deck` and `with_drive_train` strip those features for
     the exhibit. Drive-train assertions and top-deck assertions are

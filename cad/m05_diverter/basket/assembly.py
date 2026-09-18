@@ -3,12 +3,10 @@ M05 hex-tower — basket sub-assembly.
 
 Annular-sector **buckets** with cylindrical-arc inner and outer
 walls and two radial side walls, sitting on a rotating-column
-floor. The floor is a **mixed layout** — baskets of four sizes
-(N=6 / 9 / 12 / 18, each with half-angle 180°/N) placed around
-the hex per `params.FLOOR_LAYOUT`, with the ramp-facing N=6 basket
-straddling +X, an N=9 pair either side of an N=18 pair split at V_1,
-then N=12 pairs, an N=18 triple, and an (N=9, N=18) pair around
-the back — twelve baskets per floor.
+floor. Each floor is a **mixed layout** — baskets of four sizes
+(N=6 / 9 / 12 / 18, each with half-angle 180°/N) filling the six
+60° sectors between the columns, a different fill on every floor
+(`params.FLOOR_LAYOUTS`, built by `layout_from_sectors`).
 
 Outer arc radius matches the top-deck acrylic disc OD/2 (330 mm)
 and inner arc radius matches the hex inner-face apothem (130 mm),
@@ -77,7 +75,7 @@ from ..params import (
     BASKET_FLOOR_Z,
     BASKET_RIM_Z,
     COL_OUTER_SIDE,
-    FLOOR_LAYOUT,
+    FLOOR_LAYOUTS,
     R_BASKET_INNER,
     R_HEX_OUTER,
     R_VERT_INNER,
@@ -452,24 +450,24 @@ def build_basket_ring(
 # --- Standalone assembly -------------------------------------------------
 
 def build_basket_ring_standalone() -> Assembly:
-    """The `FLOOR_LAYOUT` ring plus a stand-in for the central column,
-    with the two check families the ring owns."""
-    a = build_basket_ring(FLOOR_LAYOUT).with_part("col_stub", col_stub())
+    """One ring per `FLOOR_LAYOUTS` floor (subtree `f{idx}`, all at the
+    same datum — they are never compared with each other) plus a
+    stand-in for the central column, with the two check families a
+    ring owns."""
+    a = Assembly().with_part("col_stub", col_stub())
+    for idx, layout in FLOOR_LAYOUTS.items():
+        a = a.with_subassembly(f"f{idx}", build_basket_ring(layout))
+        names = [
+            f"f{idx}.basket_{int(round(center_deg)):03d}_{n_size:02d}"
+            for center_deg, n_size, _notches in layout
+        ]
+        for name in names:
+            a = a.assert_no_interference(name, "col_stub")
 
-    names = [
-        f"basket_{int(round(center_deg)):03d}_{n_size:02d}"
-        for center_deg, n_size, _notches in FLOOR_LAYOUT
-    ]
-    for name in names:
-        a = a.assert_no_interference(name, "col_stub")
-
-    # Every adjacent pair around the ring, including wrap. Two baskets
-    # that share a boundary must both cut the notch for the column on
-    # that boundary (or the column would lie inside their shared wall);
-    # if either side forgets its notch, the two basket bodies overlap
-    # through the missing column envelope, which this loop catches.
-    for left, right in zip(names, names[1:] + names[:1]):
-        a = a.assert_no_interference(left, right)
+        # Every adjacent pair around the ring, including wrap: two
+        # neighbours must meet at their shared boundary, not cross it.
+        for left, right in zip(names, names[1:] + names[:1]):
+            a = a.assert_no_interference(left, right)
     return a
 
 

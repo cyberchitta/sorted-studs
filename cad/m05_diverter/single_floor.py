@@ -13,7 +13,9 @@ at identity (floor-local == world here):
 - `bearing` — bearing spider + ring bearing
 - `rotating` — column + hinge pin + ramp + trap-closed (no trap-open:
   that envelope only exists to check against an upper neighbour)
-- `baskets` — the full mixed `FLOOR_LAYOUT`
+- `baskets` — the reference `FLOOR_LAYOUT` (the base floor's; the
+  tower's other floors differ and check themselves at rest in
+  `assembly._build_floor_static`)
 - `lower_trap_open` — root-level stand-in for the floor below's trap
   at max-open, mapped into this floor's frame via -FLOOR_H
 

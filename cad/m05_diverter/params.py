@@ -183,38 +183,71 @@ RAIL_OUTER_INNER_END_R = R_VERT_INNER + BRACKET_HOR_OFFSET     # ≈ 183.66 — 
 RAIL_OUTER_R = R_VERT_OUTER - BRACKET_HOR_OFFSET               # ≈ 289.77 — physical outer end
 
 
-# Mixed floor layout. Each entry: (center_azimuth_deg, N_size, notch_set).
-# `notch_set` ⊆ {"left", "right"}; LEFT/RIGHT refer to the basket's
-# local frame (−/+ half-angle boundaries). A column may only ever sit
-# on a basket *boundary*: a basket with a column inside its interior
-# (the former N=9 "middle" notch at 90°, straddling V_1) cannot be
-# drawn out past the continuous through-columns (dropped 2026-09-15),
-# so its 70°..110° slot is split at V_1 into two N=18s, each with V_1
-# on one boundary (2026-09-18).
+# Basket layouts. A layout is a list of (center_azimuth_deg, N_size,
+# notch_set) entries; `notch_set` ⊆ {"left", "right"}, LEFT/RIGHT in the
+# basket's local frame (−/+ half-angle boundaries).
 #
-# Counterclockwise from the ramp (world +X = 0°). Entries must stay in
-# this order — the basket standalone checks each consecutive pair,
-# wrap included, as neighbours:
-#   S1    [330°, 30°]   1× N=6 in front of ramp, notches L + R
-#   S2+3  [30°, 150°]   N=9 (L at 50°), N=18 pair (R at 80°, L at
-#                       100° — split at V_1), N=9 (R at 130°)
-#   S4    [150°, 210°]  N=12 pair (L, R)
-#   S5    [210°, 270°]  N=18 triple (L, NONE, R)
-#   S6    [270°, 330°]  N=9 (L at V_4) + N=18 (R at V_5)
+# A column may only ever sit on a basket *boundary*: a basket with a
+# column inside it cannot be drawn out past the continuous through-
+# columns (the N=9 once centred on V_1, dropped 2026-09-15). So a floor
+# is six independent **sector fills**, one per 60° sector between
+# vertices, sector k centred on 60·k (sector 0 faces the ramp's home at
+# world +X). Each fill is its basket widths in degrees, counterclockwise,
+# summing to 60 — the four sizes are 60 / 40 / 30 / 20 (N = 6 / 9 / 12 /
+# 18), so the fills are (60,), (30, 30), (40, 20), (20, 40),
+# (20, 20, 20). A sector's first basket carries the left notch and its
+# last the right one; `layout_from_sectors` derives both, so any fill is
+# valid by construction.
 #
-# Every outer-hex vertex V_k = (k+0.5)·60° lands on exactly the
-# notches it needs — twelve baskets per floor.
-FLOOR_LAYOUT = [
-    (  0.0,  6, {"left", "right"}),
-    ( 50.0,  9, {"left"}),
-    ( 80.0, 18, {"right"}),
-    (100.0, 18, {"left"}),
-    (130.0,  9, {"right"}),
-    (165.0, 12, {"left"}),
-    (195.0, 12, {"right"}),
-    (220.0, 18, {"left"}),
-    (240.0, 18, set()),
-    (260.0, 18, {"right"}),
-    (290.0,  9, {"left"}),
-    (320.0, 18, {"right"}),
-]
+# Which fill goes where is not a design decision: it is set by how the
+# collection is actually being sorted, and differs floor to floor. The
+# four below are one illustration of that range, not a recommendation.
+# Entries come out counterclockwise from sector 0 — the basket
+# standalone checks each consecutive pair, wrap included, as neighbours.
+_SECTOR_WIDTHS = {60: 6, 40: 9, 30: 12, 20: 18}
+
+
+def layout_from_sectors(fills):
+    """Six sector fills → a basket layout (see above)."""
+    if len(fills) != 6:
+        raise ValueError(f"need six sector fills, got {len(fills)}")
+    layout = []
+    for k, widths in enumerate(fills):
+        if sum(widths) != 60 or any(w not in _SECTOR_WIDTHS for w in widths):
+            raise ValueError(f"sector {k} fill {widths} is not a 60° split")
+        edge = 60.0 * k - 30.0
+        for i, w in enumerate(widths):
+            notches = set()
+            if i == 0:
+                notches.add("left")
+            if i == len(widths) - 1:
+                notches.add("right")
+            layout.append(((edge + w / 2.0) % 360.0, _SECTOR_WIDTHS[w], notches))
+            edge += w
+    return layout
+
+
+# Per-floor layouts, keyed by floor index (0 = base). The base floor is
+# the reference layout: the wide N=6 facing the ramp's home, the rest a
+# mix (its 70°..110° slot split at V_1 into two N=18s, 2026-09-18).
+# The others: many small categories, a few bulk ones, and a mix.
+FLOOR_LAYOUTS = {
+    0: layout_from_sectors([(60,), (40, 20), (20, 40), (30, 30), (20, 20, 20), (40, 20)]),
+    1: layout_from_sectors([(20, 20, 20)] * 6),
+    2: layout_from_sectors([(60,), (30, 30), (60,), (30, 30), (60,), (30, 30)]),
+    3: layout_from_sectors([(30, 30), (20, 40), (60,), (40, 20), (20, 20, 20), (30, 30)]),
+}
+
+# The reference single-floor layout — `single_floor.py`, the basket
+# standalone's first ring, and anything that checks one floor.
+FLOOR_LAYOUT = FLOOR_LAYOUTS[0]
+
+
+def all_basket_names() -> list[str]:
+    """Every basket leaf name any floor layout uses, sorted — the set
+    the paint and material maps must cover."""
+    return sorted({
+        f"basket_{int(round(c)):03d}_{n:02d}"
+        for layout in FLOOR_LAYOUTS.values()
+        for c, n, _ in layout
+    })

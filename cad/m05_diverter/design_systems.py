@@ -35,16 +35,13 @@ from ..design_systems import (
     blend,
     lookup,
 )
-from .params import FLOOR_LAYOUT
+from .params import all_basket_names
 
 
 # --- Basket name expansion --------------------------------------------
 
 def _basket_basenames() -> list[str]:
-    return [
-        f"basket_{int(round(center_deg)):03d}_{n_size:02d}"
-        for center_deg, n_size, _notches in FLOOR_LAYOUT
-    ]
+    return all_basket_names()
 
 
 # --- m05 role tags ----------------------------------------------------

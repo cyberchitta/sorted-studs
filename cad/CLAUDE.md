@@ -348,7 +348,7 @@ script for the rest:
 | unit | `khana check assembly.py` covers | command script covers |
 |---|---|---|
 | `m05_diverter/ramp_mechanism` | the `middle` role | `role_sweep.py` — all three roles + 11 inspects |
-| `m05_diverter` | baskets at rest | `khana check check_basket_removal.py` — every basket drawn out along its own axis, stepped past the columns and vertex brackets |
+| `m05_diverter` | every floor's baskets at rest, each in its own layout | `khana check check_basket_removal.py` — every distinct basket of every floor layout drawn out along its own axis, stepped past the columns and vertex brackets (~17 min; run it in the background) |
 | `m03_scanner` (animated) | frame `t = 0` | `frame_sweep.py` — all 12 sampled frames |
 | `m03_scanner` (cones) | the cone-free product assembly | `khana check check_cones.py` — the sightline claims |
 | `cad/` (top level) | cross-unit interference, anchor coincidence, the gantry's rests on m05 | `khana check check_turret_envelope.py` — the chain vs the turret's loaded-platform sweep (a probe solid); `khana check check_service_access.py` — a hand-wide reach corridor to IMAGE from ±X, clear of every unit |

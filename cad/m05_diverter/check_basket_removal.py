@@ -12,7 +12,8 @@ blocked path stood unnoticed from 2026-05-30 to 2026-09-18.
 
 Fixture: one floor's through-columns and vertex brackets (the frame
 parts that reach up into the basket's z band — the brackets' clamp
-plates to z = 40), and each `FLOOR_LAYOUT` basket copied at draw-out
+plates to z = 40), and each distinct basket of every `FLOOR_LAYOUTS`
+floor copied at draw-out
 steps of `STEP_MM` from rest to its `withdrawal_travel` plus one step.
 Each copy is asserted against every column and bracket.
 
@@ -41,7 +42,7 @@ from cad_khana.mechanism.assembly import Assembly
 
 from .basket.assembly import basket, withdrawal_travel
 from .frame import assembly as _frame
-from .params import FLOOR_LAYOUT
+from .params import FLOOR_LAYOUTS
 
 STEP_MM = 4.0
 
@@ -67,7 +68,15 @@ def build_basket_removal() -> Assembly:
         )
     ]
 
-    for center_deg, n_size, notches in FLOOR_LAYOUT:
+    # Every distinct basket any floor uses, once. A basket's notches
+    # follow from its centre and width (they mark the edges that land on
+    # a column), so one name is one shape at one pose on every floor.
+    distinct = {
+        (center_deg, n_size): notches
+        for layout in FLOOR_LAYOUTS.values()
+        for center_deg, n_size, notches in layout
+    }
+    for (center_deg, n_size), notches in sorted(distinct.items()):
         half_angle = 180.0 / n_size
         body = basket(
             half_angle_deg=half_angle,
