@@ -32,6 +32,7 @@ from .assembly import (
     ramp,
     ring_bearing,
     trap,
+    trap_coupler,
 )
 
 
@@ -48,9 +49,10 @@ waivers = {
     },
     "column": {
         "overhang_max": "flat 90° ceilings are real: collar / joint-"
-        "flange / hinge-boss undersides and the exit-opening lintel on "
-        "a vertically printed tube — printed base-down with support "
-        "under the annular features",
+        "flange / hinge-boss undersides, the exit-opening lintel, and "
+        "the servo cage's web underside and cut-out lintel on a "
+        "vertically printed tube — printed base-down with support "
+        "under the annular features and the cage web",
     },
 }
 for role in FLOOR_ROLES:
@@ -77,3 +79,4 @@ inspect(
     },
 )
 inspect(ramp(), method=method, out="outputs", name="ramp")
+inspect(trap_coupler(), method=method, out="outputs", name="trap_coupler")

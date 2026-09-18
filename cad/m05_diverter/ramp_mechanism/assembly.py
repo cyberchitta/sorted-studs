@@ -90,9 +90,9 @@ import math
 from typing import Callable
 
 
-from build123d import Box, Cylinder, Location, Part, Plane, Pos, Rot
+from build123d import Axis, Box, Cylinder, Location, Part, Plane, Pos, Rot
 
-from cad_khana.mechanism.assembly import Assembly
+from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 
 from ..params import (
     BASE_COL_Z_BOT,
@@ -123,11 +123,15 @@ from ..params import (
 # whose drive pinion meshes with the base column's bottom collar).
 COLLAR_T = 5.0
 
-# Hinge pin + knuckle
+# Hinge pin + knuckle. The pin is the trap's drive shaft: a Ø3 steel
+# D-shaft keyed into a D-bore in the knuckle and in the coupler, turning
+# in plain round bores through the bosses and both ±Y walls.
 KNUCKLE_OD = 10.0
 PIN_D = 3.0
-PIN_HOLE_D = 3.6
-PIN_LEN = COL_OUTER_SIDE + 4.0
+PIN_FLAT = 1.0                                # flat at this distance from the axis (0.5 deep)
+PIN_HOLE_D = 3.6                              # round bearing bore: bosses + walls
+PIN_D_BORE_D = 3.4                            # keyed bore: knuckle + coupler
+PIN_D_BORE_FLAT = 1.2                         # 0.2 clear of the pin's flat
 
 # Trap — flat plate, knuckle at hinge axis, plate body in +X
 TRAP_T = 4.0
@@ -201,8 +205,48 @@ SERVO_TAB_L = 32.2                            # mounting-tab span along X
 SERVO_TAB_T = 2.5
 SERVO_TAB_FROM_TOP = 6.7                      # tab top face below the shaft face
 SERVO_SHAFT_FROM_END = SERVO_BODY_W / 2       # shaft axis from the body's −X end
-SERVO_STANDOFF = 6.0                          # shaft face → column outer wall: horn + hub
+# Shaft face → column outer wall. Between them, from the wall out: a
+# 1 mm gap, the printed coupler (the pin's D-bore; the horn screws to
+# it), the bought round horn, and its hub over the spline.
+SERVO_STANDOFF = 10.0
 SERVO_STALL_NM = 0.22                         # MG90S, 2.2 kg·cm at 4.8 V (datasheet)
+# Drive: printed coupler (D-bore on the pin, horn screwed to its outer
+# face) + the servo's own round disc horn. Y ranges are the hinge-frame
+# coordinates; both sit between the +Y wall (48) and the case (58).
+COUPLER_R = 10.0
+COUPLER_T = 3.0
+COUPLER_WALL_GAP = 1.0
+COUPLER_Y_MIN = COL_OUTER_SIDE / 2 + COUPLER_WALL_GAP       # 49
+COUPLER_Y_MAX = COUPLER_Y_MIN + COUPLER_T                   # 52
+HORN_R = 10.0                                 # MG90S round disc horn, Ø20
+HORN_DISC_T = 1.5
+HORN_HUB_R = 3.5
+HORN_HUB_H = 4.0                              # over the spline, toward the case
+# Pin spans the −Y wall (2 mm proud, for a retaining clip — not
+# modeled) to 0.5 short of the coupler's outer face, so it never
+# touches the horn.
+PIN_Y_MIN = -(COL_OUTER_SIDE / 2 + 2.0)       # −50
+PIN_Y_MAX = COUPLER_Y_MAX - 0.5               # 51.5
+PIN_LEN = PIN_Y_MAX - PIN_Y_MIN
+
+# Servo cage — printed as part of the column, on its +Y face. A plate
+# (normal Y) with a cut-out the case passes through, the tabs landing
+# on its outer face and screwing into it; a web (normal Z) above the
+# horn tying the plate back to the wall; a cheek at the +X end. No
+# lower web: below the horn is the floor above's bearing and spider
+# band (they top out at z ≈ 228 in this frame).
+CAGE_T = 3.0
+# The tab holes sit only ~2.5 mm past each end of the case (MG90S
+# pitch 27.5 over a 22.5 case), so hole and cut-out clearance share
+# that land: 0.2 per side + a Ø1.5 pilot leaves ≈ 1.55 of wall, just
+# over WALL_MIN (0.3 + Ø1.6 printed a 1.40 sliver — red, 2026-09-18).
+CAGE_CUT_CLEAR = 0.2                          # case to cut-out, per side
+CAGE_PLATE_Y_MAX = COL_OUTER_SIDE / 2 + SERVO_STANDOFF + SERVO_TAB_FROM_TOP  # tab face, 64.7
+CAGE_PLATE_Y_MIN = CAGE_PLATE_Y_MAX - CAGE_T
+CAGE_HORN_CLEAR = 1.4                         # horn rim to web underside
+CAGE_TAB_HOLE_D = 1.5                         # M2 self-tapping pilot
+CAGE_TAB_HOLE_PITCH = 27.5                    # MG90S tab hole spacing
+
 # Static hold budget: the plate's own weight (solid PLA — conservative)
 # plus a heavy brick at the free end, at the catch tilt. Impact is not
 # in this number; it is a bench question.
@@ -395,6 +439,53 @@ def _cyl_along_y(r: float, length: float) -> Part:
     return Rot(90, 0, 0) * Cylinder(r, length)
 
 
+def _d_cyl(r: float, flat: float, length: float) -> Part:
+    """D-profile cylinder along Z, centred, the flat on the local +Y side
+    at distance ``flat`` from the axis. ``Rot(90, 0, 0)`` turns local +Y
+    onto +Z, so every keyed feature placed that way has its flat facing
+    the hinge frame's +Z (the plate normal)."""
+    return Cylinder(r, length) - Pos(0, flat + r, 0) * Box(2 * r, 2 * r, length * 2)
+
+
+def _servo_cage() -> Part:
+    """The servo cage in the floor-local frame, to be fused onto the
+    column's +Y face (see the CAGE_* parameters). Open at the bottom:
+    the plate's cut-out runs out through its lower edge, which sits
+    level with the case bottom, so nothing of the cage reaches lower
+    than the servo does."""
+    hx, hz = TRAP_HINGE_X, TRAP_HINGE_Z
+    body_x0 = hx - SERVO_SHAFT_FROM_END
+    body_x1 = body_x0 + SERVO_BODY_L
+    x_mid = (body_x0 + body_x1) / 2
+    tab_x0, tab_x1 = x_mid - SERVO_TAB_L / 2, x_mid + SERVO_TAB_L / 2
+    cheek_x0 = tab_x1 + 1.0
+    x0, x1 = tab_x0 - 1.0, cheek_x0 + CAGE_T
+    z0 = hz - SERVO_BODY_W / 2
+    web_z0 = hz + HORN_R + CAGE_HORN_CLEAR
+    z1 = web_z0 + CAGE_T
+    y_wall = COL_OUTER_SIDE / 2 - 0.5             # fuse 0.5 into the wall
+
+    def box(xa, xb, ya, yb, za, zb):
+        return Pos((xa + xb) / 2, (ya + yb) / 2, (za + zb) / 2) * Box(
+            xb - xa, yb - ya, zb - za
+        )
+
+    plate = box(x0, x1, CAGE_PLATE_Y_MIN, CAGE_PLATE_Y_MAX, z0, z1)
+    web = box(x0, x1, y_wall, CAGE_PLATE_Y_MAX, web_z0, z1)
+    cheek = box(cheek_x0, x1, y_wall, CAGE_PLATE_Y_MAX, z0, z1)
+    cut = box(
+        body_x0 - CAGE_CUT_CLEAR, body_x1 + CAGE_CUT_CLEAR,
+        CAGE_PLATE_Y_MIN - 1.0, CAGE_PLATE_Y_MAX + 1.0,
+        z0 - 1.0, hz + SERVO_BODY_W / 2 + CAGE_CUT_CLEAR,
+    )
+    cage = plate + web + cheek - cut
+    for dx in (-CAGE_TAB_HOLE_PITCH / 2, CAGE_TAB_HOLE_PITCH / 2):
+        cage = cage - Pos(x_mid + dx, CAGE_PLATE_Y_MAX, hz) * _cyl_along_y(
+            CAGE_TAB_HOLE_D / 2, 4 * CAGE_T
+        )
+    return cage
+
+
 # --- Part functions -----------------------------------------------------
 
 def bearing_spider(role: str = "middle") -> Part:
@@ -533,6 +624,7 @@ def _joint_interlock(z_face: float, d: float, h: float) -> Part:
 
 def column(role: str = "middle") -> Part:
     """Square-section tube with a +X exit opening, −X hinge bosses, a
+    servo cage on the +Y face, a
     rotating collar at mid-height (the bearing-engagement surface for
     the floor *above*), a top joint flange, and — for the base role
     only — a bottom collar where the motor pinion meets the ring gear.
@@ -637,36 +729,57 @@ def column(role: str = "middle") -> Part:
     boss_minus = Pos(BOSS_X_CENTER, -BOSS_Y_OFFSET, TRAP_HINGE_Z) * Box(
         BOSS_X, BOSS_Y, BOSS_H_Z
     )
-    tube = tube + boss_plus + boss_minus
+    tube = tube + boss_plus + boss_minus + _servo_cage()
 
-    # Pin bore through bosses (and the air between)
+    # Pin bore through bosses and both ±Y walls (and the air between)
     pin_bore = Pos(TRAP_HINGE_X, 0, TRAP_HINGE_Z) * _cyl_along_y(
-        PIN_HOLE_D / 2, PIN_LEN + 4.0
+        PIN_HOLE_D / 2, COL_OUTER_SIDE + 4.0
     )
     return tube - pin_bore
 
 
 def hinge_pin() -> Part:
-    """Hinge pin in canonical local frame (axis along +Z). The +Y
-    orientation it needs in the assembly is composed into
-    ``hinge_pin_loc``, not the part itself — see ``ramp()``'s
-    docstring for why this matters for animated GLB exports.
+    """Hinge pin — the trap's D-shaft — in canonical local frame (axis
+    along +Z, flat on +Y). The +Y axis orientation it needs in the
+    assembly is composed into ``hinge_pin_loc``, not the part itself —
+    see ``ramp()``'s docstring for why this matters for animated GLB
+    exports.
     """
-    return Cylinder(PIN_D / 2, PIN_LEN)
+    return _d_cyl(PIN_D / 2, PIN_FLAT, PIN_LEN)
 
 
 def trap() -> Part:
     """Flat plate hinged at the −X interior wall. In the local frame the
     hinge knuckle is at origin and the plate body extends in +X to
-    x = TRAP_L + KNUCKLE_OD/2. Placed at θ = 90° it hangs (rest); at
-    θ = TRAP_CATCH_DEG it catches, free end down toward the exit.
+    x = TRAP_L + KNUCKLE_OD/2. The knuckle's bore is keyed (D) to the
+    pin, flat facing +Z. At joint angle 90° it hangs (rest); at
+    TRAP_CATCH_DEG it catches, free end down toward the exit.
     """
     plate_center_x = TRAP_L / 2 + KNUCKLE_OD / 2
     plate = Pos(plate_center_x, 0, 0) * Box(TRAP_L, TRAP_W, TRAP_T)
     knuckle = _cyl_along_y(KNUCKLE_OD / 2, TRAP_W)
     body = plate + knuckle
-    pin_hole = _cyl_along_y(PIN_HOLE_D / 2, TRAP_W * 2)
-    return body - pin_hole
+    pin_bore = Rot(90, 0, 0) * _d_cyl(PIN_D_BORE_D / 2, PIN_D_BORE_FLAT, TRAP_W * 2)
+    return body - pin_bore
+
+
+def trap_coupler() -> Part:
+    """Printed disc joining the pin to the servo horn, canonical frame
+    (axis +Z, centred, D-bore flat on +Y). The horn screws to its outer
+    face (screws not modeled)."""
+    return Cylinder(COUPLER_R, COUPLER_T) - _d_cyl(
+        PIN_D_BORE_D / 2, PIN_D_BORE_FLAT, COUPLER_T * 2
+    )
+
+
+def servo_horn() -> Part:
+    """Bought round disc horn, canonical frame: disc centred on z = 0,
+    spline hub below it on −Z (``horn_loc`` turns −Z onto +Y, toward
+    the case). Not printed, so not inspected."""
+    hub_z = -(HORN_DISC_T / 2 + HORN_HUB_H / 2)
+    return Cylinder(HORN_R, HORN_DISC_T) + Pos(0, 0, hub_z) * Cylinder(
+        HORN_HUB_R, HORN_HUB_H
+    )
 
 
 def ramp() -> Part:
@@ -723,13 +836,16 @@ def trap_servo() -> Part:
 
 # --- Assembly -----------------------------------------------------------
 
+# The trap is a jointed sub-assembly — plate, pin, coupler and horn turn
+# together about the hinge — placed at `hinge_loc`, whose frame is the
+# hinge frame: origin on the hinge axis, axes as the floor's. Inside it
+# the keyed parts need their axes along +Y; `Rot(90, 0, 0)` turns local
+# +Z onto −Y and local +Y (every D-flat) onto +Z, and it lives in the
+# placement, not the part, so per-frame TRS samplers carry it.
 hinge_loc = Location((TRAP_HINGE_X, 0, TRAP_HINGE_Z))
-# The hinge pin needs its axis along +Y (the canonical hinge direction
-# in the assembly). The rotation lives here in the placement, not in
-# `hinge_pin()`, so per-frame TRS samplers carry it.
-hinge_pin_loc = hinge_loc * Rot(90, 0, 0)
-trap_rest_loc = hinge_loc * Rot(0, TRAP_REST_DEG, 0)
-trap_catch_loc = hinge_loc * Rot(0, TRAP_CATCH_DEG, 0)
+hinge_pin_loc = Pos(0, (PIN_Y_MIN + PIN_Y_MAX) / 2, 0) * Rot(90, 0, 0)
+coupler_loc = Pos(0, (COUPLER_Y_MIN + COUPLER_Y_MAX) / 2, 0) * Rot(90, 0, 0)
+horn_loc = Pos(0, COUPLER_Y_MAX + HORN_DISC_T / 2, 0) * Rot(90, 0, 0)
 # Shaft face SERVO_STANDOFF outside the +Y wall, shaft pointing −Y
 # into the hinge: Rot(90, 0, 0) turns local +Z onto −Y and local +Y
 # onto +Z, leaving the long axis on +X.
@@ -768,6 +884,45 @@ def _servo_hold_margin() -> float:
 
 # --- Sub-assembly builders ----------------------------------------------
 
+def _trap_joint(angle_deg: float) -> RevoluteJoint:
+    """The hinge: +Y through the hinge-frame origin. Positive angles
+    follow the right-hand rule about +Y — the same sense as
+    ``Rot(0, θ, 0)`` — so they tip the +X free end down: 90 hangs,
+    TRAP_CATCH_DEG catches."""
+    return RevoluteJoint(
+        axis=Axis((0, 0, 0), (0, 1, 0)), angle_deg=angle_deg, frame="local",
+    )
+
+
+def build_trap_drive(
+    material_fn: Callable[[str], str | None] | None = None,
+) -> Assembly:
+    """The parts that turn about the hinge, in the hinge frame: the
+    plate, the pin keyed through its knuckle, the coupler keyed on the
+    pin, and the servo horn screwed to the coupler. The parent places it
+    at ``hinge_loc`` with ``_trap_joint``."""
+    def _mt(name: str) -> str | None:
+        return material_fn(name) if material_fn is not None else None
+
+    a = Assembly()
+    for name, part, loc in (
+        ("trap", trap(), Location()),
+        ("hinge_pin", hinge_pin(), hinge_pin_loc),
+        ("trap_coupler", trap_coupler(), coupler_loc),
+        ("servo_horn", servo_horn(), horn_loc),
+    ):
+        a = a.with_part(name, part, location=loc, material=_mt(name))
+    return (
+        a
+        # The key: the pin's flat sits 0.2 inside each D-bore's flat.
+        .assert_no_interference("hinge_pin", "trap")
+        .assert_no_interference("hinge_pin", "trap_coupler")
+        .assert_no_interference("hinge_pin", "servo_horn")
+        # The horn is screwed flat to the coupler's outer face.
+        .assert_tangent_contact("trap_coupler", "servo_horn")
+    )
+
+
 def build_column_side_static(
     role: str = "middle",
     material_fn: Callable[[str], str | None] | None = None,
@@ -804,8 +959,9 @@ def build_column_side_rotating(
     *,
     material_fn: Callable[[str], str | None] | None = None,
 ) -> Assembly:
-    """Rotating column-side parts — column + hinge pin + ramp + trap
-    (at rest, hanging) + trap servo — as a sub-`Assembly` in the
+    """Rotating column-side parts — column (with its servo cage) + ramp
+    + trap servo + the jointed ``trap`` subtree (plate, pin, coupler,
+    horn; at rest, hanging) — as a sub-`Assembly` in the
     floor-local frame. One of each physical part: the catch pose and
     the swing samples are standalone-only (``make_assembly``), since
     the trap stays inside its own column at every pose. These parts
@@ -821,10 +977,12 @@ def build_column_side_rotating(
 
     a = Assembly()
     a = _add(a, "column", column(role))
-    a = _add(a, "hinge_pin", hinge_pin(), location=hinge_pin_loc)
     a = _add(a, "ramp", ramp(), location=ramp_loc)
-    a = _add(a, "trap", trap(), location=trap_rest_loc)
     a = _add(a, "trap_servo", trap_servo(), location=servo_loc)
+    a = a.with_subassembly(
+        "trap", build_trap_drive(material_fn),
+        location=hinge_loc, joint=_trap_joint(TRAP_REST_DEG),
+    )
 
     # Declared once here, where the ramp lives; standalone runs
     # evaluate directly and composed runs (single_floor, tower, cad
@@ -887,14 +1045,15 @@ def make_assembly(role: str = "middle") -> Assembly:
             .with_part("lower_column", column("middle"), location=lower_column_loc)
             .with_part("lower_trap_servo", trap_servo(), location=lower_servo_loc)
         )
-    a = a.with_part("trap_catching", trap(), location=trap_catch_loc)
-    for angle in TRAP_SAMPLES:
-        a = a.with_part(
-            f"trap_at_{int(angle)}", trap(),
-            location=hinge_loc * Rot(0, angle, 0),
+    poses = {"trap_catching": TRAP_CATCH_DEG,
+             **{f"trap_at_{int(t)}": t for t in TRAP_SAMPLES}}
+    for name, angle in poses.items():
+        a = a.with_subassembly(
+            name, build_trap_drive(), location=hinge_loc,
+            joint=_trap_joint(angle),
         )
 
-    rotating_fixed = (
+    fixed = (
         "rotating.column", "rotating.ramp", "rotating.trap_servo",
         "bearing_spider", "ring_bearing",
     )
@@ -904,33 +1063,43 @@ def make_assembly(role: str = "middle") -> Assembly:
         .assert_no_interference("bearing_spider", "ring_bearing")
         .assert_no_interference("bearing_spider", "rotating.column")
         .assert_no_interference("ring_bearing", "rotating.column")
-        .assert_no_interference("rotating.hinge_pin", "rotating.column")
         .assert_no_interference("rotating.ramp", "rotating.column")
         .assert_no_interference("rotating.ramp", "bearing_spider")
         .assert_no_interference("rotating.ramp", "ring_bearing")
-        .assert_no_interference("rotating.ramp", "rotating.hinge_pin")
-        # Servo outside the +Y wall: clear of the column (and its
-        # collar), the pin end it drives, and everything else.
-        .assert_no_interference("rotating.trap_servo", "rotating.column")
-        .assert_no_interference("rotating.trap_servo", "rotating.hinge_pin")
+        # Servo: its tabs rest on the cage plate's outer face (no
+        # overlap anywhere else — the case clears the cut-out), and it
+        # clears the ramp and the bearing stack.
+        .assert_tangent_contact("rotating.trap_servo", "rotating.column",
+                                name="servo_tabs_on_cage")
         .assert_no_interference("rotating.trap_servo", "rotating.ramp")
         .assert_no_interference("rotating.trap_servo", "bearing_spider")
         .assert_no_interference("rotating.trap_servo", "ring_bearing")
+        # The drive turns against the column: coupler off the +Y wall,
+        # horn under the cage web, horn hub short of the case.
+        .assert_clearance("rotating.trap.trap_coupler", "rotating.column",
+                          min_mm=0.5)
+        .assert_clearance("rotating.trap.servo_horn", "rotating.column",
+                          min_mm=0.5)
+        .assert_no_interference("rotating.trap.servo_horn", "rotating.trap_servo")
+        .assert_no_interference("rotating.trap.hinge_pin", "rotating.trap_servo")
         # The catching trap hands the brick down a short step onto the
         # ramp root: clear of the ramp, but not so far that the brick
         # tumbles. Constructed at TRAP_HANDOFF_STEP vertically; the
         # true (shortest) distance is a little less, so the bounds
         # bracket it rather than pin it.
         .assert_distance(
-            "trap_catching", "rotating.ramp",
+            "trap_catching.trap", "rotating.ramp",
             min_mm=2.0, max_mm=TRAP_HANDOFF_STEP + 1.0,
             name="trap_catch_to_ramp_step",
         )
+        # Every pose of the whole drive (plate, pin, coupler, horn) —
+        # rest, catch, and the swing between — clears every fixed part.
+        # The pin runs through the column's round bores, so it is in
+        # here too: a pin fouling its bore is a real defect.
+        .assert_no_interference_between("rotating.trap", fixed)
     )
-    for name in ("rotating.trap", "trap_catching",
-                 *(f"trap_at_{int(t)}" for t in TRAP_SAMPLES)):
-        for other in rotating_fixed:
-            a = a.assert_no_interference(name, other)
+    for name in poses:
+        a = a.assert_no_interference_between(name, fixed)
     if role == "base":
         # The column's bottom flange rests on the turntable's top ring —
         # the other half of the axial load path (seat contact is
@@ -956,8 +1125,7 @@ def make_assembly(role: str = "middle") -> Assembly:
             # Ramp / trap / hinge live well above the joint plane,
             # so they're clear of the lower column entirely.
             .assert_no_interference("rotating.ramp", "lower_column")
-            .assert_no_interference("rotating.hinge_pin", "lower_column")
-            .assert_no_interference("rotating.trap", "lower_column")
+            .assert_no_interference_between("rotating.trap", ["lower_column"])
             # Lower-floor servo — must clear THIS floor's column-bottom
             # stack (bearing / spider / column).
             .assert_no_interference("lower_trap_servo", "rotating.column")

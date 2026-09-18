@@ -41,7 +41,7 @@ MATERIAL_OF: dict[str, str | None] = {
     "column": "pla_matte",
     "ramp": "pla_matte",
     "trap": "pla_matte",
-    "trap_catching": "pla_matte",
+    "trap_coupler": "pla_matte",
     "motor_mount": "pla_matte",
     "ring_gear": "pla_matte",
     **{name: "pla_matte" for name in _basket_basenames()},
@@ -51,6 +51,7 @@ MATERIAL_OF: dict[str, str | None] = {
     "pinion": "steel",
     # Bought hobby servo — plastic case; m03's servo_body renders the same.
     "trap_servo": "pla_matte",
+    "servo_horn": "pla_matte",
     "lower_trap_servo": "pla_matte",
     # Top deck
     "top_acrylic": "acrylic_clear",

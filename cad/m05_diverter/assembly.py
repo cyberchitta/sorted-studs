@@ -20,7 +20,8 @@ builders (role differences are builder parameters) and placed by one
   (`basket.build_basket_ring` per the floor's layout), and `bearing`
   (spider + ring bearing; `ramp_mechanism.build_column_side_static`).
 - `rotating_stack.f{idx}` — the floor's revolving parts: column +
-  hinge pin + ramp + trap (hanging, at rest) + trap servo
+  ramp + trap servo + the jointed `trap` subtree (plate, hinge pin,
+  coupler, horn — hanging, at rest)
   (`ramp_mechanism.build_column_side_rotating`). Roles differ only at
   the column bottom: base has a bottom collar (motor + ring-gear
   interface); middle/top have a bottom face flange that mates with
@@ -439,7 +440,8 @@ def _add_drive_train_checks(a: Assembly, base: int) -> Assembly:
         _brg(base, "ring_bearing"),
         _brg(base, "bearing_spider"),
         _rot(base, "ramp"),
-        _rot(base, "trap"),
+        _rot(base, "trap.trap"),
+        _rot(base, "trap.servo_horn"),
         _rot(base, "trap_servo"),
     ):
         a = a.assert_no_interference(mtr, other)

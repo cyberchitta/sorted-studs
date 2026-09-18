@@ -73,8 +73,8 @@ ROLE_OF: dict[str, Role | None] = {
     "hinge_pin": None,                        # steel pin — outside palette
     "ramp": Role.SECONDARY_STRUCTURE,
     "trap": Role.MECHANISM,
-    # Standalone-only poses of the same trap (``ramp_mechanism``).
-    "trap_catching": Role.MECHANISM,
+    "trap_coupler": Role.MECHANISM,           # printed pin-to-horn disc
+    "servo_horn": None,                       # bought with the servo — outside palette
     "trap_servo": None,                       # bought hobby servo — outside palette
     # ``single_floor.py`` stand-in for the floor below's servo.
     "lower_trap_servo": None,
