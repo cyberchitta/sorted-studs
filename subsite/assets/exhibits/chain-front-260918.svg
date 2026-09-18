@@ -1,0 +1,520 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200">
+  <polyline points="978.85,845.74 978.85,816.80" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="978.85,816.80 951.66,817.81" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="978.85,845.74 954.79,846.64" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="978.85,816.80 978.68,816.75" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="914.15,837.07 895.04,832.13" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="951.66,817.81 951.49,817.77" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="605.42,455.18 605.42,426.24" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="605.42,426.24 577.45,427.02" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="577.45,455.97 577.45,427.02" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="605.42,455.18 577.45,455.97" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="605.42,426.24 605.29,426.19" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="577.45,455.97 569.82,453.34" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="532.64,440.56 519.55,436.05" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="577.45,427.02 577.32,426.98" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="519.55,436.05 519.55,435.96" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="308.79,438.99 308.79,410.05" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="308.79,410.05 316.77,412.80" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="316.77,441.74 316.77,412.80" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="308.79,438.99 316.77,441.74" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="309.24,410.04 308.79,410.05" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="519.55,436.05 455.50,437.85" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="369.29,440.27 316.77,441.74" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="317.23,412.78 316.77,412.80" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="750.29,429.58 750.29,409.83" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="614.08,433.40 750.29,429.58" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="558.15,657.14 558.15,628.19" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="558.15,657.14 557.10,654.97" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="558.15,628.19 552.94,617.37" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="787.53,634.62 787.53,627.38" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="335.82,633.86 335.82,604.92" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="335.82,604.92 337.19,607.77" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="337.19,636.72 337.19,607.77" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="335.82,633.86 337.19,636.72" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="518.77,604.07 335.82,604.92" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="787.53,634.62 754.07,634.78" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="685.24,635.10 616.26,635.42" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="528.82,635.82 337.19,636.72" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="518.89,606.93 337.19,607.77" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="496.16,792.96 254.63,1023.63" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="491.61,787.11 241.30,1026.17" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="491.61,748.20 241.30,987.26" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="653.24,787.29 889.31,1023.15" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="653.24,748.38 889.31,984.25" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="645.14,792.49 873.59,1020.75" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 914.15 901.46 A 40.72 4.00 -0.00 0 0 995.59 901.46" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 936.16 818.17 A 40.72 4.00 -0.00 0 0 954.79 818.62" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="954.79,847.57 954.79,818.62" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 954.79 847.57 A 40.72 4.00 -0.00 0 0 981.98 846.55" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="981.98,846.55 981.98,817.61" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 981.98 817.61 A 40.72 4.00 -0.00 0 0 992.89 816.06" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="978.68,816.75 981.98,817.61" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="981.98,846.55 978.85,845.74" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="951.49,817.77 954.79,818.62" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 532.64 507.25 A 40.72 4.00 -0.00 0 0 614.08 507.25" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="569.82,453.34 569.82,427.12" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="551.22,668.93 549.02,664.37" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="549.02,690.31 549.02,664.37" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="550.76,688.66 550.76,795.73" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="551.22,796.69 550.76,795.73" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="551.22,796.69 551.22,668.93" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="549.02,664.37 558.15,664.32" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="588.58,664.18 595.51,664.15" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="551.22,668.93 597.71,668.71" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="597.71,668.71 595.51,664.15" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="559.52,668.03 558.15,665.18" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="559.52,668.03 588.58,667.90" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="550.76,688.66 491.61,745.14" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="491.61,792.73 550.76,795.73" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="491.61,745.14 491.61,792.73" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="551.22,796.69 597.71,796.48" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="653.24,791.98 597.71,795.48" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="597.71,796.48 597.71,668.71" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="597.71,688.91 653.24,744.39" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="653.24,744.39 653.24,791.98" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="258.63,1081.40 237.29,1085.46" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="237.29,1085.46 139.07,1080.49" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="139.07,1071.80 139.07,1080.49" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="139.07,1071.80 159.75,1067.87" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="258.63,1081.40 258.63,1019.81" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="237.29,1085.46 237.29,988.02" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="241.30,987.26 237.29,988.02" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="241.30,1026.17 241.30,987.26" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="254.63,1023.63 241.30,1026.17" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="237.29,988.02 159.75,1062.08" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="159.75,1062.08 159.75,1072.85" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="159.75,1072.85 139.07,1071.80" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="949.09,1078.94 894.03,1082.41" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="894.03,1082.41 868.88,1078.57" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="894.03,1082.41 894.03,984.97" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="894.03,984.97 949.09,1039.99" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="949.09,1039.99 949.09,1078.94" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="868.88,1078.57 868.88,1016.04" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="889.31,1023.15 873.59,1020.75" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="889.31,1023.15 889.31,984.25" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="894.03,984.97 889.31,984.25" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="558.15,654.96 558.15,630.36" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="556.77,627.51 558.15,630.36" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="556.77,627.51 550.96,627.53" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="550.96,629.82 550.96,627.53" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="552.06,629.82 550.96,627.53" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="552.06,629.82 528.82,629.93" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="528.82,654.53 528.82,629.93" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="529.09,655.10 528.82,654.53" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="529.09,630.50 528.82,629.93" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="529.09,655.10 529.09,630.50" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="529.09,630.50 558.15,630.36" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="558.15,654.96 529.09,655.10" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="549.21,616.76 549.21,629.83" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="543.40,615.72 543.40,629.86" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="542.30,615.50 542.30,629.86" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="528.82,634.23 519.06,634.27" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="519.06,614.63 519.06,634.27" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="518.78,609.10 518.89,609.33" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="518.78,633.70 519.06,634.27" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="518.78,609.10 518.78,633.70" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="518.89,609.10 518.78,609.10" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="588.58,627.36 591.64,627.35" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="592.74,629.63 591.64,627.35" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="592.74,629.63 615.98,629.52" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="616.26,630.09 615.98,629.52" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="616.26,630.09 616.26,654.69" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="616.26,654.69 588.58,654.82" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="588.58,630.22 616.26,630.09" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="606.22,629.57 606.22,623.16" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="491.58,434.67 491.58,427.16" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="493.18,435.22 493.18,427.19" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="491.58,434.67 493.18,435.22" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="515.55,434.59 493.18,435.22" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="515.55,434.59 515.55,427.44" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="521.94,436.79 521.94,427.47" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="515.55,434.59 521.94,436.79" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="527.53,436.63 521.94,436.79" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="527.53,436.63 527.53,427.48" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="558.15,1098.56 558.15,796.66" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="558.15,665.18 558.15,510.96" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="559.52,1101.41 559.52,796.66" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="559.52,668.03 559.52,511.01" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="588.58,1101.28 588.58,796.52" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="588.58,667.90 588.58,510.96" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="559.52,1101.41 588.58,1101.28" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="558.15,1098.56 559.52,1101.41" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="935.28,1026.19 935.28,904.96" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="961.13,1077.78 961.13,905.41" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="974.47,1075.24 974.47,904.96" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="961.13,1077.78 974.47,1075.24" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="949.09,1077.17 961.13,1077.78" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 1031.32 1053.21 A 479.93 47.13 -0.00 0 0 974.47 1033.09" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 868.88 1020.05 A 479.93 47.13 -0.00 0 0 588.58 1008.45" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 558.15 1008.32 A 479.93 47.13 -0.00 0 0 260.53 1017.99" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 200.29 1023.37 A 479.93 47.13 -0.00 0 0 72.00 1055.44" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 72.00 1055.44 A 479.93 47.13 -0.00 0 0 139.07 1079.47" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 148.44 1080.96 A 479.93 47.13 -0.00 0 0 1031.85 1055.44" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 1031.85 1055.44 A 479.93 47.13 -0.00 0 0 1031.32 1053.21" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 72.00 1069.92 A 479.93 47.13 -0.00 0 0 1031.85 1069.92" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 660.88 1054.94 A 109.07 10.71 -0.00 0 0 588.58 1045.35" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 558.15 1044.75 A 109.07 10.71 -0.00 0 0 442.85 1055.44" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 442.85 1055.44 A 109.07 10.71 -0.00 0 0 558.15 1066.14" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 588.58 1065.53 A 109.07 10.71 -0.00 0 0 661.00 1055.44" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 661.00 1055.44 A 109.07 10.71 -0.00 0 0 660.88 1054.94" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 632.35 1062.68 A 109.07 10.71 -0.00 0 0 588.58 1059.83" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 558.15 1059.22 A 109.07 10.71 -0.00 0 0 471.51 1062.68" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="890.70,626.64 877.46,626.89" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="1019.00,720.54 1018.84,720.38 1018.69,720.23 1018.53,720.07 1018.37,719.91 1018.22,719.76 1018.06,719.60 1017.90,719.45 1017.75,719.29 1017.59,719.13 1017.43,718.98 1017.28,718.82 1017.12,718.67 1016.96,718.51 1016.80,718.36 1016.65,718.20 1016.49,718.04 1016.33,717.89 1016.18,717.73 1016.02,717.58 1015.86,717.42 1015.71,717.26 1015.55,717.11 1015.39,716.95 1015.24,716.80 1015.08,716.64 1014.92,716.48 1014.77,716.33 1014.61,716.17 1014.45,716.02 1014.30,715.86 1014.14,715.71 1013.98,715.55 1013.83,715.39 1013.67,715.24 1013.51,715.08 1013.36,714.93 1013.20,714.77 1013.04,714.61 1012.89,714.46 1012.73,714.30 1012.57,714.15 1012.42,713.99 1012.26,713.84 1012.10,713.68 1011.95,713.52 1011.79,713.37 1011.63,713.21" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="1007.06,717.09 1011.63,713.21" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="1011.47,721.07 1011.38,720.99 1011.29,720.91 1011.19,720.82 1011.10,720.74 1011.01,720.65 1010.91,720.57 1010.82,720.48 1010.72,720.40 1010.63,720.31 1010.54,720.23 1010.44,720.14 1010.35,720.06 1010.25,719.97 1010.16,719.89 1010.07,719.80 1009.97,719.72 1009.88,719.63 1009.79,719.55 1009.69,719.46 1009.60,719.38 1009.50,719.30 1009.41,719.21 1009.32,719.13 1009.22,719.04 1009.13,718.96 1009.03,718.87 1008.94,718.79 1008.85,718.70 1008.75,718.62 1008.66,718.53 1008.56,718.45 1008.47,718.36 1008.38,718.28 1008.28,718.19 1008.19,718.11 1008.10,718.02 1008.00,717.94 1007.91,717.85 1007.81,717.77 1007.72,717.69 1007.63,717.60 1007.53,717.52 1007.44,717.43 1007.34,717.35 1007.25,717.26 1007.16,717.18 1007.06,717.09" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="1001.54,720.96 1007.06,717.09" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="1002.16,721.68 1002.15,721.66 1002.14,721.65 1002.12,721.63 1002.11,721.62 1002.10,721.60 1002.08,721.59 1002.07,721.57 1002.06,721.56 1002.04,721.54 1002.03,721.53 1002.02,721.51 1002.00,721.49 1001.99,721.48 1001.98,721.46 1001.96,721.45 1001.95,721.43 1001.94,721.42 1001.92,721.40 1001.91,721.39 1001.90,721.37 1001.88,721.36 1001.87,721.34 1001.86,721.33 1001.84,721.31 1001.83,721.30 1001.82,721.28 1001.80,721.27 1001.79,721.25 1001.78,721.24 1001.76,721.22 1001.75,721.20 1001.74,721.19 1001.72,721.17 1001.71,721.16 1001.70,721.14 1001.68,721.13 1001.67,721.11 1001.66,721.10 1001.64,721.08 1001.63,721.07 1001.62,721.05 1001.60,721.04 1001.59,721.02 1001.58,721.01 1001.56,720.99 1001.55,720.98 1001.54,720.96" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="986.76,722.54 1001.54,720.96" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="777.38,721.36 784.40,722.58" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="776.62,722.17 776.63,722.15 776.65,722.14 776.67,722.12 776.68,722.10 776.70,722.08 776.72,722.07 776.73,722.05 776.75,722.03 776.76,722.01 776.78,722.00 776.80,721.98 776.81,721.96 776.83,721.95 776.85,721.93 776.86,721.91 776.88,721.89 776.89,721.88 776.91,721.86 776.93,721.84 776.94,721.82 776.96,721.81 776.98,721.79 776.99,721.77 777.01,721.76 777.02,721.74 777.04,721.72 777.06,721.70 777.07,721.69 777.09,721.67 777.11,721.65 777.12,721.63 777.14,721.62 777.16,721.60 777.17,721.58 777.19,721.57 777.20,721.55 777.22,721.53 777.24,721.51 777.25,721.50 777.27,721.48 777.29,721.46 777.30,721.44 777.32,721.43 777.33,721.41 777.35,721.39 777.37,721.38 777.38,721.36" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="758.70,717.91 777.38,721.36" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="755.84,720.86 755.85,720.85 755.86,720.84 755.87,720.82 755.89,720.81 755.90,720.80 755.91,720.78 755.93,720.77 755.94,720.76 755.95,720.74 755.97,720.73 755.98,720.72 755.99,720.70 756.01,720.69 756.02,720.68 756.03,720.66 756.04,720.65 756.06,720.64 756.07,720.62 756.08,720.61 756.10,720.60 756.11,720.58 756.12,720.57 756.14,720.55 756.15,720.54 756.16,720.53 756.17,720.51 756.19,720.50 756.20,720.49 756.21,720.47 756.23,720.46 756.24,720.45 756.25,720.43 756.27,720.42 756.28,720.41 756.29,720.39 756.31,720.38 756.32,720.37 756.33,720.35 756.34,720.34 756.36,720.33 756.37,720.31 756.38,720.30 756.40,720.29 756.41,720.27 756.42,720.26 756.44,720.25 756.45,720.23" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="756.45,720.23 756.50,720.18 756.54,720.13 756.59,720.08 756.64,720.03 756.69,719.98 756.74,719.94 756.78,719.89 756.83,719.84 756.88,719.79 756.93,719.74 756.98,719.69 757.02,719.64 757.07,719.59 757.12,719.54 757.17,719.49 757.22,719.44 757.26,719.39 757.31,719.34 757.36,719.29 757.41,719.24 757.45,719.19 757.50,719.14 757.55,719.10 757.60,719.05 757.65,719.00 757.69,718.95 757.74,718.90 757.79,718.85 757.84,718.80 757.89,718.75 757.93,718.70 757.98,718.65 758.03,718.60 758.08,718.55 758.13,718.50 758.17,718.45 758.22,718.40 758.27,718.35 758.32,718.30 758.36,718.26 758.41,718.21 758.46,718.16 758.51,718.11 758.56,718.06 758.60,718.01 758.65,717.96 758.70,717.91" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="877.46,626.89 864.21,627.14" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="864.21,627.14 854.96,628.10" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="854.96,628.10 845.72,629.06" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="845.72,629.06 844.01,630.38" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="844.01,630.38 842.30,631.69" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="842.30,631.69 848.77,632.85" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="848.77,632.85 855.25,634.01" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="855.25,634.01 867.44,634.58" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="867.44,634.58 879.63,635.14" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="879.63,635.14 892.88,634.90" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="892.88,634.90 906.12,634.65" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="906.12,634.65 915.37,633.69" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="915.37,633.69 924.61,632.72" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="924.61,632.72 926.33,631.41" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="926.33,631.41 928.04,630.10" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="928.04,630.10 921.56,628.94" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="921.56,628.94 915.08,627.78" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="915.08,627.78 902.89,627.21" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="902.89,627.21 890.70,626.64" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="1011.63,713.21 1009.85,711.44 1008.07,709.68 1006.30,707.91 1004.52,706.14 1002.74,704.37 1000.96,702.60 999.18,700.83 997.40,699.06 995.62,697.30 993.85,695.53 992.07,693.76 990.29,691.99 988.51,690.22 986.73,688.45 984.95,686.69 983.17,684.92 981.40,683.15 979.62,681.38 977.84,679.61 976.06,677.84 974.28,676.08 972.50,674.31 970.72,672.54 968.94,670.77 967.17,669.00 965.39,667.23 963.61,665.47 961.83,663.70 960.05,661.93 958.27,660.16 956.49,658.39 954.72,656.62 952.94,654.86 951.16,653.09 949.38,651.32 947.60,649.55 945.82,647.78 944.04,646.01 942.27,644.24 940.49,642.48 938.71,640.71 936.93,638.94 935.15,637.17 933.37,635.40 931.59,633.63 929.81,631.87 928.04,630.10" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="1007.06,717.09 1005.35,715.27 1003.63,713.45 1001.91,711.62 1000.19,709.80 998.47,707.98 996.76,706.15 995.04,704.33 993.32,702.51 991.60,700.69 989.88,698.86 988.17,697.04 986.45,695.22 984.73,693.39 983.01,691.57 981.30,689.75 979.58,687.92 977.86,686.10 976.14,684.28 974.42,682.46 972.71,680.63 970.99,678.81 969.27,676.99 967.55,675.16 965.84,673.34 964.12,671.52 962.40,669.69 960.68,667.87 958.96,666.05 957.25,664.23 955.53,662.40 953.81,660.58 952.09,658.76 950.37,656.93 948.66,655.11 946.94,653.29 945.22,651.46 943.50,649.64 941.79,647.82 940.07,646.00 938.35,644.17 936.63,642.35 934.91,640.53 933.20,638.70 931.48,636.88 929.76,635.06 928.04,633.23 926.33,631.41" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="1001.54,720.96 999.90,719.08 998.26,717.21 996.63,715.33 994.99,713.45 993.35,711.57 991.72,709.70 990.08,707.82 988.44,705.94 986.81,704.06 985.17,702.19 983.53,700.31 981.90,698.43 980.26,696.55 978.62,694.68 976.99,692.80 975.35,690.92 973.71,689.05 972.08,687.17 970.44,685.29 968.80,683.41 967.17,681.54 965.53,679.66 963.89,677.78 962.26,675.90 960.62,674.03 958.98,672.15 957.35,670.27 955.71,668.39 954.07,666.52 952.44,664.64 950.80,662.76 949.16,660.88 947.53,659.01 945.89,657.13 944.25,655.25 942.62,653.38 940.98,651.50 939.34,649.62 937.71,647.74 936.07,645.87 934.43,643.99 932.80,642.11 931.16,640.23 929.52,638.36 927.89,636.48 926.25,634.60 924.61,632.72" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="974.15,723.13 972.90,721.23 971.65,719.32 970.40,717.42 969.15,715.52 967.90,713.62 966.65,711.71 965.40,709.81 964.15,707.91 962.90,706.00 961.65,704.10 960.40,702.20 959.14,700.29 957.89,698.39 956.64,696.49 955.39,694.59 954.14,692.68 952.89,690.78 951.64,688.88 950.39,686.97 949.14,685.07 947.89,683.17 946.64,681.26 945.39,679.36 944.14,677.46 942.89,675.56 941.63,673.65 940.38,671.75 939.13,669.85 937.88,667.94 936.63,666.04 935.38,664.14 934.13,662.23 932.88,660.33 931.63,658.43 930.38,656.52 929.13,654.62 927.88,652.72 926.63,650.82 925.38,648.91 924.12,647.01 922.87,645.11 921.62,643.20 920.37,641.30 919.12,639.40 917.87,637.49 916.62,635.59 915.37,633.69" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="945.88,724.13 945.03,722.23 944.19,720.33 943.34,718.42 942.49,716.52 941.65,714.61 940.80,712.71 939.96,710.81 939.11,708.90 938.26,707.00 937.42,705.09 936.57,703.19 935.73,701.29 934.88,699.38 934.04,697.48 933.19,695.58 932.34,693.67 931.50,691.77 930.65,689.86 929.81,687.96 928.96,686.06 928.12,684.15 927.27,682.25 926.42,680.34 925.58,678.44 924.73,676.54 923.89,674.63 923.04,672.73 922.19,670.83 921.35,668.92 920.50,667.02 919.66,665.11 918.81,663.21 917.97,661.31 917.12,659.40 916.27,657.50 915.43,655.59 914.58,653.69 913.74,651.79 912.89,649.88 912.05,647.98 911.20,646.08 910.35,644.17 909.51,642.27 908.66,640.36 907.82,638.46 906.97,636.56 906.12,634.65" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="907.58,724.86 907.27,722.94 906.96,721.03 906.65,719.11 906.33,717.20 906.02,715.29 905.71,713.37 905.39,711.46 905.08,709.54 904.77,707.63 904.46,705.72 904.14,703.80 903.83,701.89 903.52,699.97 903.20,698.06 902.89,696.15 902.58,694.23 902.26,692.32 901.95,690.40 901.64,688.49 901.33,686.58 901.01,684.66 900.70,682.75 900.39,680.83 900.07,678.92 899.76,677.01 899.45,675.09 899.14,673.18 898.82,671.26 898.51,669.35 898.20,667.44 897.88,665.52 897.57,663.61 897.26,661.69 896.95,659.78 896.63,657.87 896.32,655.95 896.01,654.04 895.69,652.12 895.38,650.21 895.07,648.30 894.75,646.38 894.44,644.47 894.13,642.55 893.82,640.64 893.50,638.73 893.19,636.81 892.88,634.90" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="869.20,724.91 869.43,723.00 869.65,721.09 869.87,719.18 870.09,717.27 870.31,715.36 870.53,713.45 870.76,711.54 870.98,709.63 871.20,707.72 871.42,705.81 871.64,703.90 871.87,701.99 872.09,700.08 872.31,698.17 872.53,696.26 872.75,694.35 872.97,692.44 873.20,690.53 873.42,688.62 873.64,686.71 873.86,684.80 874.08,682.89 874.31,680.98 874.53,679.07 874.75,677.16 874.97,675.25 875.19,673.34 875.42,671.43 875.64,669.52 875.86,667.61 876.08,665.70 876.30,663.79 876.52,661.88 876.75,659.97 876.97,658.06 877.19,656.15 877.41,654.24 877.63,652.33 877.86,650.42 878.08,648.51 878.30,646.60 878.52,644.69 878.74,642.78 878.96,640.87 879.19,638.96 879.41,637.05 879.63,635.14" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="833.46,724.37 834.19,722.46 834.91,720.54 835.63,718.63 836.36,716.72 837.08,714.81 837.80,712.90 838.52,710.99 839.25,709.08 839.97,707.17 840.69,705.26 841.42,703.35 842.14,701.44 842.86,699.53 843.58,697.62 844.31,695.71 845.03,693.80 845.75,691.89 846.48,689.98 847.20,688.07 847.92,686.16 848.64,684.25 849.37,682.34 850.09,680.43 850.81,678.52 851.54,676.61 852.26,674.70 852.98,672.79 853.70,670.88 854.43,668.96 855.15,667.05 855.87,665.14 856.60,663.23 857.32,661.32 858.04,659.41 858.77,657.50 859.49,655.59 860.21,653.68 860.93,651.77 861.66,649.86 862.38,647.95 863.10,646.04 863.83,644.13 864.55,642.22 865.27,640.31 865.99,638.40 866.72,636.49 867.44,634.58" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="797.91,723.20 799.13,721.31 800.35,719.41 801.57,717.51 802.79,715.61 804.01,713.72 805.23,711.82 806.45,709.92 807.67,708.02 808.89,706.13 810.11,704.23 811.33,702.33 812.55,700.43 813.77,698.53 814.99,696.64 816.21,694.74 817.43,692.84 818.65,690.94 819.87,689.05 821.09,687.15 822.31,685.25 823.53,683.35 824.75,681.46 825.97,679.56 827.19,677.66 828.41,675.76 829.63,673.86 830.85,671.97 832.07,670.07 833.29,668.17 834.51,666.27 835.73,664.38 836.95,662.48 838.17,660.58 839.39,658.68 840.61,656.79 841.83,654.89 843.05,652.99 844.27,651.09 845.49,649.19 846.71,647.30 847.93,645.40 849.15,643.50 850.37,641.60 851.59,639.71 852.81,637.81 854.03,635.91 855.25,634.01" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="777.38,721.36 778.90,719.48 780.42,717.59 781.94,715.71 783.46,713.83 784.98,711.94 786.50,710.06 788.02,708.18 789.53,706.29 791.05,704.41 792.57,702.53 794.09,700.64 795.61,698.76 797.13,696.88 798.65,694.99 800.17,693.11 801.69,691.23 803.21,689.35 804.72,687.46 806.24,685.58 807.76,683.70 809.28,681.81 810.80,679.93 812.32,678.05 813.84,676.16 815.36,674.28 816.88,672.40 818.39,670.51 819.91,668.63 821.43,666.75 822.95,664.86 824.47,662.98 825.99,661.10 827.51,659.22 829.03,657.33 830.55,655.45 832.06,653.57 833.58,651.68 835.10,649.80 836.62,647.92 838.14,646.03 839.66,644.15 841.18,642.27 842.70,640.38 844.22,638.50 845.74,636.62 847.25,634.73 848.77,632.85" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="758.70,717.91 760.48,716.08 762.26,714.24 764.04,712.41 765.81,710.57 767.59,708.74 769.37,706.90 771.15,705.07 772.93,703.23 774.71,701.40 776.49,699.57 778.27,697.73 780.04,695.90 781.82,694.06 783.60,692.23 785.38,690.39 787.16,688.56 788.94,686.72 790.72,684.89 792.49,683.06 794.27,681.22 796.05,679.39 797.83,677.55 799.61,675.72 801.39,673.88 803.17,672.05 804.94,670.21 806.72,668.38 808.50,666.54 810.28,664.71 812.06,662.88 813.84,661.04 815.62,659.21 817.40,657.37 819.17,655.54 820.95,653.70 822.73,651.87 824.51,650.03 826.29,648.20 828.07,646.37 829.85,644.53 831.62,642.70 833.40,640.86 835.18,639.03 836.96,637.19 838.74,635.36 840.52,633.52 842.30,631.69" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 680.63 709.50 A 221.06 21.71 -0.00 0 0 676.75 710.50" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="682.88,712.01 680.63,709.50" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="680.63,695.02 680.63,709.50" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 680.63 695.02 A 221.06 21.71 -0.00 0 0 664.11 703.26" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 664.11 703.26 A 221.06 21.71 -0.00 0 0 914.82 724.77" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="660.44,694.21 680.63,695.02" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="660.44,694.21 657.68,694.87" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="673.94,695.53 657.68,694.87" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 673.94 695.53 A 225.42 22.14 -0.00 0 0 659.75 703.26" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 659.75 703.26 A 225.42 22.14 -0.00 0 0 908.19 725.28" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="908.19,725.28 910.54,726.99" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="910.54,726.99 917.75,726.89" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="914.82,724.77 917.75,726.89" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="910.54,745.80 910.54,726.99" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="917.75,745.71 917.75,726.89" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="910.54,745.80 917.75,745.71" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 659.75 722.07 A 225.42 22.14 -0.00 0 0 908.19 744.10" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="659.75,713.77 657.68,713.69" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="908.19,744.10 910.54,745.80" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="908.19,744.10 908.19,725.28" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="657.68,713.69 657.68,694.87" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="1050.11,717.71 1060.05,704.45" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 1093.58 710.50 A 221.06 21.71 -0.00 0 0 1060.05 704.45" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="1060.05,689.98 1060.05,704.45" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 914.82 724.77 A 221.06 21.71 -0.00 0 0 1106.22 703.26" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 1106.22 703.26 A 221.06 21.71 -0.00 0 0 1060.05 689.98" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="917.75,726.89 924.95,726.80" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="922.60,725.09 924.95,726.80" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 922.60 725.09 A 225.42 22.14 -0.00 0 0 1110.59 703.26" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 1110.59 703.26 A 225.42 22.14 -0.00 0 0 1067.86 690.29" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="1067.86,690.29 1081.75,689.23" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="1081.75,689.23 1077.31,688.67" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="1060.05,689.98 1077.31,688.67" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="1081.75,692.43 1081.75,689.23" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 924.95 743.86 A 225.42 22.14 -0.00 0 0 1110.59 722.07" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="917.75,745.71 924.95,745.61" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="924.95,745.61 924.95,726.80" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 777.24 698.79 A 221.06 21.71 -0.00 0 0 680.63 709.50" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 792.47 683.08 A 225.42 22.14 -0.00 0 0 679.46 694.21" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="679.46,694.21 663.20,693.55" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="663.20,693.55 660.44,694.21" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 791.99 683.57 A 221.06 21.71 -0.00 0 0 680.63 695.02" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 1060.05 704.45 A 221.06 21.71 -0.00 0 0 997.36 699.03" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 1060.05 689.98 A 221.06 21.71 -0.00 0 0 981.99 683.74" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="1077.31,688.67 1072.86,688.11" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="1058.96,689.16 1072.86,688.11" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 1058.96 689.16 A 225.42 22.14 -0.00 0 0 981.49 683.24" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 716.17 811.26 A 225.42 22.14 -0.00 0 0 771.07 815.70" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="771.07,817.68 777.59,817.99" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 659.75 722.07 A 225.42 22.14 -0.00 0 0 778.86 741.59" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="778.86,741.59 771.07,743.14" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="771.07,743.14 777.59,743.46" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="785.32,741.92 777.59,743.46" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="777.59,817.99 777.59,743.46" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="771.07,817.68 771.07,743.14" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="777.59,817.99 784.11,818.31" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="791.89,816.76 784.11,818.31" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 791.89 816.76 A 225.42 22.14 -0.00 0 0 1110.59 796.61" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="1110.59,795.89 1128.00,795.78" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="777.59,743.46 784.11,743.77" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="791.89,742.23 784.11,743.77" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 791.89 742.23 A 225.42 22.14 -0.00 0 0 908.19 744.10" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 1110.59 722.07 A 225.42 22.14 -0.00 0 0 1110.47 721.35" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="1110.59,721.35 1128.00,721.24" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="1128.00,721.24 1127.53,720.53" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="1110.59,720.64 1127.53,720.53" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="1128.00,795.78 1128.00,721.24" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="791.89,742.23 791.89,816.76" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="784.11,818.31 784.11,743.77" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="1127.53,720.53 1127.06,719.82" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="1110.59,719.92 1127.06,719.82" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="895.04,870.72 895.04,818.73" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="826.22,875.95 826.22,818.06" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="826.32,817.98 826.22,818.06" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="887.34,818.75 887.24,818.82" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="826.22,818.06 832.67,818.14" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="880.79,818.74 887.24,818.82" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="895.04,870.72 887.24,876.72" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="887.24,876.72 887.24,818.82" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="826.22,875.95 887.24,876.72" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="770.62,436.53 757.90,436.09" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="876.13,529.72 875.94,529.54 875.76,529.35 875.58,529.16 875.39,528.98 875.21,528.79 875.02,528.61 874.84,528.42 874.65,528.23 874.47,528.05 874.29,527.86 874.10,527.67 873.92,527.49 873.73,527.30 873.55,527.12 873.36,526.93 873.18,526.74 872.99,526.56 872.81,526.37 872.63,526.19 872.44,526.00 872.26,525.81 872.07,525.63 871.89,525.44 871.70,525.25 871.52,525.07 871.33,524.88 871.15,524.70 870.97,524.51 870.78,524.32 870.60,524.14 870.41,523.95 870.23,523.77 870.04,523.58 869.86,523.39 869.67,523.21 869.49,523.02 869.31,522.83 869.12,522.65 868.94,522.46 868.75,522.28 868.57,522.09 868.38,521.90 868.20,521.72 868.02,521.53 867.83,521.34 867.65,521.16 867.46,520.97" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="867.05,524.88 867.46,520.97" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="872.79,529.96 872.67,529.85 872.55,529.75 872.42,529.64 872.30,529.53 872.18,529.42 872.06,529.31 871.93,529.20 871.81,529.10 871.69,528.99 871.57,528.88 871.45,528.77 871.32,528.66 871.20,528.56 871.08,528.45 870.96,528.34 870.83,528.23 870.71,528.12 870.59,528.02 870.47,527.91 870.35,527.80 870.22,527.69 870.10,527.58 869.98,527.47 869.86,527.37 869.74,527.26 869.61,527.15 869.49,527.04 869.37,526.93 869.25,526.83 869.12,526.72 869.00,526.61 868.88,526.50 868.76,526.39 868.64,526.28 868.51,526.18 868.39,526.07 868.27,525.96 868.15,525.85 868.03,525.74 867.90,525.64 867.78,525.53 867.66,525.42 867.54,525.31 867.41,525.20 867.29,525.09 867.17,524.99 867.05,524.88" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="865.67,528.78 867.05,524.88" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="867.11,530.35 867.08,530.31 867.05,530.28 867.02,530.25 866.99,530.21 866.96,530.18 866.93,530.15 866.89,530.11 866.86,530.08 866.83,530.05 866.80,530.01 866.77,529.98 866.74,529.95 866.71,529.91 866.68,529.88 866.65,529.85 866.62,529.81 866.59,529.78 866.56,529.75 866.53,529.71 866.50,529.68 866.47,529.65 866.44,529.62 866.41,529.58 866.37,529.55 866.34,529.52 866.31,529.48 866.28,529.45 866.25,529.42 866.22,529.38 866.19,529.35 866.16,529.32 866.13,529.28 866.10,529.25 866.07,529.22 866.04,529.18 866.01,529.15 865.98,529.12 865.95,529.08 865.92,529.05 865.88,529.02 865.85,528.98 865.82,528.95 865.79,528.92 865.76,528.88 865.73,528.85 865.70,528.82 865.67,528.78" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="843.68,531.69 865.67,528.78" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="643.17,531.48 644.70,531.69" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="643.05,531.61 643.06,531.61 643.06,531.60 643.06,531.60 643.06,531.60 643.07,531.59 643.07,531.59 643.07,531.59 643.07,531.59 643.08,531.58 643.08,531.58 643.08,531.58 643.08,531.58 643.09,531.57 643.09,531.57 643.09,531.57 643.09,531.56 643.09,531.56 643.10,531.56 643.10,531.56 643.10,531.55 643.10,531.55 643.11,531.55 643.11,531.54 643.11,531.54 643.11,531.54 643.12,531.54 643.12,531.53 643.12,531.53 643.12,531.53 643.13,531.53 643.13,531.52 643.13,531.52 643.13,531.52 643.14,531.51 643.14,531.51 643.14,531.51 643.14,531.51 643.15,531.50 643.15,531.50 643.15,531.50 643.15,531.50 643.16,531.49 643.16,531.49 643.16,531.49 643.16,531.48 643.16,531.48 643.17,531.48" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="620.92,528.24 643.17,531.48" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="619.08,530.20 619.12,530.16 619.16,530.12 619.20,530.08 619.24,530.04 619.28,529.99 619.31,529.95 619.35,529.91 619.39,529.87 619.43,529.83 619.47,529.78 619.51,529.74 619.55,529.70 619.59,529.66 619.63,529.62 619.67,529.58 619.71,529.53 619.74,529.49 619.78,529.45 619.82,529.41 619.86,529.37 619.90,529.33 619.94,529.28 619.98,529.24 620.02,529.20 620.06,529.16 620.10,529.12 620.14,529.08 620.17,529.03 620.21,528.99 620.25,528.95 620.29,528.91 620.33,528.87 620.37,528.83 620.41,528.78 620.45,528.74 620.49,528.70 620.53,528.66 620.56,528.62 620.60,528.57 620.64,528.53 620.68,528.49 620.72,528.45 620.76,528.41 620.80,528.37 620.84,528.32 620.88,528.28 620.92,528.24" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="621.33,524.33 620.92,528.24" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="614.99,529.92 615.13,529.80 615.26,529.68 615.40,529.56 615.53,529.44 615.67,529.33 615.80,529.21 615.93,529.09 616.07,528.97 616.20,528.85 616.34,528.73 616.47,528.61 616.61,528.49 616.74,528.38 616.88,528.26 617.01,528.14 617.15,528.02 617.28,527.90 617.42,527.78 617.55,527.66 617.69,527.54 617.82,527.42 617.96,527.31 618.09,527.19 618.23,527.07 618.36,526.95 618.50,526.83 618.63,526.71 618.77,526.59 618.90,526.47 619.04,526.36 619.17,526.24 619.31,526.12 619.44,526.00 619.58,525.88 619.71,525.76 619.85,525.64 619.98,525.52 620.12,525.40 620.25,525.29 620.39,525.17 620.52,525.05 620.66,524.93 620.79,524.81 620.93,524.69 621.06,524.57 621.19,524.45 621.33,524.33" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="622.71,520.43 621.33,524.33" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="615.91,527.37 616.05,527.22 616.20,527.07 616.34,526.92 616.49,526.78 616.63,526.63 616.78,526.48 616.92,526.33 617.07,526.19 617.21,526.04 617.35,525.89 617.50,525.74 617.64,525.60 617.79,525.45 617.93,525.30 618.08,525.15 618.22,525.01 618.37,524.86 618.51,524.71 618.66,524.56 618.80,524.42 618.95,524.27 619.09,524.12 619.24,523.97 619.38,523.82 619.52,523.68 619.67,523.53 619.81,523.38 619.96,523.23 620.10,523.09 620.25,522.94 620.39,522.79 620.54,522.64 620.68,522.50 620.83,522.35 620.97,522.20 621.12,522.05 621.26,521.91 621.41,521.76 621.55,521.61 621.69,521.46 621.84,521.32 621.98,521.17 622.13,521.02 622.27,520.87 622.42,520.73 622.56,520.58 622.71,520.43" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="757.90,436.09 745.17,435.66" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="745.17,435.66 732.26,436.04" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="732.26,436.04 719.35,436.42" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="719.35,436.42 711.18,437.47" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="711.18,437.47 703.01,438.52" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="703.01,438.52 702.71,439.85" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="702.71,439.85 702.40,441.17" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="702.40,441.17 710.08,442.26" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="710.08,442.26 717.76,443.35" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="717.76,443.35 730.48,443.79" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="730.48,443.79 743.21,444.22" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="743.21,444.22 756.12,443.84" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="756.12,443.84 769.03,443.46" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="769.03,443.46 777.20,442.41" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="777.20,442.41 785.37,441.36" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="785.37,441.36 785.67,440.03" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="785.67,440.03 785.98,438.71" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="785.98,438.71 778.30,437.62" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="778.30,437.62 770.62,436.53" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="867.46,520.97 865.73,519.22 863.99,517.47 862.26,515.72 860.53,513.97 858.79,512.22 857.06,510.47 855.33,508.72 853.59,506.97 851.86,505.22 850.12,503.47 848.39,501.72 846.66,499.97 844.92,498.22 843.19,496.47 841.46,494.72 839.72,492.97 837.99,491.22 836.25,489.47 834.52,487.72 832.79,485.97 831.05,484.22 829.32,482.47 827.59,480.72 825.85,478.97 824.12,477.21 822.38,475.46 820.65,473.71 818.92,471.96 817.18,470.21 815.45,468.46 813.72,466.71 811.98,464.96 810.25,463.21 808.51,461.46 806.78,459.71 805.05,457.96 803.31,456.21 801.58,454.46 799.85,452.71 798.11,450.96 796.38,449.21 794.65,447.46 792.91,445.71 791.18,443.96 789.44,442.21 787.71,440.46 785.98,438.71" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="867.05,524.88 865.32,523.07 863.59,521.27 861.85,519.46 860.12,517.66 858.39,515.85 856.66,514.05 854.93,512.24 853.20,510.44 851.47,508.63 849.73,506.83 848.00,505.02 846.27,503.22 844.54,501.41 842.81,499.60 841.08,497.80 839.35,495.99 837.61,494.19 835.88,492.38 834.15,490.58 832.42,488.77 830.69,486.97 828.96,485.16 827.23,483.36 825.49,481.55 823.76,479.75 822.03,477.94 820.30,476.14 818.57,474.33 816.84,472.53 815.11,470.72 813.38,468.92 811.64,467.11 809.91,465.31 808.18,463.50 806.45,461.69 804.72,459.89 802.99,458.08 801.26,456.28 799.52,454.47 797.79,452.67 796.06,450.86 794.33,449.06 792.60,447.25 790.87,445.45 789.14,443.64 787.40,441.84 785.67,440.03" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="865.67,528.78 863.96,526.92 862.25,525.06 860.55,523.20 858.84,521.34 857.13,519.48 855.42,517.62 853.71,515.76 852.00,513.90 850.29,512.04 848.59,510.18 846.88,508.32 845.17,506.46 843.46,504.60 841.75,502.74 840.04,500.88 838.33,499.02 836.63,497.16 834.92,495.30 833.21,493.44 831.50,491.58 829.79,489.72 828.08,487.86 826.37,486.00 824.67,484.14 822.96,482.28 821.25,480.42 819.54,478.56 817.83,476.70 816.12,474.84 814.41,472.98 812.71,471.12 811.00,469.26 809.29,467.40 807.58,465.54 805.87,463.68 804.16,461.82 802.45,459.96 800.75,458.10 799.04,456.24 797.33,454.38 795.62,452.52 793.91,450.66 792.20,448.80 790.49,446.94 788.79,445.08 787.08,443.22 785.37,441.36" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="841.86,531.78 840.48,529.88 839.11,527.98 837.73,526.08 836.35,524.17 834.98,522.27 833.60,520.37 832.23,518.47 830.85,516.57 829.48,514.67 828.10,512.76 826.73,510.86 825.35,508.96 823.97,507.06 822.60,505.16 821.22,503.26 819.85,501.36 818.47,499.45 817.10,497.55 815.72,495.65 814.34,493.75 812.97,491.85 811.59,489.95 810.22,488.04 808.84,486.14 807.47,484.24 806.09,482.34 804.71,480.44 803.34,478.54 801.96,476.64 800.59,474.73 799.21,472.83 797.84,470.93 796.46,469.03 795.08,467.13 793.71,465.23 792.33,463.33 790.96,461.42 789.58,459.52 788.21,457.62 786.83,455.72 785.46,453.82 784.08,451.92 782.70,450.01 781.33,448.11 779.95,446.21 778.58,444.31 777.20,442.41" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="816.33,532.83 815.32,530.92 814.32,529.02 813.31,527.12 812.30,525.22 811.30,523.32 810.29,521.42 809.28,519.52 808.28,517.61 807.27,515.71 806.27,513.81 805.26,511.91 804.25,510.01 803.25,508.11 802.24,506.21 801.23,504.30 800.23,502.40 799.22,500.50 798.22,498.60 797.21,496.70 796.20,494.80 795.20,492.90 794.19,491.00 793.18,489.09 792.18,487.19 791.17,485.29 790.16,483.39 789.16,481.49 788.15,479.59 787.15,477.69 786.14,475.78 785.13,473.88 784.13,471.98 783.12,470.08 782.11,468.18 781.11,466.28 780.10,464.38 779.10,462.48 778.09,460.57 777.08,458.67 776.08,456.77 775.07,454.87 774.06,452.97 773.06,451.07 772.05,449.17 771.05,447.26 770.04,445.36 769.03,443.46" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="778.91,533.74 778.42,531.83 777.94,529.92 777.45,528.01 776.97,526.09 776.48,524.18 776.00,522.27 775.51,520.35 775.03,518.44 774.55,516.53 774.06,514.62 773.58,512.70 773.09,510.79 772.61,508.88 772.12,506.96 771.64,505.05 771.15,503.14 770.67,501.23 770.18,499.31 769.70,497.40 769.21,495.49 768.73,493.58 768.24,491.66 767.76,489.75 767.27,487.84 766.79,485.92 766.30,484.01 765.82,482.10 765.33,480.19 764.85,478.27 764.36,476.36 763.88,474.45 763.39,472.53 762.91,470.62 762.42,468.71 761.94,466.80 761.45,464.88 760.97,462.97 760.48,461.06 760.00,459.15 759.51,457.23 759.03,455.32 758.54,453.41 758.06,451.49 757.57,449.58 757.09,447.67 756.60,445.76 756.12,443.84" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="741.36,534.01 741.40,532.10 741.44,530.19 741.48,528.28 741.51,526.37 741.55,524.46 741.59,522.55 741.63,520.64 741.67,518.73 741.71,516.82 741.75,514.91 741.79,513.00 741.83,511.09 741.87,509.18 741.91,507.27 741.95,505.36 741.99,503.45 742.03,501.54 742.07,499.62 742.11,497.71 742.14,495.80 742.18,493.89 742.22,491.98 742.26,490.07 742.30,488.16 742.34,486.25 742.38,484.34 742.42,482.43 742.46,480.52 742.50,478.61 742.54,476.70 742.58,474.79 742.62,472.88 742.66,470.97 742.70,469.06 742.73,467.15 742.77,465.24 742.81,463.33 742.85,461.42 742.89,459.51 742.93,457.60 742.97,455.69 743.01,453.78 743.05,451.87 743.09,449.95 743.13,448.04 743.17,446.13 743.21,444.22" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="704.27,533.66 704.83,531.74 705.39,529.83 705.95,527.92 706.50,526.01 707.06,524.10 707.62,522.18 708.18,520.27 708.74,518.36 709.29,516.45 709.85,514.54 710.41,512.62 710.97,510.71 711.52,508.80 712.08,506.89 712.64,504.97 713.20,503.06 713.75,501.15 714.31,499.24 714.87,497.33 715.43,495.41 715.98,493.50 716.54,491.59 717.10,489.68 717.66,487.77 718.21,485.85 718.77,483.94 719.33,482.03 719.89,480.12 720.44,478.20 721.00,476.29 721.56,474.38 722.12,472.47 722.67,470.56 723.23,468.64 723.79,466.73 724.35,464.82 724.91,462.91 725.46,461.00 726.02,459.08 726.58,457.17 727.14,455.26 727.69,453.35 728.25,451.43 728.81,449.52 729.37,447.61 729.92,445.70 730.48,443.79" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="667.34,532.66 668.41,530.76 669.49,528.86 670.56,526.96 671.63,525.06 672.70,523.16 673.78,521.26 674.85,519.36 675.92,517.46 677.00,515.56 678.07,513.66 679.14,511.76 680.21,509.86 681.29,507.96 682.36,506.06 683.43,504.16 684.50,502.26 685.58,500.36 686.65,498.46 687.72,496.56 688.79,494.65 689.87,492.75 690.94,490.85 692.01,488.95 693.09,487.05 694.16,485.15 695.23,483.25 696.30,481.35 697.38,479.45 698.45,477.55 699.52,475.65 700.59,473.75 701.67,471.85 702.74,469.95 703.81,468.05 704.88,466.15 705.96,464.25 707.03,462.35 708.10,460.45 709.17,458.55 710.25,456.65 711.32,454.75 712.39,452.85 713.47,450.95 714.54,449.05 715.61,447.15 716.68,445.25 717.76,443.35" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="643.17,531.48 644.59,529.58 646.01,527.68 647.44,525.78 648.86,523.89 650.29,521.99 651.71,520.09 653.13,518.19 654.56,516.29 655.98,514.39 657.40,512.50 658.83,510.60 660.25,508.70 661.67,506.80 663.10,504.90 664.52,503.00 665.95,501.11 667.37,499.21 668.79,497.31 670.22,495.41 671.64,493.51 673.06,491.62 674.49,489.72 675.91,487.82 677.33,485.92 678.76,484.02 680.18,482.12 681.61,480.23 683.03,478.33 684.45,476.43 685.88,474.53 687.30,472.63 688.72,470.73 690.15,468.84 691.57,466.94 692.99,465.04 694.42,463.14 695.84,461.24 697.27,459.34 698.69,457.45 700.11,455.55 701.54,453.65 702.96,451.75 704.38,449.85 705.81,447.96 707.23,446.06 708.66,444.16 710.08,442.26" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="620.92,528.24 622.65,526.39 624.38,524.54 626.12,522.68 627.85,520.83 629.58,518.98 631.32,517.13 633.05,515.27 634.79,513.42 636.52,511.57 638.25,509.72 639.99,507.86 641.72,506.01 643.45,504.16 645.19,502.31 646.92,500.45 648.66,498.60 650.39,496.75 652.12,494.90 653.86,493.04 655.59,491.19 657.32,489.34 659.06,487.49 660.79,485.63 662.53,483.78 664.26,481.93 665.99,480.08 667.73,478.22 669.46,476.37 671.19,474.52 672.93,472.66 674.66,470.81 676.40,468.96 678.13,467.11 679.86,465.25 681.60,463.40 683.33,461.55 685.06,459.70 686.80,457.84 688.53,455.99 690.27,454.14 692.00,452.29 693.73,450.43 695.47,448.58 697.20,446.73 698.93,444.88 700.67,443.02 702.40,441.17" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="621.33,524.33 623.06,522.54 624.79,520.74 626.52,518.94 628.26,517.14 629.99,515.35 631.72,513.55 633.45,511.75 635.18,509.95 636.91,508.16 638.64,506.36 640.38,504.56 642.11,502.76 643.84,500.97 645.57,499.17 647.30,497.37 649.03,495.57 650.76,493.78 652.49,491.98 654.23,490.18 655.96,488.38 657.69,486.59 659.42,484.79 661.15,482.99 662.88,481.19 664.61,479.40 666.35,477.60 668.08,475.80 669.81,474.00 671.54,472.20 673.27,470.41 675.00,468.61 676.73,466.81 678.47,465.01 680.20,463.22 681.93,461.42 683.66,459.62 685.39,457.82 687.12,456.03 688.85,454.23 690.59,452.43 692.32,450.63 694.05,448.84 695.78,447.04 697.51,445.24 699.24,443.44 700.97,441.65 702.71,439.85" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="622.71,520.43 624.42,518.69 626.12,516.95 627.83,515.20 629.54,513.46 631.25,511.72 632.96,509.97 634.67,508.23 636.38,506.49 638.08,504.75 639.79,503.00 641.50,501.26 643.21,499.52 644.92,497.78 646.63,496.03 648.34,494.29 650.04,492.55 651.75,490.81 653.46,489.06 655.17,487.32 656.88,485.58 658.59,483.83 660.30,482.09 662.00,480.35 663.71,478.61 665.42,476.86 667.13,475.12 668.84,473.38 670.55,471.64 672.26,469.89 673.96,468.15 675.67,466.41 677.38,464.66 679.09,462.92 680.80,461.18 682.51,459.44 684.21,457.69 685.92,455.95 687.63,454.21 689.34,452.47 691.05,450.72 692.76,448.98 694.47,447.24 696.17,445.50 697.88,443.75 699.59,442.01 701.30,440.27 703.01,438.52" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 608.98 509.60 A 221.06 21.71 -0.00 0 0 588.58 511.36" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 558.15 515.05 A 221.06 21.71 -0.00 0 0 535.77 519.54" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="617.93,525.31 608.98,509.60" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="608.98,509.19 608.98,509.60" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 532.64 506.01 A 221.06 21.71 -0.00 0 0 523.13 512.30" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 523.13 512.30 A 221.06 21.71 -0.00 0 0 558.15 524.03" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 588.58 527.72 A 221.06 21.71 -0.00 0 0 660.34 532.39" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 532.64 504.66 A 225.42 22.14 -0.00 0 0 518.77 512.30" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 518.77 512.30 A 225.42 22.14 -0.00 0 0 558.15 524.81" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 588.58 528.32 A 225.42 22.14 -0.00 0 0 652.00 532.51" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="652.00,532.51 645.34,534.10" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="645.34,534.10 652.07,534.37" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="660.34,532.39 652.07,534.37" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="645.34,552.92 645.34,534.10" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="652.07,553.19 652.07,534.37" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="645.34,552.92 652.07,553.19" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 518.77 531.12 A 225.42 22.14 -0.00 0 0 558.15 543.62" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 588.58 547.14 A 225.42 22.14 -0.00 0 0 645.34 551.01" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="963.25,509.39 963.25,515.22" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 660.34 532.39 A 221.06 21.71 -0.00 0 0 965.25 512.30" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 965.25 512.30 A 221.06 21.71 -0.00 0 0 963.25 509.39" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="652.07,534.37 658.80,534.64" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="665.46,533.05 658.80,534.64" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 665.46 533.05 A 225.42 22.14 -0.00 0 0 969.61 512.30" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 969.61 512.30 A 225.42 22.14 -0.00 0 0 968.43 510.04" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="968.43,510.04 985.84,509.81" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="985.84,509.81 984.87,509.10" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="963.25,509.39 984.87,509.10" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="985.84,528.63 985.84,509.81" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 665.46 551.86 A 225.42 22.14 -0.00 0 0 969.61 531.12" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="665.46,551.86 658.80,553.46" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="652.07,553.19 658.80,553.46" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="969.61,528.84 985.84,528.63" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="665.46,551.86 665.46,533.05" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="658.80,553.46 658.80,534.64" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 634.99 507.90 A 221.06 21.71 -0.00 0 0 608.98 509.60" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 650.41 492.17 A 225.42 22.14 -0.00 0 0 614.08 494.23" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 649.93 492.67 A 221.06 21.71 -0.00 0 0 614.08 494.75" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="916.97,525.85 925.91,514.42" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 952.60 519.54 A 221.06 21.71 -0.00 0 0 925.91 514.42" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="925.91,499.94 925.91,514.42" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 963.25 509.39 A 221.06 21.71 -0.00 0 0 925.91 499.94" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="984.87,509.10 983.89,508.40" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="966.48,508.63 983.89,508.40" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 966.48 508.63 A 225.42 22.14 -0.00 0 0 929.50 499.70" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="929.50,499.70 925.91,499.94" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 518.77 605.66 A 225.42 22.14 -0.00 0 0 518.89 606.39" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="518.89,614.59 521.82,615.25" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 518.77 531.12 A 225.42 22.14 -0.00 0 0 534.98 539.36" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="534.98,539.36 518.89,540.06" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="518.89,540.06 521.82,540.71" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="537.80,540.02 521.82,540.71" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="521.82,615.25 521.82,540.71" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="518.89,614.59 518.89,540.06" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="521.82,615.25 524.74,615.90" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="540.83,615.21 524.74,615.90" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 540.83 615.21 A 225.42 22.14 -0.00 0 0 558.15 618.16" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 588.58 621.67 A 225.42 22.14 -0.00 0 0 921.49 619.33" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="921.49,619.33 935.65,620.35" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="935.65,620.35 939.95,619.77" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="521.82,540.71 524.74,541.36" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="540.83,540.67 524.74,541.36" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 540.83 540.67 A 225.42 22.14 -0.00 0 0 558.15 543.62" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 665.46 551.86 A 225.42 22.14 -0.00 0 0 921.49 544.79" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="921.49,544.79 935.65,545.81" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="935.65,545.81 939.95,545.24" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="925.88,544.22 939.95,545.24" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="939.95,619.77 939.95,545.24" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="935.65,620.35 935.65,545.81" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="921.49,544.79 921.49,619.33" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="540.83,540.67 540.83,615.21" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="524.74,615.90 524.74,541.36" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 930.09 543.64 A 225.42 22.14 -0.00 0 0 969.61 531.12" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 944.26 615.86 A 225.42 22.14 -0.00 0 0 969.61 605.66" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="939.95,545.24 944.26,544.66" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="944.26,619.20 944.26,544.66" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="939.95,619.77 944.26,619.20" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="930.09,543.64 944.26,544.66" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="754.07,679.77 754.07,627.77" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="685.24,684.99 685.24,627.10" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="685.34,627.02 685.24,627.10" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="746.36,627.79 746.26,627.87" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="685.24,627.10 691.69,627.18" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="739.81,627.79 746.26,627.87" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="754.07,679.77 746.26,685.76" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="746.26,685.76 746.26,627.87" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="685.24,684.99 746.26,685.76" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="499.88,85.18 499.88,128.21" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 499.88 85.18 A 221.06 21.71 0.00 0 0 308.48 106.70" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 308.48 106.70 A 221.06 21.71 0.00 0 0 354.65 119.97" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="496.95,83.06 499.88,85.18" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="496.95,83.06 489.75,83.16" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="492.11,84.87 489.75,83.16" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 492.11 84.87 A 225.42 22.14 0.00 0 0 304.12 106.70" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 304.12 106.70 A 225.42 22.14 0.00 0 0 346.85 119.66" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="346.85,119.66 332.95,120.72" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="332.95,120.72 337.40,121.28" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="354.65,119.97 337.40,121.28" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="332.95,344.83 332.95,120.72" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="337.40,345.40 337.40,121.28" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="332.95,344.83 337.40,345.40" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 304.12 330.81 A 225.42 22.14 0.00 0 0 332.95 341.64" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="489.75,84.91 489.75,83.16" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 354.65 119.97 A 221.06 21.71 0.00 0 0 734.08 114.93" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="337.40,121.28 341.84,121.85" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="355.74,120.79 341.84,121.85" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 355.74 120.79 A 225.42 22.14 0.00 0 0 735.25 115.75" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="735.25,115.75 751.50,116.40" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="751.50,116.40 754.26,115.74" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="734.08,114.93 754.26,115.74" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="751.50,340.51 751.50,116.40" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="754.26,339.85 754.26,115.74" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="751.50,340.51 754.26,339.85" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 355.74 344.91 A 225.42 22.14 0.00 0 0 735.25 339.86" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="355.74,344.91 341.84,345.96" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="337.40,345.40 341.84,345.96" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="735.25,339.86 751.50,340.51" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="735.25,339.86 735.25,115.75" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="355.74,344.91 355.74,120.79" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="341.84,345.96 341.84,121.85" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 734.08 114.93 A 221.06 21.71 -0.00 0 0 750.59 106.70" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 750.59 106.70 A 221.06 21.71 -0.00 0 0 499.88 85.18" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="754.26,115.74 757.02,115.08" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="740.76,114.43 757.02,115.08" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 740.76 114.43 A 225.42 22.14 -0.00 0 0 754.96 106.70" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 754.96 106.70 A 225.42 22.14 -0.00 0 0 506.52 84.67" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="506.52,84.67 504.16,82.96" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="504.16,82.96 496.95,83.06" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="754.26,339.85 757.02,339.19" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="757.02,339.19 757.02,115.08" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="286.59,404.92 286.68,405.64" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="304.12,330.37 286.59,330.39" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="286.59,330.39 286.68,331.10" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="304.13,331.08 286.68,331.10" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="286.68,405.64 286.68,331.10" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="286.59,404.92 286.59,330.39" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="286.68,405.64 286.77,406.35" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="304.34,406.33 286.77,406.35" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 304.34 406.33 A 225.42 22.14 0.00 0 0 638.35 424.73" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="638.35,424.73 647.32,426.21" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="647.32,426.21 653.57,425.85" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="286.68,331.10 286.77,331.82" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="304.34,331.80 286.77,331.82" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 304.34 331.80 A 225.42 22.14 0.00 0 0 332.95 341.64" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 355.74 344.91 A 225.42 22.14 0.00 0 0 638.35 350.20" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="638.35,350.20 647.32,351.68" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="647.32,351.68 653.57,351.31" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="644.66,349.84 653.57,351.31" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="653.57,425.85 653.57,351.31" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="647.32,426.21 647.32,351.68" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="638.35,350.20 638.35,424.73" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="304.34,331.80 304.34,406.33" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="286.77,406.35 286.77,331.82" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 650.85 349.47 A 225.42 22.14 0.00 0 0 735.25 339.86" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <path d="M 659.82 423.41 A 225.42 22.14 0.00 0 0 754.96 405.34" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="653.57,351.31 659.82,350.95" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="659.82,425.48 659.82,350.95" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="653.57,425.85 659.82,425.48" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="650.85,349.47 659.82,350.95" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="455.50,477.77 455.50,426.25" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="369.29,478.91 369.29,421.02" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="369.77,420.96 369.29,421.02" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="418.71,424.62 418.23,424.68" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="369.29,421.02 374.46,421.41" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="413.06,424.30 418.23,424.68" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="455.50,477.77 418.23,482.57" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="418.23,482.57 418.23,424.68" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="369.29,478.91 418.23,482.57" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="995.59,901.46 995.59,815.91" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="914.15,901.46 914.15,818.56" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="614.08,507.25 614.08,425.86" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="532.64,507.25 532.64,427.48" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="1031.85,1069.92 1031.85,1055.44" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="72.00,1069.92 72.00,1055.44" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="755.50,720.84 755.55,720.79 755.60,720.75 755.65,720.70 755.70,720.66 755.76,720.61 755.81,720.57 755.86,720.52 755.91,720.48 755.96,720.43 756.02,720.38 756.07,720.34 756.12,720.29 756.17,720.25 756.22,720.20 756.28,720.16 756.33,720.11 756.38,720.06 756.43,720.02 756.48,719.97 756.54,719.93 756.59,719.88 756.64,719.84 756.69,719.79 756.74,719.74 756.80,719.70 756.85,719.65 756.90,719.61 756.95,719.56 757.00,719.52 757.06,719.47 757.11,719.42 757.16,719.38 757.21,719.33 757.26,719.29 757.32,719.24 757.37,719.20 757.42,719.15 757.47,719.11 757.52,719.06 757.58,719.01 757.63,718.97 757.68,718.92 757.73,718.88 757.78,718.83 757.84,718.79 757.89,718.74 757.94,718.69" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="659.75,722.07 659.75,703.26" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="1110.59,722.07 1110.59,703.26" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="659.75,722.07 659.75,754.88" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="1110.59,722.07 1110.59,796.61" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="613.45,529.81 613.51,529.76 613.56,529.71 613.61,529.66 613.66,529.60 613.72,529.55 613.77,529.50 613.82,529.45 613.87,529.40 613.93,529.35 613.98,529.29 614.03,529.24 614.08,529.19 614.14,529.14 614.19,529.09 614.24,529.04 614.29,528.98 614.35,528.93 614.40,528.88 614.45,528.83 614.50,528.78 614.56,528.72 614.61,528.67 614.66,528.62 614.71,528.57 614.77,528.52 614.82,528.46 614.87,528.41 614.92,528.36 614.97,528.31 615.03,528.26 615.08,528.20 615.13,528.15 615.18,528.10 615.23,528.05 615.29,528.00 615.34,527.94 615.39,527.89 615.44,527.84 615.49,527.79 615.55,527.73 615.60,527.68 615.65,527.63 615.70,527.58 615.75,527.52 615.81,527.47 615.86,527.42 615.91,527.37" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="518.77,531.12 518.77,512.30" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="969.61,531.12 969.61,512.30" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="518.77,531.12 518.77,605.66" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="969.61,531.12 969.61,605.66" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="304.12,330.81 304.12,106.70" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="754.96,115.00 754.96,106.70" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+  <polyline points="754.96,339.69 754.96,405.34" class="cad-visible" stroke="rgb(0,0,0)" stroke-width="1.5" fill="none"/>
+</svg>
