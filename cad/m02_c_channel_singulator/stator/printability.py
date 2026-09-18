@@ -10,6 +10,7 @@ runs the per-part `inspect()` pass and its waivers.
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
+from ..params import HOPPER_WALL_H
 from .assembly import WALL_MIN, exit_floor, stator_part, stator_sectors
 
 
@@ -44,6 +45,15 @@ _KNIFE_EDGE_WAIVER = {
 for k, sector in enumerate(stator_sectors()):
     inspect(
         sector, method=method, out="outputs", name=stator_part(k),
+        waive=_KNIFE_EDGE_WAIVER,
+    )
+# The hopper stage's liner: same sectors, the cylinder zone (and the
+# ears) up to HOPPER_WALL_H. Inverted, the wall over the exit opening
+# faces up — its underside at STATOR_WALL_H is no overhang — and the
+# paddle hangs off that wall on its 45° gusset.
+for k, sector in enumerate(stator_sectors(height=HOPPER_WALL_H)):
+    inspect(
+        sector, method=method, out="outputs", name=f"hopper_{stator_part(k)}",
         waive=_KNIFE_EDGE_WAIVER,
     )
 

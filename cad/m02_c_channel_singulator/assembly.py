@@ -61,6 +61,7 @@ from .params import (
     MESH_BACKLASH,
     PINION_TOP_CLEAR,
     ROTOR_STATOR_GAP,
+    STATOR_WALL_H,
 )
 from .rotor import assembly as _rotor
 from .seams import SEAM_COUNT, angular_gap_deg, sector_index, seam_azimuths
@@ -97,6 +98,7 @@ def build_m02(
     schema: str = DEFAULT_SCHEMA,
     motor_azimuth_deg: float = MOTOR_AZIMUTH_DEG,
     bowl_seam_phase_deg: float = BOWL_SEAM_PHASE_DEG,
+    wall_h: float = STATOR_WALL_H,
 ) -> Assembly:
     """The singulator unit, painted under ``schema``.
 
@@ -105,7 +107,9 @@ def build_m02(
     per-stage value where a stage's gantry member would otherwise run
     into its motor; the unit's own claims (mesh, rests, clearances)
     hold at any azimuth. ``bowl_seam_phase_deg`` is the same kind of
-    per-stage choice for the bowl's thirds seams (``seams.py``).
+    per-stage choice for the bowl's thirds seams (``seams.py``), and
+    ``wall_h`` the liner's height — HOPPER_WALL_H on the chain's top
+    stage, STATOR_WALL_H elsewhere.
 
     Sub-assembly builders emit no colour; this root paints the finished
     tree once. ``paint`` also carries the design-system coverage check
@@ -130,7 +134,7 @@ def build_m02(
                 frame="local",
             ),
         )
-        .with_subassembly("stator", _stator.build_stator())
+        .with_subassembly("stator", _stator.build_stator(wall_h))
         .with_subassembly("drive", _drive.build_drive(motor_azimuth_deg, bowl_seam_phase_deg))
         .assert_scalar(
             "seam_stagger_deg", stagger, ge=SEAM_STAGGER_MIN_DEG,

@@ -84,6 +84,8 @@ from ..m02_c_channel_singulator.params import (
     R_STATOR_OUTER_KINK,
     ROTOR_BASE_DIAMETER,
     ROTOR_HEIGHT,
+    HOPPER_WALL_H,
+    STATOR_WALL_H,
 )
 
 
@@ -257,6 +259,7 @@ class Stage:
     vbot_z: float               # stator V-bottom plane (m02-local z = 0)
     motor_azimuth_deg: float    # m02-local; passed to build_m02
     bowl_seam_phase_deg: float  # m02-local; passed to build_m02
+    wall_h: float               # liner height; passed to build_m02
 
     @property
     def chute_exit_xy(self) -> tuple[float, float]:
@@ -340,6 +343,8 @@ def _stage_table() -> tuple[Stage, ...]:
             vbot_z=S1_VBOT_Z_LOCAL + i * STAGE_PITCH,
             motor_azimuth_deg=MOTOR_AZIMUTH_DEG + MOTOR_SWING_DEG[name],
             bowl_seam_phase_deg=BOWL_SEAM_PHASE_DEG[name],
+            # The top stage takes the bulk pile (`m02-chain.md` §1).
+            wall_h=HOPPER_WALL_H if i == N_STAGES - 1 else STATOR_WALL_H,
         ))
     return tuple(stages)
 

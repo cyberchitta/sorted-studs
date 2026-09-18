@@ -13,7 +13,9 @@ scan-station drop path (Module 3).
 
 A two-zone ring of thickness STATOR_WALL_T — V-slope from z=0 to
 z=STATOR_V_H, then vertical cylinder from STATOR_V_H to
-STATOR_WALL_H. The exit arc is cut through the full wall height. The
+STATOR_WALL_H. The exit arc is cut through the full wall height —
+except on the hopper stage, whose wall rises to HOPPER_WALL_H over an
+opening that stays STATOR_WALL_H tall (``..params``). The
 mounting interface (`_notes/decisions/m02-chain.md` §5, 2026-09-16):
 the wall is a liner that sits on the drive's bowl — its outer cone
 face stops at the skirt's inner radius at SKIRT_TOP_Z and steps out
@@ -174,6 +176,7 @@ def stator(
     r_out_kink: float = R_STATOR_OUTER_KINK,
     v_h: float = STATOR_V_H,
     height: float = STATOR_WALL_H,
+    exit_h: float = STATOR_WALL_H,
     exit_arc_deg: float = EXIT_ARC_DEG,
     exit_wall_t: float = EXIT_WALL_T,
     exit_wall_rotor_gap: float = EXIT_WALL_ROTOR_GAP,
@@ -189,17 +192,26 @@ def stator(
     bowl's skirt, then goes vertical to z=height; the inner face
     kinks to vertical at z=v_h. Revolved around Z. A radial
     wedge centered on +X (spanning ±exit_arc_deg/2) is then
-    subtracted to produce the exit opening. Finally a trapezoidal
+    subtracted to produce the exit opening, from the V-bottom up to
+    z=exit_h — below ``height`` on the hopper stage, whose wall closes
+    over the opening above that. Finally a trapezoidal
     paddle is unioned on at the downstream edge of the cut (sign
     set by exit_wall_side_sign) — its inner edge slants inward with
     z to track the rotor's nominal conical flank (offset by
     exit_wall_rotor_gap), its outer edge sits flush with the
-    cylindrical outer wall.
+    cylindrical outer wall. Under a lintel it continues up as a 45°
+    gusset fin to the wall's inner face.
     """
     # Guards the argument, not just the module default: the profile
     # below degenerates if the kink sits at or above the wall top.
     assert 0.0 < v_h <= height, (
         f"v_h ({v_h}) must be positive and not exceed height ({height})"
+    )
+    # The paddle's inner edge tracks the rotor cone up to exit_h, so the
+    # opening can't rise past the rotor top (the edge's radius would go
+    # negative) — the hopper wall is why exit_h and height are separate.
+    assert v_h <= exit_h <= min(height, ROTOR_BASE_DIAMETER / 2.0 / _TAN_V), (
+        f"exit_h ({exit_h}) must lie between v_h ({v_h}) and the wall top ({height})"
     )
     # The flange sits below the kink and inside the outer kink radius:
     # the outer cone reaches r_out_base + SKIRT_TOP_Z·tan V there.
@@ -244,8 +256,10 @@ def stator(
         align=None,
     )
     z_pad = 1.0
+    # Through the wall top when the opening is full height; stopping at
+    # exit_h exactly otherwise, so the wall above is a lintel.
     wedge = Pos(0, 0, -z_pad) * extrude(
-        wedge_sketch, amount=height + 2 * z_pad,
+        wedge_sketch, amount=exit_h + z_pad + (z_pad if exit_h >= height else 0.0),
     )
 
     # Downstream paddle — profile in the XZ plane traces the stator's
@@ -261,15 +275,34 @@ def stator(
     # solid says otherwise, probed at r 124 — inside from 16.6° to 18°.)
     r_rotor_base = ROTOR_BASE_DIAMETER / 2.0
     r_wall_inner_bot = r_rotor_base + exit_wall_rotor_gap
-    r_wall_inner_top = (r_rotor_base - height * _TAN_V) + exit_wall_rotor_gap
+    r_wall_inner_top = (r_rotor_base - exit_h * _TAN_V) + exit_wall_rotor_gap
+    # Under a lintel (exit_h < height) the paddle's top edge would start
+    # mid-air in the inverted print — a 90° ledge anchored only at the
+    # wall. So it rises on as a gusset fin into the hopper, its inner edge
+    # climbing outward at 45° from the paddle's inner top corner to the
+    # wall's inner face (owner, 2026-09-18): self-supporting, and the gap
+    # to the rotor cone only widens above exit_h.
+    top_z = exit_h
+    if exit_h < height:
+        top_z = exit_h + (r_in_kink - r_wall_inner_top) / _TAN_V
+        assert top_z <= height, f"gusset top ({top_z:.1f}) above the wall top ({height})"
+    # A flat plate's far corner sits at √(r² + t²): pull the outer edge
+    # in so it stays inside the wall's curved outer face instead of
+    # poking 0.03 mm past it (a 90° sliver ledge under a lintel).
+    r_paddle_out = math.sqrt(r_out_kink ** 2 - exit_wall_t ** 2)
     paddle_pts: list[tuple[float, float]] = [
         (r_wall_inner_bot, 0.0),
         (r_out_base, 0.0),
         (_FLANGE_R_IN, _FLANGE_Z),
-        (r_out_kink, _FLANGE_Z),
-        (r_out_kink, height),
+        (r_paddle_out, _FLANGE_Z),
+        (r_paddle_out, exit_h),
     ]
-    paddle_pts.append((r_wall_inner_top, height))
+    if top_z > exit_h:
+        # Above exit_h the wall itself fills r_in_kink…r_out_kink, so the
+        # fin stops at its inner face: a flat plate carried out to the
+        # curved outer face would poke a sliver past it.
+        paddle_pts += [(r_in_kink, exit_h), (r_in_kink, top_z)]
+    paddle_pts.append((r_wall_inner_top, exit_h))
     paddle_profile = Plane.XZ * Polygon(*paddle_pts, align=None)
     paddle = extrude(paddle_profile, amount=exit_wall_t)
     if exit_wall_side_sign < 0:
@@ -325,7 +358,8 @@ def exit_floor(
 
 def stator_sectors(*, phase_deg: float = LINER_SEAM_PHASE_DEG, height: float = STATOR_WALL_H) -> list[Part]:
     """The wall cut into SEAM_COUNT sectors at ``phase_deg``, ears on
-    the cylinder zone above the skirt. Sector k is ``stator_k``."""
+    the cylinder zone above the skirt. Sector k is ``stator_k``. The
+    exit opening stays STATOR_WALL_H tall whatever ``height`` is."""
     return split_ring(
         stator(height=height), phase_deg=phase_deg, r_out=R_STATOR_OUTER_KINK,
         ear_z=(SKIRT_TOP_Z, height),
@@ -342,9 +376,10 @@ STATOR_PARTS = tuple(stator_part(k) for k in range(SEAM_COUNT))
 
 # --- Assembly ----------------------------------------------------------
 
-def build_stator() -> Assembly:
+def build_stator(height: float = STATOR_WALL_H) -> Assembly:
     """Stator sub-assembly in stator-local frame (= m02-local: origin
-    on the rotor axis at the V-bottom): the wall and the exit floor.
+    on the rotor axis at the V-bottom): the wall, ``height`` tall
+    (HOPPER_WALL_H on the hopper stage), and the exit floor.
     The tongue clears the wall's cut faces and the paddle laterally;
     its rests and its gear clearance are the unit root's (they involve
     the drive and the rotor)."""
@@ -354,7 +389,7 @@ def build_stator() -> Assembly:
             f"liner seam at {seam:.1f}° runs into the exit arc"
         )
     a = Assembly()
-    for k, sector in enumerate(stator_sectors()):
+    for k, sector in enumerate(stator_sectors(height=height)):
         a = a.with_part(stator_part(k), sector, material=material_of(stator_part(k)))
     a = a.with_part("exit_floor", exit_floor(), material=material_of("exit_floor"))
     for k, part in enumerate(STATOR_PARTS):

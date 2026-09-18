@@ -452,7 +452,7 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
     a = Assembly()
     for s in STAGES:
         a = a.with_subassembly(
-            s.name, build_m02(schema, s.motor_azimuth_deg, s.bowl_seam_phase_deg),
+            s.name, build_m02(schema, s.motor_azimuth_deg, s.bowl_seam_phase_deg, s.wall_h),
             location=_stage_pose(s),
         )
     s1, s2, s3 = STAGES

@@ -89,7 +89,8 @@ ROTOR_FACET_VALLEY_DENT = 4.0          # inward deflection of valleys (mm)
 ROTOR_STATOR_GAP = 2.0
 
 # Stator container wall height above the V-bottom, standard variant
-# (no extended-wall hopper). Matches #channel_wall_height.
+# (the hopper stage's is HOPPER_WALL_H, below). Matches
+# #channel_wall_height. Also the exit opening's height on every stage.
 STATOR_WALL_H = 40.0
 
 # Height above the V-bottom where the stator inner wall transitions
@@ -141,6 +142,25 @@ R_STATOR_INNER_KINK = (
 )
 R_STATOR_OUTER_BASE = R_STATOR_INNER_BASE + STATOR_WALL_T
 R_STATOR_OUTER_KINK = R_STATOR_INNER_KINK + STATOR_WALL_T     # 155
+
+
+# --- Hopper variant (the chain's top stage) ----------------------------
+
+# The top stage doubles as the bulk hopper (`m02-chain.md` §1): its
+# liner's cylinder zone rises to HOPPER_WALL_H instead of STATOR_WALL_H,
+# while the exit opening and the paddle stay at STATOR_WALL_H — the wall
+# closes over the opening above that, so the pile leaves only through the
+# V at the exit, like every other stage (the static-gap branch of §11.4;
+# a gate only if the bench shows it overfeeding). Sized to hold
+# HOPPER_MASS_KG (owner, 2026-09-15) in the cylinder *above the rotor
+# top* alone, at the explorer's bulk density — the annulus between the
+# rotor cone and the wall below that is margin, not counted.
+HOPPER_MASS_KG = 3.0
+BRICK_BULK_DENSITY_KG_PER_L = 0.45     # loose mixed LEGO; an estimate, unmeasured
+HOPPER_WALL_H = ROTOR_HEIGHT + (
+    HOPPER_MASS_KG / BRICK_BULK_DENSITY_KG_PER_L * 1e6
+    / (math.pi * R_STATOR_INNER_KINK ** 2)
+)                                      # ≈ 182
 
 
 # --- Drive: rim gear on a rim bearing ----------------------------------
