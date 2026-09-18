@@ -475,9 +475,11 @@ ARM_TOP_Z_LOCAL = S2.plate_bottom_z                                  # +185 (wor
 # direction — structure pass finding 2). 280 rather than the pass's
 # 325: at the stem's height the brace ends beside the stem run into
 # it, 45 mm lower they clear it (explorer `brace=5&braceH=280` clean).
-# Accepted by the owner 2026-09-15; the structure pass's braced figures
-# (~0.25 mm, ~24 Hz) were for a node at 325 and have not been
-# re-figured for the longer free length above 280.
+# Accepted by the owner 2026-09-15. Re-figured 2026-09-18 by hand
+# (`_notes/state/m02-singulator.md` §Open): 0.45 mm / ~25 Hz at the
+# top with rigid brace ends, but the printed sockets are in series
+# with the brace and it is their stiffness, not the aluminium's, that
+# sets what the brace buys — an unmeasured number.
 BRACE_H_ABOVE_DECK = 280.0
 BRACE_COLS = (3, 5)
 
