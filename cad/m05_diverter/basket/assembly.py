@@ -28,12 +28,13 @@ flagged azimuth cuts the basket twice: from the inner arc out through
 the inner column, and from the outer column out through the outer arc.
 These channels let a basket move horizontally around the continuous
 tower columns during installation and removal; closed column-footprint
-holes would force it to slide the full tower height instead. *Only half
-of that holds today* (probe 2026-09-18): drawn out along its own axis,
-a basket clears the inner columns but hits the outer ones at 5–15 mm of
-travel — the outer channel's inboard end is in the way. Basket removal
-is an open design item. Each channel is lined on its cavity side
-(see `basket()`), so no floor opening beside a column reaches a brick. The notch
+holes would force it to slide the full tower height instead. Every
+basket comes out the same way — drawn along its own axis, which moves
+it away from both neighbours — so each one can be emptied without
+touching another; the outer channel is swept along that path
+(`withdrawal_travel`) and `../check_basket_removal.py` holds the claim.
+Each channel is lined on its cavity side (see `basket()`), so no floor
+opening beside a column reaches a brick. The notch
 set per basket is declared in `FLOOR_LAYOUT`: `left`/`right` for the
 boundary columns. A column can only ever sit on a boundary — a basket
 with a column notched through its *interior* (the former N=9 at 90°,
@@ -171,6 +172,27 @@ OUTER_ARC_OVERSHOOT = _arc_overshoot(R_BASKET_OUTER)
 
 WALL_MIN = 1.5
 
+# A basket comes out by being drawn along its own axis (+X, local). A
+# column on a boundary at ±half_angle then moves, relative to the
+# basket, in −X: inward and out through the side edge at rate
+# sin(half_angle). The outer channel's inboard end would stop it, so the
+# outer channel is swept along that path until its basket-side half
+# (ACCESS_CHANNEL_W / 2 — column, both clamp plates, clearance; the
+# vertex brackets' clamp plates reach z = 40, inside the basket) has
+# crossed the edge. The inner channel needs no sweep: it is already open
+# to the inner arc, which is where that path leads. The removal claim
+# itself is `../check_basket_removal.py`.
+WITHDRAW_MARGIN = 2.0
+
+
+def withdrawal_travel(half_angle_deg: float, grow: float = 0.0) -> float:
+    """Draw-out distance along the basket axis at which the swept
+    channel (padded by `grow`) has fully crossed the basket edge."""
+    return (
+        (ACCESS_CHANNEL_W / 2.0 + grow) / math.sin(math.radians(half_angle_deg))
+        + WITHDRAW_MARGIN
+    )
+
 
 # --- Helpers ------------------------------------------------------------
 
@@ -179,6 +201,7 @@ def _radial_access_channel_at(
     radius_start: float,
     radius_end: float,
     grow: float = 0.0,
+    sweep_x: float = 0.0,
 ) -> Part:
     """Full-height radial slot between two radii at `azimuth_deg`.
 
@@ -189,19 +212,50 @@ def _radial_access_channel_at(
 
     `grow` pads the slot by that much on every side — `basket()` uses
     it to keep a lining wall between the slot and the cavity.
+
+    `sweep_x` extends the slot along the path its contents take
+    relative to the basket while the basket is drawn out along its own
+    +X: the slot's footprint is swept `sweep_x` in −X (the convex hull
+    of the footprint and its shifted copy — exact for a straight
+    sweep of a convex shape).
     """
     z_margin = 10.0
-    height = BASKET_DEPTH_Z + 2 * z_margin
-    length = radius_end - radius_start + 2 * grow
-    radius_mid = (radius_start + radius_end) / 2.0
-    vx = radius_mid * math.cos(math.radians(azimuth_deg))
-    vy = radius_mid * math.sin(math.radians(azimuth_deg))
-    z_center = (BASKET_FLOOR_Z + BASKET_RIM_Z) / 2.0
-    return (
-        Pos(vx, vy, z_center)
-        * Rot(0, 0, azimuth_deg)
-        * Box(length, ACCESS_CHANNEL_W + 2 * grow, height)
+    z_bot = BASKET_FLOOR_Z - z_margin
+    half_w = ACCESS_CHANNEL_W / 2.0 + grow
+    r0 = radius_start - grow
+    r1 = radius_end + grow
+    c = math.cos(math.radians(azimuth_deg))
+    s = math.sin(math.radians(azimuth_deg))
+    corners = [
+        (r * c - w * s, r * s + w * c)
+        for r in (r0, r1)
+        for w in (-half_w, +half_w)
+    ]
+    swept = corners + [(x - sweep_x, y) for x, y in corners]
+    footprint = Polygon(*_convex_hull(swept), align=None)
+    return Pos(0, 0, z_bot) * extrude(
+        footprint, amount=BASKET_DEPTH_Z + 2 * z_margin,
     )
+
+
+def _convex_hull(points: list[tuple[float, float]]) -> list[tuple[float, float]]:
+    """Counter-clockwise hull (monotone chain), collinear points dropped."""
+    pts = sorted(set(points))
+
+    def cross(o, a, b):
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+    lower: list[tuple[float, float]] = []
+    upper: list[tuple[float, float]] = []
+    for p in pts:
+        while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 1e-9:
+            lower.pop()
+        lower.append(p)
+    for p in reversed(pts):
+        while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 1e-9:
+            upper.pop()
+        upper.append(p)
+    return lower[:-1] + upper[:-1]
 
 
 def _arc_prism(
@@ -307,6 +361,10 @@ def basket(
     # (~20 × 17 mm) or the clamp-plate allowance beside either post.
     # The lining sits inboard of the channel, so it never crosses a
     # post's path out of the basket.
+    #
+    # The outer channel is also swept along the basket's draw-out path
+    # (`withdrawal_travel`), so a basket comes out along its own axis
+    # past both columns on each notched boundary.
     radial_clearance = COLUMN_SIDE / 2 + COLUMN_CLEARANCE
     channels = []
     for flagged, az in (
@@ -319,19 +377,26 @@ def basket(
             az,
             R_VERT_OUTER - radial_clearance,
             R_BASKET_OUTER + OUTER_ARC_OVERSHOOT,
+            True,
         ))
         channels.append((
             az,
             R_BASKET_INNER - INNER_ARC_OVERSHOOT,
             R_VERT_INNER + radial_clearance,
+            False,
         ))
-    for az, r0, r1 in channels:
-        cavity = cavity - _radial_access_channel_at(
-            az, r0, r1, grow=BASKET_WALL_T,
+
+    def cutter(az, r0, r1, swept, grow=0.0):
+        sweep_x = withdrawal_travel(half_angle_deg, grow) if swept else 0.0
+        return _radial_access_channel_at(
+            az, r0, r1, grow=grow, sweep_x=sweep_x,
         )
+
+    for az, r0, r1, swept in channels:
+        cavity = cavity - cutter(az, r0, r1, swept, grow=BASKET_WALL_T)
     body = outer - cavity
-    for az, r0, r1 in channels:
-        body = body - _radial_access_channel_at(az, r0, r1)
+    for az, r0, r1, swept in channels:
+        body = body - cutter(az, r0, r1, swept)
     return body
 
 
