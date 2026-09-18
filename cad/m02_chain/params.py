@@ -290,7 +290,9 @@ MOTOR_SWING_DEG = {"s1": 0.0, "s2": 30.0, "s3": 30.0}
 # the exit arc's centre (`m02_c_channel_singulator/seams.py`,
 # 2026-09-17). A seam must not land where a gantry member ends under
 # the floor — a bar end is a point load on one sector's floor edge,
-# where the ring beam is already cut — nor through the exit slot or
+# where the ring beam is already cut — nor anywhere along a member's
+# run under the floor when the member stands beside the axis and so
+# sweeps a few degrees of it (S2's T), nor through the exit slot or
 # the motor (the unit guards those two), and it stays staggered from
 # the liner's fixed seams at 75 / −165 / −45 (the unit asserts ≥ 25°).
 # Stage-local end azimuths, found by search 2026-09-17: S1 its prop
@@ -423,7 +425,15 @@ ARM_POST = 4                    # S2's T arm leaves V_4
 
 # Prop bar: along the post → axis line, from the ring's outer edge on
 # the post side (so it covers the post's whole end face) over the axis
-# to `far` past it. S1's far end is the longest reach that stays clear
+# to `far` past it. Pointing at the axis is deliberate (owner
+# 2026-09-18, `_notes/decisions/m02-chain.md` §6): the bar then only
+# bends. It leaves the bar yawed to its column's face normals (42° on
+# V_5, 13° on V_4), so no 90° corner bracket seats under it and a
+# printed seat stands in — but a bar squared to a face stands beside
+# the axis and carries the load as twist, and a 2020 is ~10× softer in
+# twist than in bending (It 0.07 vs Ix 0.72 cm⁴). Squaring S3 was
+# built and checked green, then reverted on that arithmetic.
+# S1's far end is the longest reach that stays clear
 # of the turret's loaded sweep — the explorer's r 104 (`plat=short`,
 # 2026-09-15) put the bar's far corner 0.3 mm outside the LOAD
 # platform's corner circle, an in/out test with no margin; r 96 gives

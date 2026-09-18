@@ -10,10 +10,14 @@ split by whether a standard 90° 2020 bracket fits the geometry:
   bottom corner is where the brace collar sits), the stem's T onto
   its bar, and S3's cross halves onto the prop bar. Bought, not
   inspected.
-- `post_seat` — printed. The prop bars cross their columns' ends
-  askew (S1 on V_5 by ~42°, S3 on V_4 by ~13°: the bar must pass over
-  the stage axis and the column's faces are fixed by the hex frame),
-  so no corner bracket lands. A cap sockets over the column's top
+- `post_seat` — printed. Each prop bar lies square across its
+  column's end (an end-tap joint, indifferent to yaw) but yawed to the
+  column's faces — S1 on V_5 by ~42°, S3 on V_4 by ~13°: the bar
+  points at the stage axis, so it only bends, and the faces are fixed
+  by the hex frame — so no corner bracket lands under it. The seat
+  stands in for those brackets, and its wide top is the bowl's one
+  saddle against rolling about the bar (a 2020 is ~10× softer in
+  twist than in bending). A cap sockets over the column's top
   SEAT_SOCKET_H and cradles the bar in a channel at the bar's azimuth;
   the column's end face and the channel floor are one plane, so the
   bar still bears on the aluminium. The channel's side walls double

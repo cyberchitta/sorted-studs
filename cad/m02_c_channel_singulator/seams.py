@@ -54,6 +54,15 @@ def angular_gap_deg(a: float, b: float) -> float:
     return abs(_wrap(a - b))
 
 
+def angular_gap_to_span_deg(a: float, lo: float, hi: float) -> float:
+    """Unsigned angle from azimuth ``a`` to the arc ``lo`` → ``hi``
+    (the short way round, under 180°): 0 inside it, else the gap to
+    the nearer end."""
+    span = angular_gap_deg(lo, hi)
+    to_lo, to_hi = angular_gap_deg(a, lo), angular_gap_deg(a, hi)
+    return 0.0 if to_lo + to_hi <= span + 1e-9 else min(to_lo, to_hi)
+
+
 def _wrap(a: float) -> float:
     return (a + 180.0) % 360.0 - 180.0
 

@@ -11,7 +11,8 @@ the stages on m05's two through-deck columns: S1's prop bar
 arm (`s2_stem` off V_4's face, `s2_tee` under S2's plate), the two
 braces from V_4 down to the deck at V_3 and V_5 (`brace_3`,
 `brace_5`), and the joints (2026-09-17, `joints.py`): a printed seat
-on each post's end cradling its prop bar askew (`s1_post_seat`,
+on each post's end cradling its prop bar, which lies square across
+the end but yawed to the column's faces (`s1_post_seat`,
 `s3_post_seat`), a printed collar on V_4 socketing both braces
 (`brace_head`), a printed foot block on the deck at each brace's low
 end (`brace_foot_3`, `brace_foot_5`), and bought 2020 corner brackets
@@ -69,7 +70,7 @@ from cad_khana.mechanism.assembly import Assembly
 from ..design_systems import DEFAULT_SCHEMA, paint
 from ..m02_c_channel_singulator.assembly import build_m02
 from ..m02_c_channel_singulator.drive.assembly import BOWL_PARTS, bowl_part_at
-from ..m02_c_channel_singulator.seams import angular_gap_deg, seam_azimuths, sector_index
+from ..m02_c_channel_singulator.seams import angular_gap_to_span_deg, seam_azimuths, sector_index
 from ..m02_c_channel_singulator.stator.assembly import STATOR_PARTS
 from ..m02_c_channel_singulator.params import ROTOR_BASE_DIAMETER
 from .design_systems import design_system
@@ -376,9 +377,14 @@ def _stage_local_az(s: Stage, xy: tuple[float, float]) -> float:
     return math.degrees(math.atan2(xy[1] - s.axis_xy[1], xy[0] - s.axis_xy[0])) - s.heading_deg
 
 
-def _bar_end_azimuths(bar: str, s: Stage) -> list[float]:
-    """m02-local azimuths of the bar's ends that lie under s's floor
-    (outside the floor's hole)."""
+def _bar_floor_spans(bar: str, s: Stage) -> list[tuple[float, float]]:
+    """For each end of the bar that lies under s's floor (outside the
+    floor's hole): the m02-local azimuths of (that end, the point where
+    the centreline runs back into the hole — or the other end, if it
+    never does). A bar through the axis sweeps no azimuth, so the two
+    are equal; one standing beside it (S2's T, 9 mm off) sweeps a few
+    degrees, and a seam must stay out of the whole sweep, not just off
+    the end."""
     loc, length = {
         "s1_prop_bar": lambda: _prop_bar(s),
         "s3_prop_bar": lambda: _prop_bar(s),
@@ -388,11 +394,24 @@ def _bar_end_azimuths(bar: str, s: Stage) -> list[float]:
     }[bar]()
     p = loc.position
     yaw = math.radians(loc.orientation.Z)
+    u = (math.cos(yaw), math.sin(yaw))
+    cx, cy = p.X - s.axis_xy[0], p.Y - s.axis_xy[1]
+    along, off = cx * u[0] + cy * u[1], -cx * u[1] + cy * u[0]      # the axis is at t = -along on the centreline
+    half_chord = math.sqrt(max(PLATE_R_IN**2 - off**2, 0.0))
+
+    def at(t: float) -> tuple[float, float]:
+        return (p.X + t * u[0], p.Y + t * u[1])
+
     out = []
     for sign in (-1.0, 1.0):
-        xy = (p.X + sign * length / 2.0 * math.cos(yaw), p.Y + sign * length / 2.0 * math.sin(yaw))
-        if math.hypot(xy[0] - s.axis_xy[0], xy[1] - s.axis_xy[1]) > PLATE_R_IN:
-            out.append(_stage_local_az(s, xy))
+        t_end = sign * length / 2.0
+        end = at(t_end)
+        if math.hypot(end[0] - s.axis_xy[0], end[1] - s.axis_xy[1]) <= PLATE_R_IN:
+            continue
+        t_hole = -along + sign * half_chord                         # the hole's edge on this end's side
+        t_in = t_hole if sign * (t_end - t_hole) > 0.0 and abs(off) < PLATE_R_IN else -t_end
+        t_in = max(min(t_in, length / 2.0), -length / 2.0)
+        out.append((_stage_local_az(s, end), _stage_local_az(s, at(t_in))))
     return out
 
 
@@ -524,29 +543,30 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
         )
     )
 
-    # Gantry rests: each bar tangent under its plate.
     # Gantry rests: each bar tangent under the bowl sector(s) its ends
-    # lie under (a bar crosses no seam between its ends: the seams are
-    # radial and every bar runs through, or within 9 mm of, the axis,
-    # inside the floor's hole) — and no bowl seam lands on a bar end.
-    ends_by_stage: dict[str, list[float]] = {s.name: [] for s in STAGES}
+    # lie under — and no bowl seam lands on, or under, a bar. The seams
+    # are radial; a bar through the axis meets the floor along one
+    # azimuth per end, a bar beside the axis (S2's T) sweeps a few
+    # degrees between its end and the floor's hole, and the seam must
+    # clear that whole sweep.
+    spans_by_stage: dict[str, list[tuple[float, float]]] = {s.name: [] for s in STAGES}
     by_name = {s.name: s for s in STAGES}
     for bar, stage_name in _RESTS:
         stage = by_name[stage_name]
-        for az in _bar_end_azimuths(bar, stage):
-            ends_by_stage[stage.name].append(az)
+        for az, az_in in _bar_floor_spans(bar, stage):
+            spans_by_stage[stage.name].append((az, az_in))
             a = a.assert_tangent_contact(
                 bar, f"{stage.name}.drive.{bowl_part_at(az, stage.bowl_seam_phase_deg)}",
             )
     for s in STAGES:
         clear = min(
-            angular_gap_deg(seam, end) - math.degrees((EXT_SIZE / 2.0) / R_STATOR_OUTER_KINK)
+            angular_gap_to_span_deg(seam, lo, hi) - math.degrees((EXT_SIZE / 2.0) / R_STATOR_OUTER_KINK)
             for seam in seam_azimuths(s.bowl_seam_phase_deg)
-            for end in ends_by_stage[s.name]
+            for lo, hi in spans_by_stage[s.name]
         )
         a = a.assert_scalar(
             f"{s.name}_bowl_seams_clear_of_bar_ends_deg", clear, ge=BOWL_SEAM_BAR_CLEAR_MIN_DEG,
-            detail="closest bowl seam to a gantry bar end's side, degrees at the rim",
+            detail="closest bowl seam to the side of a gantry bar's run under the floor, degrees at the rim",
         )
     # The stem butts the T bar's near face; the cross halves butt the
     # prop bar's faces.
