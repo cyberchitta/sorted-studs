@@ -23,7 +23,7 @@ updates:
 
 > Work in progress: designed, not yet built. This page is rewritten whole as the design moves.
 
-A LEGO sorting machine, vibe Caded with Claude using [cad-khana](https://github.com/cyberchitta/cad-khana): Claude writes the parts as code, writes the checks they must pass, and cad-khana runs them. 344 parts, 296 commits over six months, eleven models in the co-author trailers.
+A LEGO sorting machine, vibe Caded with Claude using [cad-khana](https://github.com/cyberchitta/cad-khana): Claude writes the parts as code, writes the checks they must pass, and cad-khana runs them. 344 parts, 297 commits over six months, eleven models in the co-author trailers.
 
 @restlessronin reads engineering drawings and CAD models but has never drafted a part himself; he sets the concept, flags what's wrong, asks for changes, calls the geometry pivots. The expertise is thin. The output isn't.
 
@@ -35,7 +35,7 @@ Bulk bricks go in at the top of a three-stage singulator, come out one at a time
 
 The diverter is the chassis, a hex tower 660 mm across. The scanner turret stands on the diverter's acrylic top deck with its dump station directly over the stack's axis. The singulator chain stands on two of the diverter's corner columns, which continue up through the deck as posts.
 
-<glb-pane src="/assets/exhibits/machine-260918.glb" orbit="140deg 65deg auto" alt="The whole machine — three singulator stages on a gantry above the scanner turret, both standing on the hex-tower diverter" />
+<glb-pane src="/assets/exhibits/machine-260918.glb" orbit="140deg 65deg auto" alt="The whole machine: singulator gantry above the scanner turret, both standing on the hex-tower diverter" />
 
 ## Singulator: Three Stages on a Curve
 
@@ -79,11 +79,11 @@ Four floors of 2020 hex frame surround a central stack of rotating segments, one
 
 Baskets come in four widths, all sharing the same inner and outer arcs, and each floor divides its six sectors among them differently: one floor of many small categories, one of a few bulk ones, two mixed.
 
-The layout drawn, fifty-one baskets in all, is an illustration. Which sizes go where is not a design decision; it will be set by how a collection actually gets sorted.
+The layout drawn, fifty-one baskets in all, is an illustration; how a collection actually gets sorted will set which sizes go where.
 
-<glb-pane src="/assets/exhibits/diverter-260918.glb" orbit="0deg 75deg auto" alt="Diverter mechanism — hex tower with central rotating ramp and per-floor trap doors, three floors shown with most baskets removed" />
+<glb-pane src="/assets/exhibits/diverter-260918.glb" orbit="0deg 75deg auto" alt="Diverter mechanism — hex tower with central rotating ramp and per-floor trap doors" />
 
-The exhibit shows three of the four floors with most baskets removed so the central stack, its ramps and its traps are visible.
+The exhibit shows three of the four floors, most baskets removed, so the stack, ramps and traps show.
 
 ## What the Checker Knows
 
