@@ -188,21 +188,27 @@ RAIL_OUTER_R = R_VERT_OUTER - BRACKET_HOR_OFFSET               # ≈ 289.77 — 
 # local frame (−/+ half-angle boundaries). A column may only ever sit
 # on a basket *boundary*: a basket with a column inside its interior
 # (the former N=9 "middle" notch at 90°, straddling V_1) cannot be
-# slid onto the floor past the continuous through-columns, so the
-# 70°..110° slot is left empty and V_1 stands in open air.
+# drawn out past the continuous through-columns (dropped 2026-09-15),
+# so its 70°..110° slot is split at V_1 into two N=18s, each with V_1
+# on one boundary (2026-09-18).
 #
-# Counterclockwise from the ramp (world +X = 0°):
+# Counterclockwise from the ramp (world +X = 0°). Entries must stay in
+# this order — the basket standalone checks each consecutive pair,
+# wrap included, as neighbours:
 #   S1    [330°, 30°]   1× N=6 in front of ramp, notches L + R
-#   S2+3  [30°, 150°]   N=9 pair (L at 50°, R at 130°); 70°..110° empty
+#   S2+3  [30°, 150°]   N=9 (L at 50°), N=18 pair (R at 80°, L at
+#                       100° — split at V_1), N=9 (R at 130°)
 #   S4    [150°, 210°]  N=12 pair (L, R)
 #   S5    [210°, 270°]  N=18 triple (L, NONE, R)
 #   S6    [270°, 330°]  N=9 (L at V_4) + N=18 (R at V_5)
 #
 # Every outer-hex vertex V_k = (k+0.5)·60° lands on exactly the
-# notches it needs; V_1 (90°) sits in the empty slot.
+# notches it needs — twelve baskets per floor.
 FLOOR_LAYOUT = [
     (  0.0,  6, {"left", "right"}),
     ( 50.0,  9, {"left"}),
+    ( 80.0, 18, {"right"}),
+    (100.0, 18, {"left"}),
     (130.0,  9, {"right"}),
     (165.0, 12, {"left"}),
     (195.0, 12, {"right"}),

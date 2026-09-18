@@ -28,7 +28,7 @@ Cross-boundary checks:
 - Baskets hang between the inner and outer hex rings → every basket
   must clear every frame part type. The mixed floor (see
   `params.FLOOR_LAYOUT`) breaks rotational symmetry on the basket
-  side, so all 10 baskets × 6 frame copies per part type are
+  side, so all 12 baskets × 6 frame copies per part type are
   enumerated.
 - Rotating column + bearing spider sit coaxial with the frame inner
   hex → frame inner-hex rails must clear the column envelope and the

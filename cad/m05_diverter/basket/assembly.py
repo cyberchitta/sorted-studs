@@ -6,9 +6,9 @@ walls and two radial side walls, sitting on a rotating-column
 floor. The floor is a **mixed layout** — baskets of four sizes
 (N=6 / 9 / 12 / 18, each with half-angle 180°/N) placed around
 the hex per `params.FLOOR_LAYOUT`, with the ramp-facing N=6 basket
-straddling +X, an N=9 pair either side of an empty 70°..110° slot,
+straddling +X, an N=9 pair either side of an N=18 pair split at V_1,
 then N=12 pairs, an N=18 triple, and an (N=9, N=18) pair around
-the back — ten baskets per floor.
+the back — twelve baskets per floor.
 
 Outer arc radius matches the top-deck acrylic disc OD/2 (330 mm)
 and inner arc radius matches the hex inner-face apothem (130 mm),
@@ -39,7 +39,8 @@ set per basket is declared in `FLOOR_LAYOUT`: `left`/`right` for the
 boundary columns. A column can only ever sit on a boundary — a basket
 with a column notched through its *interior* (the former N=9 at 90°,
 around V_1) has walls on both sides of the channel and cannot be slid
-onto the floor at all, so that slot is empty (dropped 2026-09-15).
+onto the floor at all (dropped 2026-09-15); its slot holds two N=18s
+split at V_1 instead (2026-09-18).
 
 Floor sits on the shared stage datum (z=0); rim at z=+BASKET_DEPTH_Z.
 Basket floor cantilevers past the outer-hex edge but still rests on
