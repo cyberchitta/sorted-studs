@@ -50,7 +50,7 @@ def sector_index(az_deg: float, phase_deg: float, n: int = SEAM_COUNT) -> int:
 
 
 def angular_gap_deg(a: float, b: float) -> float:
-    """Unsigned angle between two azimuths, degrees in [0, 180)."""
+    """Unsigned angle between two azimuths, degrees in [0, 180]."""
     return abs(_wrap(a - b))
 
 
