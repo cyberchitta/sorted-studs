@@ -70,8 +70,10 @@ butts rail A's front face with a CORNER_GAP separator after the
 unit is placed in world; that cross-unit assertion lives in
 `../../assembly.py`. Front-half of the cam ring (around
 LOAD/RETURN/DUMP) projects past the camera-rig front face by
-design — the open-front operator-access region the rig's rev-3
-architecture preserves.
+design. The rig's rev-3 open front was the operator's access; since
+the m02 chain came to stand on that side, IMAGE is serviced from ±X
+instead (owner 2026-09-18) — `../../check_service_access.py` holds a
+hand-wide corridor clear on each side.
 
 Members are stock 2020 aluminum extrusion — bought, not printed —
 so no `inspect()` calls. Butt-jointed members end CORNER_GAP (0.3 mm)

@@ -350,7 +350,7 @@ script for the rest:
 | `m05_diverter/ramp_mechanism` | the `middle` role | `role_sweep.py` — all three roles + 11 inspects |
 | `m03_scanner` (animated) | frame `t = 0` | `frame_sweep.py` — all 12 sampled frames |
 | `m03_scanner` (cones) | the cone-free product assembly | `khana check check_cones.py` — the sightline claims |
-| `cad/` (top level) | cross-unit interference, anchor coincidence, the gantry's rests on m05 | `khana check check_turret_envelope.py` — the chain vs the turret's loaded-platform sweep (a probe solid) |
+| `cad/` (top level) | cross-unit interference, anchor coincidence, the gantry's rests on m05 | `khana check check_turret_envelope.py` — the chain vs the turret's loaded-platform sweep (a probe solid); `khana check check_service_access.py` — a hand-wide reach corridor to IMAGE from ±X, clear of every unit |
 | `m02_chain` | the product: stages, ramp, gantry and its joints — no posts, no deck | `khana check assembly.py:build_chain_standalone` — the same plus stand-ins for m05's two posts and deck, the rests and sockets asserted against them; the target to `view` when you want the gantry on its posts. `khana run printability.py` — the five printed joint bodies (`joints.py`); the LOAD ramp is inspected nowhere |
 
 **Use the CLI, not bare `python`, for any command script.** The CLI
