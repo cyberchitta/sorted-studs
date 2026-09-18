@@ -14,16 +14,23 @@ const subsiteRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 const AUTHOR_IMAGES = {
   '@restlessronin': `${env.mainSiteUrl}/assets/images/authors/restlessronin.webp`,
-  '@claude-opus-4.7': `${env.mainSiteUrl}/assets/images/authors/claude.webp`,
 };
 
 // Inline an SVG so page CSS reaches its content. cad-khana writes
 // .cad-visible / .cad-hidden classes on themeable polylines (run
 // `khana draw --format svg --themeable`); the consumer's CSS binds
 // those classes to design-system color tokens.
+//
+// Trimmed because the result lands in markdown: a trailing newline plus
+// the template line's own makes a blank line, which ends markdown's HTML
+// block and turns the next SVG into paragraph text — `<br>` between its
+// elements breaks the parser out of SVG and blanks the rest of the page.
+// The XML prolog is meaningless inline and goes too.
 const inlineSvg = (relPath) => {
   const abs = join(subsiteRoot, relPath.replace(/^\//, ''));
-  return readFileSync(abs, 'utf8');
+  return readFileSync(abs, 'utf8')
+    .replace(/^\s*<\?xml[^>]*\?>\s*/, '')
+    .trim();
 };
 
 export default {
