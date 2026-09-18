@@ -2,7 +2,7 @@
 M05 hex-tower — single-floor cross-boundary assembly (one generic middle floor).
 
 Fast-iteration variant of the top-level: one middle floor at world z=0,
-with the floor-below trap-open as a stand-in stub. The full 4-floor
+with the floor-below trap servo as a stand-in stub. The full 4-floor
 tower lives in `assembly.py`; use this file when iterating on a single
 floor's geometry without paying the multi-floor check cost.
 
@@ -11,13 +11,12 @@ at identity (floor-local == world here):
 
 - `rails` / `columns` — frame horizontals + through-columns
 - `bearing` — bearing spider + ring bearing
-- `rotating` — column + hinge pin + ramp + trap-closed (no trap-open:
-  that envelope only exists to check against an upper neighbour)
+- `rotating` — column + hinge pin + ramp + trap (hanging) + trap servo
 - `baskets` — the reference `FLOOR_LAYOUT` (the base floor's; the
   tower's other floors differ and check themselves at rest in
   `assembly._build_floor_static`)
-- `lower_trap_open` — root-level stand-in for the floor below's trap
-  at max-open, mapped into this floor's frame via -FLOOR_H
+- `lower_trap_servo` — root-level stand-in for the floor below's trap
+  servo, mapped into this floor's frame via -FLOOR_H
 
 and runs the interference checks that span sub-assembly boundaries.
 Per-sub-system checks stay in each sub-assembly's standalone mode;
@@ -40,13 +39,14 @@ Cross-boundary checks:
 
 Trap sweep vs basket / trap vs frame are intentionally omitted: the
 trap stays inside the column envelope, and the column itself is
-already checked against the frame.
+already checked against the frame. The trap servo does leave the
+column (outside its +Y wall, r ≤ ≈ 91), so it is checked against the
+baskets and the inner frame members below.
 """
 
 
 from functools import cache
 
-from build123d import Location, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 
@@ -55,7 +55,7 @@ from .basket import assembly as _bkt
 from .design_systems import color_for, design_system
 from .materials import material_of
 from .frame import assembly as _frame
-from .params import FLOOR_H, FLOOR_LAYOUT
+from .params import FLOOR_LAYOUT
 from .ramp_mechanism import assembly as _ramp
 
 
@@ -107,8 +107,7 @@ def build_single_floor(schema: str = DEFAULT_SCHEMA) -> Assembly:
         .with_subassembly(
             "rotating",
             _ramp.build_column_side_rotating(
-                "middle", with_trap_open=False,
-                material_fn=material_of,
+                "middle", material_fn=material_of,
             ),
         )
         .with_subassembly(
@@ -120,15 +119,15 @@ def build_single_floor(schema: str = DEFAULT_SCHEMA) -> Assembly:
         )
     )
 
-    # Stand-in for the floor-below's trap at max-open (60°), mapped into
-    # this floor's frame via -FLOOR_H. Lets the single-floor model show the
-    # full steady-state stack-up before the multi-floor assembly is built.
+    # Stand-in for the floor-below's trap servo, mapped into this floor's
+    # frame via -FLOOR_H — the one lower-floor rotating part that rises
+    # past the joint plane outside the column. Lets the single-floor model
+    # show the full steady-state stack-up before the multi-floor assembly
+    # is built.
     assembly = assembly.with_part(
-        "lower_trap_open", _ramp.trap(),
-        location=Location(
-            (_ramp.TRAP_HINGE_X, 0, _ramp.TRAP_HINGE_Z - FLOOR_H)
-        ) * Rot(0, _ramp.TRAP_OPEN_DEG, 0),
-        material=material_of("lower_trap_open"),
+        "lower_trap_servo", _ramp.trap_servo(),
+        location=_ramp.lower_servo_loc,
+        material=material_of("lower_trap_servo"),
     )
 
     basket_names = [
@@ -139,7 +138,7 @@ def build_single_floor(schema: str = DEFAULT_SCHEMA) -> Assembly:
 
     # --- Cross-boundary checks ---------------------------------------------
 
-    # Every basket vs the column-side fixed parts. lower_trap_open is a
+    # Every basket vs the column-side fixed parts. lower_trap_servo is a
     # stand-in for the floor below, not a physical part on this floor —
     # but it's modeled so we can assert basket walls and frame members
     # still clear it.
@@ -149,7 +148,8 @@ def build_single_floor(schema: str = DEFAULT_SCHEMA) -> Assembly:
             .assert_no_interference(name, "rotating.column")
             .assert_no_interference(name, "bearing.bearing_spider")
             .assert_no_interference(name, "bearing.ring_bearing")
-            .assert_no_interference(name, "lower_trap_open")
+            .assert_no_interference(name, "rotating.trap_servo")
+            .assert_no_interference(name, "lower_trap_servo")
         )
 
     # Ramp tip lands in the N=6 basket that straddles +X.
@@ -214,13 +214,17 @@ def build_single_floor(schema: str = DEFAULT_SCHEMA) -> Assembly:
             # the saddle is modeled as a 3D clamp.
             .assert_no_interference("bearing.bearing_spider", radial_in)
             .assert_no_interference("bearing.bearing_spider", radial_out)
-            # Lower-floor trap-open intrusion vs the frame members radially
-            # closest to the axis. Inner hex + rails sit at z ∈ [-20, 0]
-            # (top face at z=0); the intrusion sweeps up through the axis
-            # region and must clear them.
-            .assert_no_interference("lower_trap_open", inner)
-            .assert_no_interference("lower_trap_open", radial_in)
-            .assert_no_interference("lower_trap_open", radial_out)
+            # Lower-floor servo vs the frame members radially closest to
+            # the axis. Inner hex + rails sit at z ∈ [-20, 0] (top face at
+            # z=0); the servo sweeps the ring r ≈ 55..91 at z ≈ 13..26 and
+            # must clear them.
+            .assert_no_interference("lower_trap_servo", inner)
+            .assert_no_interference("lower_trap_servo", radial_in)
+            .assert_no_interference("lower_trap_servo", radial_out)
+            # This floor's own servo, same band a floor higher.
+            .assert_no_interference("rotating.trap_servo", inner)
+            .assert_no_interference("rotating.trap_servo", radial_in)
+            .assert_no_interference("rotating.trap_servo", radial_out)
         )
 
     # Ramp extends radially past the inner hex (tip at r≈146.4) but

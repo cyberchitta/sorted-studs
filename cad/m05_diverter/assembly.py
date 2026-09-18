@@ -20,7 +20,7 @@ builders (role differences are builder parameters) and placed by one
   (`basket.build_basket_ring` per the floor's layout), and `bearing`
   (spider + ring bearing; `ramp_mechanism.build_column_side_static`).
 - `rotating_stack.f{idx}` — the floor's revolving parts: column +
-  hinge pin + ramp + trap(s)
+  hinge pin + ramp + trap (hanging, at rest) + trap servo
   (`ramp_mechanism.build_column_side_rotating`). Roles differ only at
   the column bottom: base has a bottom collar (motor + ring-gear
   interface); middle/top have a bottom face flange that mates with
@@ -57,10 +57,10 @@ Cross-floor checks (the value the tower adds beyond `single_floor.py`):
 - Lower column top (z = 273 in lower local) vs upper column bottom
   (z = 53 in upper local) tangent at the joint plane. The two flanges
   meet face-to-face; assert_no_interference allows that contact.
-- Lower floor's open-trap envelope (max-open free end at z ≈ 46 mm
-  above the upper floor's bracket) vs upper floor's column-bottom
-  stack — the trap-open zone must thread cleanly between the bearing
-  (z ≤ 5) and this floor's column-bottom (z ≥ 53).
+- Lower floor's trap servo (outside the column's +Y wall, at
+  z ≈ 13..26 above the upper floor's bracket) vs upper floor's
+  column-bottom stack — it must pass above the bearing and spider
+  and below this floor's column-bottom (z ≥ 53).
 
 Intra-floor pairs (basket-vs-frame, ramp-vs-basket, column-side self-
 clearance) are validated by `single_floor.py` and the standalone
@@ -283,7 +283,7 @@ def _rail(idx: int, name: str) -> str:
 
 def _add_floor_pair_checks(a: Assembly, lower: int, upper: int) -> Assembly:
     """Adjacent-floor cross-checks: upper floor's column-bottom stack
-    must clear the lower floor's open-trap envelope and column-top."""
+    must clear the lower floor's trap servo and column-top."""
     upper_stack = [
         _rot(upper, "column"),
         _brg(upper, "ring_bearing"),
@@ -292,7 +292,7 @@ def _add_floor_pair_checks(a: Assembly, lower: int, upper: int) -> Assembly:
     for u in upper_stack:
         a = (
             a
-            .assert_no_interference(_rot(lower, "trap_open"), u)
+            .assert_no_interference(_rot(lower, "trap_servo"), u)
             .assert_no_interference(_rot(lower, "column"), u)
         )
     # The two columns mate face-to-face at the joint plane under
@@ -351,7 +351,13 @@ def _add_top_deck_checks(
             .assert_no_interference("top_acrylic", f"columns.inner_vert_{k}")
             .assert_tangent_contact("top_acrylic", f"columns.inner_vert_{k}")
         )
-    return a.assert_no_interference("top_acrylic", _rot(top, "column"))
+    # The top floor's trap servo rides above the deck plane, radially
+    # past the aperture (r up to ≈ 91 vs 75) — it must clear the disc.
+    return (
+        a
+        .assert_no_interference("top_acrylic", _rot(top, "column"))
+        .assert_no_interference("top_acrylic", _rot(top, "trap_servo"))
+    )
 
 
 def _add_base_bearing_checks(a: Assembly, base: int) -> Assembly:
@@ -433,8 +439,8 @@ def _add_drive_train_checks(a: Assembly, base: int) -> Assembly:
         _brg(base, "ring_bearing"),
         _brg(base, "bearing_spider"),
         _rot(base, "ramp"),
-        _rot(base, "trap_closed"),
-        _rot(base, "trap_open"),
+        _rot(base, "trap"),
+        _rot(base, "trap_servo"),
     ):
         a = a.assert_no_interference(mtr, other)
     for k in range(6):
@@ -527,7 +533,7 @@ def build_tower(
 
     n = len(floor_plan)
     rotating = Assembly()
-    for i, (idx, role) in enumerate(floor_plan):
+    for idx, role in floor_plan:
         fz_loc = Pos(0, 0, idx * FLOOR_H)
         a = a.with_subassembly(
             f"f{idx}",
@@ -537,11 +543,7 @@ def build_tower(
         rotating = rotating.with_subassembly(
             f"f{idx}",
             _ramp.build_column_side_rotating(
-                role,
-                # Trap-open envelope only needs to exist on floors that
-                # have an upper neighbour to check against.
-                with_trap_open=(i < n - 1),
-                material_fn=material_of,
+                role, material_fn=material_of,
             ),
             location=fz_loc,
         )
@@ -574,8 +576,9 @@ def build_tower(
         )
 
     # Adjacent-floor pairs only. Non-adjacent floors are >1·FLOOR_H
-    # apart and the trap-open envelope reaches at most ~70 mm above
-    # its hinge, so floor i+2 is comfortably out of range. Cross-subassembly
+    # apart and the servo — the highest rotating part outside the
+    # column — tops out ~27 mm above the joint plane, so floor i+2 is
+    # comfortably out of range. Cross-subassembly
     # references resolve through ``placed_parts`` at evaluation time.
     floors = [idx for idx, _ in floor_plan]
     for i in range(n - 1):

@@ -16,10 +16,10 @@ to map a qualified tree path to its attribute-lookup leaf;
 
 One complication relative to m02 / m03:
 
-* **Stand-in names in ``single_floor.py``.** ``lower_trap_open`` is
-  a stand-in for the floor below — same geometry as ``trap_open``,
+* **Stand-in names in ``single_floor.py``.** ``lower_trap_servo`` is
+  a stand-in for the floor below — same geometry as ``trap_servo``,
   but added under its own name so the cross-boundary check matrix
-  reads cleanly. Tagged the same as the real trap.
+  reads cleanly. Tagged the same as the real servo.
 """
 
 from __future__ import annotations
@@ -72,11 +72,12 @@ ROLE_OF: dict[str, Role | None] = {
     "column": Role.MECHANISM,
     "hinge_pin": None,                        # steel pin — outside palette
     "ramp": Role.SECONDARY_STRUCTURE,
-    "trap_closed": Role.MECHANISM,
-    "trap_open": Role.MECHANISM,
-    # ``single_floor.py`` stand-in for the floor below's trap-open.
-    # Same geometry as ``trap_open``; tag matches.
-    "lower_trap_open": Role.MECHANISM,
+    "trap": Role.MECHANISM,
+    # Standalone-only poses of the same trap (``ramp_mechanism``).
+    "trap_catching": Role.MECHANISM,
+    "trap_servo": None,                       # bought hobby servo — outside palette
+    # ``single_floor.py`` stand-in for the floor below's servo.
+    "lower_trap_servo": None,
     # Baskets — textbook CONSUMABLE ("holds bricks; swapped often").
     **{name: Role.CONSUMABLE for name in _basket_basenames()},
     # Base-floor drive train

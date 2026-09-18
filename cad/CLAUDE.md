@@ -90,7 +90,7 @@ Guidance for organizing Build123d / cad-khana assemblies in this repo.
    turret; cross-unit checks in the enclosing top-level). Don't
    mirror a claim at two levels — it just evaluates twice under two
    names. Assertions referencing parts absent from a run (detail-only
-   fasteners, an optional trap_open) skip as `passed: null`; an
+   fasteners, a standalone-only stand-in) skip as `passed: null`; an
    assertion that is *always* skipped usually means a typo'd path.
    Group-form expansion is still a macro over current contents, so
    group asserts come after composition. The parent itself runs
@@ -403,10 +403,10 @@ these, the check is not your evidence — find the one that is.
   asserted; the check cannot infer it. Export it as an anchor and
   `assert_anchors_coincident` at the top level (principle 5).
 - **The poses you did not sample.** A single-pose assertion carries an
-  implicit worst-case claim. `lower_trap_open` is asserted at 60° alone
-  because 60° bounds the upward-intrusion envelope *at the current*
-  `TRAP_L` / `TRAP_OPEN_DEG`. Write that claim beside the assert, or it
-  expires silently when the parameter moves.
+  implicit worst-case claim. The m05 trap's upward-intrusion check was
+  asserted at its 60° open pose alone, because 60° bounded the envelope
+  *at the then-current* trap length and angle. Write that claim beside
+  the assert, or it expires silently when the parameter moves.
 
   The converse bites when *promoting* a bare assert to an assertion. A
   bare assert over constants is frozen at whatever pose its numbers
