@@ -23,7 +23,7 @@ updates:
 
 > Work in progress: designed, not yet built. This page is rewritten whole as the design moves.
 
-A LEGO sorting machine, vibe Caded with Claude using [cad-khana](https://github.com/cyberchitta/cad-khana): Claude writes the parts as code, writes the checks they must pass, and cad-khana runs them. 356 parts, 303 commits over six months, eleven models in the co-author trailers.
+A LEGO sorting machine, vibe Caded with Claude using [cad-khana](https://github.com/cyberchitta/cad-khana): Claude writes the parts as code, writes the checks they must pass, and cad-khana runs them. 356 parts, 304 commits over six months, eleven models in the co-author trailers.
 
 @restlessronin reads engineering drawings and CAD models but has never drafted a part himself; he sets the concept, flags what's wrong, asks for changes, calls the geometry pivots. The expertise is thin. The output isn't.
 
@@ -75,7 +75,7 @@ A turret with four platforms indexes each brick through four stations: load, ima
 
 The concept is [Basically](https://basically.website/sorter-v2)'s (LegoSpencer and team), first adapted to extrusion and 3D prints by Cristian Cuevas and reworked here.
 
-Four floors of 2020 hex frame surround a central stack of rotating segments, one per floor, driven by one motor at the base. Each segment carries a ramp and a trap door: the stack turns to aim every ramp at a basket, and the traps pick the floor. A closed trap diverts the brick down its ramp; an open one lets it fall to the floor below.
+Four floors of 2020 hex frame surround a central stack of rotating segments, one per floor, turned by one motor at the base. Each segment carries a ramp and a trap door: the stack turns to aim every ramp at a basket, and the traps pick the floor. Traps hang open and bricks fall through; a servo on each floor swings its trap up to divert one down the ramp.
 
 Baskets come in four widths, all sharing the same inner and outer arcs, and each floor divides its six sectors among them differently: one floor of many small categories, one of a few bulk ones, two mixed.
 
