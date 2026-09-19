@@ -50,7 +50,7 @@ from build123d import Axis
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 
 from ..design_systems import DEFAULT_SCHEMA, paint
-from .design_systems import design_system
+from .design_systems import color_for, design_system
 from .drive import assembly as _drive
 from .params import (
     BOWL_SEAM_PHASE_DEG,
@@ -193,7 +193,7 @@ def build_m02(
     # rests (a tangent pair carries no overlap; group form, declared
     # after composition).
     a = a.assert_no_interference_between("stator", "drive")
-    return paint(a, design_system(schema))
+    return paint(a, design_system(schema), color_for=color_for)
 
 
 def _arc_overlap_deg(a0: float, b0: float, span: float) -> float:
