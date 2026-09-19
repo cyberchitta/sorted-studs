@@ -14,7 +14,7 @@ tags:
   - cad
   - multi-view
 updates:
-  - date: "2026-09-18"
+  - date: "2026-09-19"
     version: "0.0.2"
     note: Rewritten whole for the one-machine design, with baskets that vary by floor.
 ---
@@ -23,7 +23,7 @@ updates:
 
 > Work in progress: designed, not yet built. This page is rewritten whole as the design moves.
 
-A LEGO sorting machine, vibe Caded with Claude using [cad-khana](https://github.com/cyberchitta/cad-khana): Claude writes the parts as code, writes the checks they must pass, and cad-khana runs them. 344 parts, 298 commits over six months, eleven models in the co-author trailers.
+A LEGO sorting machine, vibe Caded with Claude using [cad-khana](https://github.com/cyberchitta/cad-khana): Claude writes the parts as code, writes the checks they must pass, and cad-khana runs them. 356 parts, 303 commits over six months, eleven models in the co-author trailers.
 
 @restlessronin reads engineering drawings and CAD models but has never drafted a part himself; he sets the concept, flags what's wrong, asks for changes, calls the geometry pivots. The expertise is thin. The output isn't.
 
@@ -35,7 +35,7 @@ Bulk bricks go in at the top of a three-stage singulator, come out one at a time
 
 The diverter is the chassis, a hex tower 660 mm across. The scanner turret stands on the diverter's acrylic top deck with its dump station directly over the stack's axis. The singulator chain stands on two of the diverter's corner columns, which continue up through the deck as posts.
 
-<glb-pane src="/assets/exhibits/machine-260918.glb" orbit="140deg 65deg auto" alt="The whole machine: singulator gantry above the scanner turret, both standing on the hex-tower diverter" />
+<glb-pane src="/assets/exhibits/machine-260919.glb" orbit="140deg 65deg auto" alt="The whole machine: singulator gantry above the scanner turret, both standing on the hex-tower diverter" />
 
 ## Singulator: Three Stages on a Curve
 
@@ -81,7 +81,7 @@ Baskets come in four widths, all sharing the same inner and outer arcs, and each
 
 The layout drawn, fifty-one baskets in all, is an illustration; how a collection actually gets sorted will set which sizes go where.
 
-<glb-pane src="/assets/exhibits/diverter-260918.glb" orbit="0deg 75deg auto" alt="Diverter mechanism — hex tower with central rotating ramp and per-floor trap doors" />
+<glb-pane src="/assets/exhibits/diverter-260919.glb" orbit="0deg 75deg auto" alt="Diverter mechanism — hex tower with central rotating ramp and per-floor trap doors" />
 
 Claude can redraw the tower at another floor count: the exhibit is a three-floor build, most baskets removed, so the stack, ramps and traps show.
 
@@ -89,7 +89,7 @@ Claude can redraw the tower at another floor count: the exhibit is a three-floor
 
 Claude writes each assembly's claims alongside its parts: no two parts overlap, moving parts keep their clearance through a swept motion, a bar actually rests on its post rather than floating above it, no opaque part crosses a lower camera's sightline. cad-khana also checks printed parts for wall thickness and overhang.
 
-The top-level check alone carries 33,250 claims across the three units, all but about 250 of them the pairwise no-overlap test, and passes.
+The top-level check alone carries 34,226 claims across the three units, all but about 250 of them the pairwise no-overlap test, and passes.
 
 ## Credits
 
