@@ -23,7 +23,7 @@ updates:
 
 > Work in progress: designed, not yet built. This page is rewritten whole as the design moves.
 
-A LEGO sorting machine, vibe Caded with Claude using [cad-khana](https://github.com/cyberchitta/cad-khana): Claude writes the parts as code, writes the checks they must pass, and cad-khana runs them. 356 parts, 304 commits over six months, eleven models in the co-author trailers.
+A LEGO sorting machine, vibe Caded with Claude using [cad-khana](https://github.com/cyberchitta/cad-khana): Claude writes the parts as code, writes the checks they must pass, and cad-khana runs them. 356 parts, 305 commits over six months, eleven models in the co-author trailers.
 
 @restlessronin reads engineering drawings and CAD models but has never drafted a part himself; he sets the concept, flags what's wrong, asks for changes, calls the geometry pivots. The expertise is thin. The output isn't.
 
@@ -81,7 +81,7 @@ Baskets come in four widths, all sharing the same inner and outer arcs, and each
 
 The layout drawn, fifty-one baskets in all, is an illustration; how a collection actually gets sorted will set which sizes go where.
 
-<glb-pane src="/assets/exhibits/diverter-260919.glb" orbit="0deg 75deg auto" alt="Diverter mechanism — hex tower with central rotating ramp and per-floor trap doors" />
+<glb-pane src="/assets/exhibits/diverter-260920.glb" orbit="0deg 75deg auto" alt="Diverter mechanism — hex tower with central rotating ramp and per-floor trap doors" />
 
 Claude can redraw the tower at another floor count: the exhibit is a three-floor build, most baskets removed, so the stack, ramps and traps show.
 
