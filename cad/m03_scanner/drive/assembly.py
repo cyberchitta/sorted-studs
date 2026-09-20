@@ -489,6 +489,12 @@ DRIVE_STATIC_PART_NAMES = (
 DRIVE_ROTOR_PART_NAMES = ("drive_pulley_shaft",)
 DRIVE_PART_NAMES = DRIVE_ROTOR_PART_NAMES + DRIVE_STATIC_PART_NAMES
 
+# Detail-only fasteners, added into this unit by
+# `..detail_variations.apply_default_detail`. Public because the turret
+# level asserts the same two bolts against the real cross-rail, and a
+# second copy of the names there would be a mirror to keep in step.
+DETAIL_FOOT_BOLT_NAMES = ("drive_foot_bolt_inner", "drive_foot_bolt_outer")
+
 
 def build_turret_drive_static() -> Assembly:
     """Static drive sub-assembly: motor + driver pulley (on the motor
@@ -549,6 +555,25 @@ def build_turret_drive_static() -> Assembly:
             f"stock; adjust DRIVE_CENTER_DIST or pick another stock length"
         ),
     )
+
+    # Detail-tier fastener assertions — the two M5 foot bolts against
+    # the parts this unit owns. The bolts exist only once
+    # `..detail_variations.apply_default_detail` adds them; in a cheap
+    # run they are absent and these skip (`passed: null`). Declared
+    # *here*, in the unit that owns the bolted joint, rather than in
+    # the standalone fixture: the detail bundle keys the addition by
+    # this unit's path, so the claims qualify and evaluate at every
+    # composed root — the m03 unit and the whole machine included. In
+    # the standalone they were invisible above the drive.
+    # Bolt shank rides the foot's M5 clearance hole (bored out — zero
+    # overlap). The motor body hangs below the plate inboard of the
+    # wall; both heads stand outboard of it. Red on the original
+    # straddle layout the first time it was evaluated (2026-09-16:
+    # inner head 1 mm into the motor body); green since the bolts
+    # moved outboard the same day.
+    for bolt in DETAIL_FOOT_BOLT_NAMES:
+        a = a.assert_no_interference(bolt, "drive_bracket")
+        a = a.assert_no_interference(bolt, "drive_motor")
     return a
 
 
@@ -567,7 +592,6 @@ def build_turret_drive_rotor() -> Assembly:
 
 _SHAFT_LEN = TURRET_SHAFT_TOP_Z - RAIL_TOP_Z               # = 160
 
-_DETAIL_FOOT_BOLTS = ("drive_foot_bolt_inner", "drive_foot_bolt_outer")
 
 
 def build_turret_drive_standalone() -> Assembly:
@@ -626,24 +650,6 @@ def build_turret_drive_standalone() -> Assembly:
     # root, where the drive and frame subtrees meet.
     a = a.assert_tangent_contact("static.drive_bracket", "cross_rail_stub")
 
-    # Detail-tier fastener assertions — bracket side of the bolted foot
-    # joint. The two M5 foot bolts exist only when
-    # `..detail_variations.apply_default_detail` adds them (additions
-    # land at the root the override is applied to); in a cheap run they
-    # are absent and these skip (`passed: null` in mechanism.json). Bolt
-    # shank rides the foot's M5 clearance hole (bored out — zero
-    # overlap). The rail side of the joint is asserted at the m03 root
-    # against `turret.frame.floor_cross_x`: the bolt dips 6 mm into the
-    # T-slot opening, hollow only on the detailed V-slot — this
-    # standalone's solid `cross_rail_stub` would false-fail it.
-    # The motor body hangs below the plate inboard of the wall; both
-    # heads stand outboard of it. Red on the original straddle layout
-    # the first time it was evaluated (2026-09-16,
-    # `check_detail.py:build_drive_detailed`: inner head 1 mm into the
-    # motor body); green since the bolts moved outboard the same day.
-    for bolt in _DETAIL_FOOT_BOLTS:
-        a = a.assert_no_interference(bolt, "static.drive_bracket")
-        a = a.assert_no_interference(bolt, "static.drive_motor")
     return a
 
 

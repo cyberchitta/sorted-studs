@@ -23,11 +23,15 @@ GT2 metal pulleys (``drive_pulley_shaft``, ``drive_pulley_motor``)
 are deliberately not in the extrusion target set — they're cylindrical
 drive parts modelled as cheap stand-ins, not extrusions.
 
-The per-fastener no-interference assertions live in
-``drive/assembly.py``, where the bolted joint lives — cad-khana
-(2043f01) skips assertions whose parts are absent from the run
-(``passed: null``) instead of KeyErroring, so the cheap standalone
-check tolerates them and a detail-applied ``check()`` evaluates them.
+The per-fastener no-interference assertions live at the level that
+owns each side of the joint: bolt-vs-bracket and bolt-vs-motor in
+``drive/assembly.py``'s static builder, bolt-vs-rail in
+``assembly.py``'s ``build_turret`` where the drive and frame subtrees
+meet. cad-khana skips assertions whose parts are absent from the run
+(``passed: null``) instead of KeyErroring, so the cheap checks tolerate
+them; a detail-applied ``check()`` evaluates them **at any root**,
+because the bolts are keyed into the drive unit rather than added bare
+at the root the override was applied to (see ``_drive_foot_bolts``).
 """
 
 from __future__ import annotations
@@ -35,14 +39,13 @@ from __future__ import annotations
 
 from bd_warehouse.fastener import SocketHeadCapScrew
 from bd_warehouse.open_builds import VSlotLinearRail
-from build123d import Location, Part, Pos, Rot
+from build123d import Part, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly, DetailOverride
 
 
 from .drive.assembly import BRACKET_BOLT_XS, BRACKET_FOOT_Z
 from .params import (
-    TURRET_ARM_R,
     TURRET_FRAME_CROSS_Y,
     TURRET_FRAME_FLOOR_Z,
 )
@@ -134,28 +137,31 @@ _FOOT_BOLT_Y = TURRET_FRAME_CROSS_Y                                        # bol
 _FOOT_BOLT_LENGTH_MM = 14.0
 
 
-def _drive_foot_bolts(
-    drive_bracket_location: Location,
-) -> dict[str, DetailOverride]:
-    """Two M5×14 SHCS bolts at the drive bracket foot. The bolts ride
-    in the same Location as ``drive_bracket`` so the
-    ``Pos(0, -ARM_R, 0)`` turret-base placement carries through
-    without duplication here.
+def _drive_foot_bolts(unit_path: str) -> dict[str, DetailOverride]:
+    """Two M5×14 SHCS bolts at the drive bracket foot, keyed into the
+    static drive unit at ``unit_path`` and located in that unit's own
+    frame.
+
+    The drive unit sits at identity inside the turret, so its frame is
+    turret-local — the same frame ``BRACKET_BOLT_XS`` and the two
+    module constants above are written in. Keying the addition by the
+    unit's path (rather than bare) is what lets the unit's own bolt
+    claims evaluate at *any* composed root: the claims qualify to
+    ``<unit path>.drive_foot_bolt_*`` there, and so does the addition.
+    A bare key would land the bolts at whatever root the override was
+    applied to and leave those claims skipped forever.
     """
+    prefix = f"{unit_path}." if unit_path else ""
     overrides: dict[str, DetailOverride] = {}
     for bolt_x, label in zip(BRACKET_BOLT_XS, ("inner", "outer")):
-        bolt = (
-            Pos(bolt_x, _FOOT_BOLT_Y, _FOOT_BOLT_HEAD_Z)
-            * SocketHeadCapScrew(
+        overrides[f"{prefix}drive_foot_bolt_{label}"] = DetailOverride(
+            part=SocketHeadCapScrew(
                 size="M5-0.8",
                 length=_FOOT_BOLT_LENGTH_MM,
                 fastener_type="iso4762",
                 simple=True,
-            )
-        )
-        overrides[f"drive_foot_bolt_{label}"] = DetailOverride(
-            part=bolt,
-            location=drive_bracket_location,
+            ),
+            location=Pos(bolt_x, _FOOT_BOLT_Y, _FOOT_BOLT_HEAD_Z),
             material="steel",
         )
     return overrides
@@ -167,20 +173,28 @@ def apply_default_detail(assembly: Assembly) -> Assembly:
     geometry. Cheap-geometry consumers (``assembly.py``'s ``check()``)
     ignore this entirely. The fastener interference assertions are
     declared in ``drive/assembly.py`` beside the joint.
+
+    Root-agnostic: the static drive unit is located by its
+    ``drive_bracket`` leaf, so the same bundle applies to the drive
+    standalone, the m03 unit, or the whole machine, and the bolts land
+    in the drive unit every time.
     """
-    # Leaf-keyed lookup: both leaves are unique across the m03 tree,
-    # and matching by leaf keeps this helper placement-agnostic.
-    parts_by_leaf = {
-        p.name.rsplit(".", 1)[-1]: p for p in assembly.placed_parts
-    }
     overrides: dict[str, object] = dict(default_detail(assembly))
 
     # Drive-bracket foot bolts — only emitted if the bracket itself is
     # in the assembly (lets a sub-assembly slice that omits the drive
-    # use the same helper without a missing-key crash).
-    if "drive_bracket" in parts_by_leaf:
-        overrides.update(
-            _drive_foot_bolts(parts_by_leaf["drive_bracket"].location)
-        )
+    # use the same helper without a missing-key crash). The bracket's
+    # dotted prefix *is* the drive unit's path from this root.
+    bracket_path = next(
+        (
+            p.name
+            for p in assembly.placed_parts
+            if p.name.rsplit(".", 1)[-1] == "drive_bracket"
+        ),
+        None,
+    )
+    if bracket_path is not None:
+        unit_path = bracket_path.rpartition(".")[0]
+        overrides.update(_drive_foot_bolts(unit_path))
 
     return assembly.with_detailed_geometry(overrides)

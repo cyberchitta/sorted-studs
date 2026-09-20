@@ -445,6 +445,18 @@ def build_turret() -> Assembly:
         along="X", min_mm=_frame.CORNER_GAP,
         name="drive_foot_on_cross_rail",
     )
+    # Detail-tier, same joint: the two M5 foot bolts dip 6 mm past the
+    # rail top face into the T-slot opening — hollow on the detailed
+    # V-slot that `detail_variations` swaps in for `floor_cross_x`,
+    # solid on the cheap Box. So the claim is evaluable only in a
+    # detail-applied run; in a cheap `check()` these skip
+    # (`passed: null`). Declared *here* rather than at the unit root:
+    # this is the level where the drive and frame subtrees meet, so
+    # the claim qualifies into every composed root above it. The
+    # bolt-vs-bracket and bolt-vs-motor claims live one level down, in
+    # `drive/assembly.py`'s static builder.
+    for bolt in _drive.DETAIL_FOOT_BOLT_NAMES:
+        t = t.assert_no_interference(f"drive.{bolt}", "frame.floor_cross_x")
     # Same joint, servo side — the dump-servo bracket's foot rests on
     # the same cross-rail. Was a `_BRACKET_PLATE_BOTTOM_Z == RAIL_TOP_Z`
     # constant comparison inside dump_servo; the standalone asserts it
@@ -565,18 +577,6 @@ def add_m03_internal_checks(
 
 # --- Unit root -------------------------------------------------------
 
-# Detail-tier fastener assertions — rail side of the drive-bracket
-# foot joint. The M5 foot bolts enter via
-# `detail_variations.apply_default_detail`, whose additions land at
-# the root the override is applied to, and dip 6 mm past the rail top
-# face into the T-slot opening — hollow on the detailed V-slot the same
-# override swaps in for `floor_cross_x`, solid on the cheap Box. So the
-# claim is evaluable only in a detail-applied run; in the cheap
-# `check()` these skip (`passed: null`). The bracket side lives in
-# `drive/assembly.py` beside the joint.
-_DETAIL_FOOT_BOLTS = ("drive_foot_bolt_inner", "drive_foot_bolt_outer")
-
-
 # Cached because the degenerate ``assembly`` memo below and any
 # composing parent (``cad/assembly.py``, ``cad/render.py``) each ask
 # for the same schema, and the build is seconds of OCCT work. Replaces
@@ -601,8 +601,6 @@ def build_m03(schema: str = DEFAULT_SCHEMA) -> Assembly:
     time instead of crashing the import.
     """
     a = add_m03_internal_checks(add_m03(Assembly()))
-    for bolt in _DETAIL_FOOT_BOLTS:
-        a = a.assert_no_interference(bolt, "turret.frame.floor_cross_x")
     return paint(a, design_system(schema))
 
 

@@ -92,6 +92,16 @@ Guidance for organizing Build123d / cad-khana assemblies in this repo.
    names. Assertions referencing parts absent from a run (detail-only
    fasteners, a standalone-only stand-in) skip as `passed: null`; an
    assertion that is *always* skipped usually means a typo'd path.
+   **Read `skipped_counts` on every green run** — a nonzero count is a
+   claim that did not look, and it should fall to zero at the root
+   that supplies what was missing. A **detail addition is keyed by the
+   path of the unit it belongs to**, not bare: a bare key lands the
+   part at whatever root the override was applied to, while the unit's
+   own claims qualify to `<unit path>.<part>` at every composed root,
+   so the two never meet and the claim skips forever. Key it by the
+   unit, give it that unit's local `location`, and the same bundle
+   works at the unit standalone, at its module root and at the whole
+   machine.
    Group-form expansion is still a macro over current contents, so
    group asserts come after composition. The parent itself runs
    standalone (principle 2 applies recursively).
@@ -351,7 +361,8 @@ script for the rest:
 | `m05_diverter` | every floor's baskets at rest, each in its own layout | `khana check check_basket_removal.py` — every distinct basket of every floor layout drawn out along its own axis, stepped past the columns and vertex brackets (~17 min; run it in the background) |
 | `m03_scanner` (animated) | frame `t = 0` | `frame_sweep.py` — all 12 sampled frames |
 | `m03_scanner` (cones) | the cone-free product assembly | `khana check check_cones.py` — the sightline claims |
-| `cad/` (top level) | cross-unit interference, anchor coincidence, the gantry's rests on m05 | `khana check check_turret_envelope.py` — the chain vs the turret's loaded-platform sweep (a probe solid); `khana check check_service_access.py` — a hand-wide reach corridor to IMAGE from ±X, clear of every unit |
+| `m03_scanner` (detail) | the cheap bodies only — the six drive-foot bolt claims skip as `absent_part` | `khana check check_detail.py` — the same tree with the detail bundle applied, so those six evaluate against the hollow V-slot rail |
+| `cad/` (top level) | cross-unit interference, anchor coincidence, the gantry's rests on m05 | `khana check check_turret_envelope.py` — the chain vs the turret's loaded-platform sweep (a probe solid); `khana check check_service_access.py` — a hand-wide reach corridor to IMAGE from ±X, clear of every unit; `khana check check_detail.py` — the whole machine with m03's detail bundle applied, the only run in which every foot-bolt claim evaluates in machine coordinates (slow; run it in the background) |
 | `m02_chain` | the product: stages, ramp, gantry and its joints — no posts, no deck | `khana check assembly.py:build_chain_standalone` — the same plus stand-ins for m05's two posts and deck, the rests and sockets asserted against them; the target to `view` when you want the gantry on its posts. `khana run printability.py` — the five printed joint bodies (`joints.py`); the LOAD ramp is inspected nowhere |
 
 **Use the CLI, not bare `python`, for any command script.** The CLI
