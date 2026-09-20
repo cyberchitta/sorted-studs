@@ -127,8 +127,10 @@ ARM_BEAM_W = 14.0                          # tangential width
 # contact, no shared material, so hub and arms print as five loose
 # pieces (caught 2026-09-20 by `assert_solid_count`). The embed is
 # chosen so both inner corners fall inside the disc
-# (sqrt(13**2 + 7**2) = 14.76 < 15), which means the fix adds no
-# material outside the disc and changes no external dimension.
+# (sqrt(13**2 + 7**2) = 14.76 < 15). The beam's inner face is a chord,
+# so each arm root also gains the small web between that chord and the
+# disc's arc: +197 mm3 per arm, 0.7% of the body, inside the existing
+# bounding box.
 ARM_EMBED = 2.0                            # radial bite into the hub disc
 _ARM_INNER_R = HUB_OD / 2 - ARM_EMBED      # joins INSIDE the hub disc OD
 
