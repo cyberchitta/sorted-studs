@@ -93,6 +93,8 @@ from typing import Callable
 from build123d import Axis, Box, Cylinder, Location, Part, Plane, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
+from cad_khana.mechanism.assertions import JointWindow
+from cad_khana.mechanism.motion import Motion
 
 from ..params import (
     BASE_COL_Z_BOT,
@@ -143,7 +145,7 @@ TRAP_REST_DEG = 90.0                          # hanging: pass-through
 # with more room than the ramp's 25°, since the trap is where the
 # brick lands and first has to start moving.
 TRAP_CATCH_DEG = 30.0
-TRAP_SAMPLES = (45.0, 60.0, 75.0)             # swing samples between catch and rest
+TRAP_SWING_STEP = 5.0                         # sampling of the catch->rest swing
 _TRAP_CATCH_RAD = math.radians(TRAP_CATCH_DEG)
 # At the catch tilt the free end reaches to TRAP_TIP_X, short of the
 # ramp root (RAMP_ROOT_X = 43) so the brick steps down onto the ramp
@@ -183,7 +185,8 @@ RAMP_ROOT_Z = 185.0
 # Hinge height — the catching trap's free-end underside sits
 # TRAP_HANDOFF_STEP above the ramp's top face at its root, so the brick
 # drops a short step from trap to ramp. Measured, not just derived: the
-# `trap_catch_to_ramp_step` assert_distance in `make_assembly`.
+# `trap_catch_to_ramp_step` assert_distance in `make_assembly`,
+# phased on the trap joint at the catch angle.
 TRAP_HANDOFF_STEP = 5.0
 _RAMP_ROOT_TOP_Z = RAMP_ROOT_Z + (RAMP_T / 2) / math.cos(math.radians(RAMP_DEG))
 TRAP_HINGE_Z = (
@@ -962,9 +965,10 @@ def build_column_side_rotating(
     """Rotating column-side parts — column (with its servo cage) + ramp
     + trap servo + the jointed ``trap`` subtree (plate, pin, coupler,
     horn; at rest, hanging) — as a sub-`Assembly` in the
-    floor-local frame. One of each physical part: the catch pose and
-    the swing samples are standalone-only (``make_assembly``), since
-    the trap stays inside its own column at every pose. These parts
+    floor-local frame. One of each physical part; the trap's swing is
+    declared as a motion on the standalone (``make_assembly``), since
+    the trap stays inside its own column at every pose and a motion
+    here would ride into every composing root. These parts
     revolve together with the column stack; the revolute joint that
     carries the azimuth lives on the consumer's rotating-stack
     subtree, not here.
@@ -1027,9 +1031,9 @@ def make_assembly(role: str = "middle") -> Assembly:
     Composes the same builders the tower consumes: static parts at
     the root (``build_column_side_static``), the revolving parts as
     the ``rotating`` subtree (``build_column_side_rotating``), plus
-    standalone-only stand-ins, the trap's catch pose and its swing
-    samples at the root. This is the only place the catch pose and
-    the swing are checked — every role, via ``role_sweep.py``.
+    standalone-only stand-ins and the declared ``trap_swing`` motion.
+    This is the only place the swing is checked — every role, via
+    ``role_sweep.py``.
     """
     a = build_column_side_static(role)
     a = a.with_subassembly("rotating", build_column_side_rotating(role))
@@ -1045,14 +1049,6 @@ def make_assembly(role: str = "middle") -> Assembly:
             .with_part("lower_column", column("middle"), location=lower_column_loc)
             .with_part("lower_trap_servo", trap_servo(), location=lower_servo_loc)
         )
-    poses = {"trap_catching": TRAP_CATCH_DEG,
-             **{f"trap_at_{int(t)}": t for t in TRAP_SAMPLES}}
-    for name, angle in poses.items():
-        a = a.with_subassembly(
-            name, build_trap_drive(), location=hinge_loc,
-            joint=_trap_joint(angle),
-        )
-
     fixed = (
         "rotating.column", "rotating.ramp", "rotating.trap_servo",
         "bearing_spider", "ring_bearing",
@@ -1087,19 +1083,24 @@ def make_assembly(role: str = "middle") -> Assembly:
         # tumbles. Constructed at TRAP_HANDOFF_STEP vertically; the
         # true (shortest) distance is a little less, so the bounds
         # bracket it rather than pin it.
+        # ... and only there: the window lapses the claim everywhere
+        # else in the swing, where the free end is nowhere near the
+        # ramp root. TRAP_CATCH_DEG is the motion's low bound, so the
+        # window is always entered.
         .assert_distance(
-            "trap_catching.trap", "rotating.ramp",
+            "rotating.trap.trap", "rotating.ramp",
             min_mm=2.0, max_mm=TRAP_HANDOFF_STEP + 1.0,
             name="trap_catch_to_ramp_step",
+            during=JointWindow("rotating.trap", max_deg=TRAP_CATCH_DEG),
         )
         # Every pose of the whole drive (plate, pin, coupler, horn) —
         # rest, catch, and the swing between — clears every fixed part.
         # The pin runs through the column's round bores, so it is in
-        # here too: a pin fouling its bore is a real defect.
+        # here too: a pin fouling its bore is a real defect. Held over
+        # the declared swing below, which is what makes "every pose"
+        # true rather than "the five somebody enumerated".
         .assert_no_interference_between("rotating.trap", fixed)
     )
-    for name in poses:
-        a = a.assert_no_interference_between(name, fixed)
     if role == "base":
         # The column's bottom flange rests on the turntable's top ring —
         # the other half of the axial load path (seat contact is
@@ -1138,10 +1139,30 @@ def make_assembly(role: str = "middle") -> Assembly:
             # covers the stand-in the standalone builds against.
             .assert_tangent_contact("rotating.column", "lower_column")
         )
+
+    # The trap's swing, declared once. Every claim above is now held at
+    # every sampled angle from catch to rest, which retires the four
+    # extra posed copies of the drive this fixture used to carry
+    # (catch + 45/60/75) and their hand-written per-pose asserts. 13
+    # samples at 5 deg instead of 5 poses at 15 deg, and no second set
+    # of parts in `parts[]`.
+    #
+    # It lives on the standalone, not on `build_column_side_rotating`:
+    # the tower composes that builder four times, so a motion inside it
+    # would ride into `single_floor.py`, the tower and the whole machine.
+    a = a.with_motion(
+        Motion.over_joint(
+            "trap_swing", "rotating.trap",
+            TRAP_CATCH_DEG, TRAP_REST_DEG, step=TRAP_SWING_STEP,
+        )
+    )
     return a
 
 
-# Module-level "default" assembly — preserved so the top-level
-# `m05_diverter/assembly.py` and other consumers can import a ready-
-# built middle-floor assembly without going through `make_assembly`.
+# Degenerate memoized master, so `khana check <file>` resolves without
+# a `:factory` — the middle role. Nothing imports it or
+# `make_assembly`: the tower and `single_floor.py` call
+# `build_column_side_{static,rotating}` directly. That is what makes
+# the `trap_swing` motion declared inside it a fixture cost and not a
+# tax on every composing root.
 assembly = make_assembly("middle")
