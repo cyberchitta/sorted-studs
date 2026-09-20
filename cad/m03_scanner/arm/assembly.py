@@ -122,7 +122,15 @@ SET_SCREW_INSERT_D = 4.0
 
 ARM_BEAM_W = 14.0                          # tangential width
 
-_ARM_INNER_R = HUB_OD / 2                  # joins hub disc OD
+# The beam runs INSIDE the hub disc, not up to its OD. A beam whose
+# inner face sits at r = HUB_OD/2 is tangent to the disc — one line of
+# contact, no shared material, so hub and arms print as five loose
+# pieces (caught 2026-09-20 by `assert_solid_count`). The embed is
+# chosen so both inner corners fall inside the disc
+# (sqrt(13**2 + 7**2) = 14.76 < 15), which means the fix adds no
+# material outside the disc and changes no external dimension.
+ARM_EMBED = 2.0                            # radial bite into the hub disc
+_ARM_INNER_R = HUB_OD / 2 - ARM_EMBED      # joins INSIDE the hub disc OD
 
 
 # --- Bushing block dimensions ------------------------------------------
@@ -334,7 +342,10 @@ def build_turret_arm() -> Assembly:
             name, pin(), location=Pos(*local_pos) * rot,
             material=material_of(name),
         )
-    return a
+    # Hub disc and the four arms are one printed body. They met along
+    # four tangent lines until 2026-09-20 — volume, bbox and every
+    # drawn view of that spider looked exactly right.
+    return a.assert_solid_count("spider")
 
 
 # --- Standalone assembly -----------------------------------------------

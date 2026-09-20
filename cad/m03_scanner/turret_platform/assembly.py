@@ -154,6 +154,11 @@ CORNER_LIP_SIZE = 10.0
 CORNER_LIP_T = 3.0
 CORNER_LIP_TOP_Z = ACRYLIC_BOTTOM_Z                             # = -4
 CORNER_LIP_BOTTOM_Z = CORNER_LIP_TOP_Z - CORNER_LIP_T           # = -7
+# How far each lip reaches up into the pocket wall. Its only job is
+# to give lip and wall shared material instead of a shared edge; the
+# tab it forms is trimmed back to the pocket, so it adds nothing
+# inside the acrylic seat. See `frame()`.
+LIP_FUSE_Z = 1.0
 
 
 # --- Hinge bracket dimensions (integrated into hub-side skirt) ---------
@@ -420,16 +425,37 @@ def frame():
         * Box(ACRYLIC_INSERT_SIZE, ACRYLIC_INSERT_SIZE, perim_z_len * 3)
     )
 
-    # Corner lips — 4 rectangular tabs at the pocket corners.
-    lip_z_center = (CORNER_LIP_TOP_Z + CORNER_LIP_BOTTOM_Z) / 2
+    # Corner lips — the acrylic's 4 corner seats, each carried out
+    # through the wall footprint and LIP_FUSE_Z up into the wall.
+    #
+    # A lip that stops at the pocket's inner face (x, y = ±55) meets
+    # the wall along two edges and nothing else: no shared material,
+    # so it prints as a loose tab. Two of the four fused anyway and
+    # two did not (caught 2026-09-20 by `assert_solid_count`), which
+    # is what an edge-contact union gets you — the answer is the
+    # solver's, not the model's. The tab above the seat is trimmed
+    # back to the pocket below, so the acrylic seat is unchanged; the
+    # only new material is a corner gusset under the wall.
+    lip_in = ACRYLIC_INSERT_SIZE / 2 - CORNER_LIP_SIZE
+    lip_out = FRAME_OUTER_SIZE / 2
+    lip_span = lip_out - lip_in
+    lip_center = (lip_in + lip_out) / 2
+    lip_z_top = CORNER_LIP_TOP_Z + LIP_FUSE_Z
+    lip_z_len = lip_z_top - CORNER_LIP_BOTTOM_Z
     for sx in (-1, +1):
         for sy in (-1, +1):
-            corner_x = sx * (ACRYLIC_INSERT_SIZE / 2 - CORNER_LIP_SIZE / 2)
-            corner_y = sy * (ACRYLIC_INSERT_SIZE / 2 - CORNER_LIP_SIZE / 2)
             body += (
-                Pos(corner_x, corner_y, lip_z_center)
-                * Box(CORNER_LIP_SIZE, CORNER_LIP_SIZE, CORNER_LIP_T)
+                Pos(sx * lip_center, sy * lip_center,
+                    (CORNER_LIP_BOTTOM_Z + lip_z_top) / 2)
+                * Box(lip_span, lip_span, lip_z_len)
             )
+    # Re-clear the acrylic pocket above the seat, so each lip's fusing
+    # tab survives only where the wall already stands.
+    _pocket_clear_h = (TOP_RING_TOP_Z - CORNER_LIP_TOP_Z) * 3
+    body -= (
+        Pos(0, 0, CORNER_LIP_TOP_Z + _pocket_clear_h / 2)
+        * Box(ACRYLIC_INSERT_SIZE, ACRYLIC_INSERT_SIZE, _pocket_clear_h)
+    )
 
     # Hub-side skirt — full X span at cart Y ∈ [-90, -86].
     skirt_y_center = (HUB_SKIRT_Y_OUTER + HUB_SKIRT_Y_INNER) / 2   # = -88
@@ -569,6 +595,11 @@ def build_platform_cartridge() -> Assembly:
             frame(),
             material=material_of("frame"),
         )
+        # Ring, walls, corner lips, skirt, brackets and kicker
+        # extension are one printed body. The lips met the wall along
+        # its inner corner edges until 2026-09-20, and two of the four
+        # came out detached.
+        .assert_solid_count("frame")
     )
 
 
