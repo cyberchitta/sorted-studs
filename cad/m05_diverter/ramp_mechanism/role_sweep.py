@@ -73,9 +73,9 @@ inspect(
     trap(), method=method, out="outputs", name="trap",
     waive={
         "overhang_max": "real ceilings: KNUCKLE_OD (10) exceeds TRAP_T "
-        "(4), so with the knuckle tangent on the plate the whole plate "
-        "underside floats 3 mm up — printed with support under the "
-        "plate; pin-bore top bridges",
+        "(4), and the plate is centred on the hinge axis, so the whole "
+        "plate underside floats 3 mm above the knuckle's lowest point "
+        "— printed with support under the plate; pin-bore top bridges",
     },
 )
 inspect(ramp(), method=method, out="outputs", name="ramp")

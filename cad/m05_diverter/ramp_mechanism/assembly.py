@@ -758,8 +758,15 @@ def trap() -> Part:
     pin, flat facing +Z. At joint angle 90° it hangs (rest); at
     TRAP_CATCH_DEG it catches, free end down toward the exit.
     """
-    plate_center_x = TRAP_L / 2 + KNUCKLE_OD / 2
-    plate = Pos(plate_center_x, 0, 0) * Box(TRAP_L, TRAP_W, TRAP_T)
+    # The plate runs all the way in to the hinge axis, not to the
+    # knuckle's tangent line: a plate starting at x = KNUCKLE_OD/2
+    # touches the knuckle cylinder along one line, shares no material
+    # with it, and prints as two loose pieces (caught 2026-09-20 by
+    # `assert_solid_count` below). TRAP_L stays the exposed length
+    # from the tangent line out to the tip, which is what the reach
+    # and torque math is written against.
+    plate_len = TRAP_L + KNUCKLE_OD / 2
+    plate = Pos(plate_len / 2, 0, 0) * Box(plate_len, TRAP_W, TRAP_T)
     knuckle = _cyl_along_y(KNUCKLE_OD / 2, TRAP_W)
     body = plate + knuckle
     pin_bore = Rot(90, 0, 0) * _d_cyl(PIN_D_BORE_D / 2, PIN_D_BORE_FLAT, TRAP_W * 2)
@@ -878,8 +885,9 @@ def _servo_hold_margin() -> float:
     (solid PLA, lever at its centroid) plus BRICK_MASS_BUDGET_G at the
     free end. Hinge knuckle mass ignored (on the axis)."""
     g = 9.81e-3                                   # N per g
-    plate_g = TRAP_L * TRAP_W * TRAP_T * PLA_DENSITY_G_PER_MM3
-    arm_mm = (KNUCKLE_OD / 2 + TRAP_L / 2) * math.cos(_TRAP_CATCH_RAD)
+    plate_len = TRAP_L + KNUCKLE_OD / 2           # as built, see ``trap()``
+    plate_g = plate_len * TRAP_W * TRAP_T * PLA_DENSITY_G_PER_MM3
+    arm_mm = (plate_len / 2) * math.cos(_TRAP_CATCH_RAD)
     tip_mm = _TRAP_REACH * math.cos(_TRAP_CATCH_RAD)
     load_nm = g * (plate_g * arm_mm + BRICK_MASS_BUDGET_G * tip_mm) / 1000.0
     return SERVO_STALL_NM / load_nm
@@ -923,6 +931,10 @@ def build_trap_drive(
         .assert_no_interference("hinge_pin", "servo_horn")
         # The horn is screwed flat to the coupler's outer face.
         .assert_tangent_contact("trap_coupler", "servo_horn")
+        # The plate and its hinge knuckle are one printed piece. They
+        # met along a tangent line until 2026-09-20 — every scalar,
+        # bbox and drawn view of that trap looked right.
+        .assert_solid_count("trap")
     )
 
 
