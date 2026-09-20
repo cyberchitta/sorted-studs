@@ -19,4 +19,5 @@ inspect(
     method=FDM(wall_min_mm=WALL_MIN, overhang_max_deg=90.0),
     out="outputs",
     name="frame",
+    solid_count=1,
 )

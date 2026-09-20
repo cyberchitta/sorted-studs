@@ -374,6 +374,23 @@ def stator_part(k: int) -> str:
 STATOR_PARTS = tuple(stator_part(k) for k in range(SEAM_COUNT))
 
 
+def sector_solid_count(k: int, height: float = STATOR_WALL_H) -> int:
+    """How many pieces sector ``k`` is at wall ``height``. A seam may
+    not run into the exit arc (asserted in ``build_stator``), so the
+    opening always falls *inside* one sector — and on a plain wall it
+    is full height, so it cuts that sector clean through: two arcs,
+    each held by the ear at its own seam and free at the opening. On
+    the hopper stage the wall continues above the opening and the
+    sector is one piece.
+
+    The single source for both the mechanism claim and the
+    printability claim, so the two cannot drift: "three sectors"
+    quietly means four printed parts at wall height (found
+    2026-09-20, `_notes/state/m02-singulator.md`)."""
+    split = k == sector_index(0.0, LINER_SEAM_PHASE_DEG) and height <= STATOR_WALL_H + 1e-9
+    return 2 if split else 1
+
+
 # --- Assembly ----------------------------------------------------------
 
 def build_stator(height: float = STATOR_WALL_H) -> Assembly:
@@ -401,17 +418,17 @@ def build_stator(height: float = STATOR_WALL_H) -> Assembly:
     # The tongue's side clearance is to the sector spanning the exit.
     exit_k = sector_index(0.0, LINER_SEAM_PHASE_DEG)
     exit_sector = stator_part(exit_k)
-    # How many pieces each sector actually is. A seam may not run into
-    # the exit arc (asserted above), so the opening always falls
-    # *inside* one sector — and on a plain wall it is full height, so
-    # it cuts that sector clean through: two arcs, each held by the ear
-    # at its own seam and free at the opening. On the hopper stage the
-    # wall continues above the opening and the sector is one piece.
-    # Found 2026-09-20; the split was nowhere stated, and "three
-    # sectors" quietly means four printed parts at this height.
+    # How many pieces each sector actually is — derived by
+    # `sector_solid_count`, which `printability.py` claims from too.
     for k, part in enumerate(STATOR_PARTS):
-        split = k == exit_k and height <= STATOR_WALL_H + 1e-9
-        a = a.assert_solid_count(part, eq=2 if split else 1)
+        a = a.assert_solid_count(
+            part, eq=sector_solid_count(k, height),
+            detail="count derived by `sector_solid_count`: 2 on the "
+                   "sector the exit opening cuts at wall height, 1 "
+                   "elsewhere and on the hopper stage. A mismatch "
+                   "means the wall height or the seam phase moved "
+                   "the opening relative to the seams",
+        )
     return a.assert_clearance(
         "exit_floor", exit_sector, min_mm=EXIT_FLOOR_SIDE_CLEAR - 0.01,
     )

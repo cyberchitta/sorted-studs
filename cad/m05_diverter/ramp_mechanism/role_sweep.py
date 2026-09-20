@@ -70,7 +70,7 @@ for role in FLOOR_ROLES:
         )
 # Trap and ramp are role-independent — inspect once at the top.
 inspect(
-    trap(), method=method, out="outputs", name="trap",
+    trap(), method=method, out="outputs", name="trap", solid_count=1,
     waive={
         "overhang_max": "real ceilings: KNUCKLE_OD (10) exceeds TRAP_T "
         "(4), and the plate is centred on the hinge axis, so the whole "

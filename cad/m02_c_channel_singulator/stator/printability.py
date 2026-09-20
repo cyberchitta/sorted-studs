@@ -11,7 +11,13 @@ from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
 from ..params import HOPPER_WALL_H
-from .assembly import WALL_MIN, exit_floor, stator_part, stator_sectors
+from .assembly import (
+    WALL_MIN,
+    exit_floor,
+    sector_solid_count,
+    stator_part,
+    stator_sectors,
+)
 
 
 # Printed inverted (top face on the bed): the cylinder zone and the
@@ -42,10 +48,14 @@ _KNIFE_EDGE_WAIVER = {
     "Truncating it would put a ledge at the exact circle bricks "
     "slide through.",
 }
+# `solid_count=` from the same `sector_solid_count` the mechanism
+# claim uses: the sector carrying the exit opening arrives as two
+# arcs at wall height, and this file is the last gate before a print
+# batch.
 for k, sector in enumerate(stator_sectors()):
     inspect(
         sector, method=method, out="outputs", name=stator_part(k),
-        waive=_KNIFE_EDGE_WAIVER,
+        waive=_KNIFE_EDGE_WAIVER, solid_count=sector_solid_count(k),
     )
 # The hopper stage's liner: same sectors, the cylinder zone (and the
 # ears) up to HOPPER_WALL_H. Inverted, the wall over the exit opening
@@ -55,6 +65,7 @@ for k, sector in enumerate(stator_sectors(height=HOPPER_WALL_H)):
     inspect(
         sector, method=method, out="outputs", name=f"hopper_{stator_part(k)}",
         waive=_KNIFE_EDGE_WAIVER,
+        solid_count=sector_solid_count(k, HOPPER_WALL_H),
     )
 
 # Exit floor: printed top face down (the brick surface on the bed),
