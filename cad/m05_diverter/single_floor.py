@@ -12,9 +12,11 @@ at identity (floor-local == world here):
 - `rails` / `columns` — frame horizontals + through-columns
 - `bearing` — bearing spider + ring bearing
 - `rotating` — column + hinge pin + ramp + trap (hanging) + trap servo
-- `baskets` — the reference `FLOOR_LAYOUT` (the base floor's; the
-  tower's other floors differ and check themselves at rest in
-  `assembly._build_floor_static`)
+- `baskets` — the layout of the floor named by `floor` (default 0,
+  the base floor's reference layout). The tower's four floors differ
+  on the basket side only, so sweeping `floor` over 0..3 covers every
+  layout against the same column-side fixture —
+  `floor_layout_sweep.py`.
 - `lower_trap_servo` — root-level stand-in for the floor below's trap
   servo, mapped into this floor's frame via -FLOOR_H
 
@@ -28,7 +30,7 @@ Cross-boundary checks:
   sector → ramp vs `baskets.basket_000_06` (the N=6 basket straddling +X).
 - Baskets hang between the inner and outer hex rings → every basket
   must clear every frame part type. The mixed floor (see
-  `params.FLOOR_LAYOUT`) breaks rotational symmetry on the basket
+  `params.FLOOR_LAYOUTS`) breaks rotational symmetry on the basket
   side, so all 12 baskets × 6 frame copies per part type are
   enumerated.
 - Rotating column + bearing spider sit coaxial with the frame inner
@@ -58,7 +60,7 @@ from .basket import assembly as _bkt
 from .design_systems import color_for, design_system
 from .materials import material_of
 from .frame import assembly as _frame
-from .params import FLOOR_LAYOUT
+from .params import FLOOR_LAYOUTS
 from .ramp_mechanism import assembly as _ramp
 
 
@@ -77,9 +79,17 @@ from .ramp_mechanism import assembly as _ramp
 # geometry twice. That mistake is invisible — same output, double the
 # work — so ``cache_info().misses`` is the only thing that shows it.
 @cache
-def build_single_floor(schema: str = DEFAULT_SCHEMA) -> Assembly:
-    """One generic middle floor plus a stand-in for the floor below,
-    painted under ``schema``.
+def build_single_floor(
+    schema: str = DEFAULT_SCHEMA, floor: int = 0,
+) -> Assembly:
+    """One generic middle floor carrying floor ``floor``'s basket
+    layout, plus a stand-in for the floor below, painted under
+    ``schema``.
+
+    ``floor`` selects the basket layout only; the column side stays the
+    ``middle`` role at identity, which is the conservative fixture (the
+    base floor has no floor below it, and gets the lower-servo intrusion
+    checked anyway).
 
     The cross-boundary check matrix this file exists for — every basket
     against every frame copy, the column side against the inner hex and
@@ -121,7 +131,7 @@ def build_single_floor(schema: str = DEFAULT_SCHEMA) -> Assembly:
         .with_subassembly(
             "baskets",
             _bkt.build_basket_ring(
-                FLOOR_LAYOUT,
+                FLOOR_LAYOUTS[floor],
                 material_fn=material_of,
             ),
         )
@@ -140,7 +150,7 @@ def build_single_floor(schema: str = DEFAULT_SCHEMA) -> Assembly:
 
     basket_names = [
         f"baskets.basket_{int(round(center_deg)):03d}_{n_size:02d}"
-        for center_deg, n_size, _notches in FLOOR_LAYOUT
+        for center_deg, n_size, _notches in FLOOR_LAYOUTS[floor]
     ]
 
 
@@ -263,7 +273,10 @@ def build_single_floor(schema: str = DEFAULT_SCHEMA) -> Assembly:
     return paint(assembly, design_system(schema), color_for=color_for)
 
 
-# Degenerate memoized master. Note the privileged-stem rule: this file
-# is not called ``assembly.py``, so ``khana check`` writes to
-# ``outputs/single_floor/``, not ``outputs/``.
-assembly = build_single_floor(DEFAULT_SCHEMA)
+# Degenerate memoized master — the base floor's layout. Note the
+# privileged-stem rule: this file is not called ``assembly.py``, so
+# ``khana check`` writes to ``outputs/single_floor/``, not
+# ``outputs/``. The other three layouts are checked by
+# ``floor_layout_sweep.py``; the CLI cannot address them, because
+# ``floor`` is an argument.
+assembly = build_single_floor(DEFAULT_SCHEMA, 0)

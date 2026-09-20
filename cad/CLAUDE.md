@@ -358,6 +358,7 @@ script for the rest:
 | unit | `khana check assembly.py` covers | command script covers |
 |---|---|---|
 | `m05_diverter/ramp_mechanism` | the `middle` role | `role_sweep.py` — all three roles + 11 inspects |
+| `m05_diverter/single_floor.py` | the **base floor's** basket layout, held over the declared `stack_turn` (181 poses, ~30 s) | `khana run floor_layout_sweep.py` — all four floors' layouts against the same turning column side (~1 m 45 s). The tower declares no basket-vs-rotating pair, so without this three layouts are checked at no azimuth |
 | `m05_diverter` | every floor's baskets at rest, each in its own layout | `khana check check_basket_removal.py` — every distinct basket of every floor layout drawn out along its own axis, stepped past the columns and vertex brackets (~17 min; run it in the background) |
 | `m03_scanner` (animated) | frame `t = 0` | `frame_sweep.py` — all 12 sampled frames |
 | `m03_scanner` (cones) | the cone-free product assembly | `khana check check_cones.py` — the sightline claims |
