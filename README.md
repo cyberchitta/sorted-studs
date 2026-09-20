@@ -167,7 +167,7 @@ cad/            Build123d / cad-khana assemblies — one directory per module
                 under active CAD. Live design state is tracked in private
                 working notes. Top-level cad/assembly.py composes the
                 modules that have integrated cross-checks (currently m05
-                diverter + m03 turret unit).
+                diverter + m03 turret unit + m02 chain).
 subsite/        Build-in-public eleventy site (bun-managed). Published
                 exhibits are GLB models exported from cad/.
 pyproject.toml  uv-managed Python environment. cad-khana and chitra-cad

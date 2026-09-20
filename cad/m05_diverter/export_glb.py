@@ -1,7 +1,7 @@
 """M05 diverter — GLB export for the subsite diverter-interactive pane.
 
 Mirrors ``m03_scanner/export_glb_shape.py``: geometry-truth static GLB
-from the *exhibit* assembly (2-floor stripped variant), not the
+from the *exhibit* assembly (3-floor stripped variant), not the
 production 4-floor tower. The model-viewer in
 ``subsite/index.md`` reads this artifact for the interactive,
 non-animated diverter pane; an animated variant is deferred.
