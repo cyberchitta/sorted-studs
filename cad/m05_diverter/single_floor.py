@@ -48,7 +48,10 @@ baskets and the inner frame members below.
 from functools import cache
 
 
-from cad_khana.mechanism.assembly import Assembly
+from build123d import Axis
+
+from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
+from cad_khana.mechanism.motion import Motion
 
 from ..design_systems import DEFAULT_SCHEMA, paint
 from .basket import assembly as _bkt
@@ -109,6 +112,11 @@ def build_single_floor(schema: str = DEFAULT_SCHEMA) -> Assembly:
             _ramp.build_column_side_rotating(
                 "middle", material_fn=material_of,
             ),
+            # Same DOF the tower drives as ``rotating_stack`` — one
+            # revolute about world Z. Declared here so the motion below
+            # has a joint to sweep; at angle 0 the geometry is identical
+            # to the flat form this replaced.
+            joint=RevoluteJoint(axis=Axis.Z, angle_deg=0.0),
         )
         .with_subassembly(
             "baskets",
@@ -239,6 +247,18 @@ def build_single_floor(schema: str = DEFAULT_SCHEMA) -> Assembly:
         assembly = assembly.assert_no_interference("rotating.ramp", f"rails.radial_inner_{k}")
         assembly = assembly.assert_no_interference("rotating.ramp", f"rails.radial_outer_{k}")
         assembly = assembly.assert_no_interference("rotating.ramp", f"columns.inner_vert_{k}")
+
+    # Every claim above is held over the stack turn, not just at the
+    # as-built azimuth. Nothing composes this file (it is a leaf root,
+    # not a unit the tower or `cad/assembly.py` builds from), so the
+    # motion costs its ~20 s here and nowhere else — which is why it
+    # can live in the factory rather than on a separate check target.
+    # `step=2` resolves the ramp/column onset to 2°; the ramp's side
+    # wall is ~8 mm thick at r≈152, so nothing narrow slips between
+    # samples.
+    assembly = assembly.with_motion(
+        Motion.over_joint("stack_turn", "rotating", 0, 358, step=2)
+    )
 
     return paint(assembly, design_system(schema), color_for=color_for)
 
