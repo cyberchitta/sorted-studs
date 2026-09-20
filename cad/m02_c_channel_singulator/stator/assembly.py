@@ -399,7 +399,19 @@ def build_stator(height: float = STATOR_WALL_H) -> Assembly:
             .assert_tangent_contact(part, STATOR_PARTS[(k + 1) % SEAM_COUNT])
         )
     # The tongue's side clearance is to the sector spanning the exit.
-    exit_sector = stator_part(sector_index(0.0, LINER_SEAM_PHASE_DEG))
+    exit_k = sector_index(0.0, LINER_SEAM_PHASE_DEG)
+    exit_sector = stator_part(exit_k)
+    # How many pieces each sector actually is. A seam may not run into
+    # the exit arc (asserted above), so the opening always falls
+    # *inside* one sector — and on a plain wall it is full height, so
+    # it cuts that sector clean through: two arcs, each held by the ear
+    # at its own seam and free at the opening. On the hopper stage the
+    # wall continues above the opening and the sector is one piece.
+    # Found 2026-09-20; the split was nowhere stated, and "three
+    # sectors" quietly means four printed parts at this height.
+    for k, part in enumerate(STATOR_PARTS):
+        split = k == exit_k and height <= STATOR_WALL_H + 1e-9
+        a = a.assert_solid_count(part, eq=2 if split else 1)
     return a.assert_clearance(
         "exit_floor", exit_sector, min_mm=EXIT_FLOOR_SIDE_CLEAR - 0.01,
     )
