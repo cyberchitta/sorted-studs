@@ -331,10 +331,10 @@ def _add_top_deck_checks(
             a = (
                 a
                 # Constructed at exactly TOP_DECK_POST_CLEAR; the bound
-                # sits a measurement tolerance below (cad/CLAUDE.md §6).
+                # is the same constant (cad/CLAUDE.md §6, corollary 2).
                 .assert_distance(
                     "top_acrylic", col,
-                    min_mm=TOP_DECK_POST_CLEAR - 0.01,
+                    min_mm=TOP_DECK_POST_CLEAR,
                     name=f"deck_notch_clears_outer_vert_{k}",
                 )
                 .assert_tangent_contact("top_acrylic", brk)

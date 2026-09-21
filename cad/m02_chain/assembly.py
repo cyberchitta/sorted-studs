@@ -125,9 +125,6 @@ from .params import (
 )
 from ..m02_c_channel_singulator.params import LINER_SEAM_PHASE_DEG, PLATE_R_IN, R_STATOR_OUTER_KINK
 
-# Constructed-equals-bound tolerance (cad/CLAUDE.md principle 6).
-_MEAS_TOL = 0.01
-
 
 # --- Part builders -----------------------------------------------------
 
@@ -504,14 +501,14 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
         a = a.with_anchor(f"post_top_{k}", Pos(*m05_outer_vertex_local_xy(k), z))
 
     # Stage over stage: the plate clears the lower rotor's apex by
-    # STAGE_CLEAR (constructed from the same constant → tolerance
-    # below the bound), the chute lands its brick on the lower rotor,
-    # and no part of one stage touches another.
+    # STAGE_CLEAR (constructed from the same constant as the bound),
+    # the chute lands its brick on the lower rotor, and no part of one
+    # stage touches another.
     for up, dn in ((s2, s1), (s3, s2)):
         for part in BOWL_PARTS:
             a = a.assert_clearance(
                 f"{up.name}.drive.{part}", f"{dn.name}.rotor.rotor",
-                min_mm=STAGE_CLEAR - _MEAS_TOL,
+                min_mm=STAGE_CLEAR,
                 name=f"{up.name}_{part}_over_{dn.name}_rotor",
             )
         a = a.assert_no_interference_between(up.name, dn.name)
@@ -522,7 +519,7 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
     )
 
     # Ramp: pitch inside the window; wraps S1's stator wall at the cut
-    # clearance (constructed from the same constant → tolerance below).
+    # clearance (constructed from the same constant as the bound).
     a = (
         a
         .assert_scalar(
@@ -530,7 +527,7 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
             detail="LOAD ramp pitch; 20/55 are placeholders, not measured friction",
         )
         .assert_distance(
-            "load_ramp", f"s1.stator.{_s1_exit_liner()}", min_mm=RAMP_STATOR_CLEAR - _MEAS_TOL,
+            "load_ramp", f"s1.stator.{_s1_exit_liner()}", min_mm=RAMP_STATOR_CLEAR,
             name="ramp_wraps_s1_stator",
         )
         # The seam: the ramp's landing starts RAMP_STATOR_CLEAR outside
@@ -538,7 +535,7 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
         # = 0) — a hairline in plan, never a step up.
         .assert_distance(
             "load_ramp", "s1.stator.exit_floor",
-            min_mm=RAMP_STATOR_CLEAR - _MEAS_TOL, max_mm=RAMP_STATOR_CLEAR + 0.5,
+            min_mm=RAMP_STATOR_CLEAR, max_mm=RAMP_STATOR_CLEAR + 0.5,
             name="ramp_meets_exit_floor",
         )
     )

@@ -135,12 +135,14 @@ WALL_MIN = 1.5
 # has no teeth, so ../assembly.py measures it grown by ADDENDUM);
 # outer edge at the skirt radius, where the chain's ramp cut takes
 # over 1 mm further out. Angular span: the exit wedge less
-# EXIT_FLOOR_SIDE_CLEAR (at the inner radius) from each face it must
-# not touch — the wall's cut face on the upstream side, and on the
-# downstream side the paddle's face, which stands *inside* the wedge
-# EXIT_WALL_T in from the cut (the extrude goes −Y off Plane.XZ, so
-# the paddle plugs the opening's edge rather than the wall's solid
-# half), so that edge is a further EXIT_WALL_T in. The rib stands from
+# EXIT_FLOOR_SIDE_CLEAR (perpendicular, from the inner corner) from
+# each face it must not touch — the wall's cut face on the upstream
+# side, and on the downstream side the paddle's face, which stands
+# *inside* the wedge EXIT_WALL_T in from the cut (the extrude goes −Y
+# off Plane.XZ, so the paddle plugs the opening's edge rather than the
+# wall's solid half), so that edge is a further EXIT_WALL_T in. Both
+# faces are planes, so the angle is an asin: the arc-length `d / r`
+# left the paddle side 0.001 mm short. The rib stands from
 # the bowl's floor to the tongue's underside, 1 mm inboard of the
 # skirt's inner face (EXIT_FLOOR_RIB_SKIRT_CLEAR), 2° inside the
 # tongue's edges. EXIT_FLOOR_T and EXIT_FLOOR_SIDE_CLEAR live in
@@ -148,8 +150,8 @@ WALL_MIN = 1.5
 EXIT_FLOOR_GEAR_CLEAR = 2.0
 EXIT_FLOOR_R_IN = RING_PITCH_D / 2.0 + ADDENDUM + EXIT_FLOOR_GEAR_CLEAR   # 123.5
 EXIT_FLOOR_R_OUT = R_STATOR_OUTER_KINK                                    # 155
-_UPSTREAM_EDGE_DEG = EXIT_ARC_DEG / 2.0 - math.degrees(EXIT_FLOOR_SIDE_CLEAR / EXIT_FLOOR_R_IN)          # ≈ 17.3
-_DOWNSTREAM_EDGE_DEG = EXIT_ARC_DEG / 2.0 - math.degrees((EXIT_WALL_T + EXIT_FLOOR_SIDE_CLEAR) / EXIT_FLOOR_R_IN)   # ≈ 15.9
+_UPSTREAM_EDGE_DEG = EXIT_ARC_DEG / 2.0 - math.degrees(math.asin(EXIT_FLOOR_SIDE_CLEAR / EXIT_FLOOR_R_IN))          # ≈ 17.3
+_DOWNSTREAM_EDGE_DEG = EXIT_ARC_DEG / 2.0 - math.degrees(math.asin((EXIT_WALL_T + EXIT_FLOOR_SIDE_CLEAR) / EXIT_FLOOR_R_IN))   # ≈ 15.9
 # (from, to) in degrees about +X, the paddle side per EXIT_WALL_SIDE_SIGN.
 EXIT_FLOOR_SPAN_DEG = (
     (-_UPSTREAM_EDGE_DEG, _DOWNSTREAM_EDGE_DEG) if EXIT_WALL_SIDE_SIGN > 0
@@ -430,7 +432,7 @@ def build_stator(height: float = STATOR_WALL_H) -> Assembly:
                    "the opening relative to the seams",
         )
     return a.assert_clearance(
-        "exit_floor", exit_sector, min_mm=EXIT_FLOOR_SIDE_CLEAR - 0.01,
+        "exit_floor", exit_sector, min_mm=EXIT_FLOOR_SIDE_CLEAR,
     )
 
 

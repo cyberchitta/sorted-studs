@@ -70,10 +70,6 @@ from .stator import assembly as _stator
 
 GAP_CLEARANCE_TOLERANCE = 0.5   # mm — catches a shrunk V-gap early
 
-# Measurement tolerance for bounds constructed from the same constant
-# as the geometry (cad/CLAUDE.md principle 6, corollary 2).
-_MEAS_TOL = 0.01
-
 # The bowl's seams stay at least this far round from the liner's, so
 # no seam line runs through both rings (the stagger is what makes two
 # parts worth having — `m02-chain.md` §5).
@@ -145,7 +141,7 @@ def build_m02(
         # thing to the pinion.
         .assert_distance(
             "rotor.rotor", "drive.pinion.pinion",
-            min_mm=MESH_BACKLASH - _MEAS_TOL, max_mm=MESH_BACKLASH + 0.1,
+            min_mm=MESH_BACKLASH, max_mm=MESH_BACKLASH + 0.1,
             name="gear_mesh_backlash",
         )
         # Rotor rests on the bearing, which is BEARING_H above the plate.
@@ -158,7 +154,7 @@ def build_m02(
         .assert_no_interference("rotor.rotor", "stator.exit_floor")
         .assert_distance(
             "stator.exit_floor", "rotor.rotor",
-            min_mm=_stator.EXIT_FLOOR_GEAR_CLEAR - _MEAS_TOL, grow_b_mm=ADDENDUM,
+            min_mm=_stator.EXIT_FLOOR_GEAR_CLEAR, grow_b_mm=ADDENDUM,
             name="exit_floor_clears_ring_gear_tips",
         )
         .assert_tangent_contact(
@@ -176,11 +172,11 @@ def build_m02(
             )
             # Pinion runs just under the stator's bottom face.
             .assert_clearance(
-                f"stator.{part}", "drive.pinion.pinion", min_mm=PINION_TOP_CLEAR - _MEAS_TOL,
+                f"stator.{part}", "drive.pinion.pinion", min_mm=PINION_TOP_CLEAR,
             )
         )
     for part in _drive.BOWL_PARTS:
-        a = a.assert_clearance("rotor.rotor", f"drive.{part}", min_mm=BEARING_H - _MEAS_TOL)
+        a = a.assert_clearance("rotor.rotor", f"drive.{part}", min_mm=BEARING_H)
     # Each liner sector's flange rests on the skirt's top edge of every
     # bowl sector it overlaps round the axis (its cone seats on the
     # edge's inner corner at the same z — a line contact, zero overlap).

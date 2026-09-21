@@ -104,10 +104,6 @@ from ..params import (
 
 WALL_MIN = 1.5
 
-# Measurement tolerance for bounds constructed from the same constant
-# as the geometry (cad/CLAUDE.md principle 6, corollary 2).
-_MEAS_TOL = 0.01
-
 # Pinion / motor axis in drive-local XY.
 _AZ = math.radians(MOTOR_AZIMUTH_DEG)
 PINION_AXIS_XY = (CENTER_DIST * math.cos(_AZ), CENTER_DIST * math.sin(_AZ))
@@ -363,11 +359,11 @@ def build_drive(
         .assert_tangent_contact("motor", motor_sector)
         .assert_no_interference("pinion.pinion", "motor")
         .assert_clearance(
-            "pinion.pinion", "motor", min_mm=MOTOR_SHAFT_BORE_CLEARANCE - _MEAS_TOL,
+            "pinion.pinion", "motor", min_mm=MOTOR_SHAFT_BORE_CLEARANCE,
         )
         # Pinion and motor stay well clear of the bearing.
         .assert_clearance("pinion.pinion", "bearing", min_mm=15.0)
-        .assert_clearance("motor", "bearing", min_mm=PLATE_T - _MEAS_TOL)
+        .assert_clearance("motor", "bearing", min_mm=PLATE_T)
         # The pinion's tip circle stays inside the skirt with 1 mm to
         # spare. A scalar, not a measured clearance: the pinion↔bowl
         # distance is the 0.5 mm hub-to-floor gap asserted below.
@@ -387,7 +383,7 @@ def build_drive(
             .assert_tangent_contact("bearing", part)
             # Pinion hub floats just above the floor.
             .assert_clearance(
-                "pinion.pinion", part, min_mm=PINION_HUB_PLATE_CLEAR - _MEAS_TOL,
+                "pinion.pinion", part, min_mm=PINION_HUB_PLATE_CLEAR,
             )
             # Each seam: the two sectors' faces and ears meet on the
             # seam plane.

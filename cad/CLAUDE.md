@@ -115,10 +115,10 @@ Guidance for organizing Build123d / cad-khana assemblies in this repo.
    feature's extent). (2) When geometry is *constructed from* the
    same constant as the bound (gear blanks placed at exactly
    backlash, a bracket sized off the same 1 mm air gap), measured ==
-   bound, and the strict comparison flips on solver noise (~1e-14
-   distance, ~1e-7 bbox extents) — set the bound a small explicit
-   measurement tolerance below the constructed value and say so in a
-   comment.
+   bound. Bound it with that same constant — cad-khana's bound
+   comparisons carry a 1e-6 tolerance, which covers solver noise
+   (~1e-14 distance, ~1e-7 bbox extents). Don't pad the bound
+   (`- 0.01`): the pad is a real 0.01 mm the claim stops seeing.
 
 7. **A bare `assert` lives inside the thing it constrains, never at
    module level.** Importing a module must not run a claim. Put each
