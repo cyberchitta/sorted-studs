@@ -4,8 +4,9 @@ m02 chain — top-level standalone assembly.
 Composes the three singulator stages as the `s1` / `s2` / `s3`
 subtrees (part identity is the tree path: `s2.rotor.rotor`,
 `s3.drive.bowl_0`, …), the LOAD ramp (`load_ramp`) from S1's
-chute exit down to the m03 LOAD platform, and the gantry that carries
-the stages on m05's two through-deck columns: S1's prop bar
+chute exit down to the m03 LOAD platform, and the gantry — the
+`gantry` subtree (`build_gantry`), so each name below is
+`gantry.<leaf>` — that carries the stages on m05's two through-deck columns: S1's prop bar
 (`s1_prop_bar`, across V_5's end), S3's prop bar and cross
 (`s3_prop_bar`, `s3_cross_a`, `s3_cross_b`, across V_4's end), S2's T
 arm (`s2_stem` off V_4's face, `s2_tee` under S2's plate), the two
@@ -36,7 +37,7 @@ Claims within the chain:
 - gantry ↔ stages: each prop bar and the T bar rest tangent under
   their plate; no gantry member touches a stage's motor, bearing,
   rotor or stator (S2's and S3's motors are swung for exactly this).
-- gantry ↔ gantry: the stem butts the T bar (tangent); each brace
+- gantry ↔ gantry (`build_gantry`'s own): the stem butts the T bar (tangent); each brace
   sits in its head and foot sockets (tangent: end face on the stop,
   underside on the channel floor); each seat cradles its bar; each
   bracket touches both members it joins; nothing else touches.
@@ -349,19 +350,6 @@ def _bracket_poses(s2: Stage, s3: Stage) -> dict[str, Location]:
 
 # --- Compose -----------------------------------------------------------
 
-_MEMBERS = (
-    "s1_prop_bar", "s3_prop_bar", "s3_cross_a", "s3_cross_b",
-    "s2_stem", "s2_tee", "brace_3", "brace_5",
-)
-_PRINTED_JOINTS = ("s1_post_seat", "s3_post_seat", "brace_head", "brace_foot_3", "brace_foot_5")
-_BRACKETS = (
-    "s2_stem_bracket_top", "s2_stem_bracket_left", "s2_stem_bracket_right",
-    "s2_tee_bracket_left", "s2_tee_bracket_right",
-    "s3_cross_bracket_a1", "s3_cross_bracket_a2", "s3_cross_bracket_b1", "s3_cross_bracket_b2",
-)
-_GANTRY = _MEMBERS + _PRINTED_JOINTS + _BRACKETS
-_SKELETON = ("load_ramp",) + _GANTRY
-
 # The bars that rest under a stage's floor.
 _RESTS = (
     ("s1_prop_bar", "s1"), ("s3_prop_bar", "s3"),
@@ -425,35 +413,21 @@ _STAGE_NAMES = tuple(s.name for s in STAGES)
 # returns a copy. Call it with the schema **explicit** everywhere,
 # including the memo below (``@cache`` keys on the call signature).
 @cache
-def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
-    """The m02 chain — three singulator stages, the LOAD ramp and the
-    gantry — painted under ``schema``.
-
-    Painted with ``skip=`` the three stage subtrees: each arrives from
-    ``build_m02(schema, …)`` already painted against m02's own tag
-    dict, and the chain's dict covers only its own members.
-
-    The anchors are chain-local *belief* anchors. The chain builds
-    standalone from mirrored m05/m03 constants (``params.py``); these
-    state where those mirrors put the shared datums, so the top level
-    can assert them against the live units' own anchors — a drifted
-    mirror stops coinciding there and fails loudly. ``load_top`` is the
-    chain-local origin by construction (the top level derives the
-    chain's world pose from m03's live ``load_top``); ``deck_top`` is
-    the hub-axis point on the m05 deck top face; ``post_top_k`` is
-    where the chain needs m05's outer column k to end.
+def build_gantry() -> Assembly:
+    """The gantry — prop bars, S3's cross, S2's stem and T, the two
+    braces, and the joints between them — in the chain-local frame,
+    placed at identity. Its own claims are the joints: each seat
+    cradles its bar, each brace sits in its head and foot sockets, each
+    bracket touches both members it joins, and nothing touches itself
+    anywhere else. What it rests on is the chain's (the stages) and
+    the top level's (m05's columns and deck). Unpainted: the chain
+    paints the whole tree, and its tag dict carries these leaves.
     """
     def mat(name: str) -> dict:
         return {"material": material_of(name)}
 
-    a = Assembly()
-    for s in STAGES:
-        a = a.with_subassembly(
-            s.name, build_m02(schema, s.motor_azimuth_deg, s.bowl_seam_phase_deg, s.wall_h),
-            location=_stage_pose(s),
-        )
     s1, s2, s3 = STAGES
-    a = a.with_part("load_ramp", _load_ramp(s1), **mat("load_ramp"))
+    a = Assembly()
     for name, (loc, length) in (
         ("s1_prop_bar", _prop_bar(s1)),
         ("s3_prop_bar", _prop_bar(s3)),
@@ -491,6 +465,83 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
         )
     for name, loc in _bracket_poses(s2, s3).items():
         a = a.with_part(name, corner_bracket(), location=loc, **mat(name))
+
+    # The stem butts the T bar's near face; the cross halves butt the
+    # prop bar's faces.
+    a = (
+        a
+        .assert_tangent_contact("s2_stem", "s2_tee")
+        .assert_tangent_contact("s3_cross_a", "s3_prop_bar")
+        .assert_tangent_contact("s3_cross_b", "s3_prop_bar")
+    )
+    # Joints. Each seat cradles its bar; each brace sits in its head
+    # and foot sockets; each bracket touches both members it joins.
+    # The collar clears the stem above it (280 + the brace's
+    # half-diagonal + the wall against the stem's underside at 305 —
+    # measured, not constructed).
+    for s in (s1, s3):
+        a = a.assert_tangent_contact(f"{s.name}_post_seat", f"{s.name}_prop_bar")
+    for col in BRACE_COLS:
+        a = (
+            a
+            .assert_tangent_contact("brace_head", f"brace_{col}")
+            .assert_tangent_contact(f"brace_foot_{col}", f"brace_{col}")
+        )
+    a = a.assert_distance("brace_head", "s2_stem", min_mm=5.0, name="brace_head_under_stem")
+    for name in ("top", "left", "right"):
+        a = a.assert_tangent_contact(f"s2_stem_bracket_{name}", "s2_stem")
+        if name != "top":
+            a = (
+                a
+                .assert_tangent_contact(f"s2_tee_bracket_{name}", "s2_stem")
+                .assert_tangent_contact(f"s2_tee_bracket_{name}", "s2_tee")
+            )
+    for half in ("a", "b"):
+        for tag in ("1", "2"):
+            a = (
+                a
+                .assert_tangent_contact(f"s3_cross_bracket_{half}{tag}", "s3_prop_bar")
+                .assert_tangent_contact(f"s3_cross_bracket_{half}{tag}", f"s3_cross_{half}")
+            )
+    # Nothing in the gantry touches itself except at the T, cross and
+    # socket joints (tangent pairs carry no overlap, so the group form
+    # holds).
+    return a.assert_no_interference_within([p.name for p in a.placed_parts])
+
+
+def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
+    """The m02 chain — three singulator stages, the LOAD ramp and the
+    gantry — painted under ``schema``.
+
+    Painted with ``skip=`` the three stage subtrees: each arrives from
+    ``build_m02(schema, …)`` already painted against m02's own tag
+    dict, and the chain's dict covers only its own members.
+
+    The anchors are chain-local *belief* anchors. The chain builds
+    standalone from mirrored m05/m03 constants (``params.py``); these
+    state where those mirrors put the shared datums, so the top level
+    can assert them against the live units' own anchors — a drifted
+    mirror stops coinciding there and fails loudly. ``load_top`` is the
+    chain-local origin by construction (the top level derives the
+    chain's world pose from m03's live ``load_top``); ``deck_top`` is
+    the hub-axis point on the m05 deck top face; ``post_top_k`` is
+    where the chain needs m05's outer column k to end.
+    """
+    def mat(name: str) -> dict:
+        return {"material": material_of(name)}
+
+    a = Assembly()
+    for s in STAGES:
+        a = a.with_subassembly(
+            s.name, build_m02(schema, s.motor_azimuth_deg, s.bowl_seam_phase_deg, s.wall_h),
+            location=_stage_pose(s),
+        )
+    s1, s2, s3 = STAGES
+    a = (
+        a
+        .with_part("load_ramp", _load_ramp(s1), **mat("load_ramp"))
+        .with_subassembly("gantry", build_gantry())
+    )
 
     a = (
         a
@@ -553,7 +604,7 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
         for az, az_in in _bar_floor_spans(bar, stage):
             spans_by_stage[stage.name].append((az, az_in))
             a = a.assert_tangent_contact(
-                bar, f"{stage.name}.drive.{bowl_part_at(az, stage.bowl_seam_phase_deg)}",
+                f"gantry.{bar}", f"{stage.name}.drive.{bowl_part_at(az, stage.bowl_seam_phase_deg)}",
             )
     for s in STAGES:
         clear = min(
@@ -565,72 +616,40 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
             f"{s.name}_bowl_seams_clear_of_bar_ends_deg", clear, ge=BOWL_SEAM_BAR_CLEAR_MIN_DEG,
             detail="closest bowl seam to the side of a gantry bar's run under the floor, degrees at the rim",
         )
-    # The stem butts the T bar's near face; the cross halves butt the
-    # prop bar's faces.
-    a = (
-        a
-        .assert_tangent_contact("s2_stem", "s2_tee")
-        .assert_tangent_contact("s3_cross_a", "s3_prop_bar")
-        .assert_tangent_contact("s3_cross_b", "s3_prop_bar")
-    )
     # The swung motors are what keeps these pairs apart — measure them.
     a = (
         a
-        .assert_distance("s2_stem", "s2.drive.motor", min_mm=5.0)
-        .assert_distance("s3_cross_a", "s3.drive.motor", min_mm=5.0)
-        .assert_distance("s3_cross_b", "s3.drive.motor", min_mm=5.0)
-        .assert_distance("s1_prop_bar", "s1.drive.motor", min_mm=5.0)
-        .assert_distance("s3_prop_bar", "s3.drive.motor", min_mm=5.0)
+        .assert_distance("gantry.s2_stem", "s2.drive.motor", min_mm=5.0)
+        .assert_distance("gantry.s3_cross_a", "s3.drive.motor", min_mm=5.0)
+        .assert_distance("gantry.s3_cross_b", "s3.drive.motor", min_mm=5.0)
+        .assert_distance("gantry.s1_prop_bar", "s1.drive.motor", min_mm=5.0)
+        .assert_distance("gantry.s3_prop_bar", "s3.drive.motor", min_mm=5.0)
     )
 
-    # Joints. Each seat cradles its bar and stands under the bowl's
-    # floor (its top is the plate underside — the saddle); each brace
-    # sits in its head and foot sockets; each bracket touches both
-    # members it joins. The seats and the collar keep the swung
-    # motors' 5 mm; the collar clears the stem above it (280 + the
-    # brace's half-diagonal + the wall against the stem's underside
-    # at 305 — measured, not constructed).
+    # Each seat stands under the bowl's floor (its top is the plate
+    # underside — the saddle) and keeps the swung motor's 5 mm. The
+    # seat-in-gantry joints are `build_gantry`'s.
     for s in (s1, s3):
-        seat = f"{s.name}_post_seat"
+        seat = f"gantry.{s.name}_post_seat"
         a = (
             a
-            .assert_tangent_contact(seat, f"{s.name}_prop_bar")
             .assert_tangent_contact(
                 seat,
                 f"{s.name}.drive.{bowl_part_at(_stage_local_az(s, m05_outer_vertex_local_xy(PROP_POST[s.name])), s.bowl_seam_phase_deg)}",
             )
             .assert_distance(seat, f"{s.name}.drive.motor", min_mm=5.0)
         )
-    for col in BRACE_COLS:
+
+    # Nothing of the ramp or the gantry touches a stage except at the
+    # declared rests (tangent pairs carry no overlap, so the group
+    # forms hold), and the ramp touches nothing of the gantry.
+    for s in STAGES:
         a = (
             a
-            .assert_tangent_contact("brace_head", f"brace_{col}")
-            .assert_tangent_contact(f"brace_foot_{col}", f"brace_{col}")
+            .assert_no_interference_between("gantry", s.name)
+            .assert_no_interference_between(["load_ramp"], s.name)
         )
-    a = a.assert_distance("brace_head", "s2_stem", min_mm=5.0, name="brace_head_under_stem")
-    for name in ("top", "left", "right"):
-        a = a.assert_tangent_contact(f"s2_stem_bracket_{name}", "s2_stem")
-        if name != "top":
-            a = (
-                a
-                .assert_tangent_contact(f"s2_tee_bracket_{name}", "s2_stem")
-                .assert_tangent_contact(f"s2_tee_bracket_{name}", "s2_tee")
-            )
-    for half in ("a", "b"):
-        for tag in ("1", "2"):
-            a = (
-                a
-                .assert_tangent_contact(f"s3_cross_bracket_{half}{tag}", "s3_prop_bar")
-                .assert_tangent_contact(f"s3_cross_bracket_{half}{tag}", f"s3_cross_{half}")
-            )
-
-    # Nothing of the skeleton touches a stage except at the declared
-    # rests (tangent pairs carry no overlap, so the group forms hold);
-    # nothing in the skeleton touches itself except at the T, cross
-    # and socket joints (same).
-    for s in STAGES:
-        a = a.assert_no_interference_between(_SKELETON, s.name)
-    a = a.assert_no_interference_within(_SKELETON)
+    a = a.assert_no_interference_between(["load_ramp"], "gantry")
 
     return paint(a, design_system(schema), skip=_STAGE_NAMES)
 
@@ -687,27 +706,31 @@ def build_chain_standalone(schema: str = DEFAULT_SCHEMA) -> Assembly:
     for stage, k in PROP_POST.items():
         a = (
             a
-            .assert_tangent_contact(f"{stage}_prop_bar", f"post_{k}", name=f"{stage}_prop_bar_on_post_{k}")
-            .assert_tangent_contact(f"{stage}_post_seat", f"post_{k}", name=f"{stage}_post_seat_on_post_{k}")
+            .assert_tangent_contact(f"gantry.{stage}_prop_bar", f"post_{k}", name=f"{stage}_prop_bar_on_post_{k}")
+            .assert_tangent_contact(f"gantry.{stage}_post_seat", f"post_{k}", name=f"{stage}_post_seat_on_post_{k}")
         )
     a = (
         a
-        .assert_tangent_contact("s2_stem", f"post_{ARM_POST}", name=f"s2_stem_on_post_{ARM_POST}")
-        .assert_tangent_contact("brace_head", f"post_{ARM_POST}", name=f"brace_head_on_post_{ARM_POST}")
+        .assert_tangent_contact("gantry.s2_stem", f"post_{ARM_POST}", name=f"s2_stem_on_post_{ARM_POST}")
+        .assert_tangent_contact("gantry.brace_head", f"post_{ARM_POST}", name=f"brace_head_on_post_{ARM_POST}")
     )
     for name in ("top", "left", "right"):
         a = a.assert_tangent_contact(
-            f"s2_stem_bracket_{name}", f"post_{ARM_POST}", name=f"s2_stem_bracket_{name}_on_post_{ARM_POST}",
+            f"gantry.s2_stem_bracket_{name}", f"post_{ARM_POST}", name=f"s2_stem_bracket_{name}_on_post_{ARM_POST}",
         )
     for col in BRACE_COLS:
         a = (
             a
-            .assert_distance(f"brace_{col}", f"post_{ARM_POST}", min_mm=1.0, name=f"brace_{col}_clears_post")
-            .assert_distance(f"brace_{col}", "deck", min_mm=1.0, name=f"brace_{col}_clears_deck")
-            .assert_tangent_contact(f"brace_foot_{col}", "deck", name=f"brace_foot_{col}_on_deck")
+            .assert_distance(f"gantry.brace_{col}", f"post_{ARM_POST}", min_mm=1.0, name=f"brace_{col}_clears_post")
+            .assert_distance(f"gantry.brace_{col}", "deck", min_mm=1.0, name=f"brace_{col}_clears_deck")
+            .assert_tangent_contact(f"gantry.brace_foot_{col}", "deck", name=f"brace_foot_{col}_on_deck")
         )
-    a = a.assert_distance("brace_foot_5", "post_5", min_mm=1.0, name="brace_foot_5_clears_post_5")
-    a = a.assert_no_interference_between(_STUBS, _SKELETON)
+    a = a.assert_distance("gantry.brace_foot_5", "post_5", min_mm=1.0, name="brace_foot_5_clears_post_5")
+    a = (
+        a
+        .assert_no_interference_between(_STUBS, ["load_ramp"])
+        .assert_no_interference_between(_STUBS, "gantry")
+    )
     for s in STAGES:
         a = a.assert_no_interference_between(_STUBS, s.name)
     return a

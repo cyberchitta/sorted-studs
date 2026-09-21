@@ -189,7 +189,7 @@ def build_top(schema: str = DEFAULT_SCHEMA) -> Assembly:
                 f"m02_chain.post_top_{k}", f"m05.outer_vert_{k}_top"
             )
             .assert_tangent_contact(
-                f"m02_chain.{stage}_prop_bar", f"m05.columns.outer_vert_{k}",
+                f"m02_chain.gantry.{stage}_prop_bar", f"m05.columns.outer_vert_{k}",
                 name=f"{stage}_prop_bar_on_outer_vert_{k}",
             )
         )
@@ -198,7 +198,7 @@ def build_top(schema: str = DEFAULT_SCHEMA) -> Assembly:
     # seat cutting its column).
     for stage, k in PROP_POST.items():
         a = a.assert_tangent_contact(
-            f"m02_chain.{stage}_post_seat", f"m05.columns.outer_vert_{k}",
+            f"m02_chain.gantry.{stage}_post_seat", f"m05.columns.outer_vert_{k}",
             name=f"{stage}_post_seat_on_outer_vert_{k}",
         )
     # S2's stem butts V_4's face and its three brackets sit on it; the
@@ -210,21 +210,21 @@ def build_top(schema: str = DEFAULT_SCHEMA) -> Assembly:
     a = (
         a
         .assert_tangent_contact(
-            "m02_chain.s2_stem", "m05.columns.outer_vert_4",
+            "m02_chain.gantry.s2_stem", "m05.columns.outer_vert_4",
             name="s2_stem_on_outer_vert_4",
         )
         .assert_tangent_contact(
-            "m02_chain.brace_head", "m05.columns.outer_vert_4",
+            "m02_chain.gantry.brace_head", "m05.columns.outer_vert_4",
             name="brace_head_on_outer_vert_4",
         )
     )
     for name in ("top", "left", "right"):
         a = a.assert_tangent_contact(
-            f"m02_chain.s2_stem_bracket_{name}", "m05.columns.outer_vert_4",
+            f"m02_chain.gantry.s2_stem_bracket_{name}", "m05.columns.outer_vert_4",
             name=f"s2_stem_bracket_{name}_on_outer_vert_4",
         )
     for col in BRACE_COLS:
-        brace = f"m02_chain.brace_{col}"
+        brace = f"m02_chain.gantry.brace_{col}"
         a = (
             a
             .assert_distance(brace, "m05.columns.outer_vert_4", min_mm=1.0,
@@ -233,14 +233,14 @@ def build_top(schema: str = DEFAULT_SCHEMA) -> Assembly:
                              name=f"brace_{col}_clears_outer_vert_{col}")
             .assert_distance(brace, "m05.top_acrylic", min_mm=1.0,
                              name=f"brace_{col}_over_deck")
-            .assert_tangent_contact(f"m02_chain.brace_foot_{col}", "m05.top_acrylic",
+            .assert_tangent_contact(f"m02_chain.gantry.brace_foot_{col}", "m05.top_acrylic",
                                     name=f"brace_foot_{col}_on_deck")
         )
     a = (
         a
-        .assert_distance("m02_chain.brace_foot_5", "m05.columns.outer_vert_5", min_mm=1.0,
+        .assert_distance("m02_chain.gantry.brace_foot_5", "m05.columns.outer_vert_5", min_mm=1.0,
                          name="brace_foot_5_clears_outer_vert_5")
-        .assert_distance("m02_chain.brace_foot_5", "m05.top_cap.outer_vertex_bracket_5", min_mm=1.0,
+        .assert_distance("m02_chain.gantry.brace_foot_5", "m05.top_cap.outer_vertex_bracket_5", min_mm=1.0,
                          name="brace_foot_5_clears_vertex_bracket_5")
     )
     return a

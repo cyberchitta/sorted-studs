@@ -42,6 +42,6 @@ for name in (
     *(f"brace_foot_{col}" for col in BRACE_COLS),
 ):
     inspect(
-        chain.part(name).part,
+        chain.part(f"gantry.{name}").part,
         method=FDM(), out="outputs", name=name,
     )
