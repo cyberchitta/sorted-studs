@@ -631,10 +631,9 @@ def build_turret_drive_standalone() -> Assembly:
     # overlap and stay in the group check; their *contact* is asserted
     # separately below / in `build_turret_drive_static`. The driven
     # pulley genuinely overlaps the shaft — it's a press fit — and the
-    # group form derives that exclusion from the `assert_allowed_contact`
-    # above, which is why this call comes *after* it: the skip set is
-    # read at expansion time, so a same-level contact declared later
-    # would not be seen. Pulleys vs each other are clear in X (center
+    # group form drops that pair because the `assert_allowed_contact`
+    # above holds it (resolved over the whole assembled set, so order
+    # doesn't matter). Pulleys vs each other are clear in X (center
     # distance 58.6, OD radii 19.1 + 6.4 = 25.5, gap 33.1 mm).
     all_parts = (
         [f"rotor.{n}" for n in DRIVE_ROTOR_PART_NAMES]
