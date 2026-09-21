@@ -344,7 +344,9 @@ def exit_floor(
     passes through the skirt's wedge slot; the rib stands inboard of
     the skirt's inner face (measured at the unit root only as a
     no-interference, since the rib's rest on the floor makes the pair
-    a contact pair — so the margin is guarded here)."""
+    a contact pair — so the margin is guarded here). A datum plane on
+    the skirt's face cannot measure it either: rib and tongue are one
+    part, and the tongue runs out through the slot past that plane."""
     assert rib_r_out <= r_out and rib_r_in >= r_in, "rib must sit under the tongue"
     assert rib_r_out + EXIT_FLOOR_RIB_SKIRT_CLEAR <= SKIRT_R_IN + 1e-9, (
         f"rib outer radius {rib_r_out} runs into the skirt's inner face {SKIRT_R_IN}"

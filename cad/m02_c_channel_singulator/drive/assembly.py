@@ -41,9 +41,10 @@ Coordinate frame:
 Claims declared here (they propagate to the module root): bearing
 and motor rest on the floor (tangent contact), the pinion hub clears
 the floor, the pinion bore clears the shaft, and the pinion's tip
-circle stays inside the skirt — recorded as a scalar, because the
-measured distance pinion↔bowl is the 0.5 mm floor gap, not the
-radial one. Rotor-vs-drive and stator-vs-drive claims live in
+circle stays inside the skirt — measured radially to a datum plane on
+the skirt's inner face, because the plain distance pinion↔bowl is the
+0.5 mm floor gap, not the radial one. Rotor-vs-drive and
+stator-vs-drive claims live in
 ../assembly.py.
 
 Printed parts: the three bowl sectors (floor down, no support), pinion — see
@@ -52,7 +53,7 @@ Printed parts: the three bowl sectors (floor down, no support), pinion — see
 
 import math
 
-from build123d import Axis, Box, Circle, Cylinder, Location, Part, Polygon, Pos, Rot, extrude
+from build123d import Axis, Box, Circle, Cylinder, Location, Part, Plane, Polygon, Pos, Rot, extrude
 
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 
@@ -107,9 +108,6 @@ WALL_MIN = 1.5
 # Pinion / motor axis in drive-local XY.
 _AZ = math.radians(MOTOR_AZIMUTH_DEG)
 PINION_AXIS_XY = (CENTER_DIST * math.cos(_AZ), CENTER_DIST * math.sin(_AZ))
-
-# Tip circle of the pinion — the outermost thing under the stator.
-PINION_TIP_R = CENTER_DIST + PINION_PITCH_D / 2.0 + ADDENDUM   # 147.2
 
 
 # --- Part functions ----------------------------------------------------
@@ -331,6 +329,8 @@ def build_drive(
     on_axis = Location((axis_xy[0], axis_xy[1], 0.0)) * Rot(
         0, 0, motor_azimuth_deg,
     )
+    radial = (math.cos(math.radians(motor_azimuth_deg)), math.sin(math.radians(motor_azimuth_deg)), 0.0)
+    skirt_face = Plane(origin=(SKIRT_R_IN * radial[0], SKIRT_R_IN * radial[1], 0.0), z_dir=radial)
     a = Assembly()
     for k, sector in enumerate(bowl_sectors(phase_deg=seam_phase_deg, motor_azimuth_deg=motor_azimuth_deg)):
         a = a.with_part(bowl_part(k), sector, material=material_of(bowl_part(k)))
@@ -360,13 +360,14 @@ def build_drive(
         .assert_distance("pinion.pinion", "bearing", min_mm=15.0)
         .assert_distance("motor", "bearing", min_mm=PLATE_T)
         # The pinion's tip circle stays inside the skirt with 1 mm to
-        # spare. A scalar, not a measured clearance: the pinion↔bowl
-        # distance is the 0.5 mm hub-to-floor gap asserted below.
-        .assert_scalar(
-            "pinion_tip_inside_skirt",
-            PINION_TIP_R,
-            le=SKIRT_R_IN - 1.0,
-            detail="pinion tip radius vs the skirt's inner face, minus 1 mm",
+        # spare, measured radially to the plane tangent to the skirt's
+        # inner face on the pinion's own radius (a plain distance to
+        # the bowl is the 0.5 mm hub-to-floor gap asserted below). The
+        # part is the pitch cylinder, so grow it to the tip circle.
+        .assert_distance(
+            "pinion.pinion", skirt_face, along=radial,
+            min_mm=1.0, grow_a_mm=ADDENDUM,
+            name="pinion_tip_inside_skirt",
         )
         .assert_scalar("gear_ratio", GEAR_RATIO, detail="ring / pinion teeth")
     )
