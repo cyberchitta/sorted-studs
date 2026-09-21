@@ -1094,26 +1094,20 @@ def make_assembly(role: str = "middle") -> Assembly:
             .with_part("lower_trap_servo", trap_servo(), location=lower_servo_loc)
         )
     fixed = (
-        "rotating.column", "rotating.ramp", "rotating.trap_servo",
-        "bearing_spider", "ring_bearing",
+        "rotating.trap_servo", "rotating.ramp",
+        "bearing_spider", "ring_bearing", "rotating.column",
     )
     a = (
         a
-        # Fixed parts don't interfere with each other
-        .assert_no_interference("bearing_spider", "ring_bearing")
-        .assert_no_interference("bearing_spider", "rotating.column")
-        .assert_no_interference("ring_bearing", "rotating.column")
-        .assert_no_interference("rotating.ramp", "rotating.column")
-        .assert_no_interference("rotating.ramp", "bearing_spider")
-        .assert_no_interference("rotating.ramp", "ring_bearing")
-        # Servo: its tabs rest on the cage plate's outer face (no
-        # overlap anywhere else — the case clears the cut-out), and it
-        # clears the ramp and the bearing stack.
+        # Fixed parts don't interfere with each other — bar the servo
+        # on the column: its tabs rest on the cage plate's outer face
+        # (no overlap anywhere else — the case clears the cut-out), so
+        # the tangent claim holds that pair instead.
+        .assert_no_interference_within(
+            fixed, suppressed=[("rotating.trap_servo", "rotating.column")],
+        )
         .assert_tangent_contact("rotating.trap_servo", "rotating.column",
                                 name="servo_tabs_on_cage")
-        .assert_no_interference("rotating.trap_servo", "rotating.ramp")
-        .assert_no_interference("rotating.trap_servo", "bearing_spider")
-        .assert_no_interference("rotating.trap_servo", "ring_bearing")
         # The drive turns against the column: coupler off the +Y wall,
         # horn under the cage web, horn hub short of the case.
         .assert_distance("rotating.trap.trap_coupler", "rotating.column",

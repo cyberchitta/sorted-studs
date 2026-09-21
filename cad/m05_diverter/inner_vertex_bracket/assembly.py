@@ -269,19 +269,12 @@ assembly = (
     .with_part("horiz_ext_2", horiz_ext_stub_local(), location=Rot(0, 0, -HALF_HEX_ANGLE_DEG))
     .with_part("radial_ext_out", horiz_ext_stub_local(), location=Rot(0, 0, 180.0))
     .with_part("radial_ext_in", horiz_ext_stub_local())
-    .assert_no_interference("bracket", "vert_ext")
-    .assert_no_interference("bracket", "horiz_ext_1")
-    .assert_no_interference("bracket", "horiz_ext_2")
-    .assert_no_interference("bracket", "radial_ext_out")
-    .assert_no_interference("bracket", "radial_ext_in")
-    .assert_no_interference("vert_ext", "horiz_ext_1")
-    .assert_no_interference("vert_ext", "horiz_ext_2")
-    .assert_no_interference("vert_ext", "radial_ext_out")
-    .assert_no_interference("vert_ext", "radial_ext_in")
-    .assert_no_interference("horiz_ext_1", "horiz_ext_2")
-    .assert_no_interference("horiz_ext_1", "radial_ext_out")
-    .assert_no_interference("horiz_ext_1", "radial_ext_in")
-    .assert_no_interference("horiz_ext_2", "radial_ext_out")
-    .assert_no_interference("horiz_ext_2", "radial_ext_in")
-    .assert_no_interference("radial_ext_out", "radial_ext_in")
+    .assert_no_interference_within([
+        "bracket",
+        "vert_ext",
+        "horiz_ext_1",
+        "horiz_ext_2",
+        "radial_ext_out",
+        "radial_ext_in",
+    ])
 )

@@ -295,12 +295,12 @@ def make_assembly() -> Assembly:
     """
     return (
         build_drive_train()
-        .assert_no_interference("ring_gear", "pinion")
-        .assert_no_interference("ring_gear", "motor")
-        .assert_no_interference("ring_gear", "motor_mount")
-        .assert_no_interference("pinion", "motor")
-        .assert_no_interference("pinion", "motor_mount")
-        .assert_no_interference("motor", "motor_mount")
+        .assert_no_interference_within([
+            "ring_gear",
+            "pinion",
+            "motor",
+            "motor_mount",
+        ])
     )
 
 
