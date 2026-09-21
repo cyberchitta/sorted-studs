@@ -48,8 +48,8 @@ keeps the cones out of every export.
 module — `from platform import assembly` would resolve to the
 already-imported stdlib copy after `cad_khana`/`build123d` load.
 The other turret subs (frame, hub, arm, ...) are safe to drop the
-prefix on; the m05 collisions on `frame`/`drive` are handled by
-`cad/assembly.py`'s per-unit module eviction.
+prefix on: `cad/` is a package, so m05's own `frame`/`drive` are
+distinct modules under their package paths and never collide.
 """
 
 
@@ -82,6 +82,7 @@ from .params import (
     VERTEX_BELOW_LEFT_POS,
     VERTEX_BELOW_RIGHT_POS,
     VERTEX_FRONT_LOW_POS,
+    WALL_MIN,
     horizontal_x_roll_deg,
     lens_axis_unit,
     plate_back_centre_world,
@@ -205,6 +206,19 @@ def build_camera_rig() -> Assembly:
                 f"{prefix}_lens", _camera_mount.m12_lens_stub(),
                 location=camera_loc,
             )
+        )
+    # The below-* mount plates tilt with their lens axes and reach
+    # ~25 mm in +Y past their clamp, toward the arch post on their
+    # side. `along` compares Y projections, so this is the whole
+    # printed body's reach — plate, beam and clamp — not the plate's
+    # bounding-rectangle estimate the arch builder used to carry over
+    # a mirrored plate size (bare until 2026-09-22).
+    for prefix in ("cam_below_left", "cam_below_right"):
+        side = "pos" if _CAMERA_INSTANCES[prefix]["vertex_pos"][0] > 0 else "neg"
+        a = a.assert_distance(
+            f"{prefix}_clamp_mount", f"arch.arch_post_{side}_x",
+            along="Y", min_mm=_arch.CORNER_GAP,
+            name=f"{prefix}_plate_post_gap",
         )
     return a
 
@@ -417,6 +431,23 @@ def build_turret() -> Assembly:
         "rotor.homing.homing_flag", "rotor.drive.drive_pulley_shaft",
         along="-Z", min_mm=1.0, name="homing_flag_pulley_gap",
     )
+    # X gaps the static parts keep to their neighbours, measured where
+    # both parts first share a level. The driven pulley is a body of
+    # revolution about the hub axis, so its X extent is the same at
+    # every rotor azimuth. Both were bare asserts over placement
+    # constants — the homing one over a `HOUSING_HALF_X` mirror —
+    # until 2026-09-22.
+    t = t.assert_distance(
+        "rotor.drive.drive_pulley_shaft", "drive.drive_motor",
+        along="X", min_mm=WALL_MIN, name="pulley_motor_body_gap",
+    )
+    t = t.assert_distance(
+        "homing.homing_bracket", "hub.hub_housing",
+        along="X", min_mm=WALL_MIN, name="homing_foot_housing_gap",
+    )
+    # The hub housing stands on the cross-rail. No-interference alone
+    # also passes with the housing floating above it.
+    t = t.assert_tangent_contact("hub.hub_housing", "frame.floor_cross_x")
     # Driven pulley pressed onto the real hub shaft — the drive
     # standalone declares the same fit against its own shaft stub;
     # this is the composed-run pair. Bore Ø7.98 on the Ø8 shaft, so
@@ -529,6 +560,17 @@ def add_m03(a: Assembly) -> Assembly:
     ``turret.servo_arm``."""
     a = a.with_subassembly("rig", build_camera_rig())
     a = a.with_subassembly("turret", build_turret(), location=TURRET_BASE)
+    # The arch posts stand on the back outriggers, behind the shared
+    # back rail with a butt-joint gap. The rail lives in the turret's
+    # frame and the posts in the rig, so this is the first level that
+    # holds both (a bare assert in the arch builder over the rail's Y
+    # until 2026-09-22).
+    for side in ("pos", "neg"):
+        a = a.assert_distance(
+            "turret.frame.floor_back_x", f"rig.arch.arch_post_{side}_x",
+            along="Y", min_mm=_arch.CORNER_GAP,
+            name=f"arch_post_{side}_x_behind_back_rail",
+        )
     # Exported interface anchors (m03-local). ``load_top`` /
     # ``dump_centroid``: station centroids on the platform top-face
     # plane (stations at hub + TURRET_ARM_R·heading; LOAD at turret

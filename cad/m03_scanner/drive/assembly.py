@@ -501,20 +501,9 @@ def build_turret_drive_static() -> Assembly:
     shaft) + motor bracket, in turret-local coordinates. The motor
     pulley turns in real life, but only the driven-side pulley is
     locked to the hub shaft we animate — the motor and its pulley
-    render as static for the animation."""
-    # Driven pulley OD must not crash the motor body in X. WALL_MIN
-    # arithmetic against the motor's placement constants — the two
-    # parts live in different subtrees (rotor vs static), so there is
-    # no level below the turret that could measure the pair. Bare.
-    _pulley_to_motor_body_x = (
-        (MOTOR_X - MOTOR_BODY_X / 2) - DRIVEN_PULLEY_OD / 2
-    )
-    assert _pulley_to_motor_body_x >= WALL_MIN, (
-        f"driven pulley OD reaches +{DRIVEN_PULLEY_OD/2:.2f} mm in X; motor "
-        f"body inboard face at +{MOTOR_X - MOTOR_BODY_X/2:.2f}; X gap "
-        f"{_pulley_to_motor_body_x:.2f} mm < WALL_MIN ({WALL_MIN})"
-    )
-
+    render as static for the animation. The driven pulley's X gap to
+    the motor body is measured at the turret, the first level holding
+    both (`pulley_motor_body_gap`)."""
     a = Assembly()
     a = a.with_part(
         "drive_pulley_motor",
@@ -590,7 +579,7 @@ def build_turret_drive_rotor() -> Assembly:
 
 # --- Standalone assembly -----------------------------------------------
 
-_SHAFT_LEN = TURRET_SHAFT_TOP_Z - RAIL_TOP_Z               # = 160
+_SHAFT_LEN = TURRET_SHAFT_TOP_Z - RAIL_TOP_Z               # = 110
 
 
 

@@ -113,11 +113,9 @@ RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2             # = -120 after c7
 
 # --- Adjacent-slice mirrors (private; bound assertions reference these) -
 
-# Slice (b) housing X half-extent. Bracket foot inner edge must clear
-# this with ≥ WALL_MIN gap (housing Z [-120, -60] still abuts the
-# foot's Z band [-120, -112] in X; the post rises clear of housing
-# top in Z but the foot does not).
-HOUSING_HALF_X = 30.0
+# The hub housing bounds the bracket foot in X. That was a mirrored
+# HOUSING_HALF_X here; the claim is now `homing_foot_housing_gap` in
+# `build_turret`, measured on the live housing.
 
 # The driven pulley bounds the homing parts' Z corridor from below.
 # That used to be a mirrored PULLEY_TOP_Z literal here feeding
@@ -285,16 +283,9 @@ def bracket():
     """Printed L-bracket: foot bolts to cross-rail's top T-slot;
     vertical post rises to sensor body top. Sensor mounts to post's
     +X face (toward axis). Returned in turret-local coords."""
-    # Bolt-hole walls (subtracted negative space) plus the foot's
-    # clearance to the hub housing, which this unit mirrors as
-    # HOUSING_HALF_X to stay standalone. All bare: no part pair.
-    _foot_to_housing = abs(_BRACKET_FOOT_X_MAX) - HOUSING_HALF_X
-    assert _foot_to_housing >= WALL_MIN, (
-        f"bracket foot inner edge ({_BRACKET_FOOT_X_MAX}) too close to "
-        f"housing -X face (-{HOUSING_HALF_X}); gap {_foot_to_housing:.2f} "
-        f"mm < WALL_MIN ({WALL_MIN}); shift bracket further -X or shrink "
-        f"BRACKET_FOOT_X"
-    )
+    # Bolt-hole walls: subtracted negative space, nothing to measure,
+    # so bare. The foot's X gap to the hub housing is measured at the
+    # turret (`homing_foot_housing_gap`).
     _inner_bolt_x = _BRACKET_FOOT_CENTER_X + _BRACKET_BOLT_HALF_X
     _outer_bolt_x = _BRACKET_FOOT_CENTER_X - _BRACKET_BOLT_HALF_X
     _bolt_to_foot_inner = _BRACKET_FOOT_X_MAX - (_inner_bolt_x + BRACKET_BOLT_HOLE_D / 2)
@@ -418,7 +409,7 @@ def build_turret_homing_rotor() -> Assembly:
 
 # --- Standalone assembly -----------------------------------------------
 
-_SHAFT_LEN = TURRET_SHAFT_TOP_Z - RAIL_TOP_Z               # = 200
+_SHAFT_LEN = TURRET_SHAFT_TOP_Z - RAIL_TOP_Z               # = 110
 
 
 def build_turret_homing_standalone() -> Assembly:
