@@ -349,11 +349,6 @@ def build_drive(
                 frame="local",
             ),
         )
-        # Where the chain's rail meets us, and how far the motor hangs.
-        .with_anchor("plate_top", Pos(0, 0, PLATE_TOP_Z))
-        .with_anchor("plate_bottom", Pos(0, 0, PLATE_BOTTOM_Z))
-        .with_anchor("skirt_top", Pos(0, 0, SKIRT_TOP_Z))
-        .with_anchor("motor_bottom", Pos(axis_xy[0], axis_xy[1], MOTOR_BOTTOM_Z))
         # The motor face rests on its sector's floor underside (pilot
         # and shaft inside the hole); the bore clears the shaft.
         .assert_tangent_contact("motor", motor_sector)

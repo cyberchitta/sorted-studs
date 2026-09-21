@@ -73,14 +73,14 @@ def build_turret_envelope_check(schema: str = DEFAULT_SCHEMA) -> Assembly:
     clearance claim per chain part."""
     top = build_top(schema)
     nodes = {n.name: n for n in top.subassemblies}
-    chain, m03, m05 = nodes["m02_chain"], nodes["m03"], nodes["m05"]
+    chain = nodes["m02_chain"]
 
     # Turret hub in world: the DUMP centroid is TURRET_ARM_R from the
     # hub along the turret's local -Y, so the hub is one arm back along
     # the placed unit's +Y.
-    dump = (m03.location * m03.assembly.anchor("dump_centroid")).position
-    hub = (m03.location * m03.assembly.anchor("dump_centroid") * Pos(0, TURRET_ARM_R, 0)).position
-    deck_top_z = (m05.location * m05.assembly.anchor("deck_top")).position.Z
+    dump = top.anchor("m03.dump_centroid").position
+    hub = (top.anchor("m03.dump_centroid") * Pos(0, TURRET_ARM_R, 0)).position
+    deck_top_z = top.anchor("m05.deck_top").position.Z
 
     # Turret hardware top at rest: the highest point of anything under
     # the turret subtree.

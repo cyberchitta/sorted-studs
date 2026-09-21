@@ -51,7 +51,7 @@ def build_service_access_check(schema: str = DEFAULT_SCHEMA) -> Assembly:
     # Turret hub in world: one arm back (+Y) from the DUMP centroid,
     # as in `check_turret_envelope.py`. LOAD / IDLE sit on the hub's
     # X line, so their outer +Y edge is half a platform past the hub.
-    hub = (m03.location * m03.assembly.anchor("dump_centroid") * Pos(0, TURRET_ARM_R, 0)).position
+    hub = (top.anchor("m03.dump_centroid") * Pos(0, TURRET_ARM_R, 0)).position
     y0 = hub.Y + PLATFORM_ACRYLIC_SIZE / 2.0 + REACH_GAP
 
     world = {pp.name: (pp.location * pp.part).bounding_box() for pp in top.placed_parts}
