@@ -147,7 +147,7 @@ def build_m02(
         # Rotor rests on the bearing, which is BEARING_H above the plate.
         .assert_tangent_contact("rotor.rotor", "drive.bearing")
         .assert_no_interference("rotor.rotor", "drive.motor")
-        .assert_clearance("rotor.rotor", "drive.motor", min_mm=10.0)
+        .assert_distance("rotor.rotor", "drive.motor", min_mm=10.0)
         # Exit floor: inner edge outside the ring gear's tips (the cheap
         # rotor is the pitch cylinder — grow it by the addendum), rib
         # standing on the plate.
@@ -166,17 +166,17 @@ def build_m02(
             a
             # V-gap
             .assert_no_interference("rotor.rotor", f"stator.{part}")
-            .assert_clearance(
+            .assert_distance(
                 "rotor.rotor", f"stator.{part}",
                 min_mm=ROTOR_STATOR_GAP - GAP_CLEARANCE_TOLERANCE,
             )
             # Pinion runs just under the stator's bottom face.
-            .assert_clearance(
+            .assert_distance(
                 f"stator.{part}", "drive.pinion.pinion", min_mm=PINION_TOP_CLEAR,
             )
         )
     for part in _drive.BOWL_PARTS:
-        a = a.assert_clearance("rotor.rotor", f"drive.{part}", min_mm=BEARING_H)
+        a = a.assert_distance("rotor.rotor", f"drive.{part}", min_mm=BEARING_H)
     # Each liner sector's flange rests on the skirt's top edge of every
     # bowl sector it overlaps round the axis (its cone seats on the
     # edge's inner corner at the same z — a line contact, zero overlap).

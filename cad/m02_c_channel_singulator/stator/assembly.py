@@ -431,7 +431,7 @@ def build_stator(height: float = STATOR_WALL_H) -> Assembly:
                    "means the wall height or the seam phase moved "
                    "the opening relative to the seams",
         )
-    return a.assert_clearance(
+    return a.assert_distance(
         "exit_floor", exit_sector, min_mm=EXIT_FLOOR_SIDE_CLEAR,
     )
 

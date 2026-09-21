@@ -105,7 +105,7 @@ def build_turret_envelope_check(schema: str = DEFAULT_SCHEMA) -> Assembly:
         .assert_scalar("turret_hub_xy_x", hub.X, detail=f"dump centroid at ({dump.X:.1f}, {dump.Y:.1f})")
     )
     for pp in chain.assembly.placed_parts:
-        a = a.assert_clearance(
+        a = a.assert_distance(
             "turret_loaded_envelope", f"m02_chain.{pp.name}", min_mm=TURRET_SWEEP_CLEAR,
         )
     return a

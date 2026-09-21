@@ -1116,10 +1116,10 @@ def make_assembly(role: str = "middle") -> Assembly:
         .assert_no_interference("rotating.trap_servo", "ring_bearing")
         # The drive turns against the column: coupler off the +Y wall,
         # horn under the cage web, horn hub short of the case.
-        .assert_clearance("rotating.trap.trap_coupler", "rotating.column",
-                          min_mm=0.5)
-        .assert_clearance("rotating.trap.servo_horn", "rotating.column",
-                          min_mm=0.5)
+        .assert_distance("rotating.trap.trap_coupler", "rotating.column",
+                         min_mm=0.5)
+        .assert_distance("rotating.trap.servo_horn", "rotating.column",
+                         min_mm=0.5)
         .assert_no_interference("rotating.trap.servo_horn", "rotating.trap_servo")
         .assert_no_interference("rotating.trap.hinge_pin", "rotating.trap_servo")
         # The catching trap hands the brick down a short step onto the

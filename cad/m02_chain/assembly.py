@@ -506,7 +506,7 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
     # stage touches another.
     for up, dn in ((s2, s1), (s3, s2)):
         for part in BOWL_PARTS:
-            a = a.assert_clearance(
+            a = a.assert_distance(
                 f"{up.name}.drive.{part}", f"{dn.name}.rotor.rotor",
                 min_mm=STAGE_CLEAR,
                 name=f"{up.name}_{part}_over_{dn.name}_rotor",
@@ -576,11 +576,11 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
     # The swung motors are what keeps these pairs apart — measure them.
     a = (
         a
-        .assert_clearance("s2_stem", "s2.drive.motor", min_mm=5.0)
-        .assert_clearance("s3_cross_a", "s3.drive.motor", min_mm=5.0)
-        .assert_clearance("s3_cross_b", "s3.drive.motor", min_mm=5.0)
-        .assert_clearance("s1_prop_bar", "s1.drive.motor", min_mm=5.0)
-        .assert_clearance("s3_prop_bar", "s3.drive.motor", min_mm=5.0)
+        .assert_distance("s2_stem", "s2.drive.motor", min_mm=5.0)
+        .assert_distance("s3_cross_a", "s3.drive.motor", min_mm=5.0)
+        .assert_distance("s3_cross_b", "s3.drive.motor", min_mm=5.0)
+        .assert_distance("s1_prop_bar", "s1.drive.motor", min_mm=5.0)
+        .assert_distance("s3_prop_bar", "s3.drive.motor", min_mm=5.0)
     )
 
     # Joints. Each seat cradles its bar and stands under the bowl's
@@ -599,7 +599,7 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
                 seat,
                 f"{s.name}.drive.{bowl_part_at(_stage_local_az(s, m05_outer_vertex_local_xy(PROP_POST[s.name])), s.bowl_seam_phase_deg)}",
             )
-            .assert_clearance(seat, f"{s.name}.drive.motor", min_mm=5.0)
+            .assert_distance(seat, f"{s.name}.drive.motor", min_mm=5.0)
         )
     for col in BRACE_COLS:
         a = (

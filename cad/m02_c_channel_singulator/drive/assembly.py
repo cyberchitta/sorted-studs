@@ -358,12 +358,12 @@ def build_drive(
         # and shaft inside the hole); the bore clears the shaft.
         .assert_tangent_contact("motor", motor_sector)
         .assert_no_interference("pinion.pinion", "motor")
-        .assert_clearance(
+        .assert_distance(
             "pinion.pinion", "motor", min_mm=MOTOR_SHAFT_BORE_CLEARANCE,
         )
         # Pinion and motor stay well clear of the bearing.
-        .assert_clearance("pinion.pinion", "bearing", min_mm=15.0)
-        .assert_clearance("motor", "bearing", min_mm=PLATE_T)
+        .assert_distance("pinion.pinion", "bearing", min_mm=15.0)
+        .assert_distance("motor", "bearing", min_mm=PLATE_T)
         # The pinion's tip circle stays inside the skirt with 1 mm to
         # spare. A scalar, not a measured clearance: the pinion↔bowl
         # distance is the 0.5 mm hub-to-floor gap asserted below.
@@ -382,7 +382,7 @@ def build_drive(
             # each sector (and, bolted, is what splices the floor).
             .assert_tangent_contact("bearing", part)
             # Pinion hub floats just above the floor.
-            .assert_clearance(
+            .assert_distance(
                 "pinion.pinion", part, min_mm=PINION_HUB_PLATE_CLEAR,
             )
             # Each seam: the two sectors' faces and ears meet on the
