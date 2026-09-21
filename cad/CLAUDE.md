@@ -431,13 +431,12 @@ these, the check is not your evidence — find the one that is.
   came from; an `assert_distance` is re-evaluated at **every** pose the
   sweeps build. Promoting a rest-pose claim therefore reddens frames
   that were always fine — the homing parts' drop-block clearance
-  measures −22.6 mm at `t=0.0875`, when the dumping platform tips
+  measured −22.6 mm at `t=0.0875` when first promoted, as the dumping platform tips
   through the same Z band without ever touching. Nothing is wrong
-  there; the directed-distance form is simply the wrong shape for a
-  claim scoped to one pose of a moving part, and `during=` windows
-  exist only for contact assertions, not distances. Before converting,
-  ask which poses the claim was ever true at, and run the sweep — not
-  just the unit's own `khana check`.
+  there; the claim was only ever true at rest tilt. Before converting,
+  ask which poses the claim was ever true at, scope it with `during=`
+  to exactly those (`build_turret`'s `*_drop_block_gap_*`, 2026-09-21),
+  and run the sweep — not just the unit's own `khana check`.
 
 Two habits that keep the check honest:
 

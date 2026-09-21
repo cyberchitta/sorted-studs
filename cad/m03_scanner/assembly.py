@@ -405,9 +405,9 @@ def build_turret() -> Assembly:
     # sensor is bench-mounted and the pulley is a body of revolution),
     # so the 12-frame sweep re-evaluates them safely.
     #
-    # The matching UPPER bound — clearing the platform drop blocks —
-    # stays a bare rest-pose assert in `homing/assembly.py`; see the
-    # note there. The bracket is not bounded below by the pulley: its
+    # The matching UPPER bound — clearing the platform drop blocks — is
+    # the rest-scoped per-station set at the end of this builder. The
+    # bracket is not bounded below by the pulley: its
     # foot sits far beneath it and its post passes outboard in X.
     t = t.assert_distance(
         "homing.homing_sensor", "rotor.drive.drive_pulley_shaft",
@@ -482,6 +482,38 @@ def build_turret() -> Assembly:
             ),
             name=f"dump_lift_contact_{station}",
             reason="servo pad lifts the DUMP-parked platform's drop block",
+        )
+    # Drop-block underside Z band, once per station: every platform
+    # indexes over the homing parts (azimuth 180°) and the servo pad
+    # (DUMP) in transit, so each cartridge's drop block must clear
+    # both from above. `along` compares Z projections, XY-blind — the
+    # conservative form, since the rotor puts any platform over either.
+    # **Rest-scoped**: a tilting platform's outer edge sweeps down
+    # through the same band without touching anything (down to
+    # −25.1 mm at the 30° peak, `frame_sweep.py` with the window
+    # removed), so the claim holds only at tilt 0 and lapses outside it;
+    # the pad bound also needs the servo arm down. These were bare
+    # asserts over a `-43` drop-block mirror in homing and dump_servo
+    # until 2026-09-21 — neither subtree contains a platform.
+    for station in TURRET_STATIONS:
+        platform = f"rotor.platform_{station}"
+        at_rest = JointWindow(platform, max_deg=0.0)
+        for homing_part in _homing.HOMING_PART_NAMES:
+            homing_path = (
+                f"rotor.homing.{homing_part}"
+                if homing_part in _homing.HOMING_ROTOR_PART_NAMES
+                else f"homing.{homing_part}"
+            )
+            t = t.assert_distance(
+                homing_path, f"{platform}.frame",
+                along="Z", min_mm=1.0, during=at_rest,
+                name=f"{homing_part}_drop_block_gap_{station}",
+            )
+        t = t.assert_distance(
+            "servo_arm.servo_arm", f"{platform}.frame",
+            along="Z", min_mm=2.0,
+            during=(at_rest, JointWindow("servo_arm", max_deg=0.0)),
+            name=f"servo_pad_drop_block_gap_{station}",
         )
     return t
 

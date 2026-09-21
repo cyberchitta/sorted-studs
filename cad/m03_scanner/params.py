@@ -679,9 +679,8 @@ TURRET_HINGE_PIN_D = 5.0
 #     and 50 mm horizontal from pivot to pad — a ~72 mm slanted beam.
 #
 # Lifter pad TOP-FACE Z at rest stays at z = -45, 2 mm below the
-# platform extension's bottom at z = -43 (slice (d) bracket bottom
-# inherits the LIFTER_TOP_Z value via the assertion in
-# `turret_platform/assembly.py`). Pad XY (turret-local) preserved from
+# platform extension's bottom at z = -43 (`turret_platform` derives
+# that bottom from LIFTER_TOP_Z; `build_turret` measures the gap). Pad XY (turret-local) preserved from
 # the kicker era so the platform extension geometry doesn't move.
 TURRET_DUMP_SERVO_PIVOT_X = -80.0
 TURRET_DUMP_SERVO_PIVOT_Y = -25.0

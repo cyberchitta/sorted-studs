@@ -125,27 +125,11 @@ HOUSING_HALF_X = 30.0
 # `homing_*_pulley_gap` assert_distance pair in `build_turret`, where
 # the drive and homing subtrees meet, measuring the live pulley.
 
-# Slice (d) platform extension drop-block bottom Z. The IDLE-pose
-# platform sweeps through azimuth 180° (the homing sensor's azimuth)
-# during rotor transit; its drop-block bottom is the lower-Z surface
-# crossing this zone (the stem above is at z ∈ [-15, -4], well above
-# the homing parts). Flag + sensor must clear this below with ≥ 1 mm
-# gap. Mirror of `turret_platform/assembly.py`'s EXTENSION_BOTTOM_Z;
-# itself derived from `TURRET_DUMP_SERVO_LIFTER_TOP_Z + 2` in
-# `params.py`. Update if the platform drop-block geometry changes.
-#
-# This one stays a mirror-and-bare-assert rather than following the
-# pulley bound into `build_turret`, and the reason is a claim the old
-# code left implicit: **it holds at the platforms' REST tilt only.**
-# Declared as an assert_distance it goes red across three frames of
-# `frame_sweep.py` — during the dump dwell the dumping platform tips
-# far enough that its Z-projection overlaps the homing band (measured
-# −22.6 mm at t=0.0875). Nothing collides there; the group
-# no-interference checks stay green. The directed-distance form is
-# simply the wrong shape for a claim scoped to one pose of a moving
-# part, and cad-khana has no `during=` window for distances (only for
-# contact assertions) — see adoption-inventory §3.
-DROP_BLOCK_BOTTOM_Z = -43.0
+# The upper Z bound — every platform's drop block (z = -43) passing
+# overhead in transit — is declared in `build_turret`
+# (`m03_scanner/assembly.py`), the level that composes this unit with
+# the platforms: per station, measured on the live drop block, and
+# scoped by `during=` to rest tilt, the only pose it was ever true at.
 
 # --- Flag disc geometry ------------------------------------------------
 
@@ -395,28 +379,6 @@ def build_turret_homing_static() -> Assembly:
     """Static homing sub-assembly: sensor + bracket, in turret-local
     coordinates. Both bolt to the bench frame; only the flag (keyed
     to the hub shaft) revolves."""
-    # Drop-block clearance at REST tilt (see DROP_BLOCK_BOTTOM_Z above
-    # for why this is bare and pose-scoped rather than an
-    # assert_distance). The flag rides the rotor and the sensor/bracket
-    # are bench-mounted, but all three share one Z band against the
-    # platform that happens to be overhead.
-    assert DROP_BLOCK_BOTTOM_Z - _FLAG_TOP_Z >= 1.0, (
-        f"flag top ({_FLAG_TOP_Z}) too close to drop-block bottom "
-        f"({DROP_BLOCK_BOTTOM_Z}); gap {DROP_BLOCK_BOTTOM_Z - _FLAG_TOP_Z:.2f} mm < 1 mm"
-    )
-    assert DROP_BLOCK_BOTTOM_Z - _SENSOR_TOP_Z >= 1.0, (
-        f"sensor top ({_SENSOR_TOP_Z}) too close to drop-block bottom "
-        f"({DROP_BLOCK_BOTTOM_Z}); gap {DROP_BLOCK_BOTTOM_Z - _SENSOR_TOP_Z:.2f} mm < 1 mm"
-    )
-    # Bracket post top stays below drop-block bottom by ≥ 1 mm so the
-    # transit sweep at azimuth 180° clears the post (post X-range
-    # [-54, -40] overlaps the drop-block sweep annulus at radius 25-53).
-    assert DROP_BLOCK_BOTTOM_Z - _BRACKET_POST_TOP_Z >= 1.0, (
-        f"bracket post top ({_BRACKET_POST_TOP_Z}) too close to drop-block "
-        f"bottom ({DROP_BLOCK_BOTTOM_Z}); gap "
-        f"{DROP_BLOCK_BOTTOM_Z - _BRACKET_POST_TOP_Z:.2f} mm < 1 mm"
-    )
-
     # Beam-to-hole alignment at home: the flag's detect hole must fall
     # inside the sensor slot's X range. A parameter claim spanning both
     # parts, so it belongs to a builder rather than either part

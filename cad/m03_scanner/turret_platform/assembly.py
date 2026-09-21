@@ -390,11 +390,8 @@ def frame():
 
     # (Extension below-view occlusion is rig-level — visibility.py.)
 
-    # Extension bottom strictly above lifter pad top at REST.
-    assert EXTENSION_BOTTOM_Z > TURRET_DUMP_SERVO_LIFTER_TOP_Z, (
-        f"extension bottom {EXTENSION_BOTTOM_Z} ≤ lifter top at REST "
-        f"{TURRET_DUMP_SERVO_LIFTER_TOP_Z}; would contact at rest"
-    )
+    # Extension bottom above the lifter pad top at REST: measured, with
+    # its 2 mm bound, by `build_turret`'s `servo_pad_drop_block_gap_*`.
 
     # Lifter pad cart-frame position derived from turret-local matches the
     # extension's lift point. Option a' (2026-05-05) DUMP at heading 270°

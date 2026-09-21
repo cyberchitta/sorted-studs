@@ -349,19 +349,9 @@ def build_turret_dump_servo_static() -> Assembly:
     # a body floating 3 mm above the plate passes no-interference just
     # as happily, so nothing asserted that the seat *exists*.
     a = a.assert_tangent_contact("servo_bracket", "servo_body")
-    # Pad-to-platform clearance at REST. `_PLATFORM_EXT_BOTTOM_Z` is a
-    # mirror of the platform extension's bottom; the claim is scoped to
-    # the platforms' rest tilt, so it stays bare for the same reason as
-    # the homing drop-block bound (see `homing/assembly.py`) — a
-    # directed-distance form goes red mid-dump-dwell, when the dumping
-    # platform tips through the same Z band without ever touching.
-    _platform_ext_bottom_z = -43.0
-    _pad_to_extension = _platform_ext_bottom_z - _PAD_TOP_Z
-    assert _pad_to_extension >= 2.0 - 1e-9, (
-        f"pad top ({_PAD_TOP_Z}) too close to platform extension bottom "
-        f"({_platform_ext_bottom_z}); REST clearance "
-        f"{_pad_to_extension:.2f} mm < 2 mm"
-    )
+    # The pad's 2 mm REST clearance under every platform's drop block
+    # is declared in `build_turret` (`m03_scanner/assembly.py`), where
+    # the arm and the platforms are composed — rest-scoped by `during=`.
     return a
 
 
