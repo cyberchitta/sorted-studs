@@ -245,27 +245,33 @@ def build_single_floor(
             .assert_no_interference("rotating.trap_servo", radial_out)
         )
 
-    # Ramp extends radially past the inner hex (tip at r≈146.4) but
+    # Ramp extends radially past the inner hex (tip corners at r≈146.7) but
     # stays at z ≥ 50 while the inner hex sits at z ∈ [-20, 0]. Inner
     # through-columns at r=R_VERT_INNER≈161.66 (inner face at 151.66)
-    # clear the tip by ≈5.3 mm radially at any column rotation; the
-    # nearest pair (V_0 / V_5) sits 30° off the +X delivery azimuth, so
-    # the ramp tip is far in plan when the ramp is aimed at a basket
-    # center. Still worth asserting in case any of these radii move.
+    # are held off by a measured gap, not just no-overlap: the ramp's
+    # plate and walls are cut to the length that puts their outer top
+    # corners on RAMP_REACH_R, so the gap bottoms out at
+    # RAMP_COLUMN_CLEARANCE when a corner points at a column. The wall
+    # corners cut these columns at 14–20° + 60°·k while the no-overlap
+    # form stood green at azimuth 0.
     for k in range(6):
         assembly = assembly.assert_no_interference("rotating.ramp", f"rails.inner_horiz_{k}")
         assembly = assembly.assert_no_interference("rotating.ramp", f"rails.radial_inner_{k}")
         assembly = assembly.assert_no_interference("rotating.ramp", f"rails.radial_outer_{k}")
-        assembly = assembly.assert_no_interference("rotating.ramp", f"columns.inner_vert_{k}")
+        assembly = assembly.assert_distance(
+            "rotating.ramp", f"columns.inner_vert_{k}",
+            min_mm=_ramp.RAMP_COLUMN_CLEARANCE,
+            name=f"ramp_inner_column_gap_{k}",
+        )
 
     # Every claim above is held over the stack turn, not just at the
     # as-built azimuth. Nothing composes this file (it is a leaf root,
     # not a unit the tower or `cad/assembly.py` builds from), so the
     # motion costs its ~20 s here and nowhere else — which is why it
     # can live in the factory rather than on a separate check target.
-    # `step=2` resolves the ramp/column onset to 2°; the ramp's side
-    # wall is ~8 mm thick at r≈152, so nothing narrow slips between
-    # samples.
+    # `step=2` bounds how far the sampled ramp/column gap can read above
+    # its true minimum: a 1° miss on a corner at r≈146.7 moves it
+    # ≈0.02 mm radially toward the face.
     assembly = assembly.with_motion(
         Motion.over_joint("stack_turn", "rotating", 0, 358, step=2)
     )

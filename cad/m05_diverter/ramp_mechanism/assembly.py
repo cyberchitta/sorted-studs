@@ -110,6 +110,7 @@ from ..params import (
     RAIL_INNER_R,
     RAIL_SIZE,
     R_BASKET_INNER,
+    R_VERT_INNER,
     TURNTABLE_ID,
     TURNTABLE_OD,
     TURNTABLE_Z_BOT,
@@ -166,21 +167,50 @@ BOSS_H_Z = 12.0
 # Ramp — fixed sloped plate, root just inside the +X wall, extends
 # through the exit. The ramp root is the datum the trap is hung from
 # (TRAP_HINGE_Z below), not the other way round: the ramp is sized
-# against the basket rim and the exit opening.
+# against the basket rim and the exit opening — and its length against
+# the inner through-columns (RAMP_L, below).
 RAMP_DEG = 25.0                               # slope below horizontal
 RAMP_T = 4.0
 RAMP_W = 70.0                                 # channel width between the side walls
-RAMP_L = 112.0                                # length along slope direction
-# Side walls — outboard of the channel, full length, standing on the
-# plate. They keep a brick that lands off-centre from leaving the plate
-# sideways (2026-09-11 fabrication review). Outboard rather than inboard
-# so the channel stays the full RAMP_W; the cost is the outer width,
-# which is what the opening and the basket slot have to pass.
+# Side walls — outboard of the channel, standing on the plate. They keep
+# a brick that lands off-centre from leaving the plate sideways
+# (2026-09-11 fabrication review). Outboard rather than inboard so the
+# channel stays the full RAMP_W; the cost is the outer width, which is
+# what the opening and the basket slot have to pass.
 RAMP_WALL_T = 2.0                             # ≥ FDM wall floor (1.5); takes brick impacts
 RAMP_WALL_H = 15.0                            # above the plate top — a brick height + margin
 RAMP_OUTER_W = RAMP_W + 2 * RAMP_WALL_T       # 74 — what the opening must pass
 RAMP_ROOT_X = COL_INTERIOR_SIDE / 2 - 2.0     # 43 — just inside +X wall
 RAMP_ROOT_Z = 185.0
+# Length: the ramp turns with the stack past the six inner through-
+# columns, whose near faces sit at R_VERT_INNER − 10 ≈ 151.66 (2020
+# stock, the same RAIL_SIZE as the rails). Nothing of the ramp may reach
+# past RAMP_REACH_R, RAMP_COLUMN_CLEARANCE inside those faces, at any
+# azimuth. The binding points are each body's outer downhill top corner
+# — the part leans with the slope, so its top reaches furthest out — and
+# plate and walls are cut square to the slope at the length that puts
+# that corner on RAMP_REACH_R. The walls end short of the plate because
+# they stand 17 mm higher. (At RAMP_L = 112 with full-length walls, the
+# wall tops reached r ≈ 156.1 and cut the columns at 14–20° + 60°·k of
+# stack turn, 2026-09-20.) Square, not trimmed to the circle: a
+# world-vertical cut meets the tilted faces at 65° and leaves a wedge
+# min_wall reads at 0.4–0.9 mm. Measured over the stack turn by
+# single_floor's `ramp_inner_column_gap_k` claims.
+RAMP_COLUMN_CLEARANCE = 5.0
+RAMP_REACH_R = R_VERT_INNER - RAIL_SIZE / 2 - RAMP_COLUMN_CLEARANCE   # ≈ 146.66
+
+
+def _square_cut_length(half_w: float, top: float) -> float:
+    """Length along the slope, from the root, at which a body of
+    half-width ``half_w`` whose top face sits ``top`` above the plate
+    centreline puts its outer downhill top corner on RAMP_REACH_R."""
+    reach_x = math.sqrt(RAMP_REACH_R**2 - half_w**2)
+    rad = math.radians(RAMP_DEG)
+    return (reach_x - RAMP_ROOT_X - top * math.sin(rad)) / math.cos(rad)
+
+
+RAMP_L = _square_cut_length(RAMP_W / 2, RAMP_T / 2)                          # ≈ 108.8
+RAMP_WALL_L = _square_cut_length(RAMP_OUTER_W / 2, RAMP_T / 2 + RAMP_WALL_H)  # ≈ 101.2
 
 # Hinge height — the catching trap's free-end underside sits
 # TRAP_HANDOFF_STEP above the ramp's top face at its root, so the brick
@@ -804,7 +834,8 @@ def ramp() -> Part:
     ``PlacedPart.location`` and silently drop part-internal Locations.
 
     Two side walls (``RAMP_WALL_T`` × ``RAMP_WALL_H`` above the plate)
-    stand outboard of the ``RAMP_W`` channel along the full length,
+    stand outboard of the ``RAMP_W`` channel from the root for
+    ``RAMP_WALL_L`` — short of the plate's ``RAMP_L``, see there —
     bottoms flush with the plate underside; the part's outer width is
     ``RAMP_OUTER_W``. One printed body, plate down.
     """
@@ -822,8 +853,9 @@ def ramp() -> Part:
     wall_y = RAMP_W / 2 + RAMP_WALL_T / 2
     wall_h = RAMP_T + RAMP_WALL_H
     wall_z = RAMP_WALL_H / 2                  # bottom flush with the plate underside
-    wall = Box(RAMP_L, RAMP_WALL_T, wall_h)
-    return plate + Pos(0, +wall_y, wall_z) * wall + Pos(0, -wall_y, wall_z) * wall
+    wall_x = -(RAMP_L - RAMP_WALL_L) / 2      # root ends flush with the plate's
+    wall = Box(RAMP_WALL_L, RAMP_WALL_T, wall_h)
+    return plate + Pos(wall_x, +wall_y, wall_z) * wall + Pos(wall_x, -wall_y, wall_z) * wall
 
 
 def trap_servo() -> Part:
