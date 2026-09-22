@@ -72,9 +72,9 @@ for role in FLOOR_ROLES:
 inspect(
     trap(), method=method, out="outputs", name="trap", solid_count=1,
     waive={
-        "overhang_max": "real ceilings: KNUCKLE_OD (10) exceeds TRAP_T "
+        "overhang_max": "real ceilings: KNUCKLE_OD (8) exceeds TRAP_T "
         "(4), and the plate is centred on the hinge axis, so the whole "
-        "plate underside floats 3 mm above the knuckle's lowest point "
+        "plate underside floats 2 mm above the knuckle's lowest point "
         "— printed with support under the plate; pin-bore top bridges",
     },
 )

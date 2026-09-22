@@ -129,7 +129,9 @@ COLLAR_T = 5.0
 # Hinge pin + knuckle. The pin is the trap's drive shaft: a Ø3 steel
 # D-shaft keyed into a D-bore in the knuckle and in the coupler, turning
 # in plain round bores through the bosses and both ±Y walls.
-KNUCKLE_OD = 10.0
+# Knuckle OD is set by the fall path, not by strength: see FALL_PATH_MARGIN.
+# 8 leaves 2.3 mm of wall round the keyed bore (≥ the FDM 1.5 floor).
+KNUCKLE_OD = 8.0
 PIN_D = 3.0
 PIN_FLAT = 1.0                                # flat at this distance from the axis (0.5 deep)
 PIN_HOLE_D = 3.6                              # round bearing bore: bosses + walls
@@ -139,7 +141,10 @@ PIN_D_BORE_FLAT = 1.2                         # 0.2 clear of the pin's flat
 # Trap — flat plate, knuckle at hinge axis, plate body in +X
 TRAP_T = 4.0
 TRAP_W = 80.0                                 # ≤ MAX_BRICK_DIM; leaves ±Y for bosses
-TRAP_HINGE_X = -(COL_INTERIOR_SIDE / 2 - 7.0)  # −38 — inset so knuckle clears −X wall
+# Inset so the knuckle clears the −X wall by 1 mm — it turns in place, so
+# the gap is a fixed running clearance. Every mm of inset, and of knuckle
+# radius, is a mm off the fall path (FALL_PATH_MARGIN, below).
+TRAP_HINGE_X = -(COL_INTERIOR_SIDE / 2 - KNUCKLE_OD / 2 - 1.0)  # −40
 TRAP_REST_DEG = 90.0                          # hanging: pass-through
 # Catch tilt — the brick must slide off the trap the way it slides off
 # the ramp (tan > MU_STATIC_BUDGET, below); 30° (tan 0.577) clears it
@@ -148,20 +153,12 @@ TRAP_REST_DEG = 90.0                          # hanging: pass-through
 TRAP_CATCH_DEG = 30.0
 TRAP_SWING_STEP = 5.0                         # sampling of the catch->rest swing
 _TRAP_CATCH_RAD = math.radians(TRAP_CATCH_DEG)
-# At the catch tilt the free end reaches to TRAP_TIP_X, short of the
-# ramp root (RAMP_ROOT_X = 43) so the brick steps down onto the ramp
-# rather than the trap overlapping it. That fixes the hinge-to-tip
-# reach, and so the plate length.
-TRAP_TIP_X = COL_INTERIOR_SIDE / 2 - 4.0      # 41
-_TRAP_REACH = (TRAP_TIP_X - TRAP_HINGE_X) / math.cos(_TRAP_CATCH_RAD)  # ≈ 91.2
-TRAP_L = _TRAP_REACH - KNUCKLE_OD / 2         # ≈ 86.2
-
 # Hinge bosses — mounted on inside of −X wall, extend inward past hinge,
 # sit outside the trap knuckle's Y extent so they clear the swinging plate.
 BOSS_Y = 3.0
 BOSS_Y_OFFSET = TRAP_W / 2 + BOSS_Y / 2 + 0.5           # 42
-BOSS_X = COL_INTERIOR_SIDE / 2 - (-TRAP_HINGE_X - KNUCKLE_OD / 2 - 1.0)  # 13
-BOSS_X_CENTER = -(COL_INTERIOR_SIDE / 2 - BOSS_X / 2)   # −38.5
+BOSS_X = COL_INTERIOR_SIDE / 2 - (-TRAP_HINGE_X - KNUCKLE_OD / 2 - 1.0)  # 10
+BOSS_X_CENTER = -(COL_INTERIOR_SIDE / 2 - BOSS_X / 2)   # −40
 BOSS_H_Z = 12.0
 
 # Ramp — fixed sloped plate, root just inside the +X wall, extends
@@ -180,8 +177,22 @@ RAMP_W = 70.0                                 # channel width between the side w
 RAMP_WALL_T = 2.0                             # ≥ FDM wall floor (1.5); takes brick impacts
 RAMP_WALL_H = 15.0                            # above the plate top — a brick height + margin
 RAMP_OUTER_W = RAMP_W + 2 * RAMP_WALL_T       # 74 — what the opening must pass
-RAMP_ROOT_X = COL_INTERIOR_SIDE / 2 - 2.0     # 43 — just inside +X wall
-RAMP_ROOT_Z = 185.0
+# Pass-through fall path: a brick bound for a lower floor falls past the
+# hanging trap, and the longest one the sorter takes — a 1×10 / 2×10,
+# lying flat along X — must fit between the trap's hanging face and the
+# +X wall, which is solid below the exit opening where the trap still
+# hangs. That sizes the knuckle and the hinge inset (above): the face sits
+# MAX_BRICK_DIM + FALL_PATH_MARGIN in from the wall. The ramp root then
+# must not intrude either, so its inboard (lower) corner is flush with the
+# wall's inner face — at X = 43 it left 75.15, 2026-09-22. Both held by
+# `check_fall_path.py`.
+FALL_PATH_MARGIN = 1.0
+RAMP_ROOT_X = COL_INTERIOR_SIDE / 2 + (RAMP_T / 2) * math.sin(math.radians(RAMP_DEG))  # ≈ 45.85
+# Where the plate centreline crosses the column's outer face — the datum
+# the exit opening is cut from (OPENING_Z_*), so the root's height
+# follows its X instead of the opening moving with it.
+RAMP_WALL_Z = 182.5
+RAMP_ROOT_Z = RAMP_WALL_Z + (COL_OUTER_SIDE / 2 - RAMP_ROOT_X) * math.tan(math.radians(RAMP_DEG))
 # Length: the ramp turns with the stack past the six inner through-
 # columns, whose near faces sit at R_VERT_INNER − 10 ≈ 151.66 (2020
 # stock, the same RAIL_SIZE as the rails). Nothing of the ramp may reach
@@ -218,12 +229,19 @@ RAMP_WALL_L = _square_cut_length(RAMP_OUTER_W / 2, RAMP_T / 2 + RAMP_WALL_H)  # 
 # `trap_catch_to_ramp_step` assert_distance in `make_assembly`,
 # phased on the trap joint at the catch angle.
 TRAP_HANDOFF_STEP = 5.0
+# At the catch tilt the free end reaches to TRAP_TIP_X, short of the
+# ramp root so the brick steps down onto the ramp rather than the trap
+# overlapping it. That fixes the hinge-to-tip reach, and so the plate
+# length.
+TRAP_TIP_X = RAMP_ROOT_X - 2.0                # ≈ 43.85
+_TRAP_REACH = (TRAP_TIP_X - TRAP_HINGE_X) / math.cos(_TRAP_CATCH_RAD)  # ≈ 96.8
+TRAP_L = _TRAP_REACH - KNUCKLE_OD / 2         # ≈ 92.8
 _RAMP_ROOT_TOP_Z = RAMP_ROOT_Z + (RAMP_T / 2) / math.cos(math.radians(RAMP_DEG))
 TRAP_HINGE_Z = (
     _RAMP_ROOT_TOP_Z + TRAP_HANDOFF_STEP
     + _TRAP_REACH * math.sin(_TRAP_CATCH_RAD)
     + (TRAP_T / 2) * math.cos(_TRAP_CATCH_RAD)
-)                                             # ≈ 239.1
+)                                             # ≈ 240.5
 
 # Trap servo — bought MG90S-class micro servo (metal gears: it takes
 # every catch impact through its gear train, since nothing else holds
@@ -309,8 +327,7 @@ RAMP_TIP_Z = RAMP_ROOT_Z - RAMP_L * math.sin(_RAMP_DEG_RAD)
 
 # Exit opening in the +X column wall — must pass the ramp plus a brick
 # sliding on top of it. Ramp enters the wall at x = COL_OUTER_SIDE/2.
-_RAMP_WALL_OFFSET = COL_OUTER_SIDE / 2 - RAMP_ROOT_X
-_RAMP_WALL_Z = RAMP_ROOT_Z - _RAMP_WALL_OFFSET * math.tan(_RAMP_DEG_RAD)
+_RAMP_WALL_Z = RAMP_WALL_Z
 OPENING_MARGIN = 5.0                          # vertical: below the plate, above the brick
 # Side margin is tighter than the vertical one: when the hinge bosses
 # sat on this wall they capped the opening at 83 mm, and the side walls
