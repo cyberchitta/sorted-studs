@@ -54,13 +54,12 @@ def build_fall_path(role: str = "middle") -> Assembly:
     a = floor
     for yaw in PROBE_YAWS_DEG:
         name = f"stick_{yaw:03d}"
-        # Two calls: a subtree path expands only as a whole group — inside
-        # a list it is read as a part name and skips as absent.
         a = (
             a
             .with_part(name, stick, location=Pos(x_mid, 0, (z_lo + z_hi) / 2) * Rot(0, 0, yaw))
-            .assert_no_interference_between([name], ["bearing_spider", "ring_bearing"])
-            .assert_no_interference_between([name], "rotating")
+            .assert_no_interference_between(
+                [name], ["bearing_spider", "ring_bearing", "rotating"],
+            )
         )
     # The binding yaw, measured: lying along X the stick has half the
     # margin to spare on each side.
