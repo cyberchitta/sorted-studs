@@ -22,7 +22,9 @@ split by whether a standard 90° 2020 bracket fits the geometry:
   the column's end face and the channel floor are one plane, so the
   bar still bears on the aluminium. The channel's side walls double
   as the saddle the structure pass wanted under the plate (a 20 mm
-  line becomes SEAT_OD). Where the column's corners poke past the
+  line becomes SEAT_OD), and the cap is cut flat across the bar at
+  ±SEAT_FLAT_HALF so the walls end WALL thick instead of feathering
+  into the round. Where the column's corners poke past the
   channel walls the socket's ceiling is roofed at SEAT_ROOF_TAPER
   from vertical, so printed socket-down nothing faces down.
 - `brace_head` — printed. A collar on V_4 at the brace node with one
@@ -71,6 +73,11 @@ SEAT_OD = 56.0                   # post seat: round cap over the column
 SEAT_SOCKET_H = 40.0             # column engagement below the end face
 SEAT_ROOF_TAPER_DEG = 40.0       # from vertical: the socket-ceiling roof
 SEAT_ROOF_H = 10.0               # < half-side / tan(taper), so it closes
+# The channel walls are chords of the round cap, so uncut they run out
+# to a knife point where they meet it (min_wall 1.245 at alignment
+# 0.39, 2026-09-22). Flats square to the bar, this far out along it,
+# end every wall WALL thick.
+SEAT_FLAT_HALF = math.sqrt((SEAT_OD / 2.0) ** 2 - (EXT_SIZE / 2.0 + WALL) ** 2)  # ≈ 22.98
 BRACKET_LEG = 20.0               # 2020 corner bracket, cheap L
 BRACKET_W = 17.0
 BRACKET_T = 4.0
@@ -86,6 +93,9 @@ def post_seat(bar_az_deg: float, column_rot_deg: float) -> Part:
     socket takes the column at `column_rot_deg`."""
     h = SEAT_SOCKET_H + BAR_DEPTH
     body = Pos(0.0, 0.0, BAR_DEPTH - h / 2.0) * Cylinder(SEAT_OD / 2.0, h)
+    body = body & Rot(0, 0, bar_az_deg) * (
+        Pos(0.0, 0.0, BAR_DEPTH - h / 2.0) * Box(2.0 * SEAT_FLAT_HALF, SEAT_OD + 2.0, h + 2.0)
+    )
     socket = Rot(0, 0, column_rot_deg) * (
         Pos(0.0, 0.0, -SEAT_SOCKET_H / 2.0 - 1.0)
         * Box(EXT_SIZE, EXT_SIZE, SEAT_SOCKET_H + 2.0)

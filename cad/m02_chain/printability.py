@@ -35,13 +35,28 @@ from .params import BRACE_COLS, S1, S3
 # orientation.
 chain = build_chain()
 
-for name in (
-    f"{S1.name}_post_seat",
-    f"{S3.name}_post_seat",
-    "brace_head",
-    *(f"brace_foot_{col}" for col in BRACE_COLS),
+# A vertical cut meeting a face parallel to the 41.9° brace leaves a
+# 48.1° edge (90° − elevation) in each foot: the stop wall's top ridge,
+# and the channel floor's lip at the block's end face. The crease rays
+# read ~0.59 there (foot_3 at the ridge, foot_5 at the lip; each foot
+# has both, and only the thinner shows). Alignment 0.65 ≈ cos 48.1° =
+# 0.67 is the edge's own dihedral, not two near-parallel faces, and a
+# chamfer on the ridge would take height off the face the brace bears
+# on. Owner's call, 2026-09-22.
+FOOT_WAIVE = {
+    "wall_min": "48.1° wedge tip, not a sliver: min_wall_at on the stop "
+                "wall's top ridge (foot_3) or the channel floor's end lip "
+                "(foot_5), alignment 0.65 ≈ cos 48.1°; the edge prints as "
+                "an ordinary 48° corner",
+}
+
+for name, waive in (
+    (f"{S1.name}_post_seat", None),
+    (f"{S3.name}_post_seat", None),
+    ("brace_head", None),
+    *((f"brace_foot_{col}", FOOT_WAIVE) for col in BRACE_COLS),
 ):
     inspect(
         chain.part(f"gantry.{name}").part,
-        method=FDM(), out="outputs", name=name,
+        method=FDM(), out="outputs", name=name, waive=waive,
     )
