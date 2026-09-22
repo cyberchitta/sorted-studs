@@ -397,8 +397,8 @@ tool-level form of this list. Below is what each class cost *here* —
 keep the stories, and when a class stops being a blind spot in the tool,
 retire it there first.
 
-Exit 0 means *no interference and printability passed, at the poses you
-built*. Five classes of real defect have shipped past a green check in
+Exit 0 means *no interference and no failed claim, at the poses you
+built* — printability is a separate run (see "Running checks"). Five classes of real defect have shipped past a green check in
 this repo, each costing a redesign slice. When a slice depends on one of
 these, the check is not your evidence — find the one that is.
 

@@ -38,7 +38,7 @@ the basket Z-range [0, 80], so the bracket's horizontal arms would
 clip the basket sector and force the basket to shrink angularly.
 Flipping below leaves the whole frame top surface flush at z=0 so
 the basket can rest anywhere on it. The saddle grip zone of the
-bearing spider sits at r ≈ [90, 110], well inside the inner-hex
+bearing spider sits at r ∈ [100, 120], well inside the inner-hex
 vertex (r = R_HEX_INNER · 2/√3), so nothing collides with the
 below-plate at the vertex.
 
@@ -106,9 +106,9 @@ HOR_INNER_OFFSET = 22.0
 ARM_L_TOTAL = HOR_INNER_OFFSET + ARM_BOLT_SPAN  # 62
 
 # Inboard-radial arm — single bolt to clear the spider saddle that
-# grips the inboard rail's inner end at r ∈ [90, 110]. With the
+# grips the inboard rail's inner end at r ∈ [100, 120]. With the
 # vertex at r ≈ 161.66 and BRACKET_HOR_OFFSET = 22, a single bolt
-# at +10 mm beyond the rail's outer end sits at r ≈ 129.66, ~20 mm
+# at +10 mm beyond the rail's outer end sits at r ≈ 129.66, ~10 mm
 # clear of the saddle.
 ARM_IN_BOLT_SPAN = 2 * BOLT_FROM_EXT_END                 # 20 — single bolt centred
 ARM_IN_L_TOTAL = HOR_INNER_OFFSET + ARM_IN_BOLT_SPAN     # 42
@@ -190,7 +190,7 @@ def bracket() -> Part:
     # Inboard radial arm: single bolt at the midpoint of the short
     # plate; spans HOR_INNER_OFFSET + 2·BOLT_FROM_EXT_END so the
     # inboard rail's outer end is clamped without reaching into the
-    # spider saddle's r ∈ [90, 110] grip zone.
+    # spider saddle's r ∈ [100, 120] grip zone.
     arm_in_plate = Pos(ARM_IN_L_TOTAL / 2, 0, plate_cz) * Box(
         ARM_IN_L_TOTAL, ARM_W, PLATE_T,
     )

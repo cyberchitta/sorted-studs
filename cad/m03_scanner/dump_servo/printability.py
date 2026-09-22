@@ -14,9 +14,12 @@ from ..params import WALL_MIN
 from .assembly import servo_arm, servo_bracket
 
 
+# servo_bracket has no downward face above the bed (overhang null,
+# 2026-09-22), so it takes the default threshold; servo_arm's 90° is
+# an open owner call — `_notes/state/m03-scanner.md`.
 inspect(
     servo_bracket(),
-    method=FDM(wall_min_mm=WALL_MIN, overhang_max_deg=90.0),
+    method=FDM(wall_min_mm=WALL_MIN),
     out="outputs",
     name="servo_bracket",
 )

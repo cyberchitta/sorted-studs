@@ -13,7 +13,11 @@ from cad_khana.printability.methods import FDM
 from .assembly import WALL_MIN, motor_mount, ring_gear
 
 
-method = FDM(wall_min_mm=WALL_MIN, overhang_max_deg=90.0)
+# Default 45° threshold: neither part has a downward face above the
+# bed (overhang reads null at any threshold, 2026-09-22), so the 90°
+# this used to carry switched off nothing — and now a new overhang
+# fails instead of passing unseen.
+method = FDM(wall_min_mm=WALL_MIN)
 # pinion is bought (metal, on the motor shaft) — not inspected.
 inspect(ring_gear(), method=method, out="outputs", name="ring_gear")
 inspect(motor_mount(), method=method, out="outputs", name="motor_mount")

@@ -29,7 +29,7 @@ deck — are declared here, the level that composes both. The turret's
 loaded-platform envelope against the chain is a probe fixture, so it
 lives in `check_turret_envelope.py` (a check module: `khana check` it
 separately; this file never carries the probe). Within-module
-assertions are validated by each module's own `khana check`.
+assertions propagate and are evaluated here too (see below).
 
 Coordinate frame (world):
     +X = operator's right
@@ -49,9 +49,9 @@ World poses are *derived from the units' exported anchors* (m05
 `deck_top`, m03 `dump_centroid` / `floor_bottom` / `load_top`), and
 the chain's mirrored beliefs are asserted coincident with the live
 units after composition — no mirrored placement constants live here.
-Within-unit assertions ride along nested and are intentionally not
-evaluated by this root's `check()` (root-only evaluate) — each unit's
-own `khana check` validates them.
+Within-unit assertions propagate: this root's `check()` evaluates
+every unit's nested claims too, qualified into machine coordinates, so
+only the cross-unit claims are declared here.
 """
 
 from __future__ import annotations
@@ -82,6 +82,33 @@ _M05_POSE = Location()
 # moves the live anchors and the coincidence asserts below go red,
 # which is the mirrors asking to be updated.
 M03_ROT_DEG = 0.0
+
+
+def m03_pose(m05: Assembly, m03: Assembly) -> Location:
+    """m03's world pose, derived from the two units' anchors.
+
+    - xy: the turret's DUMP centroid sits on the m05 hub axis
+      (option a', 2026-05-05) — m05's `deck_top` anchor carries the
+      hub xy.
+    - z: the turret floor's bottom face rests on the m05 deck top
+      face — m03's `floor_bottom` meets m05's `deck_top` plane.
+
+    Rotated by ψ (`M03_ROT_DEG`) about the DUMP centroid, then DUMP
+    translated onto the hub axis: world = T + R(ψ)·local with
+    T = hub − R(ψ)·dump. Shared with `cad/render.py`, so the render
+    cannot place m03 differently from the check.
+    """
+    deck_top = m05.anchor("deck_top").position
+    dump = m03.anchor("dump_centroid").position
+    floor_bottom = m03.anchor("floor_bottom").position
+    psi = math.radians(M03_ROT_DEG)
+    dump_rx = dump.X * math.cos(psi) - dump.Y * math.sin(psi)
+    dump_ry = dump.X * math.sin(psi) + dump.Y * math.cos(psi)
+    return Pos(
+        deck_top.X - dump_rx,
+        deck_top.Y - dump_ry,
+        deck_top.Z - floor_bottom.Z,
+    ) * Rot(0, 0, M03_ROT_DEG)
 
 
 # Cached because the degenerate ``assembly`` memo below and any
@@ -119,35 +146,14 @@ def build_top(schema: str = DEFAULT_SCHEMA) -> Assembly:
     m03 = build_m03(schema)
     chain = build_chain(schema)
 
-    # m03 placement:
-    #   - xy: the turret's DUMP centroid sits on the m05 hub axis
-    #     (option a', 2026-05-05) — m05's `deck_top` anchor carries the
-    #     hub xy.
-    #   - z: the turret floor's bottom face rests on the m05 deck top
-    #     face — m03's `floor_bottom` meets m05's `deck_top` plane.
-    # Both constraints are pure translation, so the pose is
-    # componentwise arithmetic on the anchor readings (890 − (−140) =
-    # 1030 etc.).
-    deck_top = m05.anchor("deck_top").position
-    dump = m03.anchor("dump_centroid").position
-    floor_bottom = m03.anchor("floor_bottom").position
-    # Rotate m03 by ψ about the DUMP centroid, then translate DUMP onto
-    # the hub axis: world = T + R(ψ)·local with T = hub − R(ψ)·dump.
-    psi = math.radians(M03_ROT_DEG)
-    dump_rx = dump.X * math.cos(psi) - dump.Y * math.sin(psi)
-    dump_ry = dump.X * math.sin(psi) + dump.Y * math.cos(psi)
-    m03_pose = Pos(
-        deck_top.X - dump_rx,
-        deck_top.Y - dump_ry,
-        deck_top.Z - floor_bottom.Z,
-    ) * Rot(0, 0, M03_ROT_DEG)
+    m03_at = m03_pose(m05, m03)
 
     # m02 chain placement: the chain's `load_top` anchor must land on
     # m03's live `load_top` (the LOAD platform top centroid the chain
     # delivers onto). The chain's own mirrored beliefs are asserted
     # against the live units after composition (the anchor asserts
     # below) instead of the retired namespace cross-checks.
-    load_top_world = (m03_pose * m03.anchor("load_top")).position
+    load_top_world = (m03_at * m03.anchor("load_top")).position
     chain_load_local = chain.anchor("load_top").position
     chain_pose = Pos(
         load_top_world.X - chain_load_local.X,
@@ -158,14 +164,13 @@ def build_top(schema: str = DEFAULT_SCHEMA) -> Assembly:
     a = (
         Assembly()
         .with_subassembly("m05", m05, location=_M05_POSE)
-        .with_subassembly("m03", m03, location=m03_pose)
+        .with_subassembly("m03", m03, location=m03_at)
         .with_subassembly("m02_chain", chain, location=chain_pose)
         # Every cross-unit pair (m03 × m05, chain × m05, chain × m03),
         # each unit addressed by its subtree path. Within-unit pairs are
-        # covered by each unit's own standalone `khana check` (nested
-        # assertions are root-only and not evaluated here). The
-        # gantry's rests on m05 are tangent (no overlap), so they
-        # coexist with the group form.
+        # each unit's own claims, which propagate and evaluate here
+        # too. The gantry's rests on m05 are tangent (no overlap), so
+        # they coexist with the group form.
         .assert_no_interference_between("m03", "m05")
         .assert_no_interference_between("m02_chain", "m05")
         .assert_no_interference_between("m02_chain", "m03")

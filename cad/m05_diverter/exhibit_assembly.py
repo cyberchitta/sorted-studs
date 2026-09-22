@@ -3,8 +3,8 @@ M05 diverter — exhibit variant for the subsite article pane.
 
 A 3-floor tower with the production top-acrylic deck in place but
 most baskets stripped, so the rotating column + ramp + trap-door
-mechanism is visible *through* the structure. The production 4-floor
-× 10-basket assembly is opaque from any useful camera angle; this
+mechanism is visible *through* the structure. The production four-floor
+tower (9–18 baskets a floor) is opaque from any useful camera angle; this
 variant is what the article shows.
 
 Reuses every per-floor composition helper from ``assembly.py`` via

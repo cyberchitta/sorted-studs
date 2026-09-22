@@ -664,8 +664,8 @@ def build_m05(schema: str = DEFAULT_SCHEMA) -> Assembly:
         )
     )
     # Post tops: the m02 gantry derives its post-top joints from these
-    # (`outer_vert_4_top` at deck + 470, `outer_vert_5_top` at deck +
-    # 181) instead of mirroring the heights.
+    # (`outer_vert_4_top` at deck + 449.5, `outer_vert_5_top` at deck +
+    # 160.5 — `THROUGH_DECK_POSTS`) instead of mirroring the heights.
     for k, h in THROUGH_DECK_POSTS.items():
         a = a.with_anchor(
             f"outer_vert_{k}_top",

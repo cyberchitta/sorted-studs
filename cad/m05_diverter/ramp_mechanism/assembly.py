@@ -347,16 +347,14 @@ OPENING_Z_BOT = _RAMP_WALL_Z - RAMP_T - OPENING_MARGIN
 OPENING_Z_TOP = _RAMP_WALL_Z + MAX_BRICK_DIM + OPENING_MARGIN
 
 
-# Basket angular-slot width at ramp tip must admit the ramp's outer width.
-# This is an UPPER BOUND on the real slot: basket/assembly.py shrinks
-# each basket's angular span below 360°/N so its radial walls clear
-# the radial-rail corridor, so the real slot at the tip is narrower
-# than this formula reports. The tight cross-boundary check lives in
-# the top-level ../assembly.py as basket_plus_x-vs-ramp
-# no-interference, which will fail if ramp geometry actually clashes
-# with the (shrunk) basket walls. Sibling-imports are forbidden, so
-# we can't pull BASKET_HALF_DELTA_DEG in here; keep this as a cheap
-# parametric sanity check only.
+# Basket angular-slot width at the ramp tip, for the reference N=6
+# basket only (N_BASKETS_PER_FLOOR — the one facing the ramp's home).
+# Each basket takes its full 360°/N sector, so this is the chord at
+# RAMP_TIP_X for that N. Narrower baskets are NOT covered: at N=18 the
+# chord is ≈ 49.9 mm against RAMP_OUTER_W 74 — open, see
+# `state/m05-diverter.md`. The geometric ramp-vs-basket claims are
+# `single_floor.py` / `floor_layout_sweep.py`, held over `stack_turn`;
+# they test collision, not which basket a brick lands in.
 BASKET_SLOT_W_AT_TIP = 2 * RAMP_TIP_X * math.tan(math.pi / N_BASKETS_PER_FLOOR)
 
 # Column height — pinned by the column-to-column joint plane. Joints
@@ -848,7 +846,8 @@ def ramp() -> Part:
 
     Keeping the pose in the placement is what lets animated GLB
     exporters pick it up via per-frame TRS samplers, which only see
-    ``PlacedPart.location`` and silently drop part-internal Locations.
+    ``PlacedPart.location`` — the exporter raises on a part-internal
+    Location rather than render it.
 
     Two side walls (``RAMP_WALL_T`` × ``RAMP_WALL_H`` above the plate)
     stand outboard of the ``RAMP_W`` channel from the root for
@@ -856,9 +855,9 @@ def ramp() -> Part:
     bottoms flush with the plate underside; the part's outer width is
     ``RAMP_OUTER_W``. One printed body, plate down.
     """
-    # Deliberately loose upper bound (see BASKET_SLOT_W_AT_TIP above —
-    # the real slot is narrower, and the tight cross-boundary check is
-    # the top level's basket-vs-ramp no-interference). Stays bare.
+    # Parameter sanity at the reference N=6 basket only (see
+    # BASKET_SLOT_W_AT_TIP above — narrower baskets are not covered).
+    # Stays bare.
     assert RAMP_OUTER_W <= BASKET_SLOT_W_AT_TIP, (
         f"RAMP_OUTER_W ({RAMP_OUTER_W:.1f} mm) > basket angular slot upper "
         f"bound at ramp tip ({BASKET_SLOT_W_AT_TIP:.1f} mm at "
@@ -1136,8 +1135,8 @@ def make_assembly(role: str = "middle") -> Assembly:
         # The catching trap hands the brick down a short step onto the
         # ramp root: clear of the ramp, but not so far that the brick
         # tumbles. Constructed at TRAP_HANDOFF_STEP vertically; the
-        # true (shortest) distance is a little less, so the bounds
-        # bracket it rather than pin it.
+        # measured (shortest) distance is not that number — 5.42 on
+        # 2026-09-22 — so the bounds bracket it rather than pin it.
         # ... and only there: the window lapses the claim everywhere
         # else in the swing, where the free end is nowhere near the
         # ramp root. TRAP_CATCH_DEG is the motion's low bound, so the

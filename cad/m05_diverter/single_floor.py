@@ -190,7 +190,7 @@ def build_single_floor(
     # ~68 mm corner reach — and are omitted.
     #
     # Spider hangs off the radial rails (saddles at azimuth (k+0.5)·60°,
-    # on the inboard segment's inner end, r ∈ [90, 110]). It is held clear
+    # on the inboard segment's inner end, r ∈ [100, 120]). It is held clear
     # of them only — nothing yet asserts it rests on them. That each basket
     # rests on its sector's two hex edges is the tower's
     # `_build_floor_static`, for every floor's layout.

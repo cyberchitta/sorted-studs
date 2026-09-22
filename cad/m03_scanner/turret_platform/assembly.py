@@ -261,10 +261,10 @@ def acrylic_insert(
 
     Identity intrinsic is load-bearing: cad-khana's
     ``export_animated_glb`` per-frame TRS samplers extract only
-    ``PlacedPart.location`` and silently drop part-internal
-    Locations, so a dynamic part (any platform during a DUMP dwell)
-    with a non-identity intrinsic renders correctly at frame 0 and
-    quietly wrong thereafter."""
+    ``PlacedPart.location``, so a dynamic part (any platform during a
+    DUMP dwell) with a non-identity intrinsic would render right at
+    frame 0 and wrong thereafter — the exporter now raises on one
+    instead."""
     # Acrylic insert covers the imaged region.
     assert ACRYLIC_INSERT_SIZE >= IMAGED_REGION_SIDE_MM, (
         f"acrylic insert {ACRYLIC_INSERT_SIZE} < imaged region "

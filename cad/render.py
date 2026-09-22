@@ -43,6 +43,7 @@ from chitra_cad.framing import HERO_3Q
 from chitra_cad.render import render
 from chitra_cad.scene import Scene
 
+from .assembly import m03_pose
 from .m02_c_channel_singulator.assembly import build_m02
 from .m03_scanner.assembly import build_m03
 from .m05_diverter.assembly import build_m05
@@ -50,11 +51,11 @@ from .m05_diverter.assembly import build_m05
 
 # --- Placement --------------------------------------------------------
 #
-# m05 sits at world identity; the m03 pose derives from the units'
-# exported anchors inside ``_build_top_level`` — the same derivation
-# as ``cad/assembly.py`` (DUMP centroid over the m05 hub axis, turret
-# floor bottom on the deck top face), so the render can no longer
-# drift from the check assembly's layout. The m02 singulator here is
+# m05 sits at world identity; the m03 pose is ``cad/assembly.py``'s
+# own ``m03_pose`` (DUMP centroid over the m05 hub axis, turret floor
+# bottom on the deck top face, turned by ψ) — one function, so the
+# render cannot drift from the check assembly's layout. (It did once:
+# a copied derivation here left out ψ.) The m02 singulator here is
 # a render-only vignette (the m02_chain unit owns the real S1
 # placement): it hangs over the m03 LOAD platform so its exit arc
 # drops bricks onto LOAD, offset by two render-local constants.
@@ -111,11 +112,8 @@ def _build_top_level(schema: str) -> tuple[Assembly, dict[str, str]]:
         "m02_c_channel_singulator", build_m02(schema)
     )
 
-    deck = assy_m05.anchor("deck_top").position
-    dump = assy_m03.anchor("dump_centroid").position
-    floor_bottom = assy_m03.anchor("floor_bottom").position
-    m03_pose = Pos(deck.X - dump.X, deck.Y - dump.Y, deck.Z - floor_bottom.Z)
-    load = (m03_pose * assy_m03.anchor("load_top")).position
+    m03_at = m03_pose(assy_m05, assy_m03)
+    load = (m03_at * assy_m03.anchor("load_top")).position
     m02_pose = Pos(
         load.X - M02_EXIT_RADIUS, load.Y, load.Z + SINGULATOR_DROP_OVER_LOAD
     )
@@ -123,7 +121,7 @@ def _build_top_level(schema: str) -> tuple[Assembly, dict[str, str]]:
     top = (
         Assembly()
         .with_subassembly("m05", assy_m05)
-        .with_subassembly("m03", assy_m03, location=m03_pose)
+        .with_subassembly("m03", assy_m03, location=m03_at)
         .with_subassembly("m02", assy_m02, location=m02_pose)
     )
 
