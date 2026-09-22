@@ -80,6 +80,7 @@ from ..params import (
     R_HEX_OUTER,
     R_VERT_INNER,
     R_VERT_OUTER,
+    basket_name,
 )
 
 
@@ -433,7 +434,7 @@ def build_basket_ring(
     """
     a = Assembly()
     for center_deg, n_size, notches in layout:
-        name = f"basket_{int(round(center_deg)):03d}_{n_size:02d}"
+        name = basket_name(center_deg, n_size)
         a = a.with_part(
             name,
             basket(
@@ -458,7 +459,7 @@ def build_basket_ring_standalone() -> Assembly:
     for idx, layout in FLOOR_LAYOUTS.items():
         a = a.with_subassembly(f"f{idx}", build_basket_ring(layout))
         names = [
-            f"f{idx}.basket_{int(round(center_deg)):03d}_{n_size:02d}"
+            f"f{idx}.{basket_name(center_deg, n_size)}"
             for center_deg, n_size, _notches in layout
         ]
         for name in names:

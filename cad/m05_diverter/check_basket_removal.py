@@ -24,7 +24,8 @@ What is deliberately not asserted:
   each), so it separates from both neighbours from the first mm.
 - The hex rails and radials. They sit at z ∈ [-20, 0] under the basket
   floor, tangent to it; a translation in the floor plane keeps them
-  tangent. `single_floor.py` already holds the rest-pose contact.
+  tangent. The tower's `_build_floor_static` holds the rest-pose
+  contact, per floor.
 - Poses past the last step. Past `withdrawal_travel` the column
   envelope has crossed the basket edge and keeps moving away from it
   (the relative path runs parallel to the axis while the edge diverges
@@ -42,7 +43,7 @@ from cad_khana.mechanism.assembly import Assembly
 
 from .basket.assembly import basket, withdrawal_travel
 from .frame import assembly as _frame
-from .params import FLOOR_LAYOUTS
+from .params import FLOOR_LAYOUTS, basket_name
 
 STEP_MM = 4.0
 
@@ -83,7 +84,7 @@ def build_basket_removal() -> Assembly:
             notch_left="left" in notches,
             notch_right="right" in notches,
         )
-        name = f"basket_{int(round(center_deg)):03d}_{n_size:02d}"
+        name = basket_name(center_deg, n_size)
         steps = Assembly()
         for d in _steps(withdrawal_travel(half_angle)):
             steps = steps.with_part(f"d{int(d):03d}", body, location=Pos(d, 0, 0))

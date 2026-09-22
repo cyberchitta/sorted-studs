@@ -189,19 +189,11 @@ def build_single_floor(
     # brackets are all ≥ 272 mm from the axis — far outside the column's
     # ~68 mm corner reach — and are omitted.
     #
-    # Spider now hangs off the radial rails (saddles at azimuth (k+0.5)·60°,
-    # aligned with the rail axes). The saddle grips the rail's inner end;
-    # we model this as an asserted no-interference today — shape-level
-    # tangent contact at the rail outer faces reads as zero clearance but
-    # zero overlap volume, which passes. If the saddle is later modeled as
-    # a physical clamp that closes 3D around the extrusion, expect to
-    # relax this to assert_interference with a reason.
-    #
-    # Spider saddle clamps the inboard rail segment's inner end
-    # (r ∈ [90, 110]); the outer segment is well past the spider
-    # hub. Tangent-contact on the saddle reads as zero clearance
-    # / zero overlap volume — passes today; will tighten when
-    # the saddle is modeled as a 3D clamp.
+    # Spider hangs off the radial rails (saddles at azimuth (k+0.5)·60°,
+    # on the inboard segment's inner end, r ∈ [90, 110]). It is held clear
+    # of them only — nothing yet asserts it rests on them. That each basket
+    # rests on its sector's two hex edges is the tower's
+    # `_build_floor_static`, for every floor's layout.
     #
     # Lower-floor servo vs the frame members radially closest to
     # the axis. Inner hex + rails sit at z ∈ [-20, 0] (top face at

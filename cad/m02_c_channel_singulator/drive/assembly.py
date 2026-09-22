@@ -313,17 +313,15 @@ def build_drive(
     ``seam_phase_deg`` is where the bowl's thirds seams fall — also
     per instance, since they must miss that stage's gantry bar ends
     (the chain's §Seams). Guarded here against the two things the
-    unit itself owns: the exit arc (slot and tongue) and the motor.
+    unit itself owns: the exit arc (slot and tongue), below, and the
+    motor, measured — the motor stands on one sector and clears the
+    other two, ears included (they hang below the floor, in the motor's
+    own height band).
     """
     ear_deg = math.degrees(2.0 * SEAM_EAR_T / PLATE_R_OUT)
-    # The motor body's angular half-width about the rotor axis.
-    motor_half_deg = math.degrees(math.atan2(NEMA17_SIDE / 2.0, CENTER_DIST - NEMA17_SIDE / 2.0))
     for seam in seam_azimuths(seam_phase_deg):
         assert angular_gap_deg(seam, 0.0) >= EXIT_ARC_DEG / 2.0 + ear_deg, (
             f"bowl seam at {seam:.1f}° runs into the exit arc's slot"
-        )
-        assert angular_gap_deg(seam, motor_azimuth_deg) >= motor_half_deg + ear_deg, (
-            f"bowl seam at {seam:.1f}° runs through the motor at {motor_azimuth_deg:.1f}°"
         )
     axis_xy = pinion_axis_xy(motor_azimuth_deg)
     on_axis = Location((axis_xy[0], axis_xy[1], 0.0)) * Rot(
@@ -371,6 +369,15 @@ def build_drive(
         )
         .assert_scalar("gear_ratio", GEAR_RATIO, detail="ring / pinion teeth")
     )
+    # The motor touches no sector but its own. A seam run into the
+    # motor puts a neighbour's ear against its body; 1 mm is a real gap,
+    # not a fit — the ears' bolts are detail-layer.
+    for part in BOWL_PARTS:
+        if part != motor_sector:
+            a = a.assert_distance(
+                "motor", part, min_mm=1.0,
+                name=f"motor_clear_of_{part}",
+            )
     for k, part in enumerate(BOWL_PARTS):
         a = (
             a

@@ -113,6 +113,19 @@ RADIAL_INNER_LEN = RAIL_INNER_OUTER_END_R - RAIL_INNER_R          # ≈ 39.66
 RADIAL_OUTER_LEN = RAIL_OUTER_R - RAIL_OUTER_INNER_END_R          # ≈ 106.11
 
 
+def edge_apothem_deg(k: int) -> float:
+    """Azimuth of hex edge k's midpoint — the edge between V_k and
+    V_{k+1}, vertices at (k + 0.5)·60°. Outer and inner hex share it."""
+    return (k + 1) * 60.0
+
+
+def edge_under(azimuth_deg: float) -> int:
+    """The hex edge whose 60° span holds ``azimuth_deg`` — the inverse
+    of ``edge_apothem_deg``. Ambiguous only on a vertex azimuth, where
+    no basket centre falls."""
+    return (round(azimuth_deg / 60.0) - 1) % 6
+
+
 # --- Part helpers -------------------------------------------------------
 
 def _horiz_ext(length: float) -> Part:
@@ -215,8 +228,7 @@ def build_floor_horizontals(
         )
 
         # Outer horizontal on edge k (between V_k and V_{k+1}).
-        # Edge midpoint at apothem angle (k + 1) * 60°.
-        oe_angle = (k + 1) * 60.0
+        oe_angle = edge_apothem_deg(k)
         oex = R_HEX_OUTER * math.cos(math.radians(oe_angle))
         oey = R_HEX_OUTER * math.sin(math.radians(oe_angle))
         n_oh = f"outer_horiz_{k}"
@@ -229,7 +241,7 @@ def build_floor_horizontals(
 
         # Inner horizontal on inner-hex edge k — same indexing + edge
         # azimuths as outer since the hexes are aligned.
-        ie_angle = (k + 1) * 60.0
+        ie_angle = edge_apothem_deg(k)
         iex = R_HEX_INNER * math.cos(math.radians(ie_angle))
         iey = R_HEX_INNER * math.sin(math.radians(ie_angle))
         n_ih = f"inner_horiz_{k}"

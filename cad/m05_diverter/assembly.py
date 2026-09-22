@@ -100,7 +100,7 @@ from .outer_vertex_bracket.assembly import (
     PLATE_T as OUTER_BRACKET_PLATE_T,
     bracket as outer_bracket,
 )
-from .params import FLOOR_H, FLOOR_LAYOUTS, R_VERT_OUTER, THROUGH_DECK_POSTS
+from .params import FLOOR_H, FLOOR_LAYOUTS, R_VERT_OUTER, THROUGH_DECK_POSTS, basket_name
 from .ramp_mechanism import assembly as _ramp
 
 
@@ -162,8 +162,13 @@ def _build_floor_static(role: str, basket_layout) -> Assembly:
     tower is checked in its own layout — `single_floor.py` sees only
     the reference one. Columns are tower-global; the baskets' claims
     against them are `check_basket_removal.py` (rest is its first
-    step)."""
-    return (
+    step).
+
+    Rest is asserted as contact, not only as no-overlap — a basket
+    floating above its rails passes every no-interference claim. Each
+    basket stands on the inner and outer hex edges of its own sector
+    (its floor spans both, `basket/assembly.py`)."""
+    a = (
         Assembly()
         .with_subassembly(
             "rails",
@@ -187,6 +192,15 @@ def _build_floor_static(role: str, basket_layout) -> Assembly:
         .assert_no_interference_between("baskets", "rails")
         .assert_no_interference_between("baskets", "bearing")
     )
+    for center_deg, n_size, _notches in basket_layout:
+        name = f"baskets.{basket_name(center_deg, n_size)}"
+        k = _frame.edge_under(center_deg)
+        a = (
+            a
+            .assert_tangent_contact(name, f"rails.inner_horiz_{k}")
+            .assert_tangent_contact(name, f"rails.outer_horiz_{k}")
+        )
+    return a
 
 
 # Top-deck shape-truth color — faint blue-white at α=0.25 to render as
@@ -434,17 +448,19 @@ def _add_drive_train_checks(a: Assembly, base: int) -> Assembly:
         a = a.assert_no_interference(pin, other)
 
     # Motor body hangs at z ∈ [-65, -25], below every other modeled part
-    # and inside the rail-inner ring — clears the whole base floor.
-    for other in (
-        _rot(base, "column"),
-        _brg(base, "ring_bearing"),
-        _brg(base, "bearing_spider"),
-        _rot(base, "ramp"),
-        _rot(base, "trap.trap"),
-        _rot(base, "trap.servo_horn"),
-        _rot(base, "trap_servo"),
-    ):
-        a = a.assert_no_interference(mtr, other)
+    # and inside the rail-inner ring — clears the whole base floor. The
+    # trap is named as its subtree, so every part of it is covered.
+    a = (
+        a
+        .assert_no_interference_between([mtr], [
+            _rot(base, "column"),
+            _brg(base, "ring_bearing"),
+            _brg(base, "bearing_spider"),
+            _rot(base, "ramp"),
+            _rot(base, "trap_servo"),
+        ])
+        .assert_no_interference_between([mtr], _rot(base, "trap"))
+    )
     for k in range(6):
         a = (
             a

@@ -243,11 +243,17 @@ FLOOR_LAYOUTS = {
 FLOOR_LAYOUT = FLOOR_LAYOUTS[0]
 
 
+def basket_name(center_deg: float, n_size: int) -> str:
+    """Leaf name of the basket a layout entry places (``basket_090_12``)
+    — the one spelling every claim about it addresses."""
+    return f"basket_{int(round(center_deg)):03d}_{n_size:02d}"
+
+
 def all_basket_names() -> list[str]:
     """Every basket leaf name any floor layout uses, sorted — the set
     the paint and material maps must cover."""
     return sorted({
-        f"basket_{int(round(c)):03d}_{n:02d}"
+        basket_name(c, n)
         for layout in FLOOR_LAYOUTS.values()
         for c, n, _ in layout
     })
