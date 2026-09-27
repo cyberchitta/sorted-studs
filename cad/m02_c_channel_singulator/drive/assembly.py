@@ -47,8 +47,10 @@ the skirt's inner face, because the plain distance pinion↔bowl is the
 stator-vs-drive claims live in
 ../assembly.py.
 
-Printed parts: the three bowl sectors (floor down, no support), pinion — see
-`printability.py`. The bearing and motor are bought.
+Printed parts: the three bowl sectors (floor down, no support) — inspected
+per stage in `cad/m02_chain/printability.py`, since each stage cuts its
+own — and the pinion, in `printability.py`. The bearing and motor are
+bought.
 """
 
 import math
