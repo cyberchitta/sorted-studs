@@ -14,6 +14,7 @@ is placed at identity).
 
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
+from cad_khana.printability.waiver import Waiver
 
 from ..params import WALL_MIN
 from .assembly import build_turret_drive_static
@@ -33,7 +34,8 @@ inspect(
     out="outputs",
     name="drive_bracket",
     waive={
-        "overhang_max": "309.08 mm² at up to 90.0° (measured 2026-09-27, "
+        "overhang_max": Waiver(
+            reason="309.08 mm² at up to 90.0° (measured 2026-09-27, "
             "up turret +Y): the ceilings of the seven holes that print "
             "sideways and nothing else — the Ø22 motor centering pilot "
             "in the plate, 144.68 mm²; the two Ø5.5 M5 foot-bolt holes "
@@ -42,5 +44,7 @@ inspect(
             "Print plan: every ceiling bridged, no supports; ream the "
             "Ø22 pilot to fit the motor boss; drill the Ø5.5 and M3 "
             "holes if they bind.",
+            max_area_mm2=312.0, max_regions=7,
+        ),
     },
 )

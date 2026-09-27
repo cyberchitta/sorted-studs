@@ -27,6 +27,7 @@ that default bowl was inspected, so S2's and S3's were never looked at.
 
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
+from cad_khana.printability.waiver import Waiver
 
 from ..m02_c_channel_singulator.drive.assembly import BOWL_PARTS, WALL_MIN, bowl_part_at
 from .assembly import build_chain
@@ -52,10 +53,13 @@ chain = build_chain()
 # chamfer on the ridge would take height off the face the brace bears
 # on. Owner's call, 2026-09-22.
 FOOT_WAIVE = {
-    "wall_min": "48.1° wedge tip, not a sliver: min_wall_at on the stop "
-                "wall's top ridge (foot_3) or the channel floor's end lip "
-                "(foot_5), alignment 0.65 ≈ cos 48.1°; the edge prints as "
-                "an ordinary 48° corner",
+    "wall_min": Waiver(
+        reason="48.1° wedge tip, not a sliver: min_wall_at on the stop "
+        "wall's top ridge (foot_3, 0.594) or the channel floor's end lip "
+        "(foot_5, 0.582), alignment 0.65 ≈ cos 48.1°; the edge prints as "
+        "an ordinary 48° corner",
+        min_wall_mm=0.55,
+    ),
 }
 
 for name, waive in (
@@ -116,7 +120,10 @@ for s in STAGES:
         inspect(
             chain.part(f"{s.name}.drive.{leaf}").part,
             method=FDM(wall_min_mm=WALL_MIN), out="outputs", name=f"{s.name}_{leaf}",
-            waive={"overhang_max": _MOTOR_WAIVER[(s.name, s.motor_azimuth_deg, s.bowl_seam_phase_deg)]}
+            waive={"overhang_max": Waiver(
+                reason=_MOTOR_WAIVER[(s.name, s.motor_azimuth_deg, s.bowl_seam_phase_deg)],
+                max_area_mm2=0.85, max_regions=2,
+            )}
             if leaf == motor_sector else None,
         )
 

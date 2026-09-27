@@ -14,6 +14,7 @@ the hub axis at the pin-axis plane, disc spanning z ±12.5).
 
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
+from cad_khana.printability.waiver import Waiver
 
 from ..params import WALL_MIN
 from .assembly import build_turret_arm
@@ -34,7 +35,8 @@ inspect(
     name="spider",
     solid_count=1,
     waive={
-        "overhang_max": "389.35 mm² at up to 90.0° (measured 2026-09-27, "
+        "overhang_max": Waiver(
+            reason="389.35 mm² at up to 90.0° (measured 2026-09-27, "
             "up +Z): the ceilings of the five horizontal bores and "
             "nothing else — the four Ø5.4 hinge-pin bores through the "
             "bushing blocks at r 62.3–67.7, 88.78 mm² each, and the Ø4 "
@@ -42,5 +44,7 @@ inspect(
             "plan: bridged, no supports; run a Ø5.4 drill through each "
             "pin bore after printing to restore the 0.2 mm radial pin "
             "clearance the bridge droop eats.",
+            max_area_mm2=392.0, max_regions=5,
+        ),
     },
 )

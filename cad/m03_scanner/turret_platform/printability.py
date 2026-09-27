@@ -19,6 +19,7 @@ adhesive dabs. The waiver below lists each feature and its area.
 
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
+from cad_khana.printability.waiver import Waiver
 
 from ..params import WALL_MIN
 from .assembly import frame
@@ -31,7 +32,7 @@ inspect(
     name="frame",
     solid_count=1,
     waive={
-        "overhang_max": (
+        "overhang_max": Waiver(reason=(
             "measured 2026-09-27, up cartridge −Z: 550.35 mm² at 90°, all "
             "flat ceilings. Seat faces, included by owner decision "
             "2026-09-27, 430.0 mm²: 4 corner-lip tops, 100 each, and 2 "
@@ -39,10 +40,7 @@ inspect(
             "Non-functional, 120.36 mm²: 2 outboard bracket tops, 40 "
             "each, and 2 Ø5.4 pin-bore ceilings, 20.18 each. Print plan: "
             "every ceiling bridged, no supports; sand or clean the seat "
-            "faces flat after printing; drill Ø5.4 through the pin bores. "
-            "This waiver is kind-wide, so it covers any overhang on this "
-            "body. The total area is the drift tell: if it is not "
-            "550.35 mm², re-measure."
-        ),
+            "faces flat after printing; drill Ø5.4 through the pin bores."
+        ), max_area_mm2=553.0, max_regions=10),
     },
 )

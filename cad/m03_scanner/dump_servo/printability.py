@@ -14,6 +14,7 @@ rest pose in turret-local coordinates.
 
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
+from cad_khana.printability.waiver import Waiver
 
 from ..params import WALL_MIN
 from .assembly import build_turret_dump_servo_arm, servo_bracket
@@ -42,12 +43,15 @@ inspect(
     out="outputs",
     name="servo_arm",
     waive={
-        "overhang_max": "105.83 mm² at up to 89.8° (measured 2026-09-27, "
+        "overhang_max": Waiver(
+            reason="105.83 mm² at up to 89.8° (measured 2026-09-27, "
             "up turret −Z): the Ø16 hub disc's outboard arc (x −88…−72, "
             "the part the beam does not meet), 76.24 mm² to 89.8°, and "
             "the Ø4.5 servo-shaft bore's ceiling, 29.59 mm² to 89.3°. "
             "Print plan: tree support from the bed under the hub arc "
             "only (a cosmetic face); the bore bridges, then a Ø4.5 drill "
             "through it.",
+            max_area_mm2=107.0, max_regions=2,
+        ),
     },
 )
