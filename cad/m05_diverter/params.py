@@ -98,7 +98,7 @@ TURNTABLE_H = 8.5
 # the turntable. Shared here because ramp_mechanism owns the seat,
 # the flange and the column bottom while base_floor owns the ring
 # gear that bolts to that flange's underside.
-TURNTABLE_Z_BOT = 8.0             # seat top = spider saddle top-plate z (asserted in the spider)
+TURNTABLE_Z_BOT = 8.0             # seat top; must clear the spider saddle top plates (asserted in the spider)
 TURNTABLE_Z_TOP = TURNTABLE_Z_BOT + TURNTABLE_H            # 16.5
 BASE_COL_Z_BOT = TURNTABLE_Z_TOP                            # base column bottom / ring-gear standoff top
 BASE_FLANGE_OD = TURNTABLE_OD + 4.0                         # 204 — covers the turntable's top ring

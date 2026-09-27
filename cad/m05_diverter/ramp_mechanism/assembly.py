@@ -451,8 +451,8 @@ SPIDER_HUB_ID = RING_BEARING_OD + 1.0
 SPIDER_HUB_OD = SPIDER_HUB_ID + 10.0
 
 # Base-role hub = the turntable seat: a wider, taller annulus whose top
-# face (TURNTABLE_Z_BOT) is flush with the saddle top plates, so the
-# turntable's bottom ring lands on one plane. Its bore passes the
+# face (TURNTABLE_Z_BOT) stands above the saddle top plates, so the
+# turntable's bottom ring lands on the seat alone. Its bore passes the
 # base_floor ring gear's standoff (pitch Ø ≈ COLLAR_OD) with
 # SEAT_CLEARANCE radial; the tower root measures that gap.
 SEAT_CLEARANCE = 3.0
@@ -464,7 +464,15 @@ EXT_SIDE = RAIL_SIZE                          # 2020 aluminum extrusion (== fram
 
 SADDLE_T_TOP = 3.0
 SADDLE_T_WALL = 3.0
-SADDLE_COVER_H = 12.0
+# The saddle's channel ceiling is the rail's top face, so the top plate
+# bears on the rail and the stack's weight goes seat → saddles → rails
+# in compression. (Until 2026-09-27 the ceiling sat at BEARING_Z_TOP,
+# 5 mm above the rail: the saddles hung on their bolts, and the
+# hub-to-channel corner left a 1.04 mm sliver on the z = 5 plane.)
+# COVER_H keeps the side walls' bottom at z = -7, where it has always
+# been — the base floor's gear mesh sits just below it (`MESH_Z_TOP`).
+SADDLE_CEIL_Z = RAIL_TOP_Z                           # 0
+SADDLE_COVER_H = 7.0
 # Saddles sit at azimuth (i+0.5)·(360°/N_SPIDER_SADDLES) — along basket
 # boundaries = inner-hex vertex direction = radial-rail axis. Each
 # saddle spans from the hub outward past RAIL_INNER_R to grip
@@ -548,7 +556,7 @@ def bearing_spider(role: str = "middle") -> Part:
       *lower* column's rotating collar (mapped from z_lower_local
       220..225).
     - base — the turntable **seat**: annulus SEAT_ID..SEAT_OD at
-      z = 0..SEAT_T, top face flush with the saddle top plates, on
+      z = 0..SEAT_T, top face above the saddle top plates, on
       which the bought turntable (`ring_bearing("base")`) sits. The
       base_floor ring gear's standoff passes down through its bore.
     """
@@ -557,9 +565,9 @@ def bearing_spider(role: str = "middle") -> Part:
         # poking up through it; and the seat must cover the turntable's
         # bottom ring. Parameter bounds over a bought part's footprint —
         # bare, fired here where the seat is cut.
-        assert SEAT_T >= BEARING_Z_TOP + SADDLE_T_TOP, (
+        assert SEAT_T >= SADDLE_CEIL_Z + SADDLE_T_TOP, (
             f"Seat top z={SEAT_T} sits below the saddle top plates "
-            f"(z={BEARING_Z_TOP + SADDLE_T_TOP}); the turntable would rock "
+            f"(z={SADDLE_CEIL_Z + SADDLE_T_TOP}); the turntable would rock "
             f"on six pads. Raise TURNTABLE_Z_BOT."
         )
         assert SEAT_ID <= TURNTABLE_ID and SEAT_OD >= TURNTABLE_OD, (
@@ -572,7 +580,7 @@ def bearing_spider(role: str = "middle") -> Part:
     hub_z_bot = BEARING_Z_BOT
     hub_t = hub_z_top - hub_z_bot
     hub_z_center = (hub_z_bot + hub_z_top) / 2
-    ext_top_z = BEARING_Z_TOP                          # saddle clamps just above rail
+    ext_top_z = SADDLE_CEIL_Z                          # top plate bears on the rail
 
     hub_outer = Pos(0, 0, hub_z_center) * Cylinder(hub_od / 2, hub_t)
     hub_inner = Pos(0, 0, hub_z_center) * Cylinder(hub_id / 2, hub_t * 2)

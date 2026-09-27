@@ -200,6 +200,14 @@ def _build_floor_static(role: str, basket_layout) -> Assembly:
             .assert_tangent_contact(name, f"rails.inner_horiz_{k}")
             .assert_tangent_contact(name, f"rails.outer_horiz_{k}")
         )
+    # The spider's rest on its rails — each saddle's top plate on a
+    # radial rail's top face (SADDLE_CEIL_Z) — is NOT asserted: nothing
+    # in cad-khana 0.14 can see it. A tangent contact passes on the
+    # saddle's side walls, which touch the rail's sides whether or not
+    # the plate is down (0.0 with the spider lifted 7 mm), and
+    # `assert_distance(along="-Z")` compares whole-body extents, so the
+    # side walls reaching z = -7 read -7 resting or floating (tried
+    # 2026-09-27; field note in cad-khana).
     return a
 
 
