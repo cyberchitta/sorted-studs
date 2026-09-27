@@ -61,18 +61,17 @@ from __future__ import annotations
 from functools import cache
 
 import math
-import re
 
-from build123d import Cylinder, Location, Pos, Rot
+from build123d import Location, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 
 from .design_systems import DEFAULT_SCHEMA
-from .m02_c_channel_singulator.arc_fastening import arc_screw_azimuth_deg
+from .m02_c_channel_singulator.arc_fastening import FREE_END_SIGNS, arc_screw_azimuth_deg, free_end_name
 from .m02_c_channel_singulator.drive.assembly import bowl_part_at
 from .m02_c_channel_singulator.params import LINER_SEAM_PHASE_DEG
 from .m02_c_channel_singulator.seams import sector_index
-from .m02_c_channel_singulator.stator.assembly import STATOR_PARTS
+from .m02_c_channel_singulator.stator.assembly import STATOR_PARTS, exit_splits_wall
 from .m02_chain.assembly import build_chain
 from .m02_chain.params import BRACE_COLS, PROP_POST, STAGES
 from .m03_scanner.assembly import build_m03
@@ -122,23 +121,17 @@ def m03_pose(m05: Assembly, m03: Assembly) -> Location:
 # Driver access to the m02 liner's free-end screws (slice 5 of the
 # 2026-09-27 completion pass): on every stage whose liner the exit
 # opening cuts through, each countersunk M3 can be driven from outside
-# with the machine assembled. A hex driver for its 2 mm socket: Ø8 takes
-# a driver's shank with the fingers' room of the M4 clamp bolts'
-# corridor (m03 camera mount, CLAMP_BOLT_ACCESS_D), and 60 mm is a
-# stubby driver's reach. Margin as there.
-ARC_SCREW_ACCESS_D = 8.0
-ARC_SCREW_ACCESS_L = 60.0
-ARC_SCREW_ACCESS_MARGIN = 0.5
-
-_ARC_SCREW = re.compile(r"m02_chain\.(s\d)\.arc_screw_(pos|neg)")
+# with the machine assembled. The corridors are the stage's named
+# keep-outs (`arc_fastening.driver_corridor`); held here, where every
+# body they must clear exists.
+ARC_SCREW_ACCESS_MARGIN = 0.5    # as the m03 clamp bolts' CLAMP_BOLT_ACCESS_MARGIN
 
 
 def _with_arc_screw_access(a: Assembly) -> Assembly:
     """Hold every body in the machine `ARC_SCREW_ACCESS_MARGIN` clear of
-    a driver corridor running out along each free-end screw's axis from
-    its head top. Declared here, not in the stage builder: the corridor
-    reaches past the stage, and a keep-out holds only the parts of the
-    assembly that declares it.
+    each split stage's driver corridors. Declared here, not in the stage
+    builder: the corridor reaches past the stage, and a keep-out holds
+    only the parts of the assembly that declares it.
 
     Three parts are excluded, the three the screw joins: the screw (the
     corridor starts on its head), the bowl sector it is driven into
@@ -150,26 +143,20 @@ def _with_arc_screw_access(a: Assembly) -> Assembly:
     off every seam — and the liner only its cylinder zone above
     SKIRT_TOP_Z, 11 mm above the corridor's top.
     """
-    phase = {s.name: s.bowl_seam_phase_deg for s in STAGES}
-    screws = [
-        (pp, m.groups()) for pp in a.placed_parts
-        if (m := _ARC_SCREW.fullmatch(pp.name))
-    ]
-    assert screws, "no free-end screw in the machine — the claims would be vacuous"
-    for pp, (stage, end) in screws:
-        sign = +1 if end == "pos" else -1
-        own_bowl = f"m02_chain.{stage}.drive.{bowl_part_at(arc_screw_azimuth_deg(sign), phase[stage])}"
-        own_liner = f"m02_chain.{stage}.stator.{STATOR_PARTS[sector_index(0.0, LINER_SEAM_PHASE_DEG)]}"
-        corridor = pp.location * (
-            Pos(0, 0, ARC_SCREW_ACCESS_L / 2.0)
-            * Cylinder(ARC_SCREW_ACCESS_D / 2.0, ARC_SCREW_ACCESS_L)
-        )
-        a = a.assert_clear_of(
-            ["m05", "m03", "m02_chain"], corridor,
-            name=f"{stage}_arc_screw_{end}_driver",
-            excluding=[pp.name, own_bowl, own_liner],
-            min_mm=ARC_SCREW_ACCESS_MARGIN,
-        )
+    split = [s for s in STAGES if exit_splits_wall(s.wall_h)]
+    assert split, "no stage's liner is split — the claims would be vacuous"
+    own_liner = STATOR_PARTS[sector_index(0.0, LINER_SEAM_PHASE_DEG)]
+    for stage in split:
+        unit = f"m02_chain.{stage.name}"
+        for sign in FREE_END_SIGNS:
+            end = free_end_name(sign)
+            own_bowl = bowl_part_at(arc_screw_azimuth_deg(sign), stage.bowl_seam_phase_deg)
+            a = a.assert_clear_of(
+                ["m05", "m03", "m02_chain"], f"{unit}.arc_screw_{end}_driver",
+                name=f"{stage.name}_arc_screw_{end}_driver",
+                excluding=[f"{unit}.arc_screw_{end}", f"{unit}.drive.{own_bowl}", f"{unit}.stator.{own_liner}"],
+                min_mm=ARC_SCREW_ACCESS_MARGIN,
+            )
     return a
 
 

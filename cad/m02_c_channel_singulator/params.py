@@ -273,6 +273,13 @@ ARC_SCREW_HEAD_D = 6.0     # its head Ø dk (nominal; 6.72 max) → the counters
 ARC_SCREW_L = 10.0         # its length, head included (ISO 10642 convention) → how far it reaches into the boss, so the insert hole's depth
 ARC_INSERT_L = 5.7         # M3 brass heat-set insert, length → the insert hole's minimum depth
 ARC_INSERT_HOLE_D = 4.0    # that insert's recommended hole Ø → the boss's hole (a teardrop over this circle)
+# The driver's corridor to each screw, out along its axis from the head
+# top: a hex driver for the 2 mm socket. Ø8 takes the shank with the
+# fingers' room of the m03 M4 clamp bolts' corridor (CLAMP_BOLT_ACCESS_D);
+# 60 is a stubby driver's reach. Declared here as a keep-out, held
+# against the whole machine in `cad/assembly.py`.
+ARC_SCREW_ACCESS_D = 8.0
+ARC_SCREW_ACCESS_L = 60.0
 # Designed:
 ARC_SCREW_HOLE_CLEAR = 0.4     # diametral clearance through the skirt (as NEMA17_BOLT_HOLE_D over M3)
 ARC_CSINK_CLEAR = 0.4          # countersink Ø over the head Ø: the head seats ARC_CSINK_CLEAR/2 below the skirt face

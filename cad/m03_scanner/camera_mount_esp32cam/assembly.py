@@ -571,19 +571,24 @@ def clamp_base_block(
 
 def clamp_bolt_keepout(
     sx: int, bolt_half: float = _CLAMP_BOLT_HALF, base_h: float = BASE_H,
-    margin: float = CLAMP_BOLT_ACCESS_MARGIN,
 ) -> Part:
     """The Ø`CLAMP_BOLT_ACCESS_D` drop-in corridor above the `sx` clamp
-    bolt's seat (the base top), `CLAMP_BOLT_ACCESS_H` tall, grown by
-    `margin` radially and at the top so the clamp can be held clear of
-    it at 0 while it stands on the seat. Clamp-local; a keep-out for
-    `assert_clear_of`, never placed in an assembly."""
-    h = CLAMP_BOLT_ACCESS_H + margin
+    bolt's seat (the base top), `CLAMP_BOLT_ACCESS_H` tall. Clamp-local;
+    a keep-out for `assert_clear_of` with `clamp_bolt_seat()` as its
+    seat, never placed in an assembly."""
     return (
-        Pos(sx * bolt_half, base_h + h / 2, 0)
+        Pos(sx * bolt_half, base_h + CLAMP_BOLT_ACCESS_H / 2, 0)
         * Rot(90, 0, 0)
-        * Cylinder(CLAMP_BOLT_ACCESS_D / 2 + margin, h)
+        * Cylinder(CLAMP_BOLT_ACCESS_D / 2, CLAMP_BOLT_ACCESS_H)
     )
+
+
+def clamp_bolt_seat(base_h: float = BASE_H) -> Plane:
+    """The plane both drop-in corridors stand on — the base top, normal
+    up into the corridors (clamp-local +Y). The clamp touches each
+    corridor there by design; as the keep-out's seat it reads the
+    clearance of everything above."""
+    return Plane(origin=(0, base_h, 0), z_dir=(0, 1, 0))
 
 
 def clamp_base_shortfall_mm3(body: Part) -> float:

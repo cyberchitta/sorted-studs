@@ -55,7 +55,7 @@ distinct modules under their package paths and never collide.
 
 from functools import cache
 
-from build123d import Axis, Pos
+from build123d import Axis, Plane, Pos
 
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 from cad_khana.mechanism.assertions import JointWindow
@@ -222,13 +222,16 @@ def build_camera_rig() -> Assembly:
                 "two bolt bores — 0 means the rail interface is intact",
             )
         )
-        # Each corridor is grown by the margin and stands on its seat,
-        # so the whole clamp (base included) is held at 0.
+        # Each corridor stands on the base top: contact there is the
+        # seat, and everything above is held the margin clear.
+        seat = Plane(clamp_loc * _camera_mount.clamp_bolt_seat().location)
         for sx, side in ((-1, "neg"), (1, "pos")):
             a = a.assert_clear_of(
                 f"{prefix}_clamp_mount",
                 clamp_loc * _camera_mount.clamp_bolt_keepout(sx),
-                name=f"m4_drop_in_{side}",
+                name=f"{prefix}_m4_drop_in_{side}",
+                seat=seat,
+                min_mm=_camera_mount.CLAMP_BOLT_ACCESS_MARGIN,
             )
     # The below-* mount plates tilt with their lens axes and reach
     # ~25 mm in +Y past their clamp, toward the arch post on their

@@ -233,6 +233,10 @@ def _with_arc_screws(a: Assembly, bowl_seam_phase_deg: float) -> Assembly:
         ``check_rotor_turn.py``);
       - the fastening stays off the bowl's seams by an ear's width, so
         it lands on one bowl sector, clear of the ear pair.
+
+    Each screw's driver corridor is declared here as a named keep-out
+    (``arc_screw_{end}_driver``) and held in ``cad/assembly.py``: the
+    corridor reaches past the unit, into bodies only the machine has.
     """
     exit_liner = f"stator.{_stator.STATOR_PARTS[sector_index(0.0, LINER_SEAM_PHASE_DEG)]}"
     corridor = _fastening.exit_corridor()
@@ -265,11 +269,8 @@ def _with_arc_screws(a: Assembly, bowl_seam_phase_deg: float) -> Assembly:
             .assert_distance(screw, exit_liner, min_mm=ARC_SCREW_IN_HOLE_MIN)
             .assert_distance(screw, "stator.exit_floor", min_mm=EXIT_FLOOR_SIDE_CLEAR)
             .assert_distance("rotor.rotor", screw, min_mm=ROTOR_STATOR_GAP)
-            .assert_scalar(
-                f"arc_screw_{end}_exit_clearance",
-                _fastening.arc_screw().moved(loc).distance_to(corridor), ge=EXIT_FLOOR_SIDE_CLEAR,
-                detail="mm from the free-end screw to the exit wedge carried out past the skirt",
-            )
+            .assert_clear_of(screw, corridor, name=f"arc_screw_{end}_exit", min_mm=EXIT_FLOOR_SIDE_CLEAR)
+            .with_keepout(f"arc_screw_{end}_driver", _fastening.driver_corridor(sign))
         )
     return a
 

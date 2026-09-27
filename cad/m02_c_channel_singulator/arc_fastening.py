@@ -47,6 +47,8 @@ from .params import (
     ARC_HOLE_TIP_CLEAR,
     ARC_INSERT_HOLE_D,
     ARC_INSERT_L,
+    ARC_SCREW_ACCESS_D,
+    ARC_SCREW_ACCESS_L,
     ARC_SCREW_D,
     ARC_SCREW_HEAD_D,
     ARC_SCREW_HOLE_CLEAR,
@@ -192,6 +194,15 @@ def arc_screw() -> Part:
 def arc_screw_location(sign: int) -> Location:
     """Where ``arc_screw()`` goes for the free end at ``sign``, m02-local."""
     return Rot(0, 0, sign * EXIT_ARC_DEG / 2.0) * Pos(ARC_SCREW_HEAD_X, sign * _AXIS_Y, ARC_SCREW_Z) * Rot(0, 90, 0)
+
+
+def driver_corridor(sign: int) -> Part:
+    """The driver's way in to the screw at ``sign``: Ø ARC_SCREW_ACCESS_D
+    out along its axis from the head top, ARC_SCREW_ACCESS_L long,
+    m02-local. A keep-out, never placed."""
+    return arc_screw_location(sign) * (
+        Pos(0, 0, ARC_SCREW_ACCESS_L / 2.0) * Cylinder(ARC_SCREW_ACCESS_D / 2.0, ARC_SCREW_ACCESS_L)
+    )
 
 
 def exit_corridor() -> Part:
