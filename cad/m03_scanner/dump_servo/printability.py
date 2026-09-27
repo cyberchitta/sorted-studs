@@ -5,27 +5,49 @@
 Orchestration only: `assembly.py` declares the geometry and its
 mechanism claims (`khana check .../dump_servo/assembly.py`); this
 script runs the per-part `inspect()` pass.
+
+The arm comes out of `build_turret_dump_servo_arm()` by name, so the
+body inspected is the one the turret places under its servo joint
+(`turret.servo_arm.servo_arm`); `PlacedPart.part` is that body at its
+rest pose in turret-local coordinates.
 """
 
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 
 from ..params import WALL_MIN
-from .assembly import servo_arm, servo_bracket
+from .assembly import build_turret_dump_servo_arm, servo_bracket
 
 
 # servo_bracket has no downward face above the bed (overhang null,
-# 2026-09-22), so it takes the default threshold; servo_arm's 90° is
-# an open owner call — `_notes/state/m03-scanner.md`.
+# 2026-09-22), so it takes the default threshold.
 inspect(
     servo_bracket(),
     method=FDM(wall_min_mm=WALL_MIN),
     out="outputs",
     name="servo_bracket",
 )
+
+# servo_arm prints pad-down: the pad's top face (the lifter contact,
+# 22 × 26 at z −45) on the bed, turret −Z up — swept 2026-09-27
+# against ±X/±Y/±Z and both beam-face normals. The 46.1° beam's
+# underside then stands at 43.9° and passes; +Z leaves no flat bed
+# face, ±Y hangs the 8 mm-wide beam's side face 9 mm over the bed
+# (556 mm² at 90°), ±X 614–716 mm². "Beam flat on the bed" (the
+# module docstring's old plan) has no bed face at all: the Ø16 hub
+# and the pad both stand proud of the 6 mm beam.
 inspect(
-    servo_arm(),
-    method=FDM(wall_min_mm=WALL_MIN, overhang_max_deg=90.0),
+    build_turret_dump_servo_arm().part("servo_arm").part,
+    method=FDM(wall_min_mm=WALL_MIN, up_axis=(0, 0, -1)),
     out="outputs",
     name="servo_arm",
+    waive={
+        "overhang_max": "105.83 mm² at up to 89.8° (measured 2026-09-27, "
+            "up turret −Z): the Ø16 hub disc's outboard arc (x −88…−72, "
+            "the part the beam does not meet), 76.24 mm² to 89.8°, and "
+            "the Ø4.5 servo-shaft bore's ceiling, 29.59 mm² to 89.3°. "
+            "Print plan: tree support from the bed under the hub arc "
+            "only (a cosmetic face); the bore bridges, then a Ø4.5 drill "
+            "through it.",
+    },
 )

@@ -6,11 +6,10 @@ Orchestration only: `assembly.py` declares the geometry and its
 mechanism claims (`khana check cad/m02_chain/assembly.py`); this
 script runs the per-part `inspect()` pass over the five printed joint
 bodies from `joints.py`, each at the angles the chain actually places
-it at, and over every stage's three bowl sectors, each cut at that
-stage's own seam phase and motor azimuth. The 2020 members and the
-corner brackets are bought and are not inspected. The LOAD ramp is not
-inspected here either (it never has been — open work, not this
-script's omission to hide).
+it at, over every stage's three bowl sectors, each cut at that
+stage's own seam phase and motor azimuth, and over the LOAD ramp in
+its print orientation (on its side — see the call). The 2020 members
+and the corner brackets are bought and are not inspected.
 
 Each body comes out of the assembly by name (`Assembly.part`) rather
 than from a re-typed constructor call. The two forms were byte-equal
@@ -117,3 +116,21 @@ for s in STAGES:
             waive={"overhang_max": _MOTOR_WAIVER[(s.name, s.motor_azimuth_deg, s.bowl_seam_phase_deg)]}
             if leaf == motor_sector else None,
         )
+
+# The LOAD ramp prints on its side: the side wall's outer face (chain
+# y 50, 2985 mm²) on the bed, so up is chain −Y. The chain places the
+# ramp at identity (it is built in chain-local, cut by S1's stator
+# cylinder), so `PlacedPart.part` is the body in the chain frame and
+# `up_axis` is given in that frame. On its side nothing faces down
+# (the JSON's `overhang` is null): the floor, both ends and the kink
+# stand vertical, the stator cut and the wall's inner face face up —
+# so the default 45° stands with no waiver. The brick-contact faces
+# (slope and landing floor tops) stand vertical: perimeters, with
+# layer lines along the slope's fall line rather than across the flow.
+# Chosen 2026-09-27 from a sweep of ±X/±Y/±Z and the large faces'
+# normals; every other candidate leaves ≥ 2574 mm² past 45° (the
+# nearest, landing end down, is the slope's underside at 46.3°).
+inspect(
+    chain.part("load_ramp").part,
+    method=FDM(up_axis=(0, -1, 0)), out="outputs", name="load_ramp",
+)

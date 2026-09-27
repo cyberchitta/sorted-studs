@@ -381,12 +381,12 @@ RAMP_OUTLET_LOCAL = (
     RAMP_OUTLET_X * math.sin(math.radians(RAMP_AZIMUTH_DEG)),
     RAMP_FLOOR_T + 2.0,                                               # +7  (world z = 1037)
 )
-RAMP_INLET_LOCAL = (*S1.chute_exit_xy, S1.chute_exit_z)               # (130, 0, 75)
+RAMP_INLET_LOCAL = (*S1.chute_exit_xy, S1.chute_exit_z)               # (130, 0, 65)
 
 RAMP_PLAN_RUN = RAMP_RUN - RAMP_OUTLET_X                              # ≈ 55.5
-RAMP_DZ = RAMP_INLET_LOCAL[2] - RAMP_OUTLET_LOCAL[2]                  # 68
-RAMP_PITCH_DEG = math.degrees(math.atan2(RAMP_DZ, RAMP_PLAN_RUN))     # ≈ 50.8
-RAMP_SLOPE_LEN = math.sqrt(RAMP_PLAN_RUN**2 + RAMP_DZ**2)             # ≈ 87.8
+RAMP_DZ = RAMP_INLET_LOCAL[2] - RAMP_OUTLET_LOCAL[2]                  # 58
+RAMP_PITCH_DEG = math.degrees(math.atan2(RAMP_DZ, RAMP_PLAN_RUN))     # ≈ 46.3
+RAMP_SLOPE_LEN = math.sqrt(RAMP_PLAN_RUN**2 + RAMP_DZ**2)             # ≈ 80.3
 
 # Pitch window — placeholders, not measured friction (LEGO on PLA
 # static friction angle is ~20–25°; 30° was the earlier target). The

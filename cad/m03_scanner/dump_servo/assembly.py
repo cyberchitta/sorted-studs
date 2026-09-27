@@ -49,11 +49,10 @@ Why the pivot sits at turret (-80, -25, -100):
 Print orientation:
   * Bracket: bottom face on the build plate, +Z up. Foot prints flat,
     cradle walls rise as plain vertical extrusions; no overhangs.
-  * Arm: lay the arm beam on the build plate so the pad and hub end
-    print as upstanding bosses (standard cantilever lever idiom).
-    The standalone inspect uses the as-modelled orientation (arm at
-    its turret-local pose); the printability check passes either way
-    because every feature is a clean Box/Cylinder.
+  * Arm: pad-down — the pad's top face on the build plate, turret
+    −Z up. The beam cannot lie flat (the Ø16 hub and the pad stand
+    proud of it). The sweep, the chosen `up_axis` and the waived
+    residue (hub arc + shaft-bore ceiling) are in `printability.py`.
 """
 
 import math

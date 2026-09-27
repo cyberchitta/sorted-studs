@@ -78,21 +78,16 @@ pulley (z ∈ [-110, -90] is clear airspace for it) and the sensor would
 mount on a small printed bracket next to the cross-rail. Not gating
 this slice.
 
-Print orientation (bracket): bottom face on the build plate, +Z up
-(build123d default). All bores are vertical (M5 foot bolts, Ø22 motor
-centering boss, 4× M3 motor mounting holes) and print as clean
-through-holes. The cantilever plate's underside (-Z face from x =
-BRACKET_PLATE_X_MIN out to the wall at BRACKET_WALL_X_MIN) is a
-horizontal overhang at 90° from vertical and requires print-time
-supports — the slicer auto-generates these for the ~50 mm × 50 mm
-patch under the cantilever. We accept the 90° angle in the inspect
-threshold (same precedent as the slice (f1) cam, slice (f2) kicker,
-and platform_hinge_bearing for their horizontal bores). A
-printable-without-supports redesign — adding a 45° gusset between the
-wall and plate's underside — was rejected because the gusset would
-crash the motor body in X (motor body inboard face at x ≈ +37.65,
-gusset would need to extend from the wall at x = +85 inward through
-the motor's X range). Pulleys are stock parts (not printed), so no
+Print orientation (bracket): on its side, one flat L-profile face
+(y = -25, 1635.6 mm²) on the build plate, turret +Y up — owner
+decision 2026-09-27. Foot, wall and cantilever plate then lie in every
+layer, so the motor's cantilever moment runs along the layers, not
+across them; upright (+Z) would instead need ~2075 mm² of supports
+under the plate's underside, the face the motor flange seats on. The
+cost is that the Ø22 centering pilot, the M3 and the M5 foot-bolt
+holes print sideways with bridged ceilings (the pilot is reamed to
+fit). The sweep and the waived residue are in `printability.py`.
+Pulleys are stock parts (not printed), so no
 inspect call.
 """
 
