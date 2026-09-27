@@ -190,11 +190,12 @@ def build_camera_rig() -> Assembly:
             axis, roll_deg=horizontal_x_roll_deg(axis)
         )
         mount_in_clamp = _camera_mount.mount_in_clamp_for(**spec)
+        clamp_body = _camera_mount.clamp_mount(mount_in_clamp=mount_in_clamp)
         a = (
             a
             .with_part(
                 f"{prefix}_clamp_mount",
-                _camera_mount.clamp_mount(mount_in_clamp=mount_in_clamp),
+                clamp_body,
                 location=clamp_loc,
                 material=material_of(f"{prefix}_clamp_mount"),
             )
@@ -205,6 +206,27 @@ def build_camera_rig() -> Assembly:
             .with_part(
                 f"{prefix}_lens", _camera_mount.m12_lens_stub(),
                 location=camera_loc,
+            )
+            # One `clamp_mount` function, four different bodies: the
+            # plate's pose is what differs, so whether the plate stands
+            # clear of the M4 clamp bolts' drop-in corridors — and
+            # whether any plate-sized cut reached into the rail
+            # interface block — is a per-camera fact. Measured on the
+            # body this instance places (clamp-local), so every built
+            # pose is covered, not just the standalone's below-left.
+            .assert_scalar(
+                f"{prefix}_clamp_bolt_access_clearance",
+                _camera_mount.clamp_bolt_access_clearance(clamp_body),
+                ge=_camera_mount.CLAMP_BOLT_ACCESS_MARGIN,
+                detail="mm, Ø8 M4-head drop-in corridor above each clamp "
+                "bolt seat vs the plate and beam",
+            )
+            .assert_scalar(
+                f"{prefix}_clamp_base_shortfall",
+                _camera_mount.clamp_base_shortfall_mm3(clamp_body),
+                le=1e-3,
+                detail="mm³ of the clamp base block missing beyond its "
+                "two bolt bores — 0 means the rail interface is intact",
             )
         )
     # The below-* mount plates tilt with their lens axes and reach

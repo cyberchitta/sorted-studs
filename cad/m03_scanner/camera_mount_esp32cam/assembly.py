@@ -20,10 +20,13 @@ because the mount-rotations differ):
                   in Z)
   * below-right — X-mirror of below-left
 
-The two below instances are mirror-images by lens-axis chirality
-(different drilled bolt-pattern positions, same overall shape), so by
-symmetry below-right's printability matches below-left's — one
-inspect() pass covers both.
+The bodies differ in more than the plate's pose: the plate is shaped
+per pose against the print direction (edge chamfers, a back wedge,
+teardrop M2 bores) and, at back-upper, notched clear of a clamp bolt.
+The clamp base — the rail interface: block, bolt spacing, bores — is
+identical in all four, and `build_camera_rig` asserts it intact per
+camera. Every body is inspected (`printability.py`); none is assumed
+from another's symmetry.
 
 Coordinate frame (local to this sub-assembly):
     origin = centre of clamp bottom face, on the rail face being
@@ -46,10 +49,10 @@ Two M4 clamp bolts drop through the base along clamp-local -Y into
 T-nuts captured in the rail's slot (T-nuts not modelled — stock
 hardware, same convention as the rev-4 mirror_clamp_mount).
 
-Print orientation: clamp base on the build plate, +Y up. Same overhang
-character as rev-4 mirror_clamp_mount (the beam-to-plate junction on
-the mount-side overhang); inspect() threshold raised to clear the same
-beam ↔ plate boolean-cut tessellation sliver.
+Print orientation: clamp base on the build plate, +Y up (`PRINT_UP`).
+`clamp_mount` shapes each plate so no face overhangs past
+`PRINT_OVERHANG_MAX_DEG` in that orientation, and `printability.py`
+inspects at the FDM default 45° with no waiver.
 
 PCB hole pattern: dimensions are nominal-pending-verification. Online
 sources disagree on the AI-Thinker ESP32-CAM mounting hole pitch
@@ -60,7 +63,10 @@ gate before printing four for installation. M2 holes are oversized to
 
 import math
 
-from build123d import Box, Cylinder, Location, Part, Pos, Rot
+from build123d import (
+    Box, Cylinder, Location, Part, Plane, Polyline, Pos, Rot, Vector,
+    extrude, make_face,
+)
 
 from cad_khana.mechanism.assembly import Assembly
 
@@ -138,6 +144,22 @@ CLAMP_BOLT_HOLE_D = 4.5           # M4 clearance hole
 
 _CLAMP_BOLT_HALF = CLAMP_BOLT_SPACING / 2
 
+# M4 clamp bolt: ISO 4762 M4 SHCS, head Ø7 × 4. The bolt drops in
+# vertically (clamp-local -Y) onto the base top, so it needs a clear
+# drop-in corridor above its seat: Ø8 (head + 0.5 mm radial) tall
+# enough to lower an M4×20 (15 mm base + ~5 mm T-nut engagement) plus
+# its head in from above — which also covers an L-key's short arm
+# seated in the head. The printed body must stand clear of that
+# corridor by CLAMP_BOLT_ACCESS_MARGIN at every pose (asserted per
+# camera in `build_camera_rig`). The camera board and lens are NOT in
+# the corridor's claim: the clamp is bolted to the rail before the
+# ESP32-CAM goes on its plate.
+CLAMP_BOLT_L = 20.0
+CLAMP_BOLT_HEAD_H = 4.0
+CLAMP_BOLT_ACCESS_D = 8.0
+CLAMP_BOLT_ACCESS_H = CLAMP_BOLT_L + CLAMP_BOLT_HEAD_H
+CLAMP_BOLT_ACCESS_MARGIN = 0.5
+
 
 # --- Beam (rising tab) parameters ---------------------------------------
 
@@ -187,6 +209,175 @@ _MOUNT_IN_CLAMP: Location = mount_in_clamp_for(
 )
 
 
+# --- Print orientation ------------------------------------------------
+#
+# Every instance prints clamp base on the bed, clamp-local +Y up — the
+# only orientation with a large flat bed face that keeps all four
+# bodies near-clean (orientation audit 2026-09-27: every axis-aligned
+# and plate-aligned alternative leaves ≥ 58 mm² past 45°, most
+# thousands). The plate's pose differs per camera, so which plate faces
+# overhang differs too; `clamp_mount` shapes the plate against this
+# direction instead of the printability run waiving what it finds.
+# `printability.py` inspects with this same `PRINT_UP`.
+PRINT_UP = (0.0, 1.0, 0.0)
+# Half a degree inside the FDM check's 45°, so a face designed onto the
+# limit can't read over it.
+PRINT_OVERHANG_MAX_DEG = 44.5
+
+
+def _print_up_in_mount(
+    mount_in_clamp: Location, print_up: tuple[float, float, float]
+) -> Vector:
+    """`print_up` (clamp-local) as a mount-local unit vector."""
+    inv = mount_in_clamp.inverse()
+    v = (inv * Pos(*print_up)).position - inv.position
+    return v.normalized()
+
+
+def _mount_plate(
+    up_m: Vector, plate_size: float, plate_t: float, overhang_max_deg: float,
+) -> Part:
+    """The mount plate in mount-local (z ∈ [-plate_t, 0], front face at
+    z = 0), shaped so no face overhangs past `overhang_max_deg` when
+    printed with mount-local `up_m` up. Only the edges and the back
+    move; the front (PCB seat) face, the M2 corner lands and the
+    footprint the PCB covers are never cut.
+
+    * An edge face whose outward normal points too far down is
+      chamfered off its front corner: a plane through the edge's back
+      corner line, its normal tipped toward +z just enough to reach the
+      limit (front-low's low edge 65° → 44.5°, trimming ~2 mm of seat
+      face; below-*'s 55.4° → ~1 mm).
+    * A back face that overhangs (back-upper's, 45.5°) is backed by a
+      wedge: a new back plane tipped toward the plate's uphill direction
+      through the uphill back corner, so the plate only thickens (by
+      ~0.9 mm at its downhill edge), never thins below `plate_t`."""
+    s = math.sin(math.radians(overhang_max_deg))
+    half = plate_size / 2
+    plate = Pos(0, 0, -plate_t / 2) * Box(plate_size, plate_size, plate_t)
+
+    # Back wedge. Back-face normal is -z; it overhangs by asin(up_m.Z).
+    up_perp = Vector(up_m.X, up_m.Y, 0)
+    if up_m.Z > s and up_perp.length > 1e-9:
+        g = up_perp.normalized()
+        alpha = math.asin(min(1.0, up_m.Z))
+        psi = alpha - math.radians(overhang_max_deg)
+        n = Vector(0, 0, -1) * math.cos(psi) + g * math.sin(psi)
+        c = max(
+            n.dot(Vector(sx * half, sy * half, -plate_t))
+            for sx in (-1, 1) for sy in (-1, 1)
+        )
+        slab = Pos(0, 0, -plate_t - half / 2) * Box(plate_size, plate_size, half)
+        beyond = (
+            Plane(origin=tuple(n * c), z_dir=tuple(n)).location
+            * Pos(0, 0, 500)
+            * Box(1000, 1000, 1000)
+        )
+        plate = plate + (slab - beyond)
+
+    # Edge chamfers, each off its front corner.
+    for e, along in (
+        (Vector(1, 0, 0), Vector(0, 1, 0)),
+        (Vector(-1, 0, 0), Vector(0, 1, 0)),
+        (Vector(0, 1, 0), Vector(1, 0, 0)),
+        (Vector(0, -1, 0), Vector(1, 0, 0)),
+    ):
+        a = -e.dot(up_m)
+        if a <= s:
+            continue
+        r = math.hypot(a, up_m.Z)
+        assert up_m.Z > 0 and s < r, (
+            f"edge {tuple(e)} overhangs {math.degrees(math.asin(a)):.1f}° "
+            f"and a front-corner chamfer can't reach {overhang_max_deg}°"
+        )
+        phi = math.acos(s / r) - math.atan2(up_m.Z, a)
+        width = plate_t * math.tan(phi)
+        # The chamfer may trim flange only: it must stop short of the
+        # PCB outline on the seat face.
+        pcb_half = PCB_W / 2 if abs(e.X) > 0.5 else PCB_H / 2
+        assert half - width > pcb_half + WALL_MIN, (
+            f"edge chamfer {width:.2f} mm reaches within "
+            f"{half - width - pcb_half:.2f} mm of the PCB outline"
+        )
+        # Triangle (edge back corner, edge front corner, point `width`
+        # in along the front face), overshot past the edge and the
+        # front face so no face is left coplanar.
+        pts = [
+            e * (half + 1) + Vector(0, 0, -plate_t - 1e-3),
+            e * half + Vector(0, 0, -plate_t),
+            e * (half - width) + Vector(0, 0, 0),
+            e * (half - width) + Vector(0, 0, 1),
+            e * (half + 1) + Vector(0, 0, 1),
+        ]
+        prism = extrude(
+            make_face(Polyline(*[tuple(p) for p in pts], close=True)),
+            amount=plate_size + 2, dir=tuple(along),
+        )
+        plate = plate - Pos(*(along * -(half + 1))) * prism
+    return plate
+
+
+def _plate_edge_notch(
+    intrusion: Part, mount_in_clamp: Location, plate_size: float,
+) -> Part | None:
+    """A mount-local slot through the plate that removes `intrusion`
+    (plate material inside a corridor, clamp-local), opened to the
+    plate edge nearest it, full plate depth (back wedge included). None
+    when there is nothing to remove. Asserts the slot stays outside the
+    PCB footprint (+ WALL_MIN), which also keeps it off the M2 corners."""
+    if intrusion.volume < 1e-6:
+        return None
+    half = plate_size / 2
+    bb = (mount_in_clamp.inverse() * intrusion).bounding_box()
+    lo, hi = bb.min, bb.max
+    reach = {
+        "+y": half - hi.Y, "-y": lo.Y + half,
+        "+x": half - hi.X, "-x": lo.X + half,
+    }
+    side = min(reach, key=reach.get)
+    x0, x1, y0, y1 = lo.X, hi.X, lo.Y, hi.Y
+    if side == "+y":
+        y1 = half + 1
+        clear = y0 - PCB_H / 2
+    elif side == "-y":
+        y0 = -half - 1
+        clear = -y1 - PCB_H / 2
+    elif side == "+x":
+        x1 = half + 1
+        clear = x0 - PCB_W / 2
+    else:
+        x0 = -half - 1
+        clear = -x1 - PCB_W / 2
+    assert clear >= WALL_MIN, (
+        f"clamp-bolt corridor notch ({side} edge) comes within "
+        f"{clear:.2f} mm of the PCB footprint; must be ≥ {WALL_MIN}"
+    )
+    z0, z1 = -half, 1.0          # through the plate and any back wedge
+    return Pos((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2) * Box(
+        x1 - x0, y1 - y0, z1 - z0
+    )
+
+
+def _teardrop_bore(r: float, length: float, up_m: Vector) -> Part:
+    """A bore along mount-local z, centred on the origin, with a 45°
+    teardrop roof pointing at the in-plane component of `up_m`. The
+    roof faces overhang asin(|up in-plane| / √2) ≤ 45° — within the
+    check at any lens-axis tilt (front-low 40°, below-* 35.6°). Round
+    when the axis is near-vertical."""
+    bore = Cylinder(r, length)
+    d = Vector(up_m.X, up_m.Y, 0)
+    if d.length < 1e-6:
+        return bore
+    d = d.normalized()
+    ang = math.degrees(math.atan2(d.Y, d.X))
+    roof = (
+        Pos(*(d * (r / math.sqrt(2))))
+        * Rot(0, 0, ang + 45)
+        * Box(r, r, length)
+    )
+    return bore + roof
+
+
 # --- Part functions -----------------------------------------------------
 
 def clamp_mount(
@@ -203,6 +394,8 @@ def clamp_mount(
     pcb_hole_pitch_y: float = PCB_HOLE_PITCH_Y,
     pcb_hole_d: float = PCB_HOLE_D,
     mount_in_clamp: Location = _MOUNT_IN_CLAMP,
+    print_up: tuple[float, float, float] = PRINT_UP,
+    overhang_max_deg: float = PRINT_OVERHANG_MAX_DEG,
 ) -> Part:
     """Single printed body: clamp base (on rail) + beam + 50 × 50 ×
     plate_t mount plate. ESP32-CAM PCB bolts to the plate's front face
@@ -211,8 +404,13 @@ def clamp_mount(
     `mount_in_clamp` supplies the mount-local → clamp-local Location;
     defaults to the below-left pose. Beam tilt + axial length are
     derived from this Location, so all four rev-5 instances build from
-    the same body — only the mount-rotation differs, which parameterises
-    the plate orientation."""
+    the same function. The plate's pose then drives its print shaping
+    against `print_up` (clamp-local): `_mount_plate`'s edge chamfers
+    and back wedge, the teardrop direction of the M2 bores, and any
+    `_plate_edge_notch` that clears a clamp bolt's drop-in corridor.
+    None of these touches the clamp base, the plate's front (PCB seat)
+    face or its M2 corner lands — so the camera's pose, the rail
+    interface and the board seat are the same at every instance."""
     _mb_x, _mb_y, _mb_z = _mount_back_in_clamp(mount_in_clamp)
     # Pose sanity for the supplied `mount_in_clamp`: the mount back
     # must clear the clamp base in +Y and sit on the clamp's YZ axis
@@ -284,24 +482,31 @@ def clamp_mount(
     body = body - (Pos(0, -_TRIM / 2, 0) * Box(_TRIM, _TRIM, _TRIM))
 
     # --- 3. Mount plate (in mount-local) ---
-    # Plate occupies mount-local z ∈ [-plate_t, 0]; centred at -plate_t/2.
-    # Front face at z = 0 is the PCB rest plane.
-    plate_cz_mount_local = -plate_t / 2
-    plate = mount_in_clamp * (
-        Pos(0, 0, plate_cz_mount_local) * Box(plate_size, plate_size, plate_t)
+    # Plate occupies mount-local z ∈ [-plate_t, 0]; front face at z = 0
+    # is the PCB rest plane. Built whole in mount-local first — its
+    # print-driven edge chamfers and back wedge (see `_mount_plate`)
+    # belong to the plate, so the beam, unioned after, keeps its own
+    # faces where it passes the plate's edge.
+    up_m = _print_up_in_mount(mount_in_clamp, print_up)
+    plate = mount_in_clamp * _mount_plate(
+        up_m, plate_size, plate_t, overhang_max_deg,
     )
     body = body + plate
 
     # Trim everything past the plate front face (mount-local z > 0).
     # The beam overshoots into the plate so the union is one continuous
     # solid; cutting at the front face leaves a clean flat PCB-seating
-    # surface.
+    # surface. The clamp base block is exempt: the halfspace is sized
+    # for the plate, and unbounded it sliced the rail interface at
+    # three of the four poses (below-*: 3108 mm³ off the base's outer
+    # end, the M4 head left no seat and a 0.70 mm wall at its bore;
+    # back-upper: 515 mm³ off its -x end).
     _CUT_BOX_SIZE = 1000.0
     front_cutter = mount_in_clamp * (
         Pos(0, 0, _CUT_BOX_SIZE / 2)
         * Box(_CUT_BOX_SIZE, _CUT_BOX_SIZE, _CUT_BOX_SIZE)
     )
-    body = body - front_cutter
+    body = body - (front_cutter - clamp_base_block(base_l, base_w, base_h))
 
     # --- 4. Rail clamp bolts (vertical through base, axis along clamp -Y) ---
     for sx in (-1, 1):
@@ -311,9 +516,38 @@ def clamp_mount(
             * Cylinder(clamp_hole_d / 2, base_h * 3)
         )
 
-    # --- 5. PCB-mount M2 holes (along mount-local +Z, lens axis) ---
+    # --- 5. Clamp-bolt drop-in corridors ---
+    # Where the plate reaches into an M4's drop-in corridor (Ø8 head
+    # envelope, `CLAMP_BOLT_ACCESS_H` above its seat, grown by
+    # `CLAMP_BOLT_ACCESS_MARGIN`), the plate is notched from its nearest
+    # edge: a mount-aligned slot, so its faces meet the plate's at 90°
+    # (a cylindrical relief through a 45° plate leaves a knife-edge —
+    # measured 0.96 mm at alignment 0.18). Only back-upper's plate
+    # reaches one: its low edge lies across the -x bolt, which could
+    # not be dropped in or seated. The beam and the base block are
+    # exempt — the beam already clears every corridor, and the base
+    # top is the bolt's seat.
+    for sx in (-1, 1):
+        corridor = (
+            Pos(sx * bolt_half, base_h + CLAMP_BOLT_ACCESS_H / 2, 0)
+            * Rot(90, 0, 0)
+            * Cylinder(
+                CLAMP_BOLT_ACCESS_D / 2 + CLAMP_BOLT_ACCESS_MARGIN,
+                CLAMP_BOLT_ACCESS_H,
+            )
+        )
+        notch = _plate_edge_notch(corridor & plate, mount_in_clamp, plate_size)
+        if notch is not None:
+            body -= mount_in_clamp * notch - beam - clamp_base_block(
+                base_l, base_w, base_h
+            )
+
+    # --- 6. PCB-mount M2 holes (along mount-local +Z, lens axis) ---
     # Corner pattern on a 35 × 22 mm rectangle. Holes drilled through
-    # the plate; long bore (200 mm) matches the rev-4 convention.
+    # the plate; long bore (200 mm) matches the rev-4 convention. Each
+    # is a teardrop pointed at print-up: the lens axis leans 25-45°
+    # off horizontal at these poses, so a round Ø2.4 bore's crown
+    # faces down at up to 65°.
     _hole_len = 200.0
     cx = pcb_hole_pitch_x / 2
     cy = pcb_hole_pitch_y / 2
@@ -321,10 +555,57 @@ def clamp_mount(
         for sy in (-1, 1):
             body -= mount_in_clamp * (
                 Pos(sx * cx, sy * cy, 0)
-                * Cylinder(pcb_hole_d / 2, _hole_len)
+                * _teardrop_bore(pcb_hole_d / 2, _hole_len, up_m)
             )
 
     return body
+
+
+def clamp_base_block(
+    base_l: float = BASE_L, base_w: float = BASE_W, base_h: float = BASE_H,
+) -> Part:
+    """The clamp base as designed — the rail interface block, before
+    bores. Clamp-local, on the rail face at y = 0."""
+    return Pos(0, base_h / 2, 0) * Box(base_l, base_h, base_w)
+
+
+def clamp_bolt_access_corridor(
+    sx: int, bolt_half: float = _CLAMP_BOLT_HALF, base_h: float = BASE_H,
+) -> Part:
+    """The Ø`CLAMP_BOLT_ACCESS_D` drop-in corridor above the `sx` clamp
+    bolt's seat (the base top), `CLAMP_BOLT_ACCESS_H` tall. Measuring
+    geometry only — never placed in an assembly."""
+    return (
+        Pos(sx * bolt_half, base_h + CLAMP_BOLT_ACCESS_H / 2, 0)
+        * Rot(90, 0, 0)
+        * Cylinder(CLAMP_BOLT_ACCESS_D / 2, CLAMP_BOLT_ACCESS_H)
+    )
+
+
+def clamp_bolt_access_clearance(body: Part) -> float:
+    """Smallest gap from either clamp bolt's drop-in corridor to the
+    printed body outside the clamp base block — the plate and beam a
+    bolt must be lowered past. 0.0 when they touch or overlap."""
+    above = body - clamp_base_block()
+    return min(
+        clamp_bolt_access_corridor(sx).distance_to(above) for sx in (-1, 1)
+    )
+
+
+def clamp_base_shortfall_mm3(body: Part) -> float:
+    """Clamp-base material the body lacks beyond its two bolt bores —
+    0 when the rail interface block is intact. A cut sized for the
+    plate that reaches into the base (the unbounded front trim did,
+    until 2026-09-27) shows up here."""
+    block = clamp_base_block()
+    bores = [
+        Pos(sx * _CLAMP_BOLT_HALF, BASE_H / 2, 0)
+        * Rot(90, 0, 0)
+        * Cylinder(CLAMP_BOLT_HOLE_D / 2, BASE_H)
+        for sx in (-1, 1)
+    ]
+    drilled = block - bores[0] - bores[1]
+    return drilled.volume - (body & block).volume
 
 
 # --- Part functions (continued) -----------------------------------------
