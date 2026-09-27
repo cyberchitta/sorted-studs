@@ -211,16 +211,9 @@ def build_camera_rig() -> Assembly:
             # plate's pose is what differs, so whether the plate stands
             # clear of the M4 clamp bolts' drop-in corridors — and
             # whether any plate-sized cut reached into the rail
-            # interface block — is a per-camera fact. Measured on the
-            # body this instance places (clamp-local), so every built
-            # pose is covered, not just the standalone's below-left.
-            .assert_scalar(
-                f"{prefix}_clamp_bolt_access_clearance",
-                _camera_mount.clamp_bolt_access_clearance(clamp_body),
-                ge=_camera_mount.CLAMP_BOLT_ACCESS_MARGIN,
-                detail="mm, Ø8 M4-head drop-in corridor above each clamp "
-                "bolt seat vs the plate and beam",
-            )
+            # interface block — is a per-camera fact. The keep-outs
+            # ride the clamp's own placement, so every built pose is
+            # covered, not just the standalone's below-left.
             .assert_scalar(
                 f"{prefix}_clamp_base_shortfall",
                 _camera_mount.clamp_base_shortfall_mm3(clamp_body),
@@ -229,6 +222,14 @@ def build_camera_rig() -> Assembly:
                 "two bolt bores — 0 means the rail interface is intact",
             )
         )
+        # Each corridor is grown by the margin and stands on its seat,
+        # so the whole clamp (base included) is held at 0.
+        for sx, side in ((-1, "neg"), (1, "pos")):
+            a = a.assert_clear_of(
+                f"{prefix}_clamp_mount",
+                clamp_loc * _camera_mount.clamp_bolt_keepout(sx),
+                name=f"m4_drop_in_{side}",
+            )
     # The below-* mount plates tilt with their lens axes and reach
     # ~25 mm in +Y past their clamp, toward the arch post on their
     # side. `along` compares Y projections, so this is the whole

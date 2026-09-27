@@ -39,7 +39,8 @@ Cross-boundary checks:
                      (``arc_screw_pos`` / ``_neg``, placed here) seats
                      in the skirt (tangent contact). ``_with_arc_screws``
                      lists the claims; driver access is
-                     ``cad/check_arc_screw_access.py``.
+                     held in ``cad/assembly.py`` (keep-outs against
+                     the whole machine).
 - exit floor ↔ bowl — the tongue's rib rests tangent on the floor;
                      the tongue passes through the skirt's slot.
 - exit floor ↔ rotor — the tongue's inner edge stays

@@ -150,8 +150,8 @@ _CLAMP_BOLT_HALF = CLAMP_BOLT_SPACING / 2
 # enough to lower an M4×20 (15 mm base + ~5 mm T-nut engagement) plus
 # its head in from above — which also covers an L-key's short arm
 # seated in the head. The printed body must stand clear of that
-# corridor by CLAMP_BOLT_ACCESS_MARGIN at every pose (asserted per
-# camera in `build_camera_rig`). The camera board and lens are NOT in
+# corridor by CLAMP_BOLT_ACCESS_MARGIN at every pose (a keep-out per
+# bolt per camera in `build_camera_rig`). The camera board and lens are NOT in
 # the corridor's claim: the clamp is bolted to the rail before the
 # ESP32-CAM goes on its plate.
 CLAMP_BOLT_L = 20.0
@@ -569,26 +569,20 @@ def clamp_base_block(
     return Pos(0, base_h / 2, 0) * Box(base_l, base_h, base_w)
 
 
-def clamp_bolt_access_corridor(
+def clamp_bolt_keepout(
     sx: int, bolt_half: float = _CLAMP_BOLT_HALF, base_h: float = BASE_H,
+    margin: float = CLAMP_BOLT_ACCESS_MARGIN,
 ) -> Part:
     """The Ø`CLAMP_BOLT_ACCESS_D` drop-in corridor above the `sx` clamp
-    bolt's seat (the base top), `CLAMP_BOLT_ACCESS_H` tall. Measuring
-    geometry only — never placed in an assembly."""
+    bolt's seat (the base top), `CLAMP_BOLT_ACCESS_H` tall, grown by
+    `margin` radially and at the top so the clamp can be held clear of
+    it at 0 while it stands on the seat. Clamp-local; a keep-out for
+    `assert_clear_of`, never placed in an assembly."""
+    h = CLAMP_BOLT_ACCESS_H + margin
     return (
-        Pos(sx * bolt_half, base_h + CLAMP_BOLT_ACCESS_H / 2, 0)
+        Pos(sx * bolt_half, base_h + h / 2, 0)
         * Rot(90, 0, 0)
-        * Cylinder(CLAMP_BOLT_ACCESS_D / 2, CLAMP_BOLT_ACCESS_H)
-    )
-
-
-def clamp_bolt_access_clearance(body: Part) -> float:
-    """Smallest gap from either clamp bolt's drop-in corridor to the
-    printed body outside the clamp base block — the plate and beam a
-    bolt must be lowered past. 0.0 when they touch or overlap."""
-    above = body - clamp_base_block()
-    return min(
-        clamp_bolt_access_corridor(sx).distance_to(above) for sx in (-1, 1)
+        * Cylinder(CLAMP_BOLT_ACCESS_D / 2 + margin, h)
     )
 
 

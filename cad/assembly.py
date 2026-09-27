@@ -25,7 +25,9 @@ Cross-module no-interference is asserted (every pair of units), the
 units' beliefs about the shared datums are asserted coincident, and
 the gantry's rests on m05 — prop bars across the column ends, S2's
 stem on V_4's face, the braces' clearances to the columns and the
-deck — are declared here, the level that composes both. The turret's
+deck — are declared here, the level that composes both. So are the
+driver corridors to the m02 liner's free-end screws: keep-outs held
+against every unit, because a corridor reaches past its stage. The turret's
 loaded-platform envelope against the chain is a probe fixture, so it
 lives in `check_turret_envelope.py` (a check module: `khana check` it
 separately; this file never carries the probe). Within-module
@@ -59,14 +61,20 @@ from __future__ import annotations
 from functools import cache
 
 import math
+import re
 
-from build123d import Location, Pos, Rot
+from build123d import Cylinder, Location, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 
 from .design_systems import DEFAULT_SCHEMA
+from .m02_c_channel_singulator.arc_fastening import arc_screw_azimuth_deg
+from .m02_c_channel_singulator.drive.assembly import bowl_part_at
+from .m02_c_channel_singulator.params import LINER_SEAM_PHASE_DEG
+from .m02_c_channel_singulator.seams import sector_index
+from .m02_c_channel_singulator.stator.assembly import STATOR_PARTS
 from .m02_chain.assembly import build_chain
-from .m02_chain.params import BRACE_COLS, PROP_POST
+from .m02_chain.params import BRACE_COLS, PROP_POST, STAGES
 from .m03_scanner.assembly import build_m03
 from .m05_diverter.assembly import build_m05
 
@@ -109,6 +117,60 @@ def m03_pose(m05: Assembly, m03: Assembly) -> Location:
         deck_top.Y - dump_ry,
         deck_top.Z - floor_bottom.Z,
     ) * Rot(0, 0, M03_ROT_DEG)
+
+
+# Driver access to the m02 liner's free-end screws (slice 5 of the
+# 2026-09-27 completion pass): on every stage whose liner the exit
+# opening cuts through, each countersunk M3 can be driven from outside
+# with the machine assembled. A hex driver for its 2 mm socket: Ø8 takes
+# a driver's shank with the fingers' room of the M4 clamp bolts'
+# corridor (m03 camera mount, CLAMP_BOLT_ACCESS_D), and 60 mm is a
+# stubby driver's reach. Margin as there.
+ARC_SCREW_ACCESS_D = 8.0
+ARC_SCREW_ACCESS_L = 60.0
+ARC_SCREW_ACCESS_MARGIN = 0.5
+
+_ARC_SCREW = re.compile(r"m02_chain\.(s\d)\.arc_screw_(pos|neg)")
+
+
+def _with_arc_screw_access(a: Assembly) -> Assembly:
+    """Hold every body in the machine `ARC_SCREW_ACCESS_MARGIN` clear of
+    a driver corridor running out along each free-end screw's axis from
+    its head top. Declared here, not in the stage builder: the corridor
+    reaches past the stage, and a keep-out holds only the parts of the
+    assembly that declares it.
+
+    Three parts are excluded, the three the screw joins: the screw (the
+    corridor starts on its head), the bowl sector it is driven into
+    (the corridor starts in its countersink) and the liner sector it
+    fastens (its boss sits right behind the skirt, 2.6 mm off the
+    corridor's start, and would mask whatever stands in front). Outside
+    the skirt the bowl sector carries only its seam ear pairs —
+    `arc_fastening_to_bowl_seam_deg` holds the fastening an ear's width
+    off every seam — and the liner only its cylinder zone above
+    SKIRT_TOP_Z, 11 mm above the corridor's top.
+    """
+    phase = {s.name: s.bowl_seam_phase_deg for s in STAGES}
+    screws = [
+        (pp, m.groups()) for pp in a.placed_parts
+        if (m := _ARC_SCREW.fullmatch(pp.name))
+    ]
+    assert screws, "no free-end screw in the machine — the claims would be vacuous"
+    for pp, (stage, end) in screws:
+        sign = +1 if end == "pos" else -1
+        own_bowl = f"m02_chain.{stage}.drive.{bowl_part_at(arc_screw_azimuth_deg(sign), phase[stage])}"
+        own_liner = f"m02_chain.{stage}.stator.{STATOR_PARTS[sector_index(0.0, LINER_SEAM_PHASE_DEG)]}"
+        corridor = pp.location * (
+            Pos(0, 0, ARC_SCREW_ACCESS_L / 2.0)
+            * Cylinder(ARC_SCREW_ACCESS_D / 2.0, ARC_SCREW_ACCESS_L)
+        )
+        a = a.assert_clear_of(
+            ["m05", "m03", "m02_chain"], corridor,
+            name=f"{stage}_arc_screw_{end}_driver",
+            excluding=[pp.name, own_bowl, own_liner],
+            min_mm=ARC_SCREW_ACCESS_MARGIN,
+        )
+    return a
 
 
 # Cached because the degenerate ``assembly`` memo below and any
@@ -248,7 +310,7 @@ def build_top(schema: str = DEFAULT_SCHEMA) -> Assembly:
         .assert_distance("m02_chain.gantry.brace_foot_5", "m05.top_cap.outer_vertex_bracket_5", min_mm=1.0,
                          name="brace_foot_5_clears_vertex_bracket_5")
     )
-    return a
+    return _with_arc_screw_access(a)
 
 
 # Degenerate memoized master, so ``khana check cad/assembly.py``
