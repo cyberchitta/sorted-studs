@@ -323,6 +323,32 @@ def stator(
     return (wall - wedge) + downstream_wall
 
 
+def knife_edge_ring(
+    *,
+    r_in_base: float = R_STATOR_INNER_BASE,
+    reach: float = WALL_MIN / math.cos(math.radians(V_HALF_ANGLE_DEG)),
+) -> Part:
+    """The V-bottom knife edge as a feature solid for `printability.py`
+    — measuring geometry, never placed or unioned. A revolved triangle
+    whose two faces lie on the wall's own: the flat bottom annulus
+    (z = 0, r ``r_in_base``…``r_in_base + reach``) and the inner cone
+    (r = r_in_base + z·tan V, up to the same ``reach`` along r). Every
+    reading under WALL_MIN at that edge runs from one of these faces to
+    the other: from the bottom at r_in_base + δ it exits the cone after
+    δ, and from the cone it exits the bottom up to WALL_MIN / cos V out
+    (2.12 at 45°) — which is why ``reach`` is that and not WALL_MIN.
+    Deliberately not the whole revolve: a thin wall anywhere else on the
+    wall traces to no feature and fails."""
+    t = math.tan(math.radians(V_HALF_ANGLE_DEG))
+    return revolve(
+        Plane.XZ * Polygon(
+            (r_in_base, 0.0), (r_in_base + reach, 0.0), (r_in_base + reach, reach / t),
+            align=None,
+        ),
+        axis=Axis.Z,
+    )
+
+
 def _sector(r_in: float, r_out: float, span_deg: tuple[float, float], z0: float, h: float) -> Part:
     """Annular sector from ``span_deg[0]`` to ``span_deg[1]`` about +Z
     (degrees from +X), z from z0 to z0 + h. Built with ``align=None`` —

@@ -80,9 +80,10 @@ kicker extension needs no support. What still faces the bed off the
 plate is the acrylic's seat: the four corner-lip tops and the two
 bracket tops inside the pocket, all at z = -4 — plus the brackets'
 outboard tops and the Ø5.4 pin-bore ceilings. All of these are bridged
-and waived. The seat faces are included by owner decision 2026-09-27
-and are sanded or cleaned flat after printing (see the script's
-waiver).
+and waived per feature — `seat_cutter()`, `bracket_blocks()`,
+`pin_bore_cutters()`, the pieces that made them. The seat faces are
+included by owner decision 2026-09-27 and are sanded or cleaned flat
+after printing (see the script's waivers).
 """
 
 import math
@@ -299,6 +300,49 @@ def acrylic_insert(
     return Box(size, size, thickness)
 
 
+def seat_cutter():
+    """The pocket-clear cutter: the acrylic's 110 × 110 pocket from the
+    seat plane (z = CORNER_LIP_TOP_Z = -4) up past the ring top. It
+    trims each corner lip's fusing tab back to the pocket, so its floor
+    *is* the acrylic seat — the four corner-lip tops and the in-pocket
+    ends of the two bracket tops are faces this cutter left behind.
+    `frame()` cuts with it; `printability.py` declares it as the `seat`
+    feature (a face traces to the feature that made it)."""
+    h = (TOP_RING_TOP_Z - CORNER_LIP_TOP_Z) * 3
+    return (
+        Pos(0, 0, CORNER_LIP_TOP_Z + h / 2)
+        * Box(ACRYLIC_INSERT_SIZE, ACRYLIC_INSERT_SIZE, h)
+    )
+
+
+def bracket_blocks():
+    """The two hinge-bracket blocks, cart X = +13 then -13, hanging
+    from the skirt with their tops at the seat plane. `frame()` unions
+    them in this order; `printability.py` declares them as the
+    `brackets` feature."""
+    z_center = (BRACKET_BOTTOM_Z_LOCAL + BRACKET_TOP_Z_LOCAL) / 2
+    return tuple(
+        Pos(x, BRACKET_Y_LOCAL, z_center)
+        * Box(BRACKET_BLOCK_X, BRACKET_BLOCK_Y, BRACKET_BLOCK_Z)
+        for x in (BRACKET_POS_X_LOCAL, BRACKET_NEG_X_LOCAL)
+    )
+
+
+def pin_bore_cutters():
+    """The two Ø PIN_BORE_D pin bores (axis ±X), one per bracket in
+    `bracket_blocks()` order. Each spans only its bracket's X, so it
+    doesn't graze the skirt outboard of the brackets and leave a thin
+    (1.3 mm) wall sliver; the notch already removes the skirt across
+    the bore Z between them. `frame()` cuts with them;
+    `printability.py` declares them as the `pin_bores` feature."""
+    return tuple(
+        Pos(x, PIN_AXIS_Y_LOCAL, PIN_AXIS_Z_LOCAL)
+        * Rot(0, 90, 0)
+        * Cylinder(PIN_BORE_D / 2, BRACKET_BLOCK_X)
+        for x in (BRACKET_POS_X_LOCAL, BRACKET_NEG_X_LOCAL)
+    )
+
+
 def frame():
     """Single printed frame body: top ring + pocket walls + 4 corner
     lips + hub-side skirt (with bushing notch) + integrated hinge
@@ -471,11 +515,7 @@ def frame():
             )
     # Re-clear the acrylic pocket above the seat, so each lip's fusing
     # tab survives only where the wall already stands.
-    _pocket_clear_h = (TOP_RING_TOP_Z - CORNER_LIP_TOP_Z) * 3
-    body -= (
-        Pos(0, 0, CORNER_LIP_TOP_Z + _pocket_clear_h / 2)
-        * Box(ACRYLIC_INSERT_SIZE, ACRYLIC_INSERT_SIZE, _pocket_clear_h)
-    )
+    body -= seat_cutter()
 
     # Hub-side skirt — full X span at cart Y ∈ [-90, -86].
     skirt_y_center = (HUB_SKIRT_Y_OUTER + HUB_SKIRT_Y_INNER) / 2   # = -88
@@ -498,24 +538,12 @@ def frame():
     )
 
     # Hinge brackets — at cart X = ±13, hanging from the skirt.
-    bracket_z_center = (BRACKET_BOTTOM_Z_LOCAL + BRACKET_TOP_Z_LOCAL) / 2
-    for bracket_x in (BRACKET_POS_X_LOCAL, BRACKET_NEG_X_LOCAL):
-        body += (
-            Pos(bracket_x, BRACKET_Y_LOCAL, bracket_z_center)
-            * Box(BRACKET_BLOCK_X, BRACKET_BLOCK_Y, BRACKET_BLOCK_Z)
-        )
+    for block in bracket_blocks():
+        body += block
 
-    # Horizontal pin bore (axis ±X) — limited to the bracket X-span
-    # so the bore doesn't graze the skirt outboard of the brackets and
-    # leave a thin (1.3 mm) wall sliver. The notch already removes the
-    # skirt across the bore Z between brackets, so a per-bracket bore
-    # is sufficient.
-    for bracket_x in (BRACKET_POS_X_LOCAL, BRACKET_NEG_X_LOCAL):
-        body -= (
-            Pos(bracket_x, PIN_AXIS_Y_LOCAL, PIN_AXIS_Z_LOCAL)
-            * Rot(0, 90, 0)
-            * Cylinder(PIN_BORE_D / 2, BRACKET_BLOCK_X)
-        )
+    # Horizontal pin bores (axis ±X), one per bracket.
+    for bore in pin_bore_cutters():
+        body -= bore
 
     # Kicker extension — L-shape: stem at acrylic-bottom band, drop
     # block hanging down to the lifter contact face at the tip.
