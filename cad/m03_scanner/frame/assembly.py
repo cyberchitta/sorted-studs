@@ -72,7 +72,7 @@ unit is placed in world; that cross-unit assertion lives in
 LOAD/RETURN/DUMP) projects past the camera-rig front face by
 design. The rig's rev-3 open front was the operator's access; since
 the m02 chain came to stand on that side, IMAGE is serviced from ±X
-instead (owner 2026-09-18) — `../../check_service_access.py` holds a
+instead (owner 2026-09-18) — `../../assembly.py` holds a
 hand-wide corridor clear on each side.
 
 Members are stock 2020 aluminum extrusion — bought, not printed —

@@ -27,7 +27,9 @@ the gantry's rests on m05 — prop bars across the column ends, S2's
 stem on V_4's face, the braces' clearances to the columns and the
 deck — are declared here, the level that composes both. So are the
 driver corridors to the m02 liner's free-end screws: keep-outs held
-against every unit, because a corridor reaches past its stage. The turret's
+against every unit, because a corridor reaches past its stage — and
+the hand-wide reach corridors to IMAGE from ±X, clear of every unit at
+the rest pose. The turret's
 loaded-platform envelope against the chain is a probe fixture, so it
 lives in `check_turret_envelope.py` (a check module: `khana check` it
 separately; this file never carries the probe). Within-module
@@ -62,7 +64,7 @@ from functools import cache
 
 import math
 
-from build123d import Location, Pos, Rot
+from build123d import Box, Location, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 
@@ -75,6 +77,7 @@ from .m02_c_channel_singulator.stator.assembly import STATOR_PARTS, exit_splits_
 from .m02_chain.assembly import build_chain
 from .m02_chain.params import BRACE_COLS, PROP_POST, STAGES
 from .m03_scanner.assembly import build_m03
+from .m03_scanner.params import PLATFORM_ACRYLIC_SIZE, TURRET_ARM_R
 from .m05_diverter.assembly import build_m05
 
 
@@ -157,6 +160,60 @@ def _with_arc_screw_access(a: Assembly) -> Assembly:
                 excluding=[f"{unit}.arc_screw_{end}", f"{unit}.drive.{own_bowl}", f"{unit}.stator.{own_liner}"],
                 min_mm=ARC_SCREW_ACCESS_MARGIN,
             )
+    return a
+
+
+# Hand access to the IMAGE station from the machine's sides (owner
+# 2026-09-18, `_notes/state/m03-scanner.md` §Open work item 0): the
+# operator stands at −Y, where the hopper is loaded, but the m02 chain
+# fills that side of the turret, so IMAGE is serviced from ±X — clearing
+# a jam, reaching a platform. A corridor one hand wide and REACH_H tall
+# runs from the IMAGE platform's side edge out to the deck edge on each
+# side, just behind the LOAD / IDLE platforms and above the IMAGE
+# platform top. The probe is a box, not a hand.
+REACH_W = 100.0    # across the knuckles ~90, plus a little
+REACH_H = 130.0
+REACH_GAP = 5.0    # off the LOAD / IDLE platforms' +Y edge and the IMAGE top
+
+
+def _with_service_access(a: Assembly) -> Assembly:
+    """Hold every unit clear of a side-reach corridor to IMAGE on each
+    side. Declared here, not in m03: the corridor's length runs to m05's
+    deck edge and it must clear the chain, so only the machine knows its
+    geometry and has every body it must clear.
+
+    The corridor is placed from the rest pose — the turret is jointed
+    and this level drives no motion. A platform mid-index sweeps through
+    it; nobody reaches in then, so a parent that drives the turret must
+    scope this claim to the dwell.
+    """
+    # Turret hub in world: one arm back (+Y) from the DUMP centroid, as
+    # in `check_turret_envelope.py`. LOAD / IDLE sit on the hub's X
+    # line, so their outer +Y edge is half a platform past the hub.
+    hub = (a.anchor("m03.dump_centroid") * Pos(0, TURRET_ARM_R, 0)).position
+    y0 = hub.Y + PLATFORM_ACRYLIC_SIZE / 2.0 + REACH_GAP
+    image_top_z = max(
+        (pp.location * pp.part).bounding_box().max.Z
+        for pp in a.placed_parts
+        if pp.name.startswith("m03.turret.rotor.platform_image.")
+    )
+    deck = a.part("m05.top_acrylic")
+    deck_r = (deck.location * deck.part).bounding_box().max.X
+    x_in = PLATFORM_ACRYLIC_SIZE / 2.0          # IMAGE platform side edge
+    length = deck_r - x_in
+    z0 = image_top_z + REACH_GAP
+    # Along +X from x = 0, y 0…REACH_W, z 0…REACH_H.
+    corridor = Pos(length / 2.0, REACH_W / 2.0, REACH_H / 2.0) * Box(length, REACH_W, REACH_H)
+    a = (
+        a
+        .assert_scalar("service_reach_y0", y0, detail="corridor's -Y face, world")
+        .assert_scalar("service_reach_z0", z0, detail="corridor floor: IMAGE platform top + REACH_GAP")
+    )
+    for side, x in (("pos_x", hub.X + x_in), ("neg_x", hub.X - x_in - length)):
+        a = a.assert_clear_of(
+            ["m05", "m03", "m02_chain"], Pos(x, y0, z0) * corridor,
+            name=f"service_reach_{side}",
+        )
     return a
 
 
@@ -297,7 +354,7 @@ def build_top(schema: str = DEFAULT_SCHEMA) -> Assembly:
         .assert_distance("m02_chain.gantry.brace_foot_5", "m05.top_cap.outer_vertex_bracket_5", min_mm=1.0,
                          name="brace_foot_5_clears_vertex_bracket_5")
     )
-    return _with_arc_screw_access(a)
+    return _with_service_access(_with_arc_screw_access(a))
 
 
 # Degenerate memoized master, so ``khana check cad/assembly.py``
