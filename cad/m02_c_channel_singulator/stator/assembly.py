@@ -46,6 +46,14 @@ cylinder zone's outer face, z SKIRT_TOP_Z…height, above the bowl's
 skirt; the bowl's own seams are staggered from these (asserted in
 ``../assembly.py``).
 
+Free ends (`../arc_fastening.py`, owner 2026-09-27): on a plain wall
+the exit opening cuts the sector it falls in into two arcs, each held
+by one ear and free at the opening (``exit_splits_wall``). Each free
+end carries a boss on its outer cone inside the skirt, bearing on the
+skirt's inner face, with a teardrop hole for an M3 heat-set insert; a
+countersunk screw through the skirt (placed, with its claims, at the
+unit root) fastens it. The hopper stage has no free end and no boss.
+
 Print orientation: inverted (top face on the bed), so the cylinder
 zone rises from the bed, the flange's underside becomes an upward
 step, and the V-cone hangs inward at 45° with no support — the
@@ -70,6 +78,7 @@ from build123d import Axis, Box, Cylinder, Part, Plane, Polygon, Pos, Rot, extru
 
 from cad_khana.mechanism.assembly import Assembly
 
+from .. import arc_fastening as _fastening
 from ..materials import material_of
 from ..seams import SEAM_COUNT, SEAM_EAR_T, angular_gap_deg, seam_azimuths, sector_index, split_ring
 from ..params import (
@@ -360,12 +369,30 @@ def exit_floor(
     return tongue + rib
 
 
+def exit_splits_wall(height: float = STATOR_WALL_H) -> bool:
+    """Whether the exit opening cuts the wall through at ``height``: on
+    a plain wall it is full height, so the sector it falls in arrives
+    as two arcs, each free at the opening; on the hopper stage the wall
+    closes over it. The one source for the split — the solid count,
+    the free-end bosses and (via the unit root) the skirt's screw
+    holes all read it."""
+    return height <= STATOR_WALL_H + 1e-9
+
+
 def stator_sectors(*, phase_deg: float = LINER_SEAM_PHASE_DEG, height: float = STATOR_WALL_H) -> list[Part]:
     """The wall cut into SEAM_COUNT sectors at ``phase_deg``, ears on
     the cylinder zone above the skirt. Sector k is ``stator_k``. The
-    exit opening stays STATOR_WALL_H tall whatever ``height`` is."""
+    exit opening stays STATOR_WALL_H tall whatever ``height`` is.
+    Where it cuts the wall through, each free end carries its boss and
+    insert hole (``../arc_fastening.py``) before the split."""
+    ring = stator(height=height)
+    if exit_splits_wall(height):
+        for sign in _fastening.FREE_END_SIGNS:
+            ring = ring + _fastening.arc_boss(sign)
+        for sign in _fastening.FREE_END_SIGNS:
+            ring = ring - _fastening.boss_hole(sign)
     return split_ring(
-        stator(height=height), phase_deg=phase_deg, r_out=R_STATOR_OUTER_KINK,
+        ring, phase_deg=phase_deg, r_out=R_STATOR_OUTER_KINK,
         ear_z=(SKIRT_TOP_Z, height),
     )
 
@@ -391,7 +418,7 @@ def sector_solid_count(k: int, height: float = STATOR_WALL_H) -> int:
     printability claim, so the two cannot drift: "three sectors"
     quietly means four printed parts at wall height (found
     2026-09-20, `_notes/state/m02-singulator.md`)."""
-    split = k == sector_index(0.0, LINER_SEAM_PHASE_DEG) and height <= STATOR_WALL_H + 1e-9
+    split = k == sector_index(0.0, LINER_SEAM_PHASE_DEG) and exit_splits_wall(height)
     return 2 if split else 1
 
 
@@ -433,9 +460,22 @@ def build_stator(height: float = STATOR_WALL_H) -> Assembly:
                    "means the wall height or the seam phase moved "
                    "the opening relative to the seams",
         )
-    return a.assert_distance(
+    a = a.assert_distance(
         "exit_floor", exit_sector, min_mm=EXIT_FLOOR_SIDE_CLEAR,
     )
+    # Each free end's boss keeps out of the exit opening's own volume
+    # carried outward — the brick's way out — by the margin the tongue
+    # keeps from the same faces. Measured on the boss as unioned (it
+    # fuses into its arc, so no part-level claim can isolate it).
+    if exit_splits_wall(height):
+        corridor = _fastening.exit_corridor()
+        for sign in _fastening.FREE_END_SIGNS:
+            a = a.assert_scalar(
+                f"arc_boss_{_fastening.free_end_name(sign)}_exit_clearance",
+                _fastening.arc_boss(sign).distance_to(corridor), ge=EXIT_FLOOR_SIDE_CLEAR,
+                detail="mm from the free end's boss to the exit wedge carried out past the skirt",
+            )
+    return a
 
 
 assembly = build_stator()

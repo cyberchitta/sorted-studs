@@ -49,6 +49,13 @@ _KNIFE_EDGE_WAIVER = {
     "Truncating it would put a ledge at the exact circle bricks "
     "slide through.",
 }
+# The two arcs of the split sector carry the free-end bosses
+# (`../arc_fastening.py`): the insert holes are teardrops roofed toward
+# −Z, this orientation's up, so the knife-edge reading stays the
+# sector's minimum and nothing new overhangs. The waiver above is a
+# bare reason — it would swallow a thin wall on a boss — so the bosses
+# were probed apart when they landed (2026-09-27): ≥ 3.76 mm of
+# material round each insert hole, 5.5 mm to the trough.
 # `solid_count=` from the same `sector_solid_count` the mechanism
 # claim uses: the sector carrying the exit opening arrives as two
 # arcs at wall height, and this file is the last gate before a print

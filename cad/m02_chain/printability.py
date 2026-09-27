@@ -72,8 +72,11 @@ for name, waive in (
 # The bowl sectors print floor-down: the drive places each at identity
 # in its own frame, so `PlacedPart.part` is the sector in print
 # orientation (floor bottom on the bed at z −24.5). Skirt, slot and ear
-# faces are vertical. The only down-facing area above the bed is the
-# skirt foot's first layer over the rims of the motor pattern's two
+# faces are vertical; on S1 and S2 the skirt's two free-end screw holes
+# (`m02_c_channel_singulator/arc_fastening.py`) are teardrops, their
+# roofs and countersinks facing down at 40° at most — under the 45°
+# threshold, so they add no area. The only down-facing area past it is
+# the skirt foot's first layer over the rims of the motor pattern's two
 # outboard M3 counterbores (params NEMA17_BOLT_CBORE_D), so the
 # overhang waiver belongs to each stage's motor sector alone, and each
 # is witnessed on that stage's own body: the slivers' azimuths are

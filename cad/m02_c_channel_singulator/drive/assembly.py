@@ -19,6 +19,10 @@ hangs below the V-bottom plane, under the rotor's ring-gear flange:
                  seams (phase per instance, clear of the exit arc and
                  the motor — asserted in ``build_drive``), each sector
                  carrying a bolted ear at both seams outside the skirt.
+                 On a stage whose liner the exit opening cuts through,
+                 the skirt beside each side of the slot is drilled
+                 (teardrop, countersunk) for the screw fastening the
+                 liner's free end (``../arc_fastening.py``).
   - bearing    — bought aluminium turntable, modelled as one annulus
                  (BEARING_ID / OD / H). Upper ring bolts to the rotor
                  flange, lower ring to the plate; both bolt circles
@@ -59,6 +63,7 @@ from build123d import Axis, Box, Circle, Cylinder, Location, Part, Plane, Polygo
 
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 
+from .. import arc_fastening as _fastening
 from ..materials import material_of
 from ..seams import SEAM_COUNT, SEAM_EAR_T, angular_gap_deg, sector_index, seam_azimuths, split_ring
 from ..params import (
@@ -130,6 +135,7 @@ def bowl(
     bolt_hole_d: float = NEMA17_BOLT_HOLE_D,
     bolt_cbore_d: float = NEMA17_BOLT_CBORE_D,
     bolt_cbore_depth: float = NEMA17_BOLT_CBORE_DEPTH,
+    arc_screw_holes: bool = True,
 ) -> Part:
     """Floor annulus (top face at z=PLATE_TOP_Z) with the motor's pilot
     hole and M3 pattern cut through at ``motor_xy`` (pattern square
@@ -138,8 +144,14 @@ def bowl(
     from the floor top to ``skirt_top_z``, slotted through the exit
     arc from ``skirt_cut_bottom_z`` up for the stator's tongue.
 
+    With ``arc_screw_holes`` the skirt also carries, beside each side
+    of the slot, the countersunk hole for the screw that fastens the
+    liner's free end there (``../arc_fastening.py``) — the unit root
+    passes it on the stages whose liner the exit opening cuts through.
+
     Prints floor-down: the skirt is a plain vertical wall and the
-    slot's faces are vertical, so nothing overhangs.
+    slot's faces are vertical, so nothing overhangs; the screw holes
+    are teardrops roofed toward +Z.
     """
     assert r_in < r_out and t > 0.0
     assert skirt_r_in < r_out and skirt_top_z > PLATE_TOP_Z, "skirt must stand on the floor's rim"
@@ -202,21 +214,28 @@ def bowl(
     # bridging that rim is the design (printability waives it with
     # the measured area); a cutter through the standing skirt would
     # notch its face instead.
-    return ((plate - holes) + skirt) - wedge
+    body = ((plate - holes) + skirt) - wedge
+    if arc_screw_holes:
+        for sign in _fastening.FREE_END_SIGNS:
+            body = body - _fastening.skirt_hole(sign)
+    return body
 
 
 def bowl_sectors(
     *,
     phase_deg: float = BOWL_SEAM_PHASE_DEG,
     motor_azimuth_deg: float = MOTOR_AZIMUTH_DEG,
+    arc_screw_holes: bool = True,
 ) -> list[Part]:
     """The bowl for a motor at ``motor_azimuth_deg``, cut into
     SEAM_COUNT sectors at ``phase_deg`` with ears the full height of
-    floor and skirt. Sector k is ``bowl_k``."""
+    floor and skirt, the skirt drilled for the liner's free-end screws
+    when ``arc_screw_holes``. Sector k is ``bowl_k``."""
     az = math.radians(motor_azimuth_deg)
     whole = bowl(
         motor_xy=(CENTER_DIST * math.cos(az), CENTER_DIST * math.sin(az)),
         motor_rot_deg=motor_azimuth_deg,
+        arc_screw_holes=arc_screw_holes,
     )
     return split_ring(
         whole, phase_deg=phase_deg, r_out=PLATE_R_OUT, ear_z=(PLATE_BOTTOM_Z, SKIRT_TOP_Z),
@@ -302,6 +321,7 @@ def pinion_axis_xy(motor_azimuth_deg: float = MOTOR_AZIMUTH_DEG) -> tuple[float,
 def build_drive(
     motor_azimuth_deg: float = MOTOR_AZIMUTH_DEG,
     seam_phase_deg: float = BOWL_SEAM_PHASE_DEG,
+    arc_screw_holes: bool = True,
 ) -> Assembly:
     """Drive sub-assembly in drive-local frame (= m02-local).
 
@@ -319,6 +339,10 @@ def build_drive(
     motor, measured — the motor stands on one sector and clears the
     other two, ears included (they hang below the floor, in the motor's
     own height band).
+
+    ``arc_screw_holes`` drills the skirt for the liner's free-end
+    screws — the unit root passes whether its liner is split (default
+    True: the default liner is a plain wall).
     """
     ear_deg = math.degrees(2.0 * SEAM_EAR_T / PLATE_R_OUT)
     for seam in seam_azimuths(seam_phase_deg):
@@ -332,7 +356,9 @@ def build_drive(
     radial = (math.cos(math.radians(motor_azimuth_deg)), math.sin(math.radians(motor_azimuth_deg)), 0.0)
     skirt_face = Plane(origin=(SKIRT_R_IN * radial[0], SKIRT_R_IN * radial[1], 0.0), z_dir=radial)
     a = Assembly()
-    for k, sector in enumerate(bowl_sectors(phase_deg=seam_phase_deg, motor_azimuth_deg=motor_azimuth_deg)):
+    for k, sector in enumerate(bowl_sectors(
+        phase_deg=seam_phase_deg, motor_azimuth_deg=motor_azimuth_deg, arc_screw_holes=arc_screw_holes,
+    )):
         a = a.with_part(bowl_part(k), sector, material=material_of(bowl_part(k)))
     motor_sector = bowl_part_at(motor_azimuth_deg, seam_phase_deg)
     a = (

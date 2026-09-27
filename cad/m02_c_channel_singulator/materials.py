@@ -21,6 +21,8 @@ MATERIAL_OF: dict[str, str | None] = {
     "pinion":     "pla_matte",
     "bearing":    "aluminium",
     "motor":      "cast_aluminium_dark",
+    "arc_screw_pos": "steel",
+    "arc_screw_neg": "steel",
 }
 
 

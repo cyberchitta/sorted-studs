@@ -15,7 +15,10 @@ m02's named parts: ``rotor`` (rotates, MECHANISM), ``stator_0..2``
 motor and stator liner sit on, SECONDARY_STRUCTURE),
 ``pinion`` (rotates, MECHANISM), and two bought parts outside the
 design system — ``bearing`` (aluminium turntable) and ``motor``
-(NEMA-17) — which keep their material intrinsics.
+(NEMA-17) — and, on a stage whose liner the exit opening cuts
+through, ``arc_screw_pos`` / ``arc_screw_neg`` (the bought screws
+fastening the two arcs' free ends), which keep their material
+intrinsics.
 """
 
 from __future__ import annotations
@@ -52,6 +55,8 @@ ROLE_OF: dict[str, Role | None] = {
     "pinion":     Role.MECHANISM,
     "bearing":    None,                      # bought turntable — outside palette
     "motor":      None,                      # NEMA-17 cast body — outside palette
+    "arc_screw_pos": None,                   # bought M3 countersunk screw — outside palette
+    "arc_screw_neg": None,
 }
 
 

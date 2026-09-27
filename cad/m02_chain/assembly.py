@@ -69,6 +69,7 @@ from build123d import Box, Cylinder, Keep, Location, Part, Plane, Pos, Rot
 from cad_khana.mechanism.assembly import Assembly
 
 from ..design_systems import DEFAULT_SCHEMA, paint
+from ..m02_c_channel_singulator.arc_fastening import FREE_END_SIGNS, free_end_name
 from ..m02_c_channel_singulator.assembly import build_m02
 from ..m02_c_channel_singulator.drive.assembly import BOWL_PARTS, bowl_part_at
 from ..m02_c_channel_singulator.seams import angular_gap_to_span_deg, seam_azimuths, sector_index
@@ -590,6 +591,14 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
             name="ramp_meets_exit_floor",
         )
     )
+    # S1's liner is split, so its two free-end screws sit in the skirt
+    # just past each side of the exit, the ramp's side: their heads are
+    # sunk inside the skirt's outer face, and the ramp keeps its cut
+    # clearance from them as from the wall.
+    for sign in FREE_END_SIGNS:
+        a = a.assert_distance(
+            "load_ramp", f"s1.arc_screw_{free_end_name(sign)}", min_mm=RAMP_STATOR_CLEAR,
+        )
 
     # Gantry rests: each bar tangent under the bowl sector(s) its ends
     # lie under — and no bowl seam lands on, or under, a bar. The seams

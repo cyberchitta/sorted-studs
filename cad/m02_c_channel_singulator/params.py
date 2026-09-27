@@ -257,6 +257,33 @@ SKIRT_CUT_BOTTOM_Z = -EXIT_FLOOR_T - EXIT_FLOOR_SIDE_CLEAR    # -5.5
 LINER_SEAM_PHASE_DEG = 75.0
 BOWL_SEAM_PHASE_DEG = 41.0
 
+# Free-end fastening of the split exit sector (owner, 2026-09-27;
+# `arc_fastening.py`). On a plain-wall stage the exit opening cuts the
+# liner sector it falls in into two arcs, each held by one seam ear and
+# free at the opening. Each free end gets a boss on the liner's outer
+# cone, inside the skirt just under its top edge (where the liner's
+# flange rests), bearing on the skirt's inner face; one countersunk
+# screw runs radially in through the skirt into a heat-set insert in
+# the boss. Everything stays inside the skirt's outer face — outside it
+# is the LOAD ramp's chute on S1's downstream side.
+#
+# Bought parts — a substitute is a change here:
+ARC_SCREW_D = 3.0          # ISO 10642 M3 countersunk hex socket, thread major Ø → the screw stub, the skirt's clearance hole
+ARC_SCREW_HEAD_D = 6.0     # its head Ø dk (nominal; 6.72 max) → the countersink, the stub's head cone
+ARC_SCREW_L = 10.0         # its length, head included (ISO 10642 convention) → how far it reaches into the boss, so the insert hole's depth
+ARC_INSERT_L = 5.7         # M3 brass heat-set insert, length → the insert hole's minimum depth
+ARC_INSERT_HOLE_D = 4.0    # that insert's recommended hole Ø → the boss's hole (a teardrop over this circle)
+# Designed:
+ARC_SCREW_HOLE_CLEAR = 0.4     # diametral clearance through the skirt (as NEMA17_BOLT_HOLE_D over M3)
+ARC_CSINK_CLEAR = 0.4          # countersink Ø over the head Ø: the head seats ARC_CSINK_CLEAR/2 below the skirt face
+ARC_HOLE_TIP_CLEAR = 1.0       # insert hole depth past the screw tip
+ARC_SCREW_IN_HOLE_MIN = 0.3    # least radial gap the modelled insert hole must leave round the screw's major Ø — a claim floor, independent of both
+ARC_BOSS_EXIT_CLEAR = 2.0      # boss's near face from the exit cut plane, on the wall side
+ARC_BOSS_W = 12.0              # boss width, perpendicular to the cut plane
+ARC_BOSS_Z_LO = 4.0            # boss bottom above the V-bottom (it runs up to SKIRT_TOP_Z)
+ARC_SCREW_Z = 12.0             # screw axis height above the V-bottom
+ARC_HOLE_ROOF_DEG = 40.0       # teardrop roof of each horizontal hole, degrees from vertical — under both parts' overhang thresholds
+
 # NEMA 17 compact short body (shortest commodity variant).
 NEMA17_SIDE = 42.3
 NEMA17_BODY_LEN = 40.0
