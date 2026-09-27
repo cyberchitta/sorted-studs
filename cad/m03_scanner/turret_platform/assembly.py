@@ -45,7 +45,10 @@ Members (2 total — 1 PMMA insert + 1 printed frame):
         platform. Lift point at cart-frame (X=+30, Y=-100) is 40 mm
         hub-side of the hinge — clean single-direction outer-DOWN
         torque about the hinge, with no competing bonded brick-side
-        push as in the prior straddle-the-hinge tab design.
+        push as in the prior straddle-the-hinge tab design. A gusset
+        fills the stem's cantilever past the frame edge (cart Y ∈
+        [-111, -60]) from its top face up to the ring-top plane
+        z = +5 — the stem's support in the top-ring-down print.
 
 Coordinate frame = cartridge-local IMAGE pose:
     origin = brick centroid on platform top face
@@ -68,13 +71,18 @@ acrylic insert is 110. The turret arm-radius clearance math
 (`TURRET_HINGE_PIN_RADIAL = TURRET_ARM_R - 60`) uses the platform
 outer half-width.
 
-Print orientation: bottom face on build plate, +Z up (build123d
-default). Horizontal Ø5.4 pin bore bridges fine in FDM at this
-diameter (90° overhang threshold, same as the prior platform brackets
-and `platform_hinge_bearing`). The extension stem bridges 33 mm of
-mid-air at z = -15 between the drop block and the skirt — within
-PLA's bridge capability for the 18 mm beam width; supports recommended
-for clean underside finish.
+Print orientation: top ring down, cartridge −Z up
+(`printability.py`) — least residue of the six axis ups (sweep
+2026-09-27): the 120 × 120 ring goes on the bed, and the skirt, bracket
+sides and drop block stand vertical. The stem gusset rests on the bed
+beside the ring, so the
+kicker extension needs no support. What still faces the bed off the
+plate is the acrylic's seat: the four corner-lip tops and the two
+bracket tops inside the pocket, all at z = -4 — plus the brackets'
+outboard tops and the Ø5.4 pin-bore ceilings. All of these are bridged
+and waived. The seat faces are included by owner decision 2026-09-27
+and are sanded or cleaned flat after printing (see the script's
+waiver).
 """
 
 import math
@@ -246,6 +254,20 @@ EXTENSION_STEM_TOP_Z = ACRYLIC_BOTTOM_Z                            # = -4
 EXTENSION_DROP_Y_OUTBOARD = -89.0
 EXTENSION_DROP_Y_TIP = EXTENSION_Y_TIP                             # = -111
 
+# Stem gusset — the stem's print support, filling the stem's full
+# cantilever past the frame edge from its top face up to the top-ring
+# plane. The frame prints top ring down (`printability.py`), and there
+# the stem top at z = -4 was a 51 × 18 mm ceiling 9 mm off the bed:
+# a 45° chamfer off the ring's outer face can span only those 9 mm, so
+# the support runs the whole cantilever and stands on the bed instead.
+# Its top is the ring-top plane *by derivation* — coplanar is what
+# makes it bed contact, and staying at or below the ring top keeps it
+# out of every camera sightline (a ray reaching the acrylic from the
+# hub side crosses the ring above z = +5 and only climbs moving away
+# from it) and inside the turret's rest-pose hardware height.
+EXTENSION_GUSSET_TOP_Z = TOP_RING_TOP_Z                            # = +5
+EXTENSION_GUSSET_Y_ROOT = -FRAME_OUTER_SIZE / 2                    # = -60
+
 
 # --- Part functions ----------------------------------------------------
 
@@ -280,7 +302,8 @@ def acrylic_insert(
 def frame():
     """Single printed frame body: top ring + pocket walls + 4 corner
     lips + hub-side skirt (with bushing notch) + integrated hinge
-    brackets (with horizontal pin bore) + L-shaped kicker extension."""
+    brackets (with horizontal pin bore) + L-shaped kicker extension
+    with its stem gusset."""
     # Wall, clearance and datum sanity for this single printed
     # body. All of it is either WALL_MIN arithmetic over subtracted
     # negative space (pin bores, the bushing notch) or a bound
@@ -512,6 +535,19 @@ def frame():
     body += (
         Pos(EXTENSION_X_CENTER, drop_y_center, drop_z_center)
         * Box(EXTENSION_X_LEN, drop_y_len, drop_z_len)
+    )
+
+    # Stem gusset — stem width, root at the frame's hub-side edge (the
+    # ring wall stands above the stem inboard of it), tip with the stem.
+    gusset_y_len = EXTENSION_GUSSET_Y_ROOT - EXTENSION_Y_TIP        # = 51
+    gusset_z_len = EXTENSION_GUSSET_TOP_Z - EXTENSION_STEM_TOP_Z    # = 9
+    body += (
+        Pos(
+            EXTENSION_X_CENTER,
+            (EXTENSION_GUSSET_Y_ROOT + EXTENSION_Y_TIP) / 2,
+            (EXTENSION_GUSSET_TOP_Z + EXTENSION_STEM_TOP_Z) / 2,
+        )
+        * Box(EXTENSION_X_LEN, gusset_y_len, gusset_z_len)
     )
 
     return body
