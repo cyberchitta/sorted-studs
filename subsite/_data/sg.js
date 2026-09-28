@@ -12,6 +12,6 @@ export default {
   version,
   base,
   cssBundleUrl: `${base}/dist/styles.css`,
-  logoSvgUrl: `${base}/assets/cc-260508.svg`,
-  logoPngUrl: `${base}/assets/cc-260508.png`,
+  logoSvgUrl: `${base}/assets/cc-260928.svg`,
+  logoPngUrl: `${base}/assets/cc-260928.png`,
 };
