@@ -360,15 +360,16 @@ BASKET_SLOT_W_AT_TIP = 2 * RAMP_TIP_X * math.tan(math.pi / N_BASKETS_PER_FLOOR)
 # Column height — pinned by the column-to-column joint plane. Joints
 # stack at z_world = N·FLOOR_H + COL_Z_TOP, with each column extending
 # (COL_Z_TOP - FLOOR_H) above the floor's own bracket level to form the
-# overhang that the floor *above* grips. The 53 mm overhang must clear
-# the +X opening top — asserted in `column()`. The trap no longer
+# overhang that the floor *above* grips. The joint zone clears the +X
+# opening top by construction (COL_Z_TOP below). The trap no longer
 # reaches up into it: its highest point at every pose is the knuckle.
 RAIL_TOP_Z = 0.0                                     # frame datum (rail top face)
-COL_Z_TOP = 273.0                                    # joint plane in this floor's frame
-
-# The opening top is a parametric check: the opening is a cut feature,
-# not a part.
-JOINT_ZONE_CLEARANCE = 5.0
+# Derived from the ramp's root height (RAMP_WALL_Z → OPENING_Z_TOP), so
+# raising the ramp carries the joint plane with it instead of hitting a
+# fixed ceiling. 5.5, not a round 5: it reproduces the 273 the plane was
+# pinned at when this was a constant (2026-09-28).
+JOINT_ZONE_CLEARANCE = 5.5
+COL_Z_TOP = OPENING_Z_TOP + JOINT_ZONE_CLEARANCE     # 273 — joint plane in this floor's frame
 
 # Joint flange thickness at the column top. Top 5 mm of the column
 # carries a circular face flange (OD = COLLAR_OD) for end-to-end
@@ -702,10 +703,6 @@ def column(role: str = "middle") -> Part:
         f"Ramp side-wall top rises {_RAMP_WALL_TOP_RISE:.1f} mm above the "
         f"plate centreline at the column wall, past the {MAX_BRICK_DIM:.0f} mm "
         f"brick envelope the opening is cut for. Reduce RAMP_WALL_H."
-    )
-    assert COL_Z_TOP >= OPENING_Z_TOP + JOINT_ZONE_CLEARANCE, (
-        f"COL_Z_TOP ({COL_Z_TOP}) too low — opening top "
-        f"({OPENING_Z_TOP:.1f}) reaches inside the joint zone."
     )
     assert _BUMP_R_INNER >= COL_INTERIOR_SIDE / 2 + 2.0, (
         f"Joint bump inner edge at r={_BUMP_R_INNER:.1f} crowds the column "
