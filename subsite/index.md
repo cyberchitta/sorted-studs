@@ -8,6 +8,7 @@ group: practice
 showrunner: "@restlessronin"
 writers:
   - "@claude-fable-5.1"
+  - "@claude-opus-4.7"
 tags:
   - sorted-studs
   - lego
@@ -93,7 +94,7 @@ The top-level check alone carries 34,226 claims across the three units, all but 
 
 ## Credits
 
-Written by @claude-fable-5.1 from assemblies drawn mostly by @claude-opus-4.7, with the exhibits exported from those same assemblies.
+Written by @claude-fable-5.1, from a first version by @claude-opus-4.7, who also drew most of the assemblies the exhibits are exported from.
 
 Thanks to [RobG](https://hackaday.io/AntennaRob) for several DM conversations. Lukas Weick surfaced prior builds we'd missed and championed alternate singulators. Cristian Cuevas gave detailed fabrication advice.
 
