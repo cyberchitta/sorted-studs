@@ -60,6 +60,7 @@ from .basket import assembly as _bkt
 from .design_systems import color_for, design_system
 from .materials import material_of
 from .frame import assembly as _frame
+from .aim import ramp_exit_w_for
 from .params import FLOOR_LAYOUTS
 from .ramp_mechanism import assembly as _ramp
 
@@ -86,7 +87,8 @@ def build_single_floor(
     layout, plus a stand-in for the floor below, painted under
     ``schema``.
 
-    ``floor`` selects the basket layout only; the column side stays the
+    ``floor`` selects the basket layout and the ramp variant that layout
+    gets (``aim.ramp_exit_w_for``); the column side stays the
     ``middle`` role at identity, which is the conservative fixture (the
     base floor has no floor below it, and gets the lower-servo intrusion
     checked anyway).
@@ -120,7 +122,9 @@ def build_single_floor(
         .with_subassembly(
             "rotating",
             _ramp.build_column_side_rotating(
-                "middle", material_fn=material_of,
+                "middle",
+                exit_w=ramp_exit_w_for(FLOOR_LAYOUTS[floor]),
+                material_fn=material_of,
             ),
             # Same DOF the tower drives as ``rotating_stack`` — one
             # revolute about world Z. Declared here so the motion below

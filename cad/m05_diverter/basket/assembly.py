@@ -66,7 +66,7 @@ import math
 from typing import Callable
 
 
-from build123d import Box, Cylinder, Part, Polygon, Pos, Rot, extrude
+from build123d import Box, Cylinder, Part, Plane, Polygon, Pos, Rot, extrude
 
 from cad_khana.mechanism.assembly import Assembly
 
@@ -141,6 +141,16 @@ COLUMN_SIDE = 20.0
 COLUMN_CLEARANCE = 1.0   # gap between notch wall and column face
 CLAMP_ARM_T = 6.0        # vertex-bracket clamp plate thickness
 ACCESS_CHANNEL_W = COLUMN_SIDE + 2 * (CLAMP_ARM_T + COLUMN_CLEARANCE)
+# The clamp plates stop at the vertex brackets' VERT_ARM_TOP_Z (40,
+# mirrored — sibling units can't be imported). Above it the inner
+# channel need only clear the column, so it narrows there, over a 45°
+# step the lining prints across unsupported: that gives back 6 mm of
+# landing width on every notched side, in the band a brick falls
+# through (2026-09-28). The outer channel stays full width — it is
+# swept for withdrawal and nothing lands out there.
+CLAMP_Z_TOP = 40.0
+INNER_CHANNEL_STEP_Z = CLAMP_Z_TOP + COLUMN_CLEARANCE
+INNER_CHANNEL_UPPER_W = COLUMN_SIDE + 2 * COLUMN_CLEARANCE
 
 # A channel box's radial end face is a flat chord, so pushing it to
 # `arc_radius ∓ 1.0` does not clear a cylindrical basket arc across the
@@ -154,6 +164,14 @@ ACCESS_CHANNEL_W = COLUMN_SIDE + 2 * (CLAMP_ARM_T + COLUMN_CLEARANCE)
 # so the old 1.0 mm already cleared it; deriving both keeps the two ends
 # honest if ACCESS_CHANNEL_W or either radius moves.
 ARC_OVERSHOOT_MARGIN = 0.5
+
+# Perpendicular distance from a basket's boundary line to the cavity
+# face beside it, in the band just below the rim where a brick leaves
+# the ramp: the side wall on a plain boundary, the channel lining on a
+# notched one. The landing aim (`../aim.py`) works to these; the
+# landing probes (`../check_basket_landing.py`) measure the real faces.
+CAVITY_FACE_OFFSET_PLAIN = BASKET_WALL_T
+CAVITY_FACE_OFFSET_NOTCHED = INNER_CHANNEL_UPPER_W / 2 + BASKET_WALL_T
 _ARC_HALF_W = ACCESS_CHANNEL_W / 2.0
 
 
@@ -236,6 +254,39 @@ def _radial_access_channel_at(
     return Pos(0, 0, z_bot) * extrude(
         footprint, amount=BASKET_DEPTH_Z + 2 * z_margin,
     )
+
+
+def _stepped_inner_channel_at(
+    azimuth_deg: float,
+    radius_start: float,
+    radius_end: float,
+    grow: float = 0.0,
+) -> Part:
+    """The inner radial slot: ``ACCESS_CHANNEL_W`` wide up to
+    ``INNER_CHANNEL_STEP_Z``, where the clamp plates end, then a 45°
+    step in to ``INNER_CHANNEL_UPPER_W`` for the rest of the height.
+
+    ``grow`` pads it as ``_radial_access_channel_at`` does; the step
+    rises by (√2 − 1)·grow so the lining keeps its full thickness
+    perpendicular to the 45° face, not just across it.
+    """
+    z_margin = 10.0
+    z_bot = BASKET_FLOOR_Z - z_margin
+    z_top = BASKET_RIM_Z + z_margin
+    w_lo = ACCESS_CHANNEL_W / 2.0 + grow
+    w_up = INNER_CHANNEL_UPPER_W / 2.0 + grow
+    z_step = INNER_CHANNEL_STEP_Z + (math.sqrt(2.0) - 1.0) * grow
+    z_up = z_step + (w_lo - w_up)
+    # Cross-section in the plane square to the slot: (tangential, z).
+    section = Polygon(
+        (-w_lo, z_bot), (w_lo, z_bot), (w_lo, z_step), (w_up, z_up),
+        (w_up, z_top), (-w_up, z_top), (-w_up, z_up), (-w_lo, z_step),
+        align=None,
+    )
+    r0 = radius_start - grow
+    r1 = radius_end + grow
+    slot = extrude(Plane.YZ * section, amount=r1 - r0)
+    return Rot(0, 0, azimuth_deg) * Pos(r0, 0, 0) * slot
 
 
 def _convex_hull(points: list[tuple[float, float]]) -> list[tuple[float, float]]:
@@ -387,9 +438,11 @@ def basket(
         ))
 
     def cutter(az, r0, r1, swept, grow=0.0):
-        sweep_x = withdrawal_travel(half_angle_deg, grow) if swept else 0.0
+        if not swept:
+            return _stepped_inner_channel_at(az, r0, r1, grow=grow)
         return _radial_access_channel_at(
-            az, r0, r1, grow=grow, sweep_x=sweep_x,
+            az, r0, r1, grow=grow,
+            sweep_x=withdrawal_travel(half_angle_deg, grow),
         )
 
     for az, r0, r1, swept in channels:

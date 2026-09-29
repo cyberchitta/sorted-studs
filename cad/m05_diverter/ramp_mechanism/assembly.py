@@ -90,7 +90,7 @@ import math
 from typing import Callable
 
 
-from build123d import Axis, Box, Cylinder, Location, Part, Plane, Pos, Rot
+from build123d import Axis, Box, Cylinder, Location, Part, Plane, Polygon, Pos, Rot, extrude, mirror
 
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 from cad_khana.mechanism.assertions import JointWindow
@@ -106,10 +106,8 @@ from ..params import (
     COLLAR_OD,
     FLOOR_H,
     MAX_BRICK_DIM,
-    N_BASKETS_PER_FLOOR,
     RAIL_INNER_R,
     RAIL_SIZE,
-    R_BASKET_INNER,
     R_VERT_INNER,
     TURNTABLE_ID,
     TURNTABLE_OD,
@@ -347,15 +345,41 @@ OPENING_Z_BOT = _RAMP_WALL_Z - RAMP_T - OPENING_MARGIN
 OPENING_Z_TOP = _RAMP_WALL_Z + MAX_BRICK_DIM + OPENING_MARGIN
 
 
-# Basket angular-slot width at the ramp tip, for the reference N=6
-# basket only (N_BASKETS_PER_FLOOR — the one facing the ramp's home).
-# Each basket takes its full 360°/N sector, so this is the chord at
-# RAMP_TIP_X for that N. Narrower baskets are NOT covered: at N=18 the
-# chord is ≈ 49.9 mm against RAMP_OUTER_W 74 — open, see
-# `state/m05-diverter.md`. The geometric ramp-vs-basket claims are
-# `single_floor.py` / `floor_layout_sweep.py`, held over `stack_turn`;
-# they test collision, not which basket a brick lands in.
-BASKET_SLOT_W_AT_TIP = 2 * RAMP_TIP_X * math.tan(math.pi / N_BASKETS_PER_FLOOR)
+# Ramp variants (2026-09-28, owner). A brick leaves the ramp anywhere
+# across the channel's exit width, and most baskets have less free
+# width under the tip than the full RAMP_W channel: a sector narrower
+# than 60°, and the lined column channel on any boundary at a vertex.
+# The ramp is its own printed body on each floor's column, so each
+# floor carries the widest variant every basket in its layout can take
+# (`../aim.py`, `ramp_exit_w_for`) — the variant follows the layout,
+# not the floor index. A narrow variant funnels the channel down to its
+# exit width before the tip. The cost is a routing rule: a floor takes
+# only parts that pass its ramp's exit, and the sorter routes by it.
+# Which basket a brick lands in is `../check_basket_landing.py`; the
+# collision claims are `single_floor.py` / `floor_layout_sweep.py`.
+#
+# Narrow exits are sized by the widest part they pass flat, across the
+# channel: an n-stud-wide part is 8n − 0.2 mm, plus a clearance to each
+# funnel face.
+STUD_PITCH = 8.0
+FUNNEL_PART_CLEARANCE = 1.0
+
+
+def narrow_exit_w(studs: int) -> float:
+    """Exit width of the narrow ramp that passes an ``studs``-wide part."""
+    return studs * STUD_PITCH - 0.2 + 2 * FUNNEL_PART_CLEARANCE
+
+
+# Widest first. RAMP_W passes an 8-wide part (63.8) with room to spare.
+RAMP_EXIT_WIDTHS = (RAMP_W, *(narrow_exit_w(n) for n in (6, 4, 3, 2)))
+# Each funnel face turns the channel wall at most this far off the
+# slope; the funnel's length follows from the exit width and ends where
+# the side walls end.
+RAMP_FUNNEL_DEG = 20.0
+
+
+def ramp_funnel_l(exit_w: float) -> float:
+    return (RAMP_W - exit_w) / 2 / math.tan(math.radians(RAMP_FUNNEL_DEG))
 
 # Column height — pinned by the column-to-column joint plane. Joints
 # stack at z_world = N·FLOOR_H + COL_Z_TOP, with each column extending
@@ -842,7 +866,7 @@ def servo_horn() -> Part:
     )
 
 
-def ramp() -> Part:
+def ramp(exit_w: float = RAMP_W) -> Part:
     """Fixed delivery plate. Returned **flat and centered at origin**
     (identity part-local Location). The full pose — translation to the
     ramp root, the downward tilt at ``RAMP_DEG``, and the
@@ -859,16 +883,15 @@ def ramp() -> Part:
     ``RAMP_WALL_L`` — short of the plate's ``RAMP_L``, see there —
     bottoms flush with the plate underside; the part's outer width is
     ``RAMP_OUTER_W``. One printed body, plate down.
+
+    ``exit_w`` below ``RAMP_W`` is a narrow variant: a solid wedge
+    inside each wall narrows the channel at ``RAMP_FUNNEL_DEG`` to
+    ``exit_w`` where the walls end (see ``RAMP_EXIT_WIDTHS``).
     """
-    # Parameter sanity at the reference N=6 basket only (see
-    # BASKET_SLOT_W_AT_TIP above — narrower baskets are not covered).
-    # Stays bare.
-    assert RAMP_OUTER_W <= BASKET_SLOT_W_AT_TIP, (
-        f"RAMP_OUTER_W ({RAMP_OUTER_W:.1f} mm) > basket angular slot upper "
-        f"bound at ramp tip ({BASKET_SLOT_W_AT_TIP:.1f} mm at "
-        f"X={RAMP_TIP_X:.1f}, R_BASKET_INNER={R_BASKET_INNER:.1f}). Reduce "
-        f"RAMP_W / RAMP_WALL_T, increase R_BASKET_INNER, or decrease "
-        f"N_BASKETS_PER_FLOOR."
+    # Parameter sanity: a funnel narrows, and leaves a channel. Stays bare.
+    assert 0 < exit_w <= RAMP_W, f"exit_w {exit_w} not in (0, RAMP_W={RAMP_W}]"
+    assert ramp_funnel_l(exit_w) <= RAMP_WALL_L, (
+        f"funnel {ramp_funnel_l(exit_w):.1f} mm longer than the walls {RAMP_WALL_L:.1f}"
     )
     plate = Box(RAMP_L, RAMP_W, RAMP_T)
     wall_y = RAMP_W / 2 + RAMP_WALL_T / 2
@@ -876,7 +899,24 @@ def ramp() -> Part:
     wall_z = RAMP_WALL_H / 2                  # bottom flush with the plate underside
     wall_x = -(RAMP_L - RAMP_WALL_L) / 2      # root ends flush with the plate's
     wall = Box(RAMP_WALL_L, RAMP_WALL_T, wall_h)
-    return plate + Pos(wall_x, +wall_y, wall_z) * wall + Pos(wall_x, -wall_y, wall_z) * wall
+    body = plate + Pos(wall_x, +wall_y, wall_z) * wall + Pos(wall_x, -wall_y, wall_z) * wall
+    if exit_w == RAMP_W:
+        return body
+    # The funnel wedge runs half into the wall so the fuse is solid,
+    # and stands the wall's full height from the plate underside.
+    x_end = -RAMP_L / 2 + RAMP_WALL_L
+    y_wall = RAMP_W / 2 + RAMP_WALL_T / 2
+    wedge = Pos(0, 0, -RAMP_T / 2) * extrude(
+        Polygon(
+            (x_end - ramp_funnel_l(exit_w), y_wall),
+            (x_end, y_wall),
+            (x_end, exit_w / 2),
+            (x_end - ramp_funnel_l(exit_w), RAMP_W / 2),
+            align=None,
+        ),
+        amount=wall_h, dir=(0, 0, 1),
+    )
+    return body + wedge + mirror(wedge, about=Plane.XZ)
 
 
 def trap_servo() -> Part:
@@ -1025,6 +1065,7 @@ def build_column_side_static(
 def build_column_side_rotating(
     role: str = "middle",
     *,
+    exit_w: float = RAMP_W,
     material_fn: Callable[[str], str | None] | None = None,
 ) -> Assembly:
     """Rotating column-side parts — column (with its servo cage) + ramp
@@ -1037,6 +1078,9 @@ def build_column_side_rotating(
     revolve together with the column stack; the revolute joint that
     carries the azimuth lives on the consumer's rotating-stack
     subtree, not here.
+
+    ``exit_w`` picks the ramp variant — ``aim.ramp_exit_w_for`` the
+    floor's basket layout; the default is the full channel.
     """
     def _mt(name: str) -> str | None:
         return material_fn(name) if material_fn is not None else None
@@ -1046,7 +1090,7 @@ def build_column_side_rotating(
 
     a = Assembly()
     a = _add(a, "column", column(role))
-    a = _add(a, "ramp", ramp(), location=ramp_loc)
+    a = _add(a, "ramp", ramp(exit_w), location=ramp_loc)
     a = _add(a, "trap_servo", trap_servo(), location=servo_loc)
     a = a.with_subassembly(
         "trap", build_trap_drive(material_fn),

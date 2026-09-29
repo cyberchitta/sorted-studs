@@ -15,7 +15,7 @@ required `role`, so the family is orchestrated here instead:
     runs the role×part printability pass beside each.
 
 Everything under `khana run` gets the CLI's failure deferral, so all
-three roles and all eleven inspects run and every JSON on disk is
+three roles and every inspect run and every JSON on disk is
 current before the roll-up exits nonzero.
 """
 
@@ -25,6 +25,8 @@ from cad_khana.printability.methods import FDM
 
 from .assembly import (
     FLOOR_ROLES,
+    RAMP_EXIT_WIDTHS,
+    RAMP_W,
     WALL_MIN,
     bearing_spider,
     column,
@@ -79,4 +81,11 @@ inspect(
     },
 )
 inspect(ramp(), method=method, out="outputs", name="ramp")
+# The narrow variants — one printed ramp per exit width.
+for exit_w in RAMP_EXIT_WIDTHS:
+    if exit_w < RAMP_W:
+        inspect(
+            ramp(exit_w), method=method, out="outputs",
+            name=f"ramp_exit_{exit_w:.0f}", solid_count=1,
+        )
 inspect(trap_coupler(), method=method, out="outputs", name="trap_coupler")

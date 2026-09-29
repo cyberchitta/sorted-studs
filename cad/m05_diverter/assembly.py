@@ -100,6 +100,7 @@ from .outer_vertex_bracket.assembly import (
     PLATE_T as OUTER_BRACKET_PLATE_T,
     bracket as outer_bracket,
 )
+from .aim import ramp_exit_w_for
 from .params import FLOOR_H, FLOOR_LAYOUTS, R_VERT_OUTER, THROUGH_DECK_POSTS, basket_name
 from .ramp_mechanism import assembly as _ramp
 
@@ -569,7 +570,8 @@ def build_tower(
         rotating = rotating.with_subassembly(
             f"f{idx}",
             _ramp.build_column_side_rotating(
-                role, material_fn=material_of,
+                role, exit_w=ramp_exit_w_for(_layout_for(idx)),
+                material_fn=material_of,
             ),
             location=fz_loc,
         )

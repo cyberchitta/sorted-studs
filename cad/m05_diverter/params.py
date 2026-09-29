@@ -9,10 +9,6 @@ import math
 
 MAX_BRICK_DIM = 80.0            # largest LEGO dim this sorter handles (mm)
 BRICK_SLOP = 5.0                # radial clearance brick-to-column-wall (mm)
-N_BASKETS_PER_FLOOR = 6         # N of the ramp-facing basket (drives
-                                # ramp_mechanism's BASKET_SLOT_W_AT_TIP
-                                # calc). The floor itself is a mixed
-                                # layout — see FLOOR_LAYOUT below.
 R_BASKET_INNER = 130.0          # radial distance column axis → basket lip (mm).
                                 # Constant arc radius: the basket's inner
                                 # wall is a cylindrical arc at this radius
@@ -37,12 +33,13 @@ R_HEX_INNER = 140.0             # inner-hex apothem (mm). With both
                                 # extrusions, the bracket-arm ceiling is
                                 # gone; the inner hex can move out until
                                 # the inner-vertex bracket's radial arm
-                                # (bolts at r = R_VERT_INNER + 32 and
-                                # +52) runs off the end of the radial
-                                # rail at r = RAIL_OUTER_R ≈ 290, or
-                                # collides with the outer-vertex
-                                # bracket's radial arm — real ceiling
-                                # ≈ 180. Landed at 140 so the basket's
+                                # (62 long, out to R_VERT_INNER + 62)
+                                # meets the outer-vertex bracket's
+                                # (in to R_VERT_OUTER − 62) on the same
+                                # radial rail: ceiling ≈ 162.6. The
+                                # frame's bracket no-interference claim
+                                # is green at 160 and red at 165
+                                # (2026-09-28). Landed at 140 so the basket's
                                 # arc inner wall at R_BASKET_INNER = 130
                                 # lands exactly on the hex inner face
                                 # at R_HEX_INNER - EXT_SIZE/2 = 130 along
@@ -229,13 +226,18 @@ def layout_from_sectors(fills):
 
 # Per-floor layouts, keyed by floor index (0 = base). The base floor is
 # the reference layout: the wide N=6 facing the ramp's home, the rest a
-# mix (its 70°..110° slot split at V_1 into two N=18s, 2026-09-18).
-# The others: many small categories, a few bulk ones, and a mix.
+# mix. Each layout gets the widest ramp variant every one of its baskets
+# can take (`aim.ramp_exit_w_for`), and a floor accepts only parts that
+# pass its ramp: 30° baskets take the 6-wide ramp, and a 20° basket
+# beside a vertex only the 3-wide one, so floor 1 is the small-parts
+# floor and holds every 20° basket. A 40° basket pairs only with a 20°
+# in a sector, so it lives on a 3-wide floor or not at all; only a
+# floor of 60° baskets keeps the full channel (2026-09-28).
 FLOOR_LAYOUTS = {
-    0: layout_from_sectors([(60,), (40, 20), (20, 40), (30, 30), (20, 20, 20), (40, 20)]),
+    0: layout_from_sectors([(60,), (30, 30), (60,), (30, 30), (30, 30), (60,)]),
     1: layout_from_sectors([(20, 20, 20)] * 6),
     2: layout_from_sectors([(60,), (30, 30), (60,), (30, 30), (60,), (30, 30)]),
-    3: layout_from_sectors([(30, 30), (20, 40), (60,), (40, 20), (20, 20, 20), (30, 30)]),
+    3: layout_from_sectors([(30, 30), (60,), (30, 30), (60,), (30, 30), (30, 30)]),
 }
 
 # The reference single-floor layout — `single_floor.py`, the basket

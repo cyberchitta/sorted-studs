@@ -36,27 +36,27 @@ EXHIBIT_FLOOR_PLAN = [
     (2, "top"),
 ]
 
-# All four basket sizes (N=6, 9, 12, 18) live in the exhibit, spread
-# across the three floors so each size lands on its own level rather
-# than stacking under itself. Front-facing slots (azimuths within
+# The three basket sizes the layouts place (N=6, 12, 18 — no layout
+# holds an N=9 since 2026-09-28), spread across the three floors at
+# azimuths that don't stack over each other. Front-facing slots (azimuths within
 # ~±60° of +X) are kept clear on the upper two floors — only the
 # base floor carries the canonical N=6 at +X, so a viewer looking
 # into the tower from the front sees through to the mechanism on the
-# floors above. Each entry is drawn from ``FLOOR_LAYOUT`` to keep
-# design-system tag coverage intact.
+# floors above. Each entry is drawn from its floor's ``FLOOR_LAYOUTS``
+# entry, which keeps design-system tag coverage intact and gives each
+# floor the same ramp variant as production (`aim.ramp_exit_w_for`).
 EXHIBIT_BASKETS_BY_FLOOR = {
-    0: [  # base — the canonical N=6 at +X, paired with one back N=18
+    0: [  # base — the canonical N=6 at +X, paired with one back N=12
         (  0.0,  6, {"left", "right"}),
-        (240.0, 18, set()),
+        (225.0, 12, {"left"}),
     ],
-    1: [  # middle — N=9 + N=12 around the back, front clear
-        (130.0,  9, {"right"}),
-        (165.0, 12, {"left"}),
+    1: [  # middle — the small-parts floor: two N=18s around the back
+        (140.0, 18, {"right"}),
+        (180.0, 18, set()),
     ],
-    2: [  # top — a second N=9 + a second N=18 on the back-right,
-          # different azimuths from below so nothing stacks
-        (260.0, 18, {"right"}),
-        (290.0,  9, {"left"}),
+    2: [  # top — two N=12s on the back-right, clear of both below
+        (285.0, 12, {"left"}),
+        (315.0, 12, {"right"}),
     ],
 }
 
