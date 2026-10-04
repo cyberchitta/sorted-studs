@@ -59,7 +59,7 @@ Anchors at-a-glance (chain-local; world = + (125, 125, 1030)):
     V_4, S3's post + S2's arm (-125, -437); top +309.5 (world 1339.5 = 449.5 over the deck)
 
 Gantry (owner 2026-09-14/15, `m02-chain.md` §6; sizes from the
-structure pass in `_notes/handoff/m02-gantry-spine.md`, hand statics):
+structure pass in `_notes/decisions/m02-chain.md` §6.1, hand statics):
 S1 is propped on V_5 and S3 on V_4 — the m05 column continues through
 the deck (`m05_diverter/params.py:THROUGH_DECK_POSTS`) and a 2020 prop
 bar lies across its end, under the stage's base plate, from the post

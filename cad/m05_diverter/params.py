@@ -116,7 +116,7 @@ BASE_FLANGE_OD = TURNTABLE_OD + 4.0                         # 204 — covers the
 # builds standalone, and asserted coincident with the chain's
 # `post_top_k` belief anchors in `cad/assembly.py`, so drift fails
 # there. Layout: `_notes/decisions/m02-chain.md` §6; sizing: the
-# structure pass in `_notes/handoff/m02-gantry-spine.md` (hand
+# structure pass in `_notes/decisions/m02-chain.md` §6.1 (hand
 # statics, unverified — it quoted the plate underside, 181 / 470).
 THROUGH_DECK_POSTS: dict[int, float] = {
     4: 449.5,
