@@ -16,7 +16,8 @@ dovetail in a 3 mm wall has nothing to bear on. The floor's radial
 seam inboard of the skirt is spanned by the turntable bearing's lower
 ring, which bolts to the floor on both sides of it (detail layer).
 The bolt holes and bolts are detail-layer too — the cheap ear is
-solid.
+solid. When the holes go in, make them teardrops roofed toward each
+part's print-up, as `arc_fastening.py` does.
 
 Sector k spans [phase + k·360/n, phase + (k+1)·360/n] in m02-local
 degrees (0 = the exit arc's centre). The phase is a per-instance

@@ -443,7 +443,7 @@ def sector_solid_count(k: int, height: float = STATOR_WALL_H) -> int:
     The single source for both the mechanism claim and the
     printability claim, so the two cannot drift: "three sectors"
     quietly means four printed parts at wall height (found
-    2026-09-20, `_notes/state/m02-singulator.md`)."""
+    2026-09-20)."""
     split = k == sector_index(0.0, LINER_SEAM_PHASE_DEG) and exit_splits_wall(height)
     return 2 if split else 1
 

@@ -51,7 +51,10 @@ chain = build_chain()
 # has both, and only the thinner shows). Alignment 0.65 ≈ cos 48.1° =
 # 0.67 is the edge's own dihedral, not two near-parallel faces, and a
 # chamfer on the ridge would take height off the face the brace bears
-# on. Owner's call, 2026-09-22.
+# on. Owner's call, 2026-09-22. The waiver is per kind (`wall_min`):
+# it would also cover a later real sliver on either foot, and
+# `stale_waiver` cannot fire while the wedge tip keeps failing — re-read
+# both feet's witnesses after any foot geometry change.
 FOOT_WAIVE = {
     "wall_min": Waiver(
         reason="48.1° wedge tip, not a sliver: min_wall_at on the stop "
@@ -85,7 +88,9 @@ for name, waive in (
 # overhang waiver belongs to each stage's motor sector alone, and each
 # is witnessed on that stage's own body: the slivers' azimuths are
 # m02-local, sagitta and chord read off the down-facing facets'
-# vertices against the skirt's inner face at r 152.
+# vertices against the skirt's inner face at r 152. Owner accepted the
+# waiver as written, 2026-09-17; that the first layer bridges the
+# slivers is unsliced (`_notes/backlog/bench-validation.md` item 14).
 #
 # Keyed by (stage, motor azimuth, seam phase): the measurement covers
 # that configuration only, so a changed stage parameter is a KeyError

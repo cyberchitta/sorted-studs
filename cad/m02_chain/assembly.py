@@ -570,8 +570,11 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
         detail="upper chute exit's distance from the lower axis: on the lower rotor",
     )
 
-    # Ramp: pitch inside the window; wraps S1's stator wall at the cut
-    # clearance (constructed from the same constant as the bound).
+    # Ramp: pitch inside the window; keeps at least the cut clearance
+    # from S1's exit liner. Since the free-end bosses landed (2026-09-27)
+    # this reads 5.66 to a boss, not the cut gap it was written for —
+    # that gap is ramp → S1 bowl skirt; re-scope it in the fastening pass
+    # (`_notes/handoff/completion-pass.md`).
     a = (
         a
         .assert_scalar(
@@ -615,6 +618,9 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
             a = a.assert_tangent_contact(
                 f"gantry.{bar}", f"{stage.name}.drive.{bowl_part_at(az, stage.bowl_seam_phase_deg)}",
             )
+    # A model, not a solid measurement: the angular gap from each seam
+    # to a bar centreline's run under the floor, less half a bar width
+    # in degrees at the kink radius. Good to that model, no better.
     for s in STAGES:
         clear = min(
             angular_gap_to_span_deg(seam, lo, hi) - math.degrees((EXT_SIZE / 2.0) / R_STATOR_OUTER_KINK)

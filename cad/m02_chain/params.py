@@ -405,6 +405,8 @@ RAMP_PITCH_MAX_DEG = 55.0
 # RAMP_STATOR_CLEAR outside the kink radius about S1's axis — and a
 # flat landing at the exit height continues past the exit centre to
 # the far end of the exit arc, so the whole opening has floor under it.
+# (A straight 100-wide chute from the exit cut into S1's own plate and
+# rotor on the first check, 4256 / 5114 mm³ — hence the catch.)
 RAMP_STATOR_CLEAR = 1.0
 RAMP_LANDING_LEN = R_STATOR_OUTER_KINK * math.sin(math.radians(EXIT_ARC_DEG / 2.0))   # ≈ 47.9
 
@@ -492,7 +494,7 @@ BRACE_COLS = (3, 5)
 # angle — the V_4 → V_k run is 30° off every column face in plan and
 # the member descends at ~42° — so no standard 90° corner bracket or
 # single-axis hinge joint lands on it. The ends are printed sockets
-# (`joints/assembly.py`: a collar on V_4 with a U-channel per brace,
+# (`joints.py`: a collar on V_4 with a U-channel per brace,
 # a foot block on the deck at each V_k) and the brace's two end faces
 # are cut VERTICAL, each at a fixed horizontal distance from the
 # column axis it is nearest, so the end bears full-face on a vertical

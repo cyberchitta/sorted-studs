@@ -219,7 +219,7 @@ BEARING_H = 8.5
 # Bowl floor ("plate" in every derived name below): the §5 foot ring,
 # extended inward to carry the bearing. OD = skirt OD (Ø310 — exceeds
 # the X1C's 256 mm bed exactly as the stator wall already does; both
-# print in thirds, seams open in `state/m02-singulator.md`).
+# print in thirds, `seams.py`).
 PLATE_T = 6.0
 PLATE_R_IN = ROTOR_FLANGE_R_IN
 PLATE_R_OUT = R_STATOR_OUTER_KINK
