@@ -11,7 +11,9 @@ N·220 + 273 via face flanges integrated into each column's top.
 
 Delivery is split into two decoupled jobs:
 - **Trap** — a flat plate hinged at the −X interior wall (the wall
-  opposite the exit), free end toward +X. At rest it **hangs** straight
+  opposite the exit), free end toward +X, stepped out past the hinge
+  bosses to close the ±Y gaps, with a guide along each edge that
+  closes to the ramp channel at the tip. At rest it **hangs** straight
   down along the −X wall, out of the fall path: a brick bound for a
   lower floor falls past it. A servo on the column's +Y face, coaxial
   with the hinge, swings it up to **catch** — tilted down toward +X,
@@ -90,7 +92,7 @@ import math
 from typing import Callable
 
 
-from build123d import Axis, Box, Cylinder, Location, Part, Plane, Polygon, Pos, Rot, extrude, mirror
+from build123d import Axis, Box, CenterOf, Cylinder, Location, Part, Plane, Polygon, Pos, Rot, extrude, mirror
 
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 from cad_khana.mechanism.assertions import JointWindow
@@ -136,13 +138,21 @@ PIN_HOLE_D = 3.6                              # round bearing bore: bosses + wal
 PIN_D_BORE_D = 3.4                            # keyed bore: knuckle + coupler
 PIN_D_BORE_FLAT = 1.2                         # 0.2 clear of the pin's flat
 
-# Trap — flat plate, knuckle at hinge axis, plate body in +X
+# Trap — stepped plate, knuckle at hinge axis, plate body in +X
 TRAP_T = 4.0
+# The knuckle's length, and the plate's width only out to TRAP_STEP_S
+# (below): the hinge bosses stand outside it, at |y| 40.5..43.5. Past the
+# bosses' swing radius the plate steps out to TRAP_WING_HALF_W.
 TRAP_W = 80.0                                 # ≤ MAX_BRICK_DIM; leaves ±Y for bosses
-# Inset so the knuckle clears the −X wall by 1 mm — it turns in place, so
-# the gap is a fixed running clearance. Every mm of inset, and of knuckle
-# radius, is a mm off the fall path (FALL_PATH_MARGIN, below).
-TRAP_HINGE_X = -(COL_INTERIOR_SIDE / 2 - KNUCKLE_OD / 2 - 1.0)  # −40
+# Running clearance between the turning trap and a fixed column face.
+TRAP_WALL_CLEARANCE = 1.0
+# The knuckle's axial play between the two bosses, per side.
+TRAP_AXIAL_FLOAT = 0.5
+# Inset so the knuckle clears the −X wall by TRAP_WALL_CLEARANCE — it
+# turns in place, so the gap is a fixed running clearance. Every mm of
+# inset, and of knuckle radius, is a mm off the fall path
+# (FALL_PATH_MARGIN, below).
+TRAP_HINGE_X = -(COL_INTERIOR_SIDE / 2 - KNUCKLE_OD / 2 - TRAP_WALL_CLEARANCE)  # −40
 TRAP_REST_DEG = 90.0                          # hanging: pass-through
 # Catch tilt — the brick must slide off the trap the way it slides off
 # the ramp (tan > MU_STATIC_BUDGET, below); 30° (tan 0.577) clears it
@@ -154,7 +164,7 @@ _TRAP_CATCH_RAD = math.radians(TRAP_CATCH_DEG)
 # Hinge bosses — mounted on inside of −X wall, extend inward past hinge,
 # sit outside the trap knuckle's Y extent so they clear the swinging plate.
 BOSS_Y = 3.0
-BOSS_Y_OFFSET = TRAP_W / 2 + BOSS_Y / 2 + 0.5           # 42
+BOSS_Y_OFFSET = TRAP_W / 2 + BOSS_Y / 2 + TRAP_AXIAL_FLOAT   # 42
 BOSS_X = COL_INTERIOR_SIDE / 2 - (-TRAP_HINGE_X - KNUCKLE_OD / 2 - 1.0)  # 10
 BOSS_X_CENTER = -(COL_INTERIOR_SIDE / 2 - BOSS_X / 2)   # −40
 BOSS_H_Z = 12.0
@@ -242,7 +252,52 @@ TRAP_HINGE_Z = (
     _RAMP_ROOT_TOP_Z + TRAP_HANDOFF_STEP
     + _TRAP_REACH * math.sin(_TRAP_CATCH_RAD)
     + (TRAP_T / 2) * math.cos(_TRAP_CATCH_RAD)
-)                                             # ≈ 240.5
+)                                             # ≈ 240.9
+
+# Stepped plate (owner, 2026-10-04). The plate is TRAP_W wide only where
+# it passes the hinge bosses; past their swing radius it steps out to
+# within TRAP_SIDE_CLEARANCE of the ±Y walls. The swing is in XZ planes,
+# parallel to those walls, so the gap is a running clearance: the
+# knuckle's TRAP_WALL_CLEARANCE plus its axial float between the bosses.
+# 1.5 is narrower than any part's thinnest face (a plate or tile on edge
+# is 3.2; the old gap was 5).
+TRAP_SIDE_CLEARANCE = TRAP_WALL_CLEARANCE + TRAP_AXIAL_FLOAT             # 1.5
+TRAP_WING_HALF_W = COL_INTERIOR_SIDE / 2 - TRAP_SIDE_CLEARANCE            # 43.5
+# The bosses' farthest corner from the hinge axis, in the swing plane.
+# Material further out than that never meets a boss at any angle, so the
+# step stands that far out plus the running clearance; the wing then
+# widens at 45° rather than as a square ledge (a ledge faces up at rest).
+_BOSS_SWING_R = math.hypot(
+    max(abs(BOSS_X_CENTER - BOSS_X / 2 - TRAP_HINGE_X),
+        abs(BOSS_X_CENTER + BOSS_X / 2 - TRAP_HINGE_X)),
+    BOSS_H_Z / 2,
+)                                                                         # ≈ 7.81
+TRAP_STEP_S = _BOSS_SWING_R + TRAP_WALL_CLEARANCE                         # ≈ 8.81, from the axis
+TRAP_WING_S = TRAP_STEP_S + (TRAP_WING_HALF_W - TRAP_W / 2)               # full width from here
+# Guides — a wall along each wing edge on the plate's top face, closing
+# from the wing in to TRAP_GUIDE_EXIT_W at the free end, so a brick that
+# slides off the catching trap leaves inside the ramp channel instead of
+# landing on the side-wall tops at |y| 35..37 (m05-ramp-mechanism state,
+# open item 11). The guide's outer face at the tip stands TRAP_GUIDE_RAMP_GAP
+# inside the channel face, so nothing of the trap sits over a wall.
+# TRAP_GUIDE_H is set by the fall path, not by the brick: at rest the
+# guides stand out of the hanging plate into the column, and at this
+# height they stand exactly as far as the knuckle already does (face at
+# x −36), so the fall path is what it was at every Y. At TRAP_T (4) the
+# centred probes in `check_fall_path.py` stayed green, but a 1×10 lying
+# along X could fall at most 28.0 off-centre instead of 36.5 (measured,
+# 2026-10-04). 2 mm guides a part that slides; one that bounces is
+# bench item 9's.
+TRAP_GUIDE_T = 2.0                            # ≥ FDM wall floor (1.5)
+TRAP_GUIDE_H = KNUCKLE_OD / 2 - TRAP_T / 2    # 2
+TRAP_GUIDE_RAMP_GAP = 1.0
+TRAP_GUIDE_EXIT_W = RAMP_W - 2 * (TRAP_GUIDE_T + TRAP_GUIDE_RAMP_GAP)    # 64
+# How far down the ramp, from its root, the channel must stay the full
+# exit width clear of the side walls: a brick sliding off the trap tip
+# lands ~14 mm (µ 0.35) to ~19 mm (frictionless) past it — a hand
+# estimate, 2026-10-04; bounce is bench item 9. Held by
+# `trap_exit_lands_in_channel` against every ramp variant.
+TRAP_LANDING_RUN = 30.0
 
 # Trap servo — bought MG90S-class micro servo (metal gears: it takes
 # every catch impact through its gear train, since nothing else holds
@@ -829,11 +884,18 @@ def hinge_pin() -> Part:
 
 
 def trap() -> Part:
-    """Flat plate hinged at the −X interior wall. In the local frame the
-    hinge knuckle is at origin and the plate body extends in +X to
+    """Stepped plate hinged at the −X interior wall. In the local frame
+    the hinge knuckle is at origin and the plate body extends in +X to
     x = TRAP_L + KNUCKLE_OD/2. The knuckle's bore is keyed (D) to the
     pin, flat facing +Z. At joint angle 90° it hangs (rest); at
     TRAP_CATCH_DEG it catches, free end down toward the exit.
+
+    Plan, half-width against x: TRAP_W/2 out to TRAP_STEP_S (past the
+    bosses), out at 45° to TRAP_WING_HALF_W by TRAP_WING_S, then closing
+    straight to the guides' outer face at the tip. A guide wall
+    TRAP_GUIDE_T × TRAP_GUIDE_H stands on the top face along each edge
+    from TRAP_WING_S to the tip, its uphill end chamfered at 45°.
+    Printed plate-down, guides up.
     """
     # The plate runs all the way in to the hinge axis, not to the
     # knuckle's tangent line: a plate starting at x = KNUCKLE_OD/2
@@ -843,9 +905,48 @@ def trap() -> Part:
     # from the tangent line out to the tip, which is what the reach
     # and torque math is written against.
     plate_len = TRAP_L + KNUCKLE_OD / 2
-    plate = Pos(plate_len / 2, 0, 0) * Box(plate_len, TRAP_W, TRAP_T)
+    tip_half = TRAP_GUIDE_EXIT_W / 2 + TRAP_GUIDE_T
+    # Parameter sanity over the outline — a step outward, a taper that
+    # closes, no steeper than the ramp's own funnel faces. Stays bare.
+    assert TRAP_W / 2 < TRAP_WING_HALF_W and TRAP_WING_S < plate_len, (
+        f"step {TRAP_W/2}→{TRAP_WING_HALF_W} over x {TRAP_STEP_S:.2f}..{TRAP_WING_S:.2f} "
+        f"does not fit a {plate_len:.1f} plate"
+    )
+    taper_deg = math.degrees(math.atan2(TRAP_WING_HALF_W - tip_half, plate_len - TRAP_WING_S))
+    assert 0 < taper_deg <= RAMP_FUNNEL_DEG, (
+        f"guide taper {taper_deg:.1f}° not in (0, RAMP_FUNNEL_DEG={RAMP_FUNNEL_DEG}]"
+    )
+
+    def _up(outline) -> Part:
+        """Extrude a plan outline TRAP_T up from the plate underside."""
+        return Pos(0, 0, -TRAP_T / 2) * extrude(
+            Polygon(*outline, align=None), amount=TRAP_T, dir=(0, 0, 1),
+        )
+
+    half = TRAP_W / 2
+    plate = _up([
+        (0, -half), (TRAP_STEP_S, -half), (TRAP_WING_S, -TRAP_WING_HALF_W),
+        (plate_len, -tip_half), (plate_len, tip_half),
+        (TRAP_WING_S, TRAP_WING_HALF_W), (TRAP_STEP_S, half), (0, half),
+    ])
+    guide = Pos(0, 0, TRAP_T / 2) * extrude(
+        Polygon(
+            (TRAP_WING_S, TRAP_WING_HALF_W - TRAP_GUIDE_T),
+            (plate_len, tip_half - TRAP_GUIDE_T),
+            (plate_len, tip_half),
+            (TRAP_WING_S, TRAP_WING_HALF_W),
+            align=None,
+        ),
+        amount=TRAP_GUIDE_H, dir=(0, 0, 1),
+    )
+    # 45° lead-in at the uphill end: removes everything above the line
+    # rising from (TRAP_WING_S, plate top) at 45° toward the tip.
+    big = 4 * TRAP_W
+    guide = guide - Pos(TRAP_WING_S, 0, TRAP_T / 2) * Rot(0, 45, 0) * Pos(-big / 2, 0, 0) * Box(
+        big, big, big
+    )
     knuckle = _cyl_along_y(KNUCKLE_OD / 2, TRAP_W)
-    body = plate + knuckle
+    body = plate + knuckle + guide + mirror(guide, about=Plane.XZ)
     pin_bore = Rot(90, 0, 0) * _d_cyl(PIN_D_BORE_D / 2, PIN_D_BORE_FLAT, TRAP_W * 2)
     return body - pin_bore
 
@@ -977,15 +1078,19 @@ lower_servo_loc = lower_column_loc * servo_loc
 
 
 def _servo_hold_margin() -> float:
-    """Stall torque over the static torque at the catch tilt: the plate
-    (solid PLA, lever at its centroid) plus BRICK_MASS_BUDGET_G at the
-    free end. Hinge knuckle mass ignored (on the axis)."""
+    """Stall torque over the static torque at the catch tilt: the
+    printed trap as built — stepped plate, guides, knuckle, bore — at
+    solid PLA, lever at its centroid, plus BRICK_MASS_BUDGET_G at the
+    free end. Read off ``trap()`` rather than a plate formula, so the
+    margin follows the outline."""
     g = 9.81e-3                                   # N per g
-    plate_len = TRAP_L + KNUCKLE_OD / 2           # as built, see ``trap()``
-    plate_g = plate_len * TRAP_W * TRAP_T * PLA_DENSITY_G_PER_MM3
-    arm_mm = (plate_len / 2) * math.cos(_TRAP_CATCH_RAD)
+    body = trap()
+    trap_g = body.volume * PLA_DENSITY_G_PER_MM3
+    c = body.center(CenterOf.MASS)                # hinge frame, flat
+    # Rot(0, θ, 0) about the hinge: horizontal lever x cos θ + z sin θ.
+    arm_mm = c.X * math.cos(_TRAP_CATCH_RAD) + c.Z * math.sin(_TRAP_CATCH_RAD)
     tip_mm = _TRAP_REACH * math.cos(_TRAP_CATCH_RAD)
-    load_nm = g * (plate_g * arm_mm + BRICK_MASS_BUDGET_G * tip_mm) / 1000.0
+    load_nm = g * (trap_g * arm_mm + BRICK_MASS_BUDGET_G * tip_mm) / 1000.0
     return SERVO_STALL_NM / load_nm
 
 
@@ -1113,6 +1218,20 @@ def build_column_side_rotating(
         "ramp", Plane.XY.offset(BASKET_RIM_Z), along="-Z",
         min_mm=RAMP_SWEEP_CLEARANCE, name="ramp_sweep_over_basket_rim",
     )
+    # The trap's guides hand the brick down TRAP_GUIDE_EXIT_W wide. This
+    # ramp — whichever variant — must take that width clear of its side
+    # walls over the landing run: a corridor standing on the plate's top
+    # face (the seat) from the root, held off the walls by the guide and
+    # its gap. A narrow variant whose funnel started inside the run would
+    # fail here. Static: the ramp is fixed in this frame.
+    corridor = ramp_loc * Pos(
+        -RAMP_L / 2 + TRAP_LANDING_RUN / 2, 0, RAMP_T / 2 + RAMP_WALL_H / 2,
+    ) * Box(TRAP_LANDING_RUN, TRAP_GUIDE_EXIT_W, RAMP_WALL_H)
+    a = a.assert_clear_of(
+        "ramp", corridor, name="trap_exit_lands_in_channel",
+        seat=Plane(ramp_loc).offset(RAMP_T / 2),
+        min_mm=TRAP_GUIDE_T + TRAP_GUIDE_RAMP_GAP,
+    )
     # Slide conditions — recorded scalar claims (see MU_STATIC_BUDGET).
     a = a.assert_scalar(
         "ramp_slide_margin", math.tan(_RAMP_DEG_RAD),
@@ -1189,6 +1308,10 @@ def make_assembly(role: str = "middle") -> Assembly:
         # tumbles. Constructed at TRAP_HANDOFF_STEP vertically; the
         # measured (shortest) distance is not that number — 5.42 on
         # 2026-09-22 — so the bounds bracket it rather than pin it.
+        # Since the guides (2026-10-04) the shortest pair is a guide's
+        # tip corner to a side wall's root edge, 5.34; the plate-to-root
+        # step behind it is unchanged, so the max bound now holds the
+        # guide, not the step.
         # ... and only there: the window lapses the claim everywhere
         # else in the swing, where the free end is nowhere near the
         # ramp root. TRAP_CATCH_DEG is the motion's low bound, so the
@@ -1206,6 +1329,25 @@ def make_assembly(role: str = "middle") -> Assembly:
         # the declared swing below, which is what makes "every pose"
         # true rather than "the five somebody enumerated".
         .assert_no_interference_between("rotating.trap", fixed)
+        # The stepped plate's wings run TRAP_SIDE_CLEARANCE off each ±Y
+        # wall at every pose (the column's interior faces, cut from the
+        # same COL_INTERIOR_SIDE), and nothing of the plate comes nearer
+        # the column than the knuckle's float against a boss — which is
+        # what keeps the step clear of the bosses through the swing.
+        .assert_distance(
+            "rotating.trap.trap",
+            Plane(origin=(0, COL_INTERIOR_SIDE / 2, 0), z_dir=(0, 1, 0)),
+            along="Y", min_mm=TRAP_SIDE_CLEARANCE, name="trap_side_clearance_+y",
+        )
+        .assert_distance(
+            "rotating.trap.trap",
+            Plane(origin=(0, -COL_INTERIOR_SIDE / 2, 0), z_dir=(0, -1, 0)),
+            along="-Y", min_mm=TRAP_SIDE_CLEARANCE, name="trap_side_clearance_-y",
+        )
+        .assert_distance(
+            "rotating.trap.trap", "rotating.column",
+            min_mm=TRAP_AXIAL_FLOAT, name="trap_clear_of_column",
+        )
     )
     if role == "base":
         # The column's bottom flange rests on the turntable's top ring —

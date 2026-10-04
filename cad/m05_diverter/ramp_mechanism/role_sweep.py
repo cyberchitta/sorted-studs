@@ -22,6 +22,7 @@ current before the roll-up exits nonzero.
 from cad_khana.mechanism.check import check
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
+from cad_khana.printability.waiver import Waiver
 
 from .assembly import (
     FLOOR_ROLES,
@@ -74,10 +75,15 @@ for role in FLOOR_ROLES:
 inspect(
     trap(), method=method, out="outputs", name="trap", solid_count=1,
     waive={
-        "overhang_max": "real ceilings: KNUCKLE_OD (8) exceeds TRAP_T "
-        "(4), and the plate is centred on the hinge axis, so the whole "
-        "plate underside floats 2 mm above the knuckle's lowest point "
-        "— printed with support under the plate; pin-bore top bridges",
+        "overhang_max": Waiver(
+            reason="real ceilings: KNUCKLE_OD (8) exceeds TRAP_T "
+            "(4), and the plate is centred on the hinge axis, so the whole "
+            "plate underside floats 2 mm above the knuckle's lowest point "
+            "— printed with support under the plate; pin-bore top bridges. "
+            "Read 2026-10-04 on the stepped plate: 7940 mm² in 3 regions "
+            "(plate underside 7269, knuckle 478, bore flat 193)",
+            max_area_mm2=7950.0, max_regions=3,
+        ),
     },
 )
 inspect(ramp(), method=method, out="outputs", name="ramp")
