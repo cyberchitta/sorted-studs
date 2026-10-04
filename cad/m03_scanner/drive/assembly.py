@@ -138,7 +138,7 @@ DRIVER_PITCH_D = DRIVER_TEETH * GT2_PITCH / math.pi        # ≈ 12.732
 # pitch circle approximates the belt-engagement envelope to within
 # < 0.5 mm, which is below all our clearance thresholds). The flange
 # OD on a real metal pulley is typically pitch_d + ~2 mm; we ignore
-# that here.
+# that here, so pulley X gaps read ~1 mm optimistic.
 DRIVEN_PULLEY_OD = DRIVEN_PITCH_D                          # ≈ 38.20
 DRIVER_PULLEY_OD = DRIVER_PITCH_D                          # ≈ 12.73
 
@@ -273,7 +273,9 @@ BRACKET_PLATE_Y = BRACKET_WALL_Y                           # depth
 # neither fits nor can be driven with the motor mounted. Found red the
 # first time the detail tier was checked (2026-09-16); moved outboard
 # the same day. With both heads outboard, a hex key comes straight
-# down past the wall's outboard face with the motor in place.
+# down past the wall's outboard face with the motor in place
+# (geometric clearance only; the reach is unverified —
+# `_notes/backlog/bench-validation.md` item 16).
 #
 # Loads are small: the belt pull at z ≈ -86 tips the bracket inboard
 # about the toe's inner edge, and the two outboard bolts hold it in

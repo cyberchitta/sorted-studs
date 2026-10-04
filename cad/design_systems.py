@@ -446,7 +446,7 @@ def neutral_of(ds: DesignSystem) -> Color:
     ``bauhaus`` palette, which has no ``Role`` keys. (Same defect class
     as the ``basket_color_of`` crash fixed 2026-07-24; this was the
     surviving instance, tracked as "Latent: GLB-export neutral fill
-    hardcodes the role axis" in ``_notes/state/cad-top-level.md``.)
+    hardcodes the role axis" — ``_notes/archive/cad-top-level-history.md``.)
 
     On the role axis the answer is the printed-bracket shade. On the
     module axis there is none: a wayfinding palette encodes *which

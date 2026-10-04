@@ -322,13 +322,13 @@ T_FRAME_RAIL_D_Y_BACK = +150.0                           # carries back-upper cl
 #      from the hub (≈ 22 mm clear).
 #   2. Below-* mount plate clearance. The 50 × 50 below-* mount
 #      plates sit perpendicular to their lens axes and project onto
-#      world +Y by ~25 mm from the plate centre at world Y ≈ +16.8 —
-#      plate +Y reach ≈ +41.9. A naïve "just behind the back rail"
-#      placement (y = +37.3) put the post body inside that reach;
-#      y = +55 keeps post -Y face at +45, ~3 mm clear of plate +Y
-#      reach plus CORNER_GAP. (Computed in `arch/assembly.py`'s
-#      sweep+plate clearance asserts; see also the 2026-05-07
-#      Progress entry in _notes/state/m03-scanner.md for the diagnostic.)
+#      world +Y by ~25 mm from the plate centre at world Y ≈ +16.8.
+#      A naïve "just behind the back rail" placement (y = +37.3) put
+#      the post body inside that reach; y = +55 keeps post -Y face at
+#      +45. The printed body reaches +43.60 (a disc bound says +41.88
+#      and under-reaches the rolled square's corner), so the gap is
+#      1.40 mm against CORNER_GAP 0.3 — measured by `build_camera_rig`'s
+#      `cam_below_*_plate_post_gap`.
 #   3. FOV intrusion. Pushing the post farther in +Y moves it deeper
 #      into the back-upper camera's blind hemisphere and farther off
 #      every below-* lens axis — both strict improvements over the

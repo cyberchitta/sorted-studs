@@ -176,10 +176,9 @@ HOPPER_WALL_H = ROTOR_HEIGHT + (
 # chain stage (240 → 160, 300 → 200, 360 → 240). Module 2 was the
 # first instinct but a 16-tooth m2 pinion reaches r ≈ 154 and hits the
 # Ø310 skirt; at m1.5 a 17-tooth pinion (above the ~17 T undercut floor
-# at 20° PA) reaches r ≈ 147 with 5 mm to spare. The m05 base floor
-# runs m1.5 / 12 T — same module, so one pinion could serve both if m05
-# moves its rails out (17 T there pushes the tip 3.75 mm past the rail
-# ring; see `state/m05-diverter.md`).
+# at 20° PA) reaches r ≈ 147 with 5 mm to spare. m05's base floor
+# shares this 17 T pinion (its rails moved out to r 100 for it;
+# `cad/m05_diverter/base_floor/assembly.py`).
 MODULE = 1.5
 PRESSURE_ANGLE_DEG = 20.0             # documentation — cheap model has no teeth
 PINION_TEETH = 17

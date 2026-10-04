@@ -20,9 +20,9 @@ Members (5 total — all stock 2020 aluminum extrusion):
                       slice). Post body shares X range with the
                       below-* clamp body but separates in Y (post
                       Y ∈ [+45, +65] vs clamp Y ∈ [+7, +27]) and
-                      clears the below-* mount plate's +Y reach
-                      (≈ +41.9 — measured as `cam_below_*_plate_post_gap`
-                      in the rig builder).
+                      clears the below-* mount body's +Y reach
+                      (+43.60, 1.40 mm clear — measured as
+                      `cam_below_*_plate_post_gap` in the rig builder).
                       The Y-shift puts the post (a) outside every
                       lens cone (≈ 54° off the back-upper lens axis,
                       the binding "in FOV?" test; well outside the

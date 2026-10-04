@@ -28,7 +28,9 @@ to the column's periphery instead:
   OD" choice (see `_notes/state/m05-diverter.md`) is resolved here as the
   bolt-on ring: it keeps the gear off the structural column and
   swappable if the ratio changes, and leaves ramp_mechanism's
-  `column("base")` untouched.
+  `column("base")` untouched. Not m02's integral ring on the flange with
+  the motor on a rail above the floor: that moves the motor and the mesh
+  for nothing the checker can see.
 - motor_mount — printed radial arm at the rail-bottom plane; bolts up
   into one radial rail's T-slot and carries the motor below via the
   NEMA face. Detailed bolt pattern + flange interface still open.
@@ -40,11 +42,10 @@ are meant to touch. The pinion-tip-clears-the-rail-ring margin is the
 tight constraint; it needs the rails, so it lives at the tower root
 as a tip-circle (`grow_a_mm`) assert_distance.
 
-The base bearing (axial + radial + motor-reaction torque) currently
-re-uses the per-floor `ring_bearing` for the base role in
-ramp_mechanism — see `_notes/state/m05-diverter.md` for the open question
-on whether the base needs a heavier thrust+radial unit (or a
-commercial turntable) instead of the radial-only printed ring.
+The base bearing (axial + radial + motor-reaction torque) is the bought
+8" turntable m02 also uses, built as `ring_bearing("base")` in
+ramp_mechanism (params.py `TURNTABLE_*`); the middle and top
+floors keep the printed ring, which carries no axial load.
 
 Coordinate frame (matches ramp_mechanism / params):
     origin = column axis ∩ rail-top datum (z=0)
@@ -83,7 +84,7 @@ RING_TEETH = round(COLLAR_OD / MODULE)            # 92 — pitch D ≈ collar OD
 PINION_TEETH = 17
 RING_PITCH_D = RING_TEETH * MODULE                 # 138.0
 PINION_PITCH_D = PINION_TEETH * MODULE             # 18.0
-GEAR_RATIO = RING_TEETH / PINION_TEETH             # ≈ 7.67 : 1
+GEAR_RATIO = RING_TEETH / PINION_TEETH             # ≈ 5.41 : 1
 ADDENDUM = MODULE                                  # tip = pitch + module
 MESH_BACKLASH = 0.2                   # extra center distance for FDM mesh play
 

@@ -429,7 +429,7 @@ def _add_drive_train_checks(a: Assembly, base: int) -> Assembly:
         .assert_tangent_contact(ring, _rot(base, "column"))
     )
 
-    # Pinion sits at z ∈ [-11, -1] on the off-axis drive axis, threaded
+    # Pinion sits at z ∈ [-17, -9] (MESH_Z_*) on the off-axis drive axis, threaded
     # between the Ø138 collar and the rail-inner ring. It must clear the
     # radial rails and stay below the bearing. The packaging knife-edge
     # is the tip circle vs the rail the drive axis sits under (rails at

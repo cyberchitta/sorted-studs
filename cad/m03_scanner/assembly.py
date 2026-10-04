@@ -472,7 +472,8 @@ def build_turret() -> Assembly:
         along="X", min_mm=WALL_MIN, name="homing_foot_housing_gap",
     )
     # The hub housing stands on the cross-rail. No-interference alone
-    # also passes with the housing floating above it.
+    # also passes with the housing floating above it. (Never watched
+    # red: that needs the housing moved.)
     t = t.assert_tangent_contact("hub.hub_housing", "frame.floor_cross_x")
     # Driven pulley pressed onto the real hub shaft — the drive
     # standalone declares the same fit against its own shaft stub;

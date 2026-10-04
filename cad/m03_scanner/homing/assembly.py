@@ -209,6 +209,8 @@ _BRACKET_POST_CENTER_X = _BRACKET_FOOT_CENTER_X            # = -47
 _BRACKET_POST_X_MIN = _BRACKET_POST_CENTER_X - BRACKET_POST_X / 2  # = -54
 _BRACKET_POST_X_MAX = _BRACKET_POST_CENTER_X + BRACKET_POST_X / 2  # = -40
 _BRACKET_POST_BOTTOM_Z = _BRACKET_FOOT_TOP_Z               # = -112
+# At -44 the post is outside both below-* frames: ~50° off their lens
+# axes against a 20.8° frame half-angle (POV render, 2026-07-24).
 _BRACKET_POST_TOP_Z = _SENSOR_TOP_Z                        # = -44
 BRACKET_POST_Z = _BRACKET_POST_TOP_Z - _BRACKET_POST_BOTTOM_Z  # = 68
 _BRACKET_POST_CENTER_Z = (_BRACKET_POST_BOTTOM_Z + _BRACKET_POST_TOP_Z) / 2

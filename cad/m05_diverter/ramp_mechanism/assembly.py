@@ -193,13 +193,16 @@ RAMP_WALL_Z = 182.5
 RAMP_ROOT_Z = RAMP_WALL_Z + (COL_OUTER_SIDE / 2 - RAMP_ROOT_X) * math.tan(math.radians(RAMP_DEG))
 # Length: the ramp turns with the stack past the six inner through-
 # columns, whose near faces sit at R_VERT_INNER − 10 ≈ 151.66 (2020
-# stock, the same RAIL_SIZE as the rails). Nothing of the ramp may reach
+# stock, the same RAIL_SIZE as the rails). The ramp gives way to them,
+# not the reverse: they run the full floor height and all four floors
+# are placed against them. Nothing of the ramp may reach
 # past RAMP_REACH_R, RAMP_COLUMN_CLEARANCE inside those faces, at any
 # azimuth. The binding points are each body's outer downhill top corner
 # — the part leans with the slope, so its top reaches furthest out — and
 # plate and walls are cut square to the slope at the length that puts
 # that corner on RAMP_REACH_R. The walls end short of the plate because
-# they stand 17 mm higher. (At RAMP_L = 112 with full-length walls, the
+# they stand 17 mm higher (~7.6 mm along the slope; that a brick stays
+# on over that stretch is unverified — bench-validation item 18). (At RAMP_L = 112 with full-length walls, the
 # wall tops reached r ≈ 156.1 and cut the columns at 14–20° + 60°·k of
 # stack turn, 2026-09-20.) Square, not trimmed to the circle: a
 # world-vertical cut meets the tilted faces at 65° and leaves a wedge

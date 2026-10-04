@@ -24,7 +24,7 @@ see through the transparent platform. Any opaque part inside it
 occludes part of the imaged region, which `khana check` is otherwise
 blind to (`cad/CLAUDE.md` §"What a green `khana check` does not
 mean", Visibility). This assertion is the gate for any further
-turret Z compression (state file, Open work 3).
+turret Z compression (state file, Open work 1).
 
 Geometry: an oblique frustum lofted from a small horizontal disc
 just past the lens nose (entrance-pupil stand-in) to the imaged
@@ -112,7 +112,8 @@ def sightline_cone(vertex_pos: tuple[float, float, float]):
 # regression alarm, not fixed: growing the aperture past the imaged
 # square or moving the lips inboard-out is a cartridge redesign the
 # vignetting doesn't currently justify — if either lands, this
-# assertion self-fails and must be removed.
+# assertion self-fails and must be removed. Provisional: the owner has
+# not accepted the trade (state file, Open work 2).
 _SIGHTLINE_KNOWN_OVERLAP_REASON = (
     "aperture == imaged square (110): below-* near-edge sightlines "
     "graze the IMAGE frame wall + corner lips below z=0; bottom-sliver "

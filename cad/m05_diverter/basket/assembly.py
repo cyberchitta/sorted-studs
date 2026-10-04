@@ -37,8 +37,9 @@ set per basket is declared in `FLOOR_LAYOUT`: `left`/`right` for the
 boundary columns. A column can only ever sit on a boundary — a basket
 with a column notched through its *interior* (the former N=9 at 90°,
 around V_1) has walls on both sides of the channel and cannot be slid
-onto the floor at all (dropped 2026-09-15); its slot holds two N=18s
-split at V_1 instead (2026-09-18).
+onto the floor at all (dropped 2026-09-15). Sector fills
+(`params.layout_from_sectors`) make every vertex a boundary by
+construction.
 
 Floor sits on the shared stage datum (z=0); rim at z=+BASKET_DEPTH_Z.
 Basket floor cantilevers past the outer-hex edge but still rests on

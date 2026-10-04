@@ -12,7 +12,7 @@ Reuses every per-floor composition helper from ``assembly.py`` via
 and the ``with_drive_train`` flag differ. Same part functions, same
 placement helpers, same assertions; no post-hoc stripping.
 
-Per-floor baskets are drawn as a subset of ``FLOOR_LAYOUT`` so the
+Per-floor baskets are drawn as a subset of ``FLOOR_LAYOUTS[floor]`` so the
 design-system tag coverage assertion in ``build_tower`` still
 resolves every name; ``build_tower`` accepts a
 ``dict[floor_idx, layout]`` for per-floor overrides.
