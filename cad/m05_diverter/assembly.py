@@ -31,7 +31,12 @@ builders (role differences are builder parameters) and placed by one
 - `drive_train` — off-axis ring gear / pinion / motor / motor mount
   below the base floor's rail datum (`base_floor.build_drive_train`).
   The ring gear bolts to the base column's bottom collar; no central
-  drive shaft — Lego falls through the column axis.
+  drive shaft — Lego falls through the column axis. It declares the
+  fall path out of the base column as keep-outs.
+- `catch` — the bottom catch: a tray under the motor on a three-post
+  cradle hung from the base floor's radial rails
+  (`base_floor.build_bottom_catch`). Whatever falls past every trap —
+  the fault case — and parts wider than any floor's ramp end here.
 - `top_acrylic` — clear disc capping the tower (root part). At the
   two through-deck post vertices (`params.THROUGH_DECK_POSTS`) it is
   notched from the rim so the column and the bracket's vertical arm
@@ -504,6 +509,56 @@ def _add_drive_train_checks(a: Assembly, base: int) -> Assembly:
     return a
 
 
+def _add_catch_checks(a: Assembly, base: int) -> Assembly:
+    """The fall path out of the base column and the bottom catch, against
+    the frame. The keep-outs are declared in the base_floor builders
+    (`drive_train.fall_path`: the vertical fall at every column azimuth,
+    less the mount's shadow; `catch.pull_path`: the tray drawn out
+    toward −Y, standing on the shelf); the parts they must clear are
+    composed here. The ring gear turns with the column, so it is not
+    held against the fall path — its hole is the column's
+    (`check_base_fall_path.py`). The motor mount is held by its own
+    claims in `build_drive_train` (flat top outside the disc) and the
+    slope below."""
+    tray = "catch.catch_tray"
+    cradle = "catch.catch_cradle"
+    frame = [f"f{base}", "columns"]
+    a = (
+        a
+        .assert_clear_of(
+            frame + ["catch"], "drive_train.fall_path",
+            min_mm=_base.FALL_CLEAR, name="base_fall_path",
+        )
+        # A brick that lands on the deflector slides off it: the slope
+        # against the friction budget the ramp and trap are held to.
+        .assert_scalar(
+            "mount_deflector_slides",
+            math.tan(math.radians(_base.DEFLECTOR_DEG)),
+            ge=_ramp.MU_STATIC_BUDGET,
+            detail=f"tan of the mount's {_base.DEFLECTOR_DEG:.1f}° deflector vs µ_s budget",
+        )
+        .assert_clear_of(
+            frame + ["drive_train", cradle], "catch.pull_path",
+            min_mm=_base.CATCH_CURB_GAP, name="catch_pull_path",
+        )
+        .assert_no_interference_between("catch", frame + ["drive_train"])
+    )
+    # Each post's top face bolts up to its rail's bottom face, between
+    # the spider's saddle (on top) and the inner-vertex bracket's
+    # inboard arm (under), whose gap is measured.
+    for az in _base.CATCH_POST_AZIMUTHS_DEG:
+        k = round(az / 60.0 - 0.5) % 6
+        a = (
+            a
+            .assert_tangent_contact(cradle, _rail(base, f"radial_inner_{k}"))
+            .assert_distance(
+                cradle, _rail(base, f"inner_vertex_bracket_{k}"), min_mm=1.0,
+                name=f"catch_post_{k}_clears_inner_bracket",
+            )
+        )
+    return a
+
+
 # --- Public composition ------------------------------------------------
 
 def build_tower(
@@ -530,7 +585,8 @@ def build_tower(
     a few named baskets per floor.
 
     `with_top_deck` and `with_drive_train` strip those features for
-    the exhibit. Drive-train assertions and top-deck assertions are
+    the exhibit (`with_drive_train` takes the bottom catch with it — its
+    fall path is the drive train's). Drive-train assertions and top-deck assertions are
     skipped accordingly — they reference parts that wouldn't exist.
 
     `through_posts` maps outer-vertex index → height above the deck
@@ -602,6 +658,11 @@ def build_tower(
             ),
             location=Pos(0, 0, base_idx * FLOOR_H),
         )
+        a = a.with_subassembly(
+            "catch",
+            _base.build_bottom_catch(material_fn=material_of),
+            location=Pos(0, 0, base_idx * FLOOR_H),
+        )
 
     # Adjacent-floor pairs only. Non-adjacent floors are >1·FLOOR_H
     # apart and the servo — the highest rotating part outside the
@@ -620,6 +681,7 @@ def build_tower(
         a = _add_base_bearing_checks(a, base_idx)
     if with_drive_train:
         a = _add_drive_train_checks(a, base_idx)
+        a = _add_catch_checks(a, base_idx)
 
     # Paint last, once the tree is complete: ``paint`` also carries the
     # coverage check that ``_assert_design_system_coverage`` used to do

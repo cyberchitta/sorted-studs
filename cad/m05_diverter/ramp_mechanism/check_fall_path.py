@@ -19,8 +19,10 @@ so the probe follows the design. The yaws cover a half
 turn, so one floor's claims cover every floor whatever its opening
 azimuth.
 
-Scope: the middle role (top is identical here). The base floor's pass
-to the fallback bin runs through the turntable and is not covered.
+Scope: the middle role (top is identical here). The base floor's pass —
+down through the turntable and the ring gear to the bottom catch — needs
+`base_floor`, a sibling, so it is `../check_base_fall_path.py` plus the
+tower's `base_fall_path` keep-out claim.
 The trap is at rest (hanging) — the swing is `make_assembly`'s.
 """
 

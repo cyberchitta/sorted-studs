@@ -33,7 +33,30 @@ to the column's periphery instead:
   for nothing the checker can see.
 - motor_mount — printed radial arm at the rail-bottom plane; bolts up
   into one radial rail's T-slot and carries the motor below via the
-  NEMA face. Detailed bolt pattern + flange interface still open.
+  NEMA face. Detailed bolt pattern + flange interface still open. Its
+  inner end is a chamfer — the deflector over the motor (see
+  "Fall path" below).
+
+**Fall path and the bottom catch (2026-10-04).** Every trap rests
+hanging, so on power loss, a dead servo or a missed command a brick
+falls past every floor and out through the ring gear's square hole
+(bottom z = RING_GEAR_Z_BOT). The column and ring gear turn, so across
+every column azimuth that exit sweeps a disc of r = FALL_SWEEP_R
+(90·√2/2 ≈ 63.64) — exactly the union of the square over all
+rotations, so a disc keep-out covers every azimuth with no sampling.
+The motor's inner face (r = CENTER_DIST − MOTOR_BODY_W/2 ≈ 60.8) sits
+inside that disc, and neither the motor's rail azimuth nor the centre
+distance may move, so the mount is shaped to shield it: its flat top
+stops outside the disc (DEFLECTOR_R_TOP) and its inner end slopes down
+past the motor's face (DEFLECTOR_R_BOT), so a brick that lands there
+slides off inward instead of resting 3 mm under the turning ring gear.
+Below the motor a small tray (`catch_tray`) on a three-post cradle
+(`catch_cradle`, hung from the free inner ends of three radial rails)
+takes everything — the fault case, and parts wider than any floor's
+ramp. It draws out toward −Y, a side nothing blocks below the motor.
+`build_drive_train` declares the vertical fall as keep-outs;
+`build_bottom_catch` declares the scatter cone at its mouth and its
+draw-out path; the tower root holds the frame against both.
 
 Gear geometry is the cheap two-fidelity-tier model: pitch cylinders,
 no teeth. Mesh validity is a min+max `assert_distance` band ("close
@@ -60,7 +83,7 @@ import math
 from typing import Callable
 
 
-from build123d import Box, Cylinder, Part, Pos, Rot
+from build123d import Axis, Box, Cone, Cylinder, Part, Plane, Polygon, Pos, Rot, extrude
 
 from cad_khana.mechanism.assembly import Assembly
 
@@ -164,7 +187,9 @@ MOTOR_AZIMUTH_DEG = 210.0
 # motor footprint (motor spans r ≈ CENTER_DIST ∓ MOTOR_BODY_W/2 ≈ 61..103);
 # outer end overlaps the rail (r ≥ RAIL_INNER_R) by 10 mm to bolt.
 # Central clearance hole passes the bare output shaft (the pinion sits
-# above the mount).
+# above the mount). MOUNT_R_INNER is the blank's inner end only: the
+# deflector chamfer (`_deflector_cut`, below) sets the real one at
+# DEFLECTOR_R_BOT..DEFLECTOR_R_TOP.
 MOUNT_R_INNER = 52.0
 MOUNT_R_OUTER = RAIL_INNER_R + 10.0                    # 110
 MOUNT_R_CENTER = (MOUNT_R_INNER + MOUNT_R_OUTER) / 2   # 81
@@ -173,6 +198,82 @@ MOUNT_W = MOTOR_BODY_W + 4.0                           # 46.3 — straddles the 
 MOUNT_SHAFT_HOLE_D = 12.0                              # clears the bare output shaft
 
 WALL_MIN = 1.5
+
+
+# --- Fall path below the base column -------------------------------------
+#
+# A brick leaves the base column through the ring gear's square hole at
+# z = FALL_EXIT_Z. The hole turns with the column, so over every azimuth
+# the exit is a disc of the square's half-diagonal. The vertical fall from
+# there down to the catch is a keep-out (`fall_path`, declared in
+# `build_drive_train`); nothing static may stand in it but the mount's
+# deflector, which is what shields the motor.
+FALL_SWEEP_R = COL_INTERIOR_SIDE * math.sqrt(2) / 2    # 63.64
+FALL_EXIT_Z = RING_GEAR_Z_BOT                          # -17
+FALL_CLEAR = 1.0                                       # static part to the vertical fall
+MOTOR_INNER_R = CENTER_DIST - MOTOR_BODY_W / 2         # 60.8 — inside FALL_SWEEP_R
+
+# The mount's inner end, a chamfer square to the arm: its flat top stops
+# FALL_CLEAR outside the disc (on the arm's axis, where the disc reaches
+# furthest out), then the face slopes down and in to FALL_CLEAR inside
+# the motor's (planar) inner face, ending in a vertical land so the
+# edge is a printable wall, not a knife edge. Everything the disc drops
+# onto the motor lands on this slope first. The slope is held against the
+# ramp's friction budget at the tower root (it owns MU_STATIC_BUDGET).
+DEFLECTOR_R_TOP = FALL_SWEEP_R + FALL_CLEAR                       # 64.64
+DEFLECTOR_R_BOT = MOTOR_INNER_R - FALL_CLEAR                      # 59.8
+DEFLECTOR_LAND = 2.0                                              # vertical face at the bottom
+DEFLECTOR_DEG = math.degrees(math.atan2(
+    MOUNT_T - DEFLECTOR_LAND, DEFLECTOR_R_TOP - DEFLECTOR_R_BOT,
+))                                                                # ≈ 31.8
+
+
+# --- Bottom catch ----------------------------------------------------------
+#
+# A round tray under the motor, sitting on a cradle hung from three radial
+# rails. Inputs: the scatter allowance, the depth, the clearances and the
+# hanger rails. Derived: the rim height (under the motor), the mouth radius
+# (the swept disc grown by the scatter cone over the drop), and from those
+# the capacity, which is recorded against CATCH_CAPACITY_MIN_CM3.
+#
+# Scatter: the vertical fall is exact; a brick also leaves the hole with
+# some sideways speed from its last wall bounce. CATCH_SCATTER_DEG is the
+# half-angle of the cone that allowance grows at, from the exit to the
+# rim — a hand allowance, not a measurement (bench).
+CATCH_SCATTER_DEG = 10.0
+CATCH_MOUTH_MARGIN = 1.0              # scatter cone to the tray's inner wall, at the rim
+CATCH_MOTOR_CLEAR = 2.0               # rim below the motor's bottom face
+CATCH_WALL_T = 2.0
+CATCH_FLOOR_T = 2.0
+CATCH_DEPTH = 40.0                    # rim to floor, inside
+CATCH_CAPACITY_MIN_CM3 = 500.0        # a fault's worth, not a bay: owner, "size it small"
+
+CATCH_RIM_Z = MOTOR_BOTTOM_Z - CATCH_MOTOR_CLEAR                 # -67
+CATCH_DROP = FALL_EXIT_Z - CATCH_RIM_Z                           # 50
+CATCH_SCATTER_R = FALL_SWEEP_R + CATCH_DROP * math.tan(math.radians(CATCH_SCATTER_DEG))  # ≈ 72.46
+CATCH_MOUTH_R = CATCH_SCATTER_R + CATCH_MOUTH_MARGIN             # ≈ 73.46, inner wall
+CATCH_OUTER_R = CATCH_MOUTH_R + CATCH_WALL_T                     # ≈ 75.46
+CATCH_FLOOR_Z = CATCH_RIM_Z - CATCH_DEPTH                        # -107, floor top
+CATCH_BOTTOM_Z = CATCH_FLOOR_Z - CATCH_FLOOR_T                   # -109, tray underside
+CATCH_CAPACITY_CM3 = math.pi * CATCH_MOUTH_R ** 2 * CATCH_DEPTH / 1000.0   # ≈ 678
+
+# Cradle: a shelf the tray stands on, three posts up to the free inner
+# ends of radial rails, and low curbs that locate the tray. Rails sit at
+# (k+0.5)·60°; the motor's rail (MOTOR_AZIMUTH_DEG, 210°) is taken, so the
+# posts use 30°, 150° and 330° — they flank the −Y draw-out path. A rail's
+# bottom face is free between RAIL_INNER_R and the inner-vertex bracket's
+# inboard arm (r ≈ 119.7, `inner_vertex_bracket` ARM_IN_L_TOTAL — a sibling,
+# so not imported; the tower root measures the gap).
+CATCH_POST_AZIMUTHS_DEG = (30.0, 150.0, 330.0)
+CATCH_POST_W = 16.0
+CATCH_POST_R = RAIL_INNER_R + 1.0 + CATCH_POST_W / 2             # 109 — r 101..117
+CATCH_SHELF_T = 4.0
+CATCH_CURB_GAP = 0.5                  # tray wall to curb
+CATCH_CURB_W = 3.0
+CATCH_CURB_H = 5.0
+CATCH_CURB_L = 40.0
+CATCH_PULL_AZIMUTH_DEG = 270.0        # −Y: toward the operator
+CATCH_PULL_TRAVEL = 2 * CATCH_OUTER_R + CATCH_CURB_GAP           # clear of its own footprint
 
 
 # --- Part functions -----------------------------------------------------
@@ -213,17 +314,150 @@ def ring_gear() -> Part:
     return disc - hole
 
 
+def _deflector_cut() -> Part:
+    """What the mount's inner end is cut by, in the mount's own radial
+    frame and turned onto MOTOR_AZIMUTH_DEG: everything inboard of the
+    land at DEFLECTOR_R_BOT, then a plane rising to DEFLECTOR_R_TOP at
+    the mount's top face. The chamfer is planar and square to the arm —
+    parallel to the motor's inner face, which is what it covers — so it
+    meets the arm's side faces square, with no wedge."""
+    z_land = MOUNT_Z_BOT + DEFLECTOR_LAND
+    run = DEFLECTOR_R_TOP - DEFLECTOR_R_BOT
+    rise = MOUNT_Z_TOP - z_land
+    over = 1.0
+    u0 = MOUNT_R_INNER - over
+    profile = Polygon(
+        (u0, MOUNT_Z_BOT - over),
+        (DEFLECTOR_R_BOT, MOUNT_Z_BOT - over),
+        (DEFLECTOR_R_BOT, z_land),
+        (DEFLECTOR_R_TOP + over * run / rise, MOUNT_Z_TOP + over),
+        (u0, MOUNT_Z_TOP + over),
+        align=None,
+    )
+    cut = extrude(Plane.XZ * profile, amount=MOUNT_W, both=True)
+    return Rot(0, 0, MOTOR_AZIMUTH_DEG) * cut
+
+
 def motor_mount() -> Part:
     """Printed radial arm at the rail-bottom plane. Bolts up into one
     radial rail's T-slot at its outer end and carries the motor below
     via the NEMA face; a central hole passes the output shaft up to the
-    pinion."""
+    pinion. The inner end is the fall-path deflector (`_deflector_cut`):
+    flat top outside the swept exit, sloped face over the motor's inner
+    edge."""
+    # Cut-feature bounds over the deflector's own parameters: the slope
+    # must reach inside the motor's face and the land must leave a wall.
+    assert DEFLECTOR_R_BOT < MOTOR_INNER_R < FALL_SWEEP_R < DEFLECTOR_R_TOP, (
+        f"Deflector r {DEFLECTOR_R_BOT:.2f}..{DEFLECTOR_R_TOP:.2f} must "
+        f"bracket the motor face {MOTOR_INNER_R:.2f} and the swept exit "
+        f"{FALL_SWEEP_R:.2f}."
+    )
+    assert WALL_MIN <= DEFLECTOR_LAND < MOUNT_T, (
+        f"DEFLECTOR_LAND {DEFLECTOR_LAND} must leave a printable land and "
+        f"a slope in a {MOUNT_T} mm plate."
+    )
     z = (MOUNT_Z_TOP + MOUNT_Z_BOT) / 2
     arm = Rot(0, 0, MOTOR_AZIMUTH_DEG) * Pos(MOUNT_R_CENTER, 0, z) * Box(
         MOUNT_L, MOUNT_W, MOUNT_T
     )
     bore = _on_drive_axis(Cylinder(MOUNT_SHAFT_HOLE_D / 2, MOUNT_T * 2), z)
-    return arm - bore
+    return arm - bore - _deflector_cut()
+
+
+def _disc(r: float, z_top: float, z_bot: float) -> Part:
+    return Pos(0, 0, (z_top + z_bot) / 2) * Cylinder(r, z_top - z_bot)
+
+
+def fall_path() -> Part:
+    """Keep-out: the vertical fall of anything leaving the base column,
+    at every column azimuth — the disc r = FALL_SWEEP_R from the base
+    column's bottom face (above it the turning column's own walls enclose
+    the brick) down to the catch's rim — less what the motor mount
+    shadows. The mount is solid over its whole footprint, so nothing
+    falling straight down reaches the region under it except by sliding
+    off its deflector, inward; that region is cut out from the mount's
+    top face down. The mount itself is held to the band above its top
+    face (`fall_above_mount`)."""
+    disc = _disc(FALL_SWEEP_R, BASE_COL_Z_BOT, CATCH_RIM_Z)
+    foot = motor_mount().faces().sort_by(Axis.Z)[0]          # bottom face: the full footprint
+    depth = MOUNT_Z_BOT - CATCH_RIM_Z + 1.0
+    shadow = extrude(foot, amount=depth, dir=(0, 0, -1)) + extrude(
+        foot, amount=MOUNT_T, dir=(0, 0, 1),
+    )
+    return disc - shadow
+
+
+def fall_above_mount() -> Part:
+    """Keep-out: the vertical fall between the exit and the mount's top
+    face — where the mount's flat top must not reach."""
+    return _disc(FALL_SWEEP_R, FALL_EXIT_Z, MOUNT_Z_TOP)
+
+
+def catch_tray() -> Part:
+    """Open round tray under the motor: rim at CATCH_RIM_Z, inner radius
+    CATCH_MOUTH_R, floor CATCH_FLOOR_T thick. Printed floor-down."""
+    outer = _disc(CATCH_OUTER_R, CATCH_RIM_Z, CATCH_BOTTOM_Z)
+    cavity = _disc(CATCH_MOUTH_R, CATCH_RIM_Z + 1.0, CATCH_FLOOR_Z)
+    return outer - cavity
+
+
+def _post_xy(az_deg: float) -> tuple[float, float]:
+    a = math.radians(az_deg)
+    return CATCH_POST_R * math.cos(a), CATCH_POST_R * math.sin(a)
+
+
+def catch_cradle() -> Part:
+    """Shelf + three posts + locating curbs, one printed part (shelf
+    down). Each post stands under a radial rail's free inner end, its
+    top face on the rail's bottom face (z = MOUNT_Z_TOP, the same plane
+    the motor mount bolts to); the shelf top carries the tray at
+    CATCH_BOTTOM_Z. Two side curbs and a back stop locate the tray; the
+    −Y side is open so it draws out toward the operator."""
+    shelf_z_top = CATCH_BOTTOM_Z
+    shelf_z_bot = shelf_z_top - CATCH_SHELF_T
+    xs = [_post_xy(a)[0] for a in CATCH_POST_AZIMUTHS_DEG]
+    ys = [_post_xy(a)[1] for a in CATCH_POST_AZIMUTHS_DEG]
+    half = CATCH_POST_W / 2
+    back = CATCH_OUTER_R + CATCH_CURB_GAP + CATCH_CURB_W
+    x0, x1 = min(xs) - half, max(xs) + half
+    y0, y1 = min(ys) - half, back
+    shelf = Pos((x0 + x1) / 2, (y0 + y1) / 2, (shelf_z_top + shelf_z_bot) / 2) * Box(
+        x1 - x0, y1 - y0, CATCH_SHELF_T,
+    )
+    body = shelf
+    for az in CATCH_POST_AZIMUTHS_DEG:
+        h = MOUNT_Z_TOP - shelf_z_bot
+        body = body + Rot(0, 0, az) * Pos(
+            CATCH_POST_R, 0, (MOUNT_Z_TOP + shelf_z_bot) / 2,
+        ) * Box(CATCH_POST_W, CATCH_POST_W, h)
+    curb_z = shelf_z_top + CATCH_CURB_H / 2
+    curb_r = CATCH_OUTER_R + CATCH_CURB_GAP + CATCH_CURB_W / 2
+    curb_full_h = CATCH_CURB_H + CATCH_SHELF_T
+    curb_zc = (shelf_z_top + CATCH_CURB_H + shelf_z_bot) / 2
+    for sx in (-1, 1):
+        body = body + Pos(sx * curb_r, 0, curb_zc) * Box(CATCH_CURB_W, CATCH_CURB_L, curb_full_h)
+    body = body + Pos(0, curb_r, curb_zc) * Box(CATCH_CURB_L, CATCH_CURB_W, curb_full_h)
+    return body
+
+
+def fall_scatter() -> Part:
+    """Keep-out: the scatter cone — the swept exit disc growing at
+    CATCH_SCATTER_DEG from the exit down to the catch's rim. The tray's
+    wall must stand outside it at the rim."""
+    h = CATCH_DROP
+    return Pos(0, 0, (FALL_EXIT_Z + CATCH_RIM_Z) / 2) * Cone(CATCH_SCATTER_R, FALL_SWEEP_R, h)
+
+
+def catch_pull_path() -> Part:
+    """Keep-out: the tray drawn out along CATCH_PULL_AZIMUTH_DEG by
+    CATCH_PULL_TRAVEL — the cylinder at both ends and the slab between.
+    It stands on the shelf top (its `seat`)."""
+    h = CATCH_RIM_Z - CATCH_BOTTOM_Z
+    zc = (CATCH_RIM_Z + CATCH_BOTTOM_Z) / 2
+    start = Pos(0, 0, zc) * Cylinder(CATCH_OUTER_R, h)
+    end = Pos(CATCH_PULL_TRAVEL, 0, zc) * Cylinder(CATCH_OUTER_R, h)
+    slab = Pos(CATCH_PULL_TRAVEL / 2, 0, zc) * Box(CATCH_PULL_TRAVEL, 2 * CATCH_OUTER_R, h)
+    return Rot(0, 0, CATCH_PULL_AZIMUTH_DEG) * (start + slab + end)
 
 
 # --- Assembly -----------------------------------------------------------
@@ -250,6 +484,28 @@ def build_drive_train(
         ("motor_mount", motor_mount()),
     ):
         a = a.with_part(n, part, material=_mt(n))
+    # The fall path out of the base column. Declared here, where the exit
+    # and the mount that shadows the motor are known; the frame's parts
+    # are held against it at the tower root. The ring gear is not held:
+    # it turns with the column (modeled static here), and its hole is the
+    # column's, so the pass through it is `check_base_fall_path.py`'s.
+    a = (
+        a
+        .with_keepout("fall_path", fall_path())
+        .with_keepout("fall_above_mount", fall_above_mount())
+        .assert_clear_of(["motor", "pinion"], "fall_path", min_mm=FALL_CLEAR,
+                         name="drive_clear_of_fall_path")
+        # The mount's flat top stops FALL_CLEAR outside the swept exit;
+        # below its top face only the deflector slope is inside the disc
+        # (the slope's angle is held at the tower root). The nearest
+        # material is the slope, so the constructed distance is the
+        # horizontal clearance seen normal to it.
+        .assert_clear_of(
+            "motor_mount", "fall_above_mount",
+            min_mm=FALL_CLEAR * math.sin(math.radians(DEFLECTOR_DEG)),
+            name="mount_top_clear_of_fall_path",
+        )
+    )
     # Mesh validity — close but not touching: the cheap pitch blanks
     # must sit in the [MESH_BACKLASH, MESH_BACKLASH + 0.1] band (too
     # far = no mesh, too close = jam; real teeth interleave within
@@ -283,6 +539,40 @@ def build_drive_train(
     return a
 
 
+def build_bottom_catch(
+    material_fn: Callable[[str], str | None] | None = None,
+) -> Assembly:
+    """The bottom catch — tray on its cradle — as a sub-`Assembly` in the
+    base-floor-local frame. Static. Its claims about itself and the
+    falling brick are declared here; its rests on the rails and its
+    clearances to the frame and drive train are the tower root's."""
+    def _mt(name: str) -> str | None:
+        return material_fn(name) if material_fn is not None else None
+
+    return (
+        Assembly()
+        .with_part("catch_tray", catch_tray(), material=_mt("catch_tray"))
+        .with_part("catch_cradle", catch_cradle(), material=_mt("catch_cradle"))
+        .with_keepout("fall_scatter", fall_scatter())
+        .with_keepout("pull_path", catch_pull_path(),
+                      seat=Plane.XY.offset(CATCH_BOTTOM_Z))
+        # Everything the scatter cone carries to the rim lands inside the
+        # tray's wall. Constructed at exactly CATCH_MOUTH_MARGIN.
+        .assert_clear_of("catch_tray", "fall_scatter", min_mm=CATCH_MOUTH_MARGIN,
+                         name="catch_mouth_takes_scatter")
+        # The tray stands on the shelf, located by curbs it does not touch.
+        .assert_tangent_contact("catch_tray", "catch_cradle")
+        .assert_solid_count("catch_tray",
+                            detail="the cavity cut has holed the floor or wall")
+        .assert_solid_count("catch_cradle",
+                            detail="a post or curb no longer meets the shelf")
+        .assert_scalar(
+            "catch_capacity_cm3", CATCH_CAPACITY_CM3, ge=CATCH_CAPACITY_MIN_CM3,
+            detail=f"π·{CATCH_MOUTH_R:.1f}²·{CATCH_DEPTH:.0f} mm — raise CATCH_DEPTH",
+        )
+    )
+
+
 def make_assembly() -> Assembly:
     """Standalone base-floor drive-train assembly.
 
@@ -293,15 +583,28 @@ def make_assembly() -> Assembly:
     is the `gear_mesh_backlash` assert_distance declared in
     `build_drive_train`; the no-interference assert here is a weaker
     guard that the cheap pitch blanks don't gross-overlap.
+
+    Plus the bottom catch (`catch` subtree) under the motor, held clear
+    of the drive train, of the fall path, and on its draw-out path. The
+    rails it hangs from are not in this unit: the posts' rests, and the
+    frame against the fall path and the draw-out, are the tower root's.
     """
     return (
         build_drive_train()
+        .with_subassembly("catch", build_bottom_catch())
         .assert_no_interference_within([
             "ring_gear",
             "pinion",
             "motor",
             "motor_mount",
         ])
+        .assert_no_interference_between(
+            "catch", ["ring_gear", "pinion", "motor", "motor_mount"],
+        )
+        .assert_clear_of("catch", "fall_path", min_mm=FALL_CLEAR,
+                         name="catch_clear_of_fall_path")
+        .assert_clear_of(["ring_gear", "pinion", "motor", "motor_mount"],
+                         "catch.pull_path", name="drive_clear_of_catch_pull")
     )
 
 

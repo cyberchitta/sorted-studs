@@ -85,6 +85,9 @@ ROLE_OF: dict[str, Role | None] = {
     "pinion": None,                           # bought metal pinion — outside palette
     "ring_gear": Role.MECHANISM,              # printed drive gear
     "motor_mount": Role.SECONDARY_STRUCTURE,
+    # Bottom catch — the tray holds bricks and is emptied like a basket.
+    "catch_tray": Role.CONSUMABLE,
+    "catch_cradle": Role.SECONDARY_STRUCTURE,
     # Top deck — clear acrylic, outside the palette (renders via material).
     "top_acrylic": None,
 }
