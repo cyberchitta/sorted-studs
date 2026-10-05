@@ -12,10 +12,10 @@ blocked path stood unnoticed from 2026-05-30 to 2026-09-18.
 
 Fixture: one floor's through-columns and vertex brackets (the frame
 parts that reach up into the basket's z band — the brackets' clamp
-plates to z = 40), and each distinct basket of every `FLOOR_LAYOUTS`
-floor copied at draw-out
-steps of `STEP_MM` from rest to its `withdrawal_travel` plus one step.
-Each copy is asserted against every column and bracket.
+plates to z = 40). The baskets are not parts. Each distinct basket of
+every `FLOOR_LAYOUTS` floor is a keep-out, the exact volume its body
+sweeps from rest to `withdrawal_travel`, and every column and bracket
+must stay out of it: one `<basket>_draw_out` claim per basket.
 
 What is deliberately not asserted:
 
@@ -26,18 +26,13 @@ What is deliberately not asserted:
   floor, tangent to it; a translation in the floor plane keeps them
   tangent. The tower's `_build_floor_static` holds the rest-pose
   contact, per floor.
-- Poses past the last step. Past `withdrawal_travel` the column
-  envelope has crossed the basket edge and keeps moving away from it
-  (the relative path runs parallel to the axis while the edge diverges
-  from it), so no later pose can meet it again.
-
-Sampling: `STEP_MM` is 4 mm. The thinnest crossing is a 3 mm basket wall
-against a 6 mm clamp plate, travelling obliquely — a 9 mm overlap
-window along the path at least — so a 4 mm step lands in any crossing.
-Re-derive if either thickness or the step moves.
+- Travel past `withdrawal_travel`. By then the column envelope has
+  crossed the basket edge and keeps moving away from it (the relative
+  path runs parallel to the axis while the edge diverges from it), so
+  no later pose can meet it again.
 """
 
-from build123d import Pos, Rot
+from build123d import GeomType, Part, Pos, Rot, extrude
 
 from cad_khana.mechanism.assembly import Assembly
 
@@ -45,16 +40,25 @@ from .basket.assembly import basket, withdrawal_travel
 from .frame import assembly as _frame
 from .params import FLOOR_LAYOUTS, basket_name
 
-STEP_MM = 4.0
 
+def _swept(body: Part, travel: float) -> Part:
+    """The volume `body` passes through translating `travel` along +X.
 
-def _steps(travel: float) -> list[float]:
-    n = int(travel // STEP_MM) + 2   # rest, the steps, one past travel
-    return [i * STEP_MM for i in range(n)]
+    Exact, not sampled: a point of the sweep is in the body at rest, or
+    on the +X segment from where that segment leaves the body through a
+    face — inside that face's extrusion. A plane parallel to X extrudes
+    to nothing, so it is skipped.
+    """
+    prisms = [
+        extrude(f, amount=travel, dir=(1, 0, 0))
+        for f in body.faces()
+        if not (f.geom_type == GeomType.PLANE and abs(f.normal_at().X) < 1e-9)
+    ]
+    return body.fuse(*prisms).clean()
 
 
 def build_basket_removal() -> Assembly:
-    """Columns + vertex brackets, and each basket at every draw-out step."""
+    """Columns + vertex brackets, clear of each basket's draw-out path."""
     a = (
         Assembly()
         .with_subassembly("rails", _frame.build_floor_horizontals())
@@ -84,12 +88,11 @@ def build_basket_removal() -> Assembly:
             notch_left="left" in notches,
             notch_right="right" in notches,
         )
-        name = basket_name(center_deg, n_size)
-        steps = Assembly()
-        for d in _steps(withdrawal_travel(half_angle)):
-            steps = steps.with_part(f"d{int(d):03d}", body, location=Pos(d, 0, 0))
-        a = a.with_subassembly(name, steps, location=Rot(0, 0, center_deg))
-        a = a.assert_no_interference_between(name, obstacles)
+        path = _swept(body, withdrawal_travel(half_angle))
+        a = a.assert_clear_of(
+            obstacles, path.moved(Rot(0, 0, center_deg)),
+            name=f"{basket_name(center_deg, n_size)}_draw_out",
+        )
     return a
 
 
