@@ -32,29 +32,14 @@ What is deliberately not asserted:
   no later pose can meet it again.
 """
 
-from build123d import GeomType, Part, Pos, Rot, extrude
+from build123d import Rot
 
 from cad_khana.mechanism.assembly import Assembly
+from cad_khana.mechanism.keepout import swept
 
 from .basket.assembly import basket, withdrawal_travel
 from .frame import assembly as _frame
 from .params import FLOOR_LAYOUTS, basket_name
-
-
-def _swept(body: Part, travel: float) -> Part:
-    """The volume `body` passes through translating `travel` along +X.
-
-    Exact, not sampled: a point of the sweep is in the body at rest, or
-    on the +X segment from where that segment leaves the body through a
-    face — inside that face's extrusion. A plane parallel to X extrudes
-    to nothing, so it is skipped.
-    """
-    prisms = [
-        extrude(f, amount=travel, dir=(1, 0, 0))
-        for f in body.faces()
-        if not (f.geom_type == GeomType.PLANE and abs(f.normal_at().X) < 1e-9)
-    ]
-    return body.fuse(*prisms).clean()
 
 
 def build_basket_removal() -> Assembly:
@@ -88,7 +73,7 @@ def build_basket_removal() -> Assembly:
             notch_left="left" in notches,
             notch_right="right" in notches,
         )
-        path = _swept(body, withdrawal_travel(half_angle))
+        path = swept(body, (withdrawal_travel(half_angle), 0, 0))
         a = a.assert_clear_of(
             obstacles, path.moved(Rot(0, 0, center_deg)),
             name=f"{basket_name(center_deg, n_size)}_draw_out",
