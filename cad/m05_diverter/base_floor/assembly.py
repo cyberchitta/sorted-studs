@@ -83,9 +83,10 @@ import math
 from typing import Callable
 
 
-from build123d import Axis, Box, Cone, Cylinder, Part, Plane, Polygon, Pos, Rot, extrude
+from build123d import Box, Cone, Cylinder, Part, Plane, Polygon, Pos, Rot, extrude
 
 from cad_khana.mechanism.assembly import Assembly
+from cad_khana.mechanism.keepout import swept
 
 from ..params import (
     BASE_COL_Z_BOT, COL_INTERIOR_SIDE, COLLAR_OD, RAIL_INNER_R, RAIL_SIZE,
@@ -373,18 +374,14 @@ def fall_path() -> Part:
     at every column azimuth — the disc r = FALL_SWEEP_R from the base
     column's bottom face (above it the turning column's own walls enclose
     the brick) down to the catch's rim — less what the motor mount
-    shadows. The mount is solid over its whole footprint, so nothing
-    falling straight down reaches the region under it except by sliding
-    off its deflector, inward; that region is cut out from the mount's
-    top face down. The mount itself is held to the band above its top
-    face (`fall_above_mount`)."""
+    shadows. Nothing reaches under the mount from the side, so its shadow
+    is its own downward sweep: the region under it, plus the mount
+    itself. The air over the deflector slope stays in the fall. The
+    mount's top is held separately, to the band above its top face
+    (`fall_above_mount`)."""
     disc = _disc(FALL_SWEEP_R, BASE_COL_Z_BOT, CATCH_RIM_Z)
-    foot = motor_mount().faces().sort_by(Axis.Z)[0]          # bottom face: the full footprint
     depth = MOUNT_Z_BOT - CATCH_RIM_Z + 1.0
-    shadow = extrude(foot, amount=depth, dir=(0, 0, -1)) + extrude(
-        foot, amount=MOUNT_T, dir=(0, 0, 1),
-    )
-    return disc - shadow
+    return disc - swept(motor_mount(), (0, 0, -depth))
 
 
 def fall_above_mount() -> Part:
