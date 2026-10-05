@@ -12,8 +12,8 @@ interior), so **no central drive shaft can live there** — the obsolete
 coaxial `drive_shaft` from the previous pass is gone. Drive is taken
 to the column's periphery instead:
 
-- motor — NEMA-17-style 42×42×40 box stub, mounted **off-axis** on a
-  back-side radial-rail azimuth (away from the +X exit/ramp), body
+- motor — NEMA-17-style 42×42×40 box stub, mounted **off-axis** between
+  two back-side radial rails (away from the +X exit/ramp), body
   hanging below the rail datum with its output shaft pointing up.
   Final NEMA size + gearbox choice still open.
 - pinion — small gear on the motor output shaft, meshing with the ring
@@ -31,11 +31,11 @@ to the column's periphery instead:
   `column("base")` untouched. Not m02's integral ring on the flange with
   the motor on a rail above the floor: that moves the motor and the mesh
   for nothing the checker can see.
-- motor_mount — printed radial arm at the rail-bottom plane; bolts up
-  into one radial rail's T-slot and carries the motor below via the
-  NEMA face. Detailed bolt pattern + flange interface still open. Its
-  inner end is a chamfer — the deflector over the motor (see
-  "Fall path" below).
+- motor_mount — printed plate at the rail-bottom plane; bolts up into
+  the T-slots of the two radial rails either side of the motor and
+  carries the motor below via the NEMA face. Detailed bolt pattern +
+  flange interface still open; the NEMA screws are countersunk flush
+  with its top, because they sit under the pinion's tip circle.
 
 **Fall path and the bottom catch (2026-10-04).** Every trap rests
 hanging, so on power loss, a dead servo or a missed command a brick
@@ -44,17 +44,16 @@ falls past every floor and out through the ring gear's square hole
 every column azimuth that exit sweeps a disc of r = FALL_SWEEP_R
 (90·√2/2 ≈ 63.64) — exactly the union of the square over all
 rotations, so a disc keep-out covers every azimuth with no sampling.
-The motor's inner face (r = CENTER_DIST − MOTOR_BODY_W/2 ≈ 60.8) sits
-inside that disc, and neither the motor's rail azimuth nor the centre
-distance may move, so the mount is shaped to shield it: its flat top
-stops outside the disc (DEFLECTOR_R_TOP) and its inner end slopes down
-past the motor's face (DEFLECTOR_R_BOT), so a brick that lands there
-slides off inward instead of resting 3 mm under the turning ring gear.
+Nothing static stands in it: the drive sits between rails, where the
+pinion is free to be large enough (PINION_TEETH) that the motor's inner
+face (MOTOR_INNER_R) lands outside the disc. Until 2026-10-05 the motor
+hung under a rail, whose inner end capped the pinion at 17 T and left
+the motor's face inside the disc behind a sloped deflector mount.
 Below the motor a small tray (`catch_tray`) on a three-post cradle
 (`catch_cradle`, hung from the free inner ends of three radial rails)
 takes everything — the fault case, and parts wider than any floor's
-ramp. It draws out toward −Y, a side nothing blocks below the motor.
-`build_drive_train` declares the vertical fall as keep-outs;
+ramp. It draws out toward −Y, a side nothing blocks.
+`build_drive_train` declares the vertical fall as a keep-out;
 `build_bottom_catch` declares the scatter cone at its mouth and its
 draw-out path; the tower root holds the frame against both.
 
@@ -86,7 +85,6 @@ from typing import Callable
 from build123d import Box, Cone, Cylinder, Part, Plane, Polygon, Pos, Rot, extrude
 
 from cad_khana.mechanism.assembly import Assembly
-from cad_khana.mechanism.keepout import swept
 
 from ..params import (
     BASE_COL_Z_BOT, COL_INTERIOR_SIDE, COLLAR_OD, RAIL_INNER_R, RAIL_SIZE,
@@ -101,14 +99,16 @@ from ..params import (
 MODULE = 1.5                          # printable spur module (low torque)
 PRESSURE_ANGLE_DEG = 20.0             # documentation only — cheap model has no teeth
 RING_TEETH = round(COLLAR_OD / MODULE)            # 92 — pitch D ≈ collar OD
-# 17 T is the undercut floor for a 20° PA involute — and the tooth count
-# m02's rim-drive pinion settled on (`_notes/decisions/m02-rotor-drive.md`),
-# so the two modules share one printed pinion. The tip lands at r ≈ 96.2,
-# which is what pushed RAIL_INNER_R out to 100 (params.py).
-PINION_TEETH = 17
+# 26 T sets the centre distance, not the ratio: it is the smallest pinion
+# that puts the motor's inner face outside the fall disc (MOTOR_INNER_R,
+# held by `drive_clear_of_fall_path`) and the inner NEMA screws outside
+# the ring gear's tip circle. Between rails nothing caps the tip radius.
+# m02's rim-drive pinion is 17 T (`_notes/decisions/m02-rotor-drive.md`);
+# the two no longer share a part.
+PINION_TEETH = 26
 RING_PITCH_D = RING_TEETH * MODULE                 # 138.0
-PINION_PITCH_D = PINION_TEETH * MODULE             # 18.0
-GEAR_RATIO = RING_TEETH / PINION_TEETH             # ≈ 5.41 : 1
+PINION_PITCH_D = PINION_TEETH * MODULE             # 39.0
+GEAR_RATIO = RING_TEETH / PINION_TEETH             # ≈ 3.54 : 1
 ADDENDUM = MODULE                                  # tip = pitch + module
 MESH_BACKLASH = 0.2                   # extra center distance for FDM mesh play
 
@@ -117,32 +117,28 @@ MESH_BACKLASH = 0.2                   # extra center distance for FDM mesh play
 # pinion-vs-ring no-interference is robust; the `gear_mesh_backlash`
 # assert_distance in `build_drive_train` measures the placed gap and
 # is the authoritative mesh check.
-CENTER_DIST = (RING_PITCH_D + PINION_PITCH_D) / 2 + MESH_BACKLASH   # 81.95
+CENTER_DIST = (RING_PITCH_D + PINION_PITCH_D) / 2 + MESH_BACKLASH   # 88.7
 
 # Pitch ≈ collar OD: the ring gear must seat on the collar's bolt face.
 # Declared as a `ring_gear_collar_seat` assert_scalar in
 # `build_drive_train` — the collar is not a part of this sub-assembly,
 # so the claim is a recorded scalar rather than a part-pair distance.
 
-# Tight constraint: the pinion's tip circle must stay inside the radial-
-# rail ring (rails start at RAIL_INNER_R). This is the packaging knife-
-# edge — the pinion is squeezed between the Ø138 collar and the Ø200
-# rail-inner ring. The rails are not parts of this sub-assembly, so
-# the claim lives at the tower root (`.._add_drive_train_checks`) as a
-# `grow_a_mm=ADDENDUM` assert_distance measuring from the tip circle
-# while the modeled body stays a pitch cylinder. If it fails: shrink
-# PINION_TEETH or push the rails out.
+# The pinion's tip circle must clear the two rails flanking the drive
+# axis. The rails are not parts of this sub-assembly, so the claim lives
+# at the tower root (`.._add_drive_train_checks`) as a `grow_a_mm=ADDENDUM`
+# assert_distance per rail, measuring from the tip circle while the
+# modeled body stays a pitch cylinder.
 
 
 # --- Z-band layout (top → bottom) ---------------------------------------
 #
 # The gear mesh is dropped BELOW the ramp_mechanism bearing spider. That
-# spider's saddles clamp the radial rails at the same azimuths a
-# rail-mounted motor wants, and they dip to z ≈ -7 reaching in to
-# r ≈ 83.5 — straight through the pinion's tip path. The ring gear
-# itself (r ≤ 69) always clears the saddle radially, but the pinion
-# (tip r ≈ 96.2) does not, so the whole mesh plane sits under the saddle
-# and the ring gear reaches the collar via a short standoff. The
+# spider's saddles clamp the radial rails and dip to z ≈ -7 reaching in
+# to r ≈ 83.5; when the motor hung under a rail (until 2026-10-05) they
+# stood straight in the pinion's tip path. The drive now sits between
+# rails, but the mesh plane stays under the saddle: raising it would
+# re-open the ring gear's standoff for nothing a check needs. The
 # top-level `pinion`-vs-`bearing_spider` no-interference assert is the
 # guard that catches any future saddle-depth drift.
 #
@@ -153,7 +149,7 @@ CENTER_DIST = (RING_PITCH_D + PINION_PITCH_D) / 2 + MESH_BACKLASH   # 81.95
 #   z=-9   gear-mesh top (pinion top, ring-gear teeth top)
 #   z=-17  gear-mesh bottom / ring-gear bottom
 #   z=-18  pinion bottom
-#   z=-20  rail bottom / motor-mount top (bolts up into rail T-slot)
+#   z=-20  rail bottom / motor-mount top (bolts up into two rails' T-slots)
 #   z=-25  motor-mount bottom / motor face (NEMA bolts up into the mount)
 #   z=-65  motor body bottom
 GEAR_FACE_W = 8.0                                  # mesh face width
@@ -177,25 +173,32 @@ MOTOR_BODY_W = 42.3
 MOTOR_BODY_H = 40.0
 MOTOR_TOP_Z = MOUNT_Z_BOT                          # -25 — face bolts up to the mount
 MOTOR_BOTTOM_Z = MOTOR_TOP_Z - MOTOR_BODY_H        # -65
+# The NEMA face screws (M3 on a 31 mm square) run down through the mount
+# into the motor, heads up. They are detail layer (not modelled), but
+# where the heads sit is a claim: outside the ring gear's tip circle, so
+# they never reach under its turning underside (`nema_screws_clear_ring_gear`).
+# They are inside the pinion's tip circle, 2 mm under its bottom face, so
+# they are countersunk flush with the mount's top.
+NEMA_BOLT_SPACING = 31.0
+NEMA_SCREW_HEAD_D = 6.0                            # M3 countersunk (ISO 10642)
 
-# Off-axis placement: on a back-side radial-rail azimuth (rails sit at
-# (k+0.5)·60°). 210° is two sections back from the +X exit/ramp at 0°,
-# so the motor stays clear of the delivery side. The mount arm runs
-# along this rail; pinion + motor axis sit at CENTER_DIST on it.
-MOTOR_AZIMUTH_DEG = 210.0
+# Off-axis placement: midway between two back-side radial rails (rails
+# sit at (k+0.5)·60°, so a gap centre is a multiple of 60°). 120° keeps
+# the motor off the +X exit/ramp side and off the −Y side the catch tray
+# draws out toward; the flanking rails at 90° and 150° carry the mount.
+MOTOR_AZIMUTH_DEG = 120.0
+MOUNT_RAIL_OFFSETS_DEG = (-30.0, 30.0)                 # the flanking rails, from the drive azimuth
 
-# Motor mount — radial arm under the chosen rail. Inner end covers the
-# motor footprint (motor spans r ≈ CENTER_DIST ∓ MOTOR_BODY_W/2 ≈ 61..103);
-# outer end overlaps the rail (r ≥ RAIL_INNER_R) by 10 mm to bolt.
-# Central clearance hole passes the bare output shaft (the pinion sits
-# above the mount). MOUNT_R_INNER is the blank's inner end only: the
-# deflector chamfer (`_deflector_cut`, below) sets the real one at
-# DEFLECTOR_R_BOT..DEFLECTOR_R_TOP.
-MOUNT_R_INNER = 52.0
-MOUNT_R_OUTER = RAIL_INNER_R + 10.0                    # 110
-MOUNT_R_CENTER = (MOUNT_R_INNER + MOUNT_R_OUTER) / 2   # 81
-MOUNT_L = MOUNT_R_OUTER - MOUNT_R_INNER                # 58
+# Motor mount — one plate under both flanking rails: the convex hull of a
+# pad on each rail and a square that straddles the motor. A pad sits on a
+# rail's free inner end, the span a catch post also uses (r 101..117,
+# below the spider's saddle, short of the inner-vertex bracket's inboard
+# arm). Central clearance hole passes the bare output shaft (the pinion
+# sits above the mount).
 MOUNT_W = MOTOR_BODY_W + 4.0                           # 46.3 — straddles the motor
+MOUNT_PAD_L = 16.0                                     # along the rail
+MOUNT_PAD_W = 16.0                                     # across the rail
+MOUNT_PAD_R = RAIL_INNER_R + 1.0 + MOUNT_PAD_L / 2     # 109 — r 101..117
 MOUNT_SHAFT_HOLE_D = 12.0                              # clears the bare output shaft
 
 WALL_MIN = 1.5
@@ -207,26 +210,11 @@ WALL_MIN = 1.5
 # z = FALL_EXIT_Z. The hole turns with the column, so over every azimuth
 # the exit is a disc of the square's half-diagonal. The vertical fall from
 # there down to the catch is a keep-out (`fall_path`, declared in
-# `build_drive_train`); nothing static may stand in it but the mount's
-# deflector, which is what shields the motor.
+# `build_drive_train`); nothing static may stand in it.
 FALL_SWEEP_R = COL_INTERIOR_SIDE * math.sqrt(2) / 2    # 63.64
 FALL_EXIT_Z = RING_GEAR_Z_BOT                          # -17
 FALL_CLEAR = 1.0                                       # static part to the vertical fall
-MOTOR_INNER_R = CENTER_DIST - MOTOR_BODY_W / 2         # 60.8 — inside FALL_SWEEP_R
-
-# The mount's inner end, a chamfer square to the arm: its flat top stops
-# FALL_CLEAR outside the disc (on the arm's axis, where the disc reaches
-# furthest out), then the face slopes down and in to FALL_CLEAR inside
-# the motor's (planar) inner face, ending in a vertical land so the
-# edge is a printable wall, not a knife edge. Everything the disc drops
-# onto the motor lands on this slope first. The slope is held against the
-# ramp's friction budget at the tower root (it owns MU_STATIC_BUDGET).
-DEFLECTOR_R_TOP = FALL_SWEEP_R + FALL_CLEAR                       # 64.64
-DEFLECTOR_R_BOT = MOTOR_INNER_R - FALL_CLEAR                      # 59.8
-DEFLECTOR_LAND = 2.0                                              # vertical face at the bottom
-DEFLECTOR_DEG = math.degrees(math.atan2(
-    MOUNT_T - DEFLECTOR_LAND, DEFLECTOR_R_TOP - DEFLECTOR_R_BOT,
-))                                                                # ≈ 31.8
+MOTOR_INNER_R = CENTER_DIST - MOTOR_BODY_W / 2         # 67.55 — outside FALL_SWEEP_R
 
 
 # --- Bottom catch ----------------------------------------------------------
@@ -260,12 +248,12 @@ CATCH_CAPACITY_CM3 = math.pi * CATCH_MOUTH_R ** 2 * CATCH_DEPTH / 1000.0   # ≈
 
 # Cradle: a shelf the tray stands on, three posts up to the free inner
 # ends of radial rails, and low curbs that locate the tray. Rails sit at
-# (k+0.5)·60°; the motor's rail (MOTOR_AZIMUTH_DEG, 210°) is taken, so the
-# posts use 30°, 150° and 330° — they flank the −Y draw-out path. A rail's
-# bottom face is free between RAIL_INNER_R and the inner-vertex bracket's
+# (k+0.5)·60°; the motor mount takes the two rails flanking
+# MOTOR_AZIMUTH_DEG (90°, 150°), so the posts use 30°, 210° and 330° —
+# the last two flank the −Y draw-out path. A rail's bottom face is free between RAIL_INNER_R and the inner-vertex bracket's
 # inboard arm (r ≈ 119.7, `inner_vertex_bracket` ARM_IN_L_TOTAL — a sibling,
 # so not imported; the tower root measures the gap).
-CATCH_POST_AZIMUTHS_DEG = (30.0, 150.0, 330.0)
+CATCH_POST_AZIMUTHS_DEG = (30.0, 210.0, 330.0)
 CATCH_POST_W = 16.0
 CATCH_POST_R = RAIL_INNER_R + 1.0 + CATCH_POST_W / 2             # 109 — r 101..117
 CATCH_SHELF_T = 4.0
@@ -315,54 +303,51 @@ def ring_gear() -> Part:
     return disc - hole
 
 
-def _deflector_cut() -> Part:
-    """What the mount's inner end is cut by, in the mount's own radial
-    frame and turned onto MOTOR_AZIMUTH_DEG: everything inboard of the
-    land at DEFLECTOR_R_BOT, then a plane rising to DEFLECTOR_R_TOP at
-    the mount's top face. The chamfer is planar and square to the arm —
-    parallel to the motor's inner face, which is what it covers — so it
-    meets the arm's side faces square, with no wedge."""
-    z_land = MOUNT_Z_BOT + DEFLECTOR_LAND
-    run = DEFLECTOR_R_TOP - DEFLECTOR_R_BOT
-    rise = MOUNT_Z_TOP - z_land
-    over = 1.0
-    u0 = MOUNT_R_INNER - over
-    profile = Polygon(
-        (u0, MOUNT_Z_BOT - over),
-        (DEFLECTOR_R_BOT, MOUNT_Z_BOT - over),
-        (DEFLECTOR_R_BOT, z_land),
-        (DEFLECTOR_R_TOP + over * run / rise, MOUNT_Z_TOP + over),
-        (u0, MOUNT_Z_TOP + over),
-        align=None,
-    )
-    cut = extrude(Plane.XZ * profile, amount=MOUNT_W, both=True)
-    return Rot(0, 0, MOTOR_AZIMUTH_DEG) * cut
+def _convex_hull(pts: list[tuple[float, float]]) -> list[tuple[float, float]]:
+    """Counter-clockwise convex hull of 2D points (monotone chain)."""
+    pts = sorted(set(pts))
+
+    def cross(o, a, b):
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+    lower: list[tuple[float, float]] = []
+    upper: list[tuple[float, float]] = []
+    for p in pts:
+        while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
+            lower.pop()
+        lower.append(p)
+    for p in reversed(pts):
+        while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0:
+            upper.pop()
+        upper.append(p)
+    return lower[:-1] + upper[:-1]
 
 
 def motor_mount() -> Part:
-    """Printed radial arm at the rail-bottom plane. Bolts up into one
-    radial rail's T-slot at its outer end and carries the motor below
-    via the NEMA face; a central hole passes the output shaft up to the
-    pinion. The inner end is the fall-path deflector (`_deflector_cut`):
-    flat top outside the swept exit, sloped face over the motor's inner
-    edge."""
-    # Cut-feature bounds over the deflector's own parameters: the slope
-    # must reach inside the motor's face and the land must leave a wall.
-    assert DEFLECTOR_R_BOT < MOTOR_INNER_R < FALL_SWEEP_R < DEFLECTOR_R_TOP, (
-        f"Deflector r {DEFLECTOR_R_BOT:.2f}..{DEFLECTOR_R_TOP:.2f} must "
-        f"bracket the motor face {MOTOR_INNER_R:.2f} and the swept exit "
-        f"{FALL_SWEEP_R:.2f}."
+    """Printed plate at the rail-bottom plane: the convex hull of a pad on
+    each flanking rail's free inner end and a square straddling the
+    motor, so it bolts up into both rails' T-slots and carries the motor
+    below via the NEMA face; a central hole passes the output shaft up to
+    the pinion. Built in the drive's own frame (+X along
+    MOTOR_AZIMUTH_DEG), then turned onto it."""
+    h = MOUNT_W / 2
+    pts = [
+        (CENTER_DIST + sx * h, sy * h) for sx in (-1, 1) for sy in (-1, 1)
+    ]
+    for off in MOUNT_RAIL_OFFSETS_DEG:
+        c, s_ = math.cos(math.radians(off)), math.sin(math.radians(off))
+        for du in (-MOUNT_PAD_L / 2, MOUNT_PAD_L / 2):
+            for dv in (-MOUNT_PAD_W / 2, MOUNT_PAD_W / 2):
+                u = MOUNT_PAD_R + du
+                pts.append((u * c - dv * s_, u * s_ + dv * c))
+    plate = extrude(
+        Plane.XY.offset(MOUNT_Z_BOT) * Polygon(*_convex_hull(pts), align=None),
+        amount=MOUNT_T,
     )
-    assert WALL_MIN <= DEFLECTOR_LAND < MOUNT_T, (
-        f"DEFLECTOR_LAND {DEFLECTOR_LAND} must leave a printable land and "
-        f"a slope in a {MOUNT_T} mm plate."
+    bore = Pos(CENTER_DIST, 0, (MOUNT_Z_TOP + MOUNT_Z_BOT) / 2) * Cylinder(
+        MOUNT_SHAFT_HOLE_D / 2, MOUNT_T * 2,
     )
-    z = (MOUNT_Z_TOP + MOUNT_Z_BOT) / 2
-    arm = Rot(0, 0, MOTOR_AZIMUTH_DEG) * Pos(MOUNT_R_CENTER, 0, z) * Box(
-        MOUNT_L, MOUNT_W, MOUNT_T
-    )
-    bore = _on_drive_axis(Cylinder(MOUNT_SHAFT_HOLE_D / 2, MOUNT_T * 2), z)
-    return arm - bore - _deflector_cut()
+    return Rot(0, 0, MOTOR_AZIMUTH_DEG) * (plate - bore)
 
 
 def _disc(r: float, z_top: float, z_bot: float) -> Part:
@@ -373,21 +358,8 @@ def fall_path() -> Part:
     """Keep-out: the vertical fall of anything leaving the base column,
     at every column azimuth — the disc r = FALL_SWEEP_R from the base
     column's bottom face (above it the turning column's own walls enclose
-    the brick) down to the catch's rim — less what the motor mount
-    shadows. Nothing reaches under the mount from the side, so its shadow
-    is its own downward sweep: the region under it, plus the mount
-    itself. The air over the deflector slope stays in the fall. The
-    mount's top is held separately, to the band above its top face
-    (`fall_above_mount`)."""
-    disc = _disc(FALL_SWEEP_R, BASE_COL_Z_BOT, CATCH_RIM_Z)
-    depth = MOUNT_Z_BOT - CATCH_RIM_Z + 1.0
-    return disc - swept(motor_mount(), (0, 0, -depth))
-
-
-def fall_above_mount() -> Part:
-    """Keep-out: the vertical fall between the exit and the mount's top
-    face — where the mount's flat top must not reach."""
-    return _disc(FALL_SWEEP_R, FALL_EXIT_Z, MOUNT_Z_TOP)
+    the brick) down to the catch's rim."""
+    return _disc(FALL_SWEEP_R, BASE_COL_Z_BOT, CATCH_RIM_Z)
 
 
 def catch_tray() -> Part:
@@ -482,26 +454,15 @@ def build_drive_train(
     ):
         a = a.with_part(n, part, material=_mt(n))
     # The fall path out of the base column. Declared here, where the exit
-    # and the mount that shadows the motor are known; the frame's parts
-    # are held against it at the tower root. The ring gear is not held:
-    # it turns with the column (modeled static here), and its hole is the
-    # column's, so the pass through it is `check_base_fall_path.py`'s.
+    # is known; the frame's parts are held against it at the tower root.
+    # The ring gear is not held: it turns with the column (modeled static
+    # here), and its hole is the column's, so the pass through it is
+    # `check_base_fall_path.py`'s.
     a = (
         a
         .with_keepout("fall_path", fall_path())
-        .with_keepout("fall_above_mount", fall_above_mount())
-        .assert_clear_of(["motor", "pinion"], "fall_path", min_mm=FALL_CLEAR,
-                         name="drive_clear_of_fall_path")
-        # The mount's flat top stops FALL_CLEAR outside the swept exit;
-        # below its top face only the deflector slope is inside the disc
-        # (the slope's angle is held at the tower root). The nearest
-        # material is the slope, so the constructed distance is the
-        # horizontal clearance seen normal to it.
-        .assert_clear_of(
-            "motor_mount", "fall_above_mount",
-            min_mm=FALL_CLEAR * math.sin(math.radians(DEFLECTOR_DEG)),
-            name="mount_top_clear_of_fall_path",
-        )
+        .assert_clear_of(["motor", "pinion", "motor_mount"], "fall_path",
+                         min_mm=FALL_CLEAR, name="drive_clear_of_fall_path")
     )
     # Mesh validity — close but not touching: the cheap pitch blanks
     # must sit in the [MESH_BACKLASH, MESH_BACKLASH + 0.1] band (too
@@ -516,6 +477,20 @@ def build_drive_train(
         "ring_gear", "pinion",
         min_mm=MESH_BACKLASH, max_mm=MESH_BACKLASH + 0.1,
         name="gear_mesh_backlash",
+    )
+    # The inner pair of NEMA screws is nearest the column axis. Their heads
+    # stand under the ring gear's band (z −20 vs its −17 underside) unless
+    # they sit outside its tip circle. Screws are not parts, so this is a
+    # recorded scalar: head edge radius less tip radius.
+    b = NEMA_BOLT_SPACING / 2
+    head_r_min = math.hypot(CENTER_DIST - b, b) - NEMA_SCREW_HEAD_D / 2
+    ring_tip_r = RING_PITCH_D / 2 + ADDENDUM
+    a = a.assert_scalar(
+        "nema_screws_clear_ring_gear", head_r_min - ring_tip_r, ge=1.0,
+        detail=(
+            f"inner NEMA screw head edge r {head_r_min:.2f} − ring tip r "
+            f"{ring_tip_r:.2f}; raise PINION_TEETH if it fails"
+        ),
     )
     # The bolt-on ring must seat on the base collar's face, so its pitch
     # diameter has to track COLLAR_OD to within one tooth height. The
@@ -573,9 +548,9 @@ def build_bottom_catch(
 def make_assembly() -> Assembly:
     """Standalone base-floor drive-train assembly.
 
-    Four parts: ring gear on the column axis (z = -17..0), pinion on the
-    off-axis drive axis (z = -18..-9) meshing with it, motor below the
-    mount (z = -65..-25), and the mount arm bridging the two (z =
+    Four parts: ring gear on the column axis (z = -17..16.5), pinion on
+    the off-axis drive axis (z = -18..-9) meshing with it, motor below the
+    mount (z = -65..-25), and the mount plate bridging the two (z =
     -25..-20). The pinion ↔ ring *mesh* (the load-bearing relationship)
     is the `gear_mesh_backlash` assert_distance declared in
     `build_drive_train`; the no-interference assert here is a weaker

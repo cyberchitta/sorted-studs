@@ -434,20 +434,22 @@ def _add_drive_train_checks(a: Assembly, base: int) -> Assembly:
         .assert_tangent_contact(ring, _rot(base, "column"))
     )
 
-    # Pinion sits at z ∈ [-17, -9] (MESH_Z_*) on the off-axis drive axis, threaded
-    # between the Ø138 collar and the rail-inner ring. It must clear the
-    # radial rails and stay below the bearing. The packaging knife-edge
-    # is the tip circle vs the rail the drive axis sits under (rails at
-    # (k+0.5)·60° ⇒ k from MOTOR_AZIMUTH_DEG): measured from the tip
-    # circle via grow_a_mm while the modeled body stays a pitch
-    # cylinder — the modeled-body no-interference checks below can't
-    # see the tooth reach.
-    drive_rail_k = round(_base.MOTOR_AZIMUTH_DEG / 60.0 - 0.5) % 6
-    a = a.assert_distance(
-        pin, _rail(base, f"radial_inner_{drive_rail_k}"),
-        min_mm=1.0, grow_a_mm=_base.ADDENDUM,
-        name="pinion_tip_rail_gap",
-    )
+    # Pinion sits between PINION_Z_BOT and PINION_Z_TOP on the off-axis drive
+    # axis, midway between two radial rails (rails at (k+0.5)·60° ⇒ k
+    # from MOTOR_AZIMUTH_DEG ± 30°). It must clear the rails and stay
+    # below the bearing. Its tip circle vs each flanking rail is measured
+    # via grow_a_mm while the modeled body stays a pitch cylinder — the
+    # modeled-body no-interference checks below can't see the tooth reach.
+    mount_rail_ks = [
+        round((_base.MOTOR_AZIMUTH_DEG + off) / 60.0 - 0.5) % 6
+        for off in _base.MOUNT_RAIL_OFFSETS_DEG
+    ]
+    for k in mount_rail_ks:
+        a = a.assert_distance(
+            pin, _rail(base, f"radial_inner_{k}"),
+            min_mm=1.0, grow_a_mm=_base.ADDENDUM,
+            name=f"pinion_tip_rail_{k}_gap",
+        )
     for k in range(6):
         a = (
             a
@@ -483,15 +485,21 @@ def _add_drive_train_checks(a: Assembly, base: int) -> Assembly:
             .assert_no_interference(mtr, _rail(base, f"inner_horiz_{k}"))
         )
 
-    # Motor mount is a radial arm at z ∈ [-25, -20]; it bolts up into one
-    # rail — the inner radial at the drive azimuth, whose bottom face it
-    # meets at z = -20 — and clears the others + the column-side stack
-    # (all at z ≥ 0). The arm's outer end (r ≤ 110) reaches into that
-    # rail's r ∈ [100, 139.7] span; it touches no other rail at all, so
-    # only this one gets the contact claim.
-    a = a.assert_tangent_contact(
-        mount, _rail(base, f"radial_inner_{drive_rail_k}")
-    )
+    # Motor mount is a plate at z ∈ [-25, -20]; it bolts up into the two
+    # inner radials flanking the drive azimuth, whose bottom faces it
+    # meets at z = -20, and clears the others + the column-side stack
+    # (all at z ≥ 0). Its pads (r ≤ 117) stay in those rails' free inner
+    # span, short of the inner-vertex brackets' inboard arms, whose gap
+    # is measured.
+    for k in mount_rail_ks:
+        a = (
+            a
+            .assert_tangent_contact(mount, _rail(base, f"radial_inner_{k}"))
+            .assert_distance(
+                mount, _rail(base, f"inner_vertex_bracket_{k}"), min_mm=1.0,
+                name=f"motor_mount_clears_inner_bracket_{k}",
+            )
+        )
     for k in range(6):
         a = (
             a
@@ -512,14 +520,13 @@ def _add_drive_train_checks(a: Assembly, base: int) -> Assembly:
 def _add_catch_checks(a: Assembly, base: int) -> Assembly:
     """The fall path out of the base column and the bottom catch, against
     the frame. The keep-outs are declared in the base_floor builders
-    (`drive_train.fall_path`: the vertical fall at every column azimuth,
-    less the mount's shadow; `catch.pull_path`: the tray drawn out
-    toward −Y, standing on the shelf); the parts they must clear are
+    (`drive_train.fall_path`: the vertical fall at every column azimuth;
+    `catch.pull_path`: the tray drawn out toward −Y, standing on the
+    shelf); the parts they must clear are
     composed here. The ring gear turns with the column, so it is not
     held against the fall path — its hole is the column's
-    (`check_base_fall_path.py`). The motor mount is held by its own
-    claims in `build_drive_train` (flat top outside the disc) and the
-    slope below."""
+    (`check_base_fall_path.py`). The drive train is held by its own
+    claim in `build_drive_train`."""
     tray = "catch.catch_tray"
     cradle = "catch.catch_cradle"
     frame = [f"f{base}", "columns"]
@@ -528,14 +535,6 @@ def _add_catch_checks(a: Assembly, base: int) -> Assembly:
         .assert_clear_of(
             frame + ["catch"], "drive_train.fall_path",
             min_mm=_base.FALL_CLEAR, name="base_fall_path",
-        )
-        # A brick that lands on the deflector slides off it: the slope
-        # against the friction budget the ramp and trap are held to.
-        .assert_scalar(
-            "mount_deflector_slides",
-            math.tan(math.radians(_base.DEFLECTOR_DEG)),
-            ge=_ramp.MU_STATIC_BUDGET,
-            detail=f"tan of the mount's {_base.DEFLECTOR_DEG:.1f}° deflector vs µ_s budget",
         )
         .assert_clear_of(
             frame + ["drive_train", cradle], "catch.pull_path",

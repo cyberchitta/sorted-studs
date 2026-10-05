@@ -17,7 +17,7 @@ from .assembly import WALL_MIN, catch_cradle, catch_tray, motor_mount, ring_gear
 # bed (overhang reads null at any threshold, 2026-09-22), so the 90°
 # this used to carry switched off nothing — and now a new overhang
 # fails instead of passing unseen. Every part prints as installed, up
-# +Z: the mount on its bottom face (its deflector slope faces up), the
+# +Z: the mount on its bottom face, the
 # tray on its floor, the cradle on its shelf with the posts rising.
 method = FDM(wall_min_mm=WALL_MIN)
 # pinion is bought (metal, on the motor shaft) — not inspected.
