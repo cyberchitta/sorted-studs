@@ -39,8 +39,9 @@ builders (role differences are builder parameters) and placed by one
   the fault case — and parts wider than any floor's ramp end here.
 - `top_acrylic` — clear disc capping the tower (root part). At the
   two through-deck post vertices (`params.THROUGH_DECK_POSTS`) it is
-  notched from the rim so the column and the bracket's vertical arm
-  pass through.
+  cut — a closed hole, or a notch from the rim when the deck is too
+  small to leave a strip outside the hole — so the column and the
+  bracket's vertical arm pass through. OD is `params.TOP_DECK_OD`.
 - `top_cap` — the two outer-vertex brackets under the deck at the
   post vertices: the same printed part the floors use, in the same
   relationship to the deck as to a floor's rails (hub + arms under
@@ -106,7 +107,7 @@ from .outer_vertex_bracket.assembly import (
     bracket as outer_bracket,
 )
 from .aim import ramp_exit_w_for
-from .params import FLOOR_H, FLOOR_LAYOUTS, R_VERT_OUTER, THROUGH_DECK_POSTS, basket_name
+from .params import FLOOR_H, FLOOR_LAYOUTS, R_VERT_OUTER, THROUGH_DECK_POSTS, TOP_DECK_OD, basket_name
 from .ramp_mechanism import assembly as _ramp
 
 
@@ -121,19 +122,27 @@ from .ramp_mechanism import assembly as _ramp
 # Clear-acrylic disc capping the tower. Hopper / rotary-feed and
 # ceiling-sleeve mounting are deferred — see NEXT_STEPS "Top deck —
 # open detail".
-TOP_DECK_OD = 660.0       # circumscribes column outer corners (~322 mm) + ~8 mm clearance
+# The OD is `params.TOP_DECK_OD` (a knob the top level tunes).
 TOP_DECK_T = 10.0
 TOP_DECK_APERTURE_D = 150.0  # clears top column's rotating collar (OD 138 at z 880..885)
 
-# Through-deck posts: the deck is notched at each post vertex so the
-# 2020 column and the bracket's vertical arm (on the column's outward
-# face, 6 mm plate) pass through with this much clearance per side.
-# The arm sits at r ≈ 322..328 under a Ø660 deck (rim at 330), so a
-# closed hole would leave a ~1 mm sliver of acrylic — the cut runs
-# out through the rim instead. Decided (owner 2026-09-15): the OD
-# stays 660 and the two notches stay open; no thin outer strip.
+# Through-deck posts: the deck is cut at each post vertex so the 2020
+# column and the bracket's vertical arm (on the column's outward face,
+# 6 mm plate) pass through with this much clearance per side. The cut
+# is a closed hole when the acrylic left outside it is at least a sheet
+# thickness wide (`_post_hole_runs_out`); thinner than that the strip
+# is a crack waiting to happen, so the cut runs out through the rim as
+# a notch instead. At Ø660 (rim 330) the arm's outer face sits at
+# r ≈ 328.8 and the strip would be ~1 mm: a notch (owner 2026-09-15).
+# At the grown OD for the top feed it is a closed hole (owner
+# 2026-10-06).
 TOP_DECK_POST_CLEAR = 1.0
-_NOTCH_RUNOUT = 40.0         # past the rim; anything ≥ 330 - 312 = 18 opens it
+_NOTCH_PAST_RIM = 10.0       # how far a run-out notch carries past the rim
+
+# The `off_deck` keep-out (see `_add_top_deck`): a band on the deck-top
+# plane from the rim outward, this tall and this wide.
+_OFF_DECK_BAND_H = 1.0
+_OFF_DECK_BAND_W = 200.0
 
 
 # --- Floor plan --------------------------------------------------------
@@ -238,35 +247,68 @@ def _post_vertex_pose(k: int, z: float):
     ) * Rot(0, 0, v_angle + 180.0)
 
 
-def _post_notch() -> Part:
+_POST_HOLE_X_IN = EXT_SIZE / 2 + TOP_DECK_POST_CLEAR
+_POST_HOLE_X_OUT = -(EXT_SIZE / 2 + OUTER_BRACKET_PLATE_T + TOP_DECK_POST_CLEAR)
+_POST_HOLE_W = EXT_SIZE + 2 * TOP_DECK_POST_CLEAR
+
+
+def _post_hole_runs_out(deck_od: float) -> bool:
+    """True when the acrylic left between a post hole's outer corners
+    and the rim would be narrower than a sheet thickness — the hole
+    then runs out through the rim as a notch."""
+    corner_r = math.hypot(R_VERT_OUTER - _POST_HOLE_X_OUT, _POST_HOLE_W / 2)
+    return deck_od / 2 - corner_r < TOP_DECK_T
+
+
+def _post_notch(deck_od: float) -> Part:
     """Deck cut-out at a post vertex, in the bracket's local frame
     (centred on the column axis, +X inward, -X outward to the rim):
-    clears the column's inward face by TOP_DECK_POST_CLEAR, the
-    bracket's vertical arm on the outward face by the same, and runs
-    out through the rim."""
-    x_in = EXT_SIZE / 2 + TOP_DECK_POST_CLEAR
-    x_out = -(EXT_SIZE / 2 + OUTER_BRACKET_PLATE_T + TOP_DECK_POST_CLEAR + _NOTCH_RUNOUT)
-    w = EXT_SIZE + 2 * TOP_DECK_POST_CLEAR
-    return Pos((x_in + x_out) / 2, 0, 0) * Box(x_in - x_out, w, TOP_DECK_T * 2)
+    clears the column's inward face and sides by TOP_DECK_POST_CLEAR
+    and the bracket's vertical arm on the outward face by the same. A
+    closed hole, or a notch out through the rim when the strip outside
+    it would be thinner than the sheet (`_post_hole_runs_out`)."""
+    x_out = _POST_HOLE_X_OUT
+    if _post_hole_runs_out(deck_od):
+        x_out = -(deck_od / 2 - R_VERT_OUTER + _NOTCH_PAST_RIM)
+    x_in = _POST_HOLE_X_IN
+    return Pos((x_in + x_out) / 2, 0, 0) * Box(x_in - x_out, _POST_HOLE_W, TOP_DECK_T * 2)
 
 
 def _add_top_deck(
-    a: Assembly, *, top_z: float, posts: dict[int, float],
+    a: Assembly, *, top_z: float, posts: dict[int, float], deck_od: float,
 ) -> Assembly:
     """Clear-acrylic cap disc; bottom face tangent to through-column
-    tops, notched at each through-deck post vertex."""
+    tops, cut at each through-deck post vertex.
+
+    Also declares the keep-out ``off_deck``: the band just above the
+    deck's top face from its rim outward. It is not a part — a
+    composing parent holds whatever stands on the deck clear of it
+    (`cad/assembly.py` `on_deck_*`), so a footprint's distance to it
+    is its margin inside the rim."""
     top_deck = (
-        Cylinder(TOP_DECK_OD / 2, TOP_DECK_T)
+        Cylinder(deck_od / 2, TOP_DECK_T)
         - Cylinder(TOP_DECK_APERTURE_D / 2, TOP_DECK_T * 2)
     )
     # The disc is placed at z = top_z + T/2, so cut in deck-local z.
     for k in posts:
-        top_deck = top_deck - _post_vertex_pose(k, 0.0) * _post_notch()
-    return a.with_part(
-        "top_acrylic", top_deck,
-        location=Pos(0, 0, top_z + TOP_DECK_T / 2),
-        color=_TOP_DECK_COLOR,
-        material=material_of("top_acrylic"),
+        top_deck = top_deck - _post_vertex_pose(k, 0.0) * _post_notch(deck_od)
+    deck_top_z = top_z + TOP_DECK_T
+    # A 1 mm band standing on the deck-top plane: a part resting on the
+    # deck meets it only with its bottom millimetre, so the distance is
+    # the footprint's radial gap to the rim. The outer radius only has
+    # to reach past anything that could stand there.
+    off_deck = Pos(0, 0, deck_top_z + _OFF_DECK_BAND_H / 2) * (
+        Cylinder(deck_od / 2 + _OFF_DECK_BAND_W, _OFF_DECK_BAND_H)
+        - Cylinder(deck_od / 2, _OFF_DECK_BAND_H * 2)
+    )
+    return (
+        a.with_part(
+            "top_acrylic", top_deck,
+            location=Pos(0, 0, top_z + TOP_DECK_T / 2),
+            color=_TOP_DECK_COLOR,
+            material=material_of("top_acrylic"),
+        )
+        .with_keepout("off_deck", off_deck)
     )
 
 
@@ -342,15 +384,15 @@ def _add_top_deck_checks(
     """Disc rests on the through-column tops (tangent contact at
     z = top_z) and clears the top floor's central column body +
     rotating collar through its central aperture. Inner-hex
-    through-columns sit at r ≈ 162, well inside the disc OD/2=330 and
+    through-columns sit at r ≈ 162, well inside the disc rim (≥ 330) and
     well outside the aperture R=75.
 
     At a through-deck post vertex the column does not end at the
-    deck, so the rest moves to the bracket under it: the notch clears
-    the column by TOP_DECK_POST_CLEAR (measured, so a drifted notch
+    deck, so the rest moves to the bracket under it: the hole (or
+    notch) clears the column by TOP_DECK_POST_CLEAR (measured, so a drifted cut
     or a rotated column reads as a number), the deck sits on the
     bracket's hub + arms, and the bracket's vertical arm threads the
-    notch without touching it."""
+    cut without touching it."""
     for k in range(6):
         col = f"columns.outer_vert_{k}"
         a = a.assert_no_interference("top_acrylic", col)
@@ -568,6 +610,7 @@ def build_tower(
     with_top_deck: bool = True,
     with_drive_train: bool = True,
     through_posts: dict[int, float] | None = None,
+    top_deck_od: float = TOP_DECK_OD,
 ) -> Assembly:
     """Compose a hex-tower diverter assembly with cross-floor +
     drive-train + top-deck checks, parameterised on which floors,
@@ -592,6 +635,8 @@ def build_tower(
     top for columns that continue through the deck as the m02
     gantry's posts (`params.THROUGH_DECK_POSTS` in production; the
     exhibits pass none). Requires the top deck.
+
+    `top_deck_od` is the deck disc's OD (`params.TOP_DECK_OD`).
     """
     posts = dict(through_posts or {})
     if posts and not with_top_deck:
@@ -632,7 +677,7 @@ def build_tower(
         )
 
     if with_top_deck:
-        a = _add_top_deck(a, top_z=top_z, posts=posts)
+        a = _add_top_deck(a, top_z=top_z, posts=posts, deck_od=top_deck_od)
         if posts:
             a = _add_top_cap(a, top_z=top_z, posts=posts)
 
@@ -714,16 +759,22 @@ _DECK_TOP_Z = TOP_VERT_Z + TOP_DECK_T
 # geometry twice. That mistake is invisible — same output, double the
 # work — so ``cache_info().misses`` is the only thing that shows it.
 @cache
-def build_m05(schema: str = DEFAULT_SCHEMA) -> Assembly:
+def build_m05(schema: str = DEFAULT_SCHEMA, top_deck_od: float = TOP_DECK_OD) -> Assembly:
     """The production hex tower with its exported interface anchors,
     painted under ``schema`` — the m05 unit as the top level composes it.
 
     ``build_tower`` is the parameterised form (used by the exhibit
     variants); this is the production floor plan plus the two anchors
     peers derive their placement from.
+
+    ``top_deck_od`` defaults to ``params.TOP_DECK_OD``; a composing
+    parent may pass its own to size the deck for what stands on it.
     """
     a = (
-        build_tower(FLOOR_PLAN, schema=schema, through_posts=THROUGH_DECK_POSTS)
+        build_tower(
+            FLOOR_PLAN, schema=schema, through_posts=THROUGH_DECK_POSTS,
+            top_deck_od=top_deck_od,
+        )
         .with_anchor("deck_top", Pos(0, 0, _DECK_TOP_Z))
         .with_anchor(
             "outer_vert_0_top",

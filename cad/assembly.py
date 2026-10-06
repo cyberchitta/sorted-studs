@@ -16,10 +16,13 @@ Constraints landed in this slice:
     `(0, 0, *)`. Option (a') lands the firing heading at 270° (-Y in
     turret-local), so DUMP lives at turret-local `(0, -TURRET_ARM_R,
     0)` and the turret-local origin maps to world
-    `(0, +TURRET_ARM_R, *)`.
+    `(0, +TURRET_ARM_R, *)`. Since 2026-10-06 `M03_DUMP_OFFSET`
+    moves DUMP out along the turret radial for the top feed (0 is
+    exactly over the hub).
   * **Turret rests on the deck.** The turret floor frame's bottom
     face sits on the diverter top deck's top face at world z =
-    `TOP_VERT_Z + TOP_DECK_T = 890`.
+    `TOP_VERT_Z + TOP_DECK_T = 890` — and, with everything else
+    standing there, inside its rim (`on_deck_*`, `DECK_EDGE_MARGIN`).
 
 Cross-module no-interference is asserted (every pair of units), the
 units' beliefs about the shared datums are asserted coincident, and
@@ -85,38 +88,67 @@ from .m05_diverter.assembly import build_m05
 _M05_POSE = Location()
 
 # Turret rotation ψ (owner's lever, 2026-09-15): the whole m03 unit —
-# and the chain hanging off its LOAD station — turned about the m05
-# hub axis (the DUMP centroid, which the placement pins there). 0 at
+# and the chain hanging off its LOAD station — turned about the DUMP
+# centroid (on the m05 hub axis while M03_DUMP_OFFSET is 0). 0 at
 # family P (`_notes/decisions/m02-chain.md` §4, §11.8). The chain's
 # mirrored beliefs (`m02_chain/params.py`) assume 0: a non-zero ψ
 # moves the live anchors and the coincidence asserts below go red,
 # which is the mirrors asking to be updated.
 M03_ROT_DEG = 0.0
 
+# DUMP offset (owner's lever, 2026-10-06): how far the turret's DUMP
+# centroid sits from the m05 hub axis, measured outward along the
+# turret's own radial — the direction from DUMP through the turret hub,
+# so a positive offset moves the whole m03 unit, hub included, away
+# from the m05 axis (+Y at ψ = 0, DUMP at world y = +offset). It
+# composes with ψ: the radial turns with the turret. 0 is the
+# DUMP-over-hub placement of option a'. The top feed (a rotating flare
+# on the top column, `_notes/state/m05-diverter.md` §Top deck) wants
+# DUMP's exit edge over the column mouth, ~35..45 mm out. The chain's
+# mirrored beliefs (`m02_chain/params.py`) assume 0, as for ψ: the
+# chain is placed from m03's LOAD, so at +40 it leaves its posts by
+# 40 mm and the post anchors and gantry rests go red (2026-10-06) —
+# held at 0 until the owner decides how the chain follows. Moving
+# it moves the turret floor across the deck: grow
+# `m05_diverter/params.py:TOP_DECK_OD` until the `on_deck_*` claims
+# below are green.
+M03_DUMP_OFFSET = 0.0
+
 
 def m03_pose(m05: Assembly, m03: Assembly) -> Location:
     """m03's world pose, derived from the two units' anchors.
 
-    - xy: the turret's DUMP centroid sits on the m05 hub axis
-      (option a', 2026-05-05) — m05's `deck_top` anchor carries the
-      hub xy.
+    - xy: the turret's DUMP centroid sits `M03_DUMP_OFFSET` out from
+      the m05 hub axis along the turret radial (option a' at 0,
+      2026-05-05) — m05's `deck_top` anchor carries the hub xy.
     - z: the turret floor's bottom face rests on the m05 deck top
       face — m03's `floor_bottom` meets m05's `deck_top` plane.
 
     Rotated by ψ (`M03_ROT_DEG`) about the DUMP centroid, then DUMP
-    translated onto the hub axis: world = T + R(ψ)·local with
-    T = hub − R(ψ)·dump. Shared with `cad/render.py`, so the render
-    cannot place m03 differently from the check.
+    translated onto its target: world = T + R(ψ)·local with
+    T = hub + offset·R(ψ)·û − R(ψ)·dump, where û is the m03-local unit
+    vector from DUMP toward the turret hub (one arm along the DUMP
+    anchor's +Y, as `_with_service_access` finds the hub). Shared with
+    `cad/render.py`, so the render cannot place m03 differently from
+    the check.
     """
     deck_top = m05.anchor("deck_top").position
-    dump = m03.anchor("dump_centroid").position
+    dump_at = m03.anchor("dump_centroid")
+    dump = dump_at.position
     floor_bottom = m03.anchor("floor_bottom").position
+    hub = (dump_at * Pos(0, TURRET_ARM_R, 0)).position
+    ux, uy = hub.X - dump.X, hub.Y - dump.Y
+    u_len = math.hypot(ux, uy)
+    ux, uy = ux / u_len, uy / u_len
     psi = math.radians(M03_ROT_DEG)
-    dump_rx = dump.X * math.cos(psi) - dump.Y * math.sin(psi)
-    dump_ry = dump.X * math.sin(psi) + dump.Y * math.cos(psi)
+    c, s = math.cos(psi), math.sin(psi)
+    dump_rx = dump.X * c - dump.Y * s
+    dump_ry = dump.X * s + dump.Y * c
+    out_x = M03_DUMP_OFFSET * (ux * c - uy * s)
+    out_y = M03_DUMP_OFFSET * (ux * s + uy * c)
     return Pos(
-        deck_top.X - dump_rx,
-        deck_top.Y - dump_ry,
+        deck_top.X + out_x - dump_rx,
+        deck_top.Y + out_y - dump_ry,
         deck_top.Z - floor_bottom.Z,
     ) * Rot(0, 0, M03_ROT_DEG)
 
@@ -213,6 +245,52 @@ def _with_service_access(a: Assembly) -> Assembly:
         a = a.assert_clear_of(
             ["m05", "m03", "m02_chain"], Pos(x, y0, z0) * corridor,
             name=f"service_reach_{side}",
+        )
+    return a
+
+
+# What stands on the deck stays on it (owner 2026-10-06): every part
+# whose bottom face rests on m05's deck top keeps its footprint
+# DECK_EDGE_MARGIN inside the rim. 5 mm: the m03 frame is set on the
+# deck by hand with no locating feature yet, so a few mm of placement
+# slop, plus the edge break / chips of a cut acrylic edge and the
+# disc's OD tolerance — a footprint closer than that is a foot that can
+# end up on the chamfer or over the edge. It is a margin on *where* the
+# foot lands, not a load claim: whether 10 mm acrylic carries a
+# cantilevered foot near its rim is bench item 21
+# (`_notes/backlog/bench-validation.md`).
+DECK_EDGE_MARGIN = 5.0
+
+
+def _deck_standers(a: Assembly) -> list[str]:
+    """Every m03 / m02-chain part whose lowest face lies on the deck-top
+    plane — read from the placed geometry, so a part that comes to
+    rest on the deck is selected without anyone listing it."""
+    deck_z = a.anchor("m05.deck_top").position.Z
+    return sorted(
+        pp.name
+        for pp in a.placed_parts
+        if pp.name.startswith(("m03.", "m02_chain."))
+        and abs((pp.location * pp.part).bounding_box().min.Z - deck_z) < 1e-3
+    )
+
+
+def _with_on_deck(a: Assembly) -> Assembly:
+    """Hold each deck-standing part `DECK_EDGE_MARGIN` clear of m05's
+    `off_deck` keep-out — the band on the deck-top plane from the rim
+    outward — one claim per part, so the margin each one leaves is its
+    own diffable number. A footprint over the rim overlaps the band and
+    fails whatever the margin. Declared here: the deck is m05's, what
+    stands on it is m03's and the chain's.
+
+    Selected at the rest pose: every part selected today is static (the
+    turret frame, the gantry's brace feet), and this level drives no
+    motion."""
+    standers = _deck_standers(a)
+    assert standers, "nothing stands on the deck — the claims would be vacuous"
+    for path in standers:
+        a = a.assert_clear_of(
+            path, "m05.off_deck", name=f"on_deck_{path}", min_mm=DECK_EDGE_MARGIN,
         )
     return a
 
@@ -354,7 +432,7 @@ def build_top(schema: str = DEFAULT_SCHEMA) -> Assembly:
         .assert_distance("m02_chain.gantry.brace_foot_5", "m05.top_cap.outer_vertex_bracket_5", min_mm=1.0,
                          name="brace_foot_5_clears_vertex_bracket_5")
     )
-    return _with_service_access(_with_arc_screw_access(a))
+    return _with_on_deck(_with_service_access(_with_arc_screw_access(a)))
 
 
 # Degenerate memoized master, so ``khana check cad/assembly.py``

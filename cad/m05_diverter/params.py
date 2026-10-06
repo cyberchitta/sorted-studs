@@ -123,6 +123,25 @@ THROUGH_DECK_POSTS: dict[int, float] = {
     5: 160.5,
 }
 
+# Top deck OD — the clear-acrylic disc capping the tower, which the
+# m03 turret floor frame and the m02 gantry's brace feet stand on. A
+# knob (owner 2026-10-06), not derived: the deck must circumscribe the
+# column tops it rests on (outer corners at r ≈ 322), and grows past
+# that to carry whatever stands on it — m03 moves outward by
+# `cad/assembly.py:M03_DUMP_OFFSET` for the top feed. The measure is
+# the top level's `on_deck_*` claims: every deck-standing footprint
+# inside the rim by `DECK_EDGE_MARGIN`; grow this until they are green.
+# At an OD whose rim leaves less than a sheet thickness of acrylic
+# outside a through-deck post's hole, the hole runs out through the rim
+# as a notch (the 660 case, 2026-09-15); past that it is a closed hole
+# (accepted, owner 2026-10-06). `build_m05(top_deck_od=…)` overrides it.
+# 720 (owner 2026-10-06): the smallest multiple of 10 that clears the
+# outriggers (r 351.07) by DECK_EDGE_MARGIN at M03_DUMP_OFFSET = 0, by
+# arithmetic: 8.93 expected. At offset 40 the outriggers reach r 387.36
+# and 790 is the smallest green (780 leaves 2.64). Mirrored by
+# `m02_chain/params.py:M05_TOP_DECK_OD` for the chain's stand-in.
+TOP_DECK_OD = 720.0
+
 # Hex circumradii (center → vertex). With Phase 1's rotation-aligned
 # layout, inner and outer hex vertices share azimuth (k+0.5)·60° =
 # basket boundaries; radial rails run along these directions and
