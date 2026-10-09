@@ -645,17 +645,13 @@ def bearing_spider(role: str = "middle") -> Part:
     """
     if role == "base":
         # The turntable must land on the seat, not on the saddle plates
-        # poking up through it; and the seat must cover the turntable's
-        # bottom ring. Parameter bounds over a bought part's footprint —
-        # bare, fired here where the seat is cut.
+        # poking up through it — bare, fired here where the seat is cut.
+        # That the seat covers the turntable's ring is
+        # `turntable_within_seat` in `build_column_side_static`.
         assert SEAT_T >= SADDLE_CEIL_Z + SADDLE_T_TOP, (
             f"Seat top z={SEAT_T} sits below the saddle top plates "
             f"(z={SADDLE_CEIL_Z + SADDLE_T_TOP}); the turntable would rock "
             f"on six pads. Raise TURNTABLE_Z_BOT."
-        )
-        assert SEAT_ID <= TURNTABLE_ID and SEAT_OD >= TURNTABLE_OD, (
-            f"Seat annulus Ø{SEAT_ID:.1f}..Ø{SEAT_OD:.1f} does not cover the "
-            f"turntable's Ø{TURNTABLE_ID}..Ø{TURNTABLE_OD} ring."
         )
         hub_id, hub_od, hub_z_top = SEAT_ID, SEAT_OD, SEAT_T
     else:
@@ -1167,6 +1163,9 @@ def build_column_side_static(
         # whole axial load path, and no-interference alone would pass
         # with the turntable floating above six saddle pads.
         a = a.assert_tangent_contact(n_rb, n_sp, name="turntable_on_seat")
+        # ...and the seat covers the turntable's ring in plan, bore
+        # included: contact alone passes on an overhanging ring.
+        a = a.assert_within(n_rb, n_sp, along="Z", name="turntable_within_seat")
     return a
 
 
