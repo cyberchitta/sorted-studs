@@ -108,6 +108,7 @@ from .params import (
     RAMP_AZIMUTH_DEG,
     RAMP_FLOOR_T,
     RAMP_LANDING_LEN,
+    RAMP_LIP_LEN,
     RAMP_OUTLET_LOCAL,
     RAMP_PITCH_DEG,
     RAMP_PITCH_MAX_DEG,
@@ -172,6 +173,21 @@ def _load_ramp(s: Stage) -> Part:
     big = 4.0 * RAMP_SLOPE_LEN
     end_trim = Pos(*RAMP_OUTLET_LOCAL) * yaw * Pos(-big / 2.0, 0.0, 0.0) * Box(big, big, big)
     return (slope + landing) - cut - end_trim
+
+
+def _ramp_outlet_pose() -> Location:
+    """Frame at the LOAD ramp's outlet, chain-local: origin on the exit
+    edge at the chute's centreline (floor top), +X back up the run
+    (away from LOAD), +Y across the chute, +Z up."""
+    return Pos(*RAMP_OUTLET_LOCAL) * Rot(0, 0, RAMP_AZIMUTH_DEG)
+
+
+def _ramp_exit_lip_region() -> Part:
+    """The ramp's exit lip as a region solid, in the ramp's own frame
+    (= chain-local; the ramp is placed at identity): everything within
+    RAMP_LIP_LEN of the outlet plane, in plan."""
+    big = 4.0 * RAMP_SLOPE_LEN
+    return _ramp_outlet_pose() * Pos(RAMP_LIP_LEN / 2.0, 0.0, 0.0) * Box(RAMP_LIP_LEN, big, big)
 
 
 # --- Placement helpers -------------------------------------------------
@@ -541,6 +557,10 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
     a = (
         a
         .with_part("load_ramp", _load_ramp(s1), **mat("load_ramp"))
+        # The outlet end, named so a composing parent can hold it
+        # against the platform it delivers to (`cad/assembly.py`
+        # `load_ramp_lip_*`) — the chain has no LOAD platform of its own.
+        .with_region("load_ramp", "exit_lip", _ramp_exit_lip_region())
         .with_subassembly("gantry", build_gantry())
     )
 
@@ -548,6 +568,9 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
         a
         .with_anchor("load_top", Pos(0, 0, 0))
         .with_anchor("deck_top", Pos(-M03_TURRET_ARM_R, -M03_TURRET_ARM_R, DECK_TOP_Z_LOCAL))
+        # Which way the ramp runs: read by the top level for the axes
+        # of its delivery claims, never for where the lip is.
+        .with_anchor("ramp_outlet", _ramp_outlet_pose())
     )
     for k, z in POST_TOP_Z_LOCAL.items():
         a = a.with_anchor(f"post_top_{k}", Pos(*m05_outer_vertex_local_xy(k), z))

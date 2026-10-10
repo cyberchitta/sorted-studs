@@ -419,6 +419,11 @@ RAMP_LANDING_LEN = R_STATOR_OUTER_KINK * math.sin(math.radians(EXIT_ARC_DEG / 2.
 RAMP_WIDTH = 100.0
 RAMP_WALL_H = 20.0
 RAMP_WALL_T = 4.0
+# How much of the outlet end, in plan from the exit edge, the
+# `load_ramp@exit_lip` region names — the feature the top level holds
+# against m03's LOAD platform. Long enough to hold the floor's end face
+# (it leans back RAMP_FLOOR_T·sin(pitch) ≈ 3.6 under the exit edge).
+RAMP_LIP_LEN = 5.0
 
 
 # --- Gantry ------------------------------------------------------------

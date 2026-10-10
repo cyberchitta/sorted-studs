@@ -67,7 +67,7 @@ from functools import cache
 
 import math
 
-from build123d import Box, Location, Pos, Rot
+from build123d import Box, Location, Plane, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 
@@ -296,6 +296,85 @@ def _with_on_deck(a: Assembly) -> Assembly:
     return a
 
 
+# The LOAD ramp delivers to LOAD (gap found 2026-10-06): the chain is
+# placed *from* m03's LOAD today, so this is true by construction — and
+# stops being so the day the chain is placed any other way (kept on its
+# posts while `M03_DUMP_OFFSET` moves LOAD, say). The claims hold the
+# ramp's built exit lip against the LOAD platform's built catch area,
+# the acrylic inside the frame's top ring. They are about *where the
+# lip is*, bounded close round the decided outlet (owner 2026-09-15:
+# just outside the loaded platform's corner sweep, on the platform's
+# own level). Whether a brick carries from there onto the acrylic is
+# bench item 7 (`_notes/backlog/bench-validation.md`) and nothing here
+# says it does.
+#
+# Reach: the exit edge stands 19.5 from the acrylic's near edge (14.5
+# from the frame's); the bound is that plus half a millimetre, so any
+# move of the outlet away from LOAD is heard. The near limit is the
+# turret's loaded sweep (`check_turret_envelope.py`).
+LOAD_LIP_REACH_MAX = 20.0
+# Height of the lip's lowest point over the acrylic's top face: 3.54.
+# At least the 2 mm the ramp was given over the platform; at most 5,
+# a floor thickness — placeholders either side of the built reading.
+LOAD_LIP_OVER_MIN = 2.0
+LOAD_LIP_OVER_MAX = 5.0
+# The lip's whole width lies inside the acrylic's, seen along the run.
+# And the chute stays on the platform's centre line: its one side wall
+# at the lip (the +Y one; S1's stator cut takes the other) stands 5.0
+# inside the acrylic's edge, and may drift no further in than 10 — the
+# lane within 5 mm of centred either way. Without the upper bound the
+# chain left on its posts under a +40 `M03_DUMP_OFFSET` reads green
+# (45.0 / 15.7): the lip is still in front of the platform, 40 off line.
+LOAD_LIP_SIDE_MIN = 0.0
+LOAD_LIP_WALL_SIDE_MAX = 10.0
+
+
+def _with_load_delivery(a: Assembly) -> Assembly:
+    """Hold the LOAD ramp's exit lip in front of m03's LOAD platform:
+    within reach of the acrylic along the ramp's run, a bounded height
+    over it, and inside its width.
+
+    The axes are the ramp's own (the chain's `ramp_outlet` anchor: +X
+    back up the run, +Y across); the acrylic's sides are read off the
+    placed part in that frame, so neither end of any measurement is a
+    constant that places the chain. Declared here: the lip is the
+    chain's, the platform is m03's.
+
+    At the rest pose: the platform at LOAD is the one the turret parks
+    there, and this level drives no motion."""
+    lip = "m02_chain.load_ramp@exit_lip"
+    catch = "m03.turret.rotor.platform_load.acrylic"
+    out = a.anchor("m02_chain.ramp_outlet")
+    origin = out.position
+    up_run = (out * Pos(1, 0, 0)).position - origin
+    across = (out * Pos(0, 1, 0)).position - origin
+    pp = a.part(catch)
+    sides = (out.inverse() * (pp.location * pp.part)).bounding_box()
+    a = (
+        a
+        .assert_distance(
+            lip, catch, along=tuple(-up_run), max_mm=LOAD_LIP_REACH_MAX,
+            name="load_ramp_lip_reach",
+        )
+        .assert_distance(
+            lip, catch, along="-Z",
+            min_mm=LOAD_LIP_OVER_MIN, max_mm=LOAD_LIP_OVER_MAX,
+            name="load_ramp_lip_over_load",
+        )
+    )
+    for side, y, sign, most in (
+        ("pos", sides.max.Y, 1.0, LOAD_LIP_WALL_SIDE_MAX),
+        ("neg", sides.min.Y, -1.0, None),
+    ):
+        edge = Plane(origin=(out * Pos(0, y, 0)).position, z_dir=tuple(across * sign))
+        a = a.assert_distance(
+            lip, edge, along=tuple(across * sign),
+            min_mm=LOAD_LIP_SIDE_MIN, max_mm=most,
+            name=f"load_ramp_lip_inside_load_{side}",
+        )
+    return a
+
+
 # Cached because the degenerate ``assembly`` memo below and any
 # composing parent (``cad/assembly.py``, ``cad/render.py``) each ask
 # for the same schema, and the build is seconds of OCCT work. Replaces
@@ -433,7 +512,9 @@ def build_top(schema: str = DEFAULT_SCHEMA) -> Assembly:
         .assert_distance("m02_chain.gantry.brace_foot_5", "m05.top_cap.outer_vertex_bracket_5", min_mm=1.0,
                          name="brace_foot_5_clears_vertex_bracket_5")
     )
-    return _with_on_deck(_with_service_access(_with_arc_screw_access(a)))
+    return _with_load_delivery(
+        _with_on_deck(_with_service_access(_with_arc_screw_access(a)))
+    )
 
 
 # Degenerate memoized master, so ``khana check cad/assembly.py``
