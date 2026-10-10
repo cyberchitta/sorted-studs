@@ -60,21 +60,22 @@ waivers = {
 }
 # The top column is a different body since the flare (2026-10-10): no
 # joint flange, and a funnel on top. The waiver above was written
-# against a flanged column, so here it is bound to what it covered
-# that the top column still has: the pre-flare reading, 11400.94 mm² in
-# 19 regions, less the flange underside (5634.58 mm², one region), with
-# the lintel at its 3 mm wall depth (240 mm²). The flare's underside is
-# cut at FLARE_UNDER_DEG so that it adds nothing. What does go past the
-# bound is the lintel: the opening cut runs out through the flare's
-# root, so its ceiling is 774.08 mm² (11.4 mm past the wall) and the
-# reading is 6300.44 mm². That is not waived here — it is the owner's
-# call (`_notes/state/m05-ramp-mechanism.md`).
+# against a flanged column, so here it is bound to what the top column
+# reads: the pre-flare 11400.94 mm² in 19 regions, less the flange
+# underside (5634.58 mm², one region), plus the lintel's growth. The
+# opening cut runs out through the flare's root, so the lintel ceiling
+# is 774.08 mm² (11.4 mm past the wall) where it was 240, and the
+# reading is 6300.44 mm². The flare's underside is cut at
+# FLARE_UNDER_DEG so that it adds nothing. The deeper lintel is accepted
+# as the same supported ceiling (owner, 2026-10-10); the bound is the
+# reading, so any further growth is red.
 top_column_waivers = {
     "overhang_max": Waiver(
         reason=waivers["column"]["overhang_max"]
-        + " (top role: no joint flange; bound to the pre-flare reading "
-        "less the flange underside)",
-        max_area_mm2=5767.0, max_regions=18,
+        + " (top role: no joint flange; the exit-opening lintel runs "
+        "11.4 mm out through the flare's root, supported like the rest "
+        "of it)",
+        max_area_mm2=6305.0, max_regions=18,
     ),
 }
 for role in FLOOR_ROLES:
