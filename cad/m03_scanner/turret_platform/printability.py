@@ -9,20 +9,28 @@ this script runs the per-part `inspect()` pass. The four
 no-argument builder, so one inspect covers all four.
 
 Print orientation: top ring down (cartridge −Z up). Bed contact is
-the ring top plus the kicker stem's gusset, 3218 mm². Every ceiling
-left facing the bed is bridged without supports. That includes the
-acrylic's seat faces, by owner decision 2026-09-27: each corner lip
-is a short 10 × 10 bridge held on two edges, and the seats are
-sanded or cleaned flat after printing because they take the
+the ring top on its three sides plus the kicker stem's gusset,
+2668 mm² (3218 before the exit edge's rim was cut, 2026-10-10). Every
+ceiling left facing the bed but one is bridged without supports. That
+includes the acrylic's seat faces, by owner decision 2026-09-27: each
+corner lip is a short 10 × 10 bridge held on two edges, and the seats
+are sanded or cleaned flat after printing because they take the
 adhesive dabs.
+
+The one that is not: the exit edge. The outer wall's rim is cut flush
+with the acrylic so a brick can slide off at DUMP, which leaves that
+wall's top a 110 × 5 span 5 mm off the bed between the two side rims'
+ends — supported, by owner decision 2026-10-10. It is the face a brick
+slides over, so the support scar on it matters; nothing here measures
+that.
 
 The ceilings are waived per feature, each against the cutter or
 block that made it (the same solids `frame()` builds from), so a new
 ceiling anywhere else on the body traces to no feature and fails.
-Measured 2026-09-27, up cartridge −Z, all at 90°, 550.35 mm² over 10
-regions. The two in-pocket bracket tops lie on both the seat plane
-and the bracket tops, so they count toward both `seat` and
-`brackets`.
+Measured 2026-10-10, up cartridge −Z, 1100.35 mm² over 11 regions
+(the ten of 2026-09-27, 550.35, plus the exit edge's one, 550.00). The
+two in-pocket bracket tops lie on both the seat plane and the bracket
+tops, so they count toward both `seat` and `brackets`.
 """
 
 from build123d import Compound
@@ -33,7 +41,13 @@ from cad_khana.printability.methods import FDM
 from cad_khana.printability.waiver import Waiver
 
 from ..params import WALL_MIN
-from .assembly import bracket_blocks, frame, pin_bore_cutters, seat_cutter
+from .assembly import (
+    bracket_blocks,
+    exit_edge_cutter,
+    frame,
+    pin_bore_cutters,
+    seat_cutter,
+)
 
 
 inspect(
@@ -58,5 +72,11 @@ inspect(
             "2 Ø5.4 pin-bore crowns, 20.18 each, 40.35 mm²: bridged, then "
             "drilled Ø5.4 through."
         ), max_area_mm2=40.8, max_regions=2)}),
+        "exit_edge": Feature(exit_edge_cutter(), waive={"overhang_max": Waiver(reason=(
+            "supported span on the exit edge, rim cut flush for DUMP "
+            "(owner, 2026-10-10): 550.0 mm², the outer wall's top, one "
+            "110 × 5 face at (0, 57.5, 0), 5 mm off the bed between the "
+            "side rims' ends."
+        ), max_area_mm2=551.0, max_regions=1)}),
     },
 )

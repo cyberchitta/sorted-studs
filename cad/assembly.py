@@ -301,7 +301,9 @@ def _with_on_deck(a: Assembly) -> Assembly:
 # stops being so the day the chain is placed any other way (kept on its
 # posts while `M03_DUMP_OFFSET` moves LOAD, say). The claims hold the
 # ramp's built exit lip against the LOAD platform's built catch area,
-# the acrylic inside the frame's top ring. They are about *where the
+# the acrylic. The frame's rim bounds it on three sides; the outer
+# edge, the one the ramp delivers over, is cut flush with it
+# (`turret_platform` `exit_edge_flush`). They are about *where the
 # lip is*, bounded close round the decided outlet (owner 2026-09-15:
 # just outside the loaded platform's corner sweep, on the platform's
 # own level). Whether a brick carries from there onto the acrylic is

@@ -490,6 +490,48 @@ TURRET_STATION_LOAD_XY = (+TURRET_ARM_R, 0.0)
 TURRET_STATION_IDLE_XY = (-TURRET_ARM_R, 0.0)
 TURRET_STATION_DUMP_XY = (0.0, -TURRET_ARM_R)
 
+# Least time the turret may take over one 90° index, seconds — what
+# keeps a brick on its platform while the rotor turns. Each platform's
+# outer edge carries no rim (`turret_platform` cuts it flush with the
+# acrylic so a brick can slide off at DUMP; owner, 2026-10-10), and
+# that is the edge a brick is thrown toward during an index, so on
+# that side friction on the acrylic is the only thing holding it.
+#
+# **Unmeasured — a hand estimate, to be confirmed on the bench**
+# (`_notes/backlog/bench-validation.md`). The owner accepts index time
+# as a design constraint. Nothing in the CAD reads this number, and the
+# firmware that will does not exist yet.
+#
+# The estimate: a brick whose centre is at r = 140 from the hub axis
+# (`TURRET_ARM_R` + the ±15 landing scatter), the rotor turning 90° on
+# a triangular speed profile (constant acceleration to the midpoint,
+# the same back down) in T seconds. Angular acceleration is 2π/T² and
+# peak speed π/T, both present at the midpoint, so the brick's peak
+# horizontal acceleration is r·√((2π)² + π⁴)/T² = 11.70·r/T² =
+# 1.638/T² m/s². Friction alone holds it (no slip at all) while that
+# is ≤ µ_s·g:
+#
+#     µ_s 0.3  →  T ≥ 0.746 s        µ_s 0.2  →  T ≥ 0.914 s
+#
+# (The outward, centripetal part alone is 1.382/T²: 0.685 s and
+# 0.839 s. The side rims still stand against the tangential part, but
+# a brick that has started to slide along one is held outward by
+# kinetic friction only, so the no-slip figure is the one used.)
+#
+# 1.0 assumes µ_s ≥ 0.2 — the same floor `cad/check_dump_feed.py`
+# takes for a brick on the acrylic, handbook ABS on PMMA being
+# 0.3..0.5 — and holds down to µ_s 0.167. The figure belongs to the
+# triangular profile: a ⅓-⅓-⅓ trapezoid at the same T peaks lower
+# (1.258/T²), and whatever profile the firmware runs has to be put
+# through the same arithmetic.
+#
+# `_notes/decisions/m03-turret.md` §6.2 is where indexing slowly was
+# chosen over banking the platform; its "≥ 600 ms per 90°" was paired
+# with a perimeter ring, which the outer edge no longer has, and this
+# supersedes it. `animated_assembly.py` turns the exhibit rotor in
+# 0.6 s per index: that is an animation's timing, not this bound.
+TURRET_INDEX_TIME_MIN_S = 1.0
+
 
 # --- Turret frame (slice a) --------------------------------------------
 #

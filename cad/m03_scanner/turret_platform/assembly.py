@@ -19,7 +19,18 @@ Members (2 total — 1 PMMA insert + 1 printed frame):
     the four corners with dabs of structural adhesive (not modelled).
   * frame — single printed body integrating:
       - top ring (z ∈ [0, +5], 120 × 120 outer, 110 × 110 inner) —
-        5 mm wide brick-containment lip above the acrylic
+        5 mm wide brick-containment lip above the acrylic, on three
+        edges: the hub side and the two sides along the pin axis
+      - exit edge — the outer (+Y) wall, cut flush with the acrylic
+        top over the acrylic's width (cart X ∈ [-55, +55]); the two
+        side rims run on to the outer face either end of it. One edge
+        with three jobs: the sill a brick enters over at LOAD, the
+        side a brick is thrown toward while the turret indexes, and
+        the edge it slides off at DUMP. A square lip of any height
+        stops a flat plate at the 30° dump tilt, so there is none
+        (owner, 2026-10-10). Nothing on the platform holds a brick in
+        on this edge any more: that is now the turret's index time
+        (`../params.py` `TURRET_INDEX_TIME_MIN_S`, unmeasured)
       - pocket walls (z ∈ [-4, 0], same cross-section) — capture the
         acrylic edges
       - corner lips (z ∈ [-7, -4], 5 × 10 × 10 mm at pocket corners) —
@@ -73,22 +84,26 @@ outer half-width.
 
 Print orientation: top ring down, cartridge −Z up
 (`printability.py`) — least residue of the six axis ups (sweep
-2026-09-27): the 120 × 120 ring goes on the bed, and the skirt, bracket
-sides and drop block stand vertical. The stem gusset rests on the bed
+2026-09-27, before the exit edge was cut): the ring's three sides go
+on the bed, and the skirt, bracket sides and drop block stand
+vertical. The exit edge's top is then a 110 × 5 span 5 mm off the bed
+between the two side rims' ends — supported, and waived as the
+`exit_edge` feature (owner, 2026-10-10). The stem gusset rests on the bed
 beside the ring, so the
 kicker extension needs no support. What still faces the bed off the
 plate is the acrylic's seat: the four corner-lip tops and the two
 bracket tops inside the pocket, all at z = -4 — plus the brackets'
 outboard tops and the Ø5.4 pin-bore ceilings. All of these are bridged
 and waived per feature — `seat_cutter()`, `bracket_blocks()`,
-`pin_bore_cutters()`, the pieces that made them. The seat faces are
+`pin_bore_cutters()`, `exit_edge_cutter()`, the pieces that made
+them. The seat faces are
 included by owner decision 2026-09-27 and are sanded or cleaned flat
 after printing (see the script's waivers).
 """
 
 import math
 
-from build123d import Box, Color, Cylinder, Pos, Rot
+from build123d import Box, Color, Cylinder, Plane, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 
@@ -141,7 +156,9 @@ ACRYLIC_INSERT_T = PLATFORM_ACRYLIC_T                          # = 4
 # --- Frame outer geometry ----------------------------------------------
 
 FRAME_OUTER_SIZE = PLATFORM_ACRYLIC_SIZE                        # = 120
-FRAME_TOP_RING_HEIGHT = 5.0     # brick-containment lip above acrylic
+# Brick-containment lip above the acrylic — on the hub side and the two
+# pin-axis sides only; the outer edge is cut flush (see "Exit edge").
+FRAME_TOP_RING_HEIGHT = 5.0
 FRAME_WALL_T = (FRAME_OUTER_SIZE - ACRYLIC_INSERT_SIZE) / 2     # = 5
 
 # Frame Z anchors. Acrylic top at z = 0 (matches the cartridge centroid
@@ -149,6 +166,20 @@ FRAME_WALL_T = (FRAME_OUTER_SIZE - ACRYLIC_INSERT_SIZE) / 2     # = 5
 ACRYLIC_TOP_Z = 0.0
 ACRYLIC_BOTTOM_Z = -ACRYLIC_INSERT_T                            # = -4
 TOP_RING_TOP_Z = ACRYLIC_TOP_Z + FRAME_TOP_RING_HEIGHT          # = +5
+
+# --- Exit edge (outer +Y wall, rim cut flush with the acrylic) ---------
+
+# The outer wall's top over the exit width: the acrylic's top plane,
+# continued to the frame's outer face. `build_platform_cartridge`
+# measures it on the built frame against the placed acrylic
+# (`exit_edge_flush`).
+EXIT_EDGE_TOP_Z = ACRYLIC_TOP_Z                                 # = 0
+# Half-width of the cut along the pin axis: the acrylic's own. A brick
+# rests on the acrylic alone, so this is the whole width it can leave
+# (or arrive) over, and the two side rims keep their full length and
+# section out to the outer face — the cut ends on their inner faces
+# and leaves no stub of outer rim to catch a brick's corner.
+EXIT_EDGE_HALF_X = ACRYLIC_INSERT_SIZE / 2                      # = 55
 
 # --- Corner lips (acrylic support at 4 pocket corners) -----------------
 
@@ -315,6 +346,31 @@ def seat_cutter():
     )
 
 
+def exit_edge_cutter():
+    """The exit-edge cutter: the outer (+Y) wall's rim over the exit
+    width, from `EXIT_EDGE_TOP_Z` up past the ring top. Its floor *is*
+    the exit edge's top face — flush with the acrylic, and in the
+    ring-down print the one span between the side rims' ends.
+    `frame()` cuts with it; `printability.py` declares it as the
+    `exit_edge` feature."""
+    h = FRAME_TOP_RING_HEIGHT * 3
+    return (
+        Pos(0, (FRAME_OUTER_SIZE - FRAME_WALL_T) / 2, EXIT_EDGE_TOP_Z + h / 2)
+        * Box(2 * EXIT_EDGE_HALF_X, FRAME_WALL_T, h)
+    )
+
+
+def exit_edge_region():
+    """The outer (+Y) wall over the exit width, at every height — the
+    region `frame@exit_edge` whose top `build_platform_cartridge` holds
+    no higher than the acrylic's. Frame-local, as `frame()` draws."""
+    h = 4 * (TOP_RING_TOP_Z - BRACKET_BOTTOM_Z_LOCAL)
+    return (
+        Pos(0, (FRAME_OUTER_SIZE - FRAME_WALL_T) / 2, 0)
+        * Box(2 * EXIT_EDGE_HALF_X, FRAME_WALL_T, h)
+    )
+
+
 def bracket_blocks():
     """The two hinge-bracket blocks, cart X = +13 then -13, hanging
     from the skirt with their tops at the seat plane. `frame()` unions
@@ -344,7 +400,8 @@ def pin_bore_cutters():
 
 
 def frame():
-    """Single printed frame body: top ring + pocket walls + 4 corner
+    """Single printed frame body: top ring (three sides; the outer
+    edge cut flush with the acrylic) + pocket walls + 4 corner
     lips + hub-side skirt (with bushing notch) + integrated hinge
     brackets (with horizontal pin bore) + L-shaped kicker extension
     with its stem gusset."""
@@ -393,6 +450,14 @@ def frame():
     assert FRAME_WALL_T >= WALL_MIN, (
         f"frame perimeter wall thickness {FRAME_WALL_T:.2f} mm < WALL_MIN "
         f"({WALL_MIN}); shrink ACRYLIC_INSERT_SIZE or grow FRAME_OUTER_SIZE"
+    )
+
+    # The exit cut leaves each side rim its full section at the outer
+    # face.
+    assert FRAME_OUTER_SIZE / 2 - EXIT_EDGE_HALF_X >= FRAME_WALL_T - 1e-9, (
+        f"exit-edge cut half-width {EXIT_EDGE_HALF_X} leaves a side rim "
+        f"{FRAME_OUTER_SIZE / 2 - EXIT_EDGE_HALF_X:.2f} mm thick at the "
+        f"outer face, under the frame wall ({FRAME_WALL_T})"
     )
 
     # Corner lip width ≥ WALL_MIN.
@@ -488,6 +553,8 @@ def frame():
         Pos(0, 0, perim_z_center)
         * Box(ACRYLIC_INSERT_SIZE, ACRYLIC_INSERT_SIZE, perim_z_len * 3)
     )
+    # The exit edge: no rim on the outer wall over the acrylic's width.
+    body -= exit_edge_cutter()
 
     # Corner lips — the acrylic's 4 corner seats, each carried out
     # through the wall footprint and LIP_FUSE_Z up into the wall.
@@ -642,7 +709,7 @@ def build_platform_cartridge() -> Assembly:
     design-system ``color_of`` returns None for it (intrinsic material
     colour), but the shape-truth GLB needs an alpha channel to render
     through (see ``ACRYLIC_INSERT_COLOR``)."""
-    return (
+    a = (
         Assembly()
         .with_part(
             "acrylic",
@@ -656,11 +723,25 @@ def build_platform_cartridge() -> Assembly:
             frame(),
             material=material_of("frame"),
         )
+        .with_region("frame", "exit_edge", exit_edge_region())
         # Ring, walls, corner lips, skirt, brackets and kicker
         # extension are one printed body. The lips met the wall along
         # its inner corner edges until 2026-09-20, and two of the four
         # came out detached.
         .assert_solid_count("frame")
+    )
+    # The exit edge carries no rim: the frame's top over the exit width
+    # is no higher than the acrylic's top face, both read off what was
+    # built (the plane is the placed acrylic's top, not a constant).
+    # 0.0 — flush. A rim grown back on that edge reads minus its
+    # height, and a flat brick does not climb a square step at the
+    # dump tilt. Rigid with the cartridge, so one reading speaks for
+    # every pose.
+    acrylic = a.part("acrylic")
+    acrylic_top_z = (acrylic.location * acrylic.part).bounding_box().max.Z
+    return a.assert_distance(
+        "frame@exit_edge", Plane.XY.offset(acrylic_top_z), along="Z",
+        min_mm=0.0, name="exit_edge_flush",
     )
 
 

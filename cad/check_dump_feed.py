@@ -34,6 +34,14 @@ them (its cross-unit pair claims stay at home — see
    fastest and the dead-drop path of each also record the radius at
    which they enter the column (`*_meets_flare_r`).
 
+The exit is geometry, not an assumption: the frame's outer wall is cut
+flush with the acrylic over the acrylic's width (`turret_platform`
+`exit_edge_cutter`; held on the built frame by its `exit_edge_flush`,
+which rides in here four times), so the acrylic plane continued to the
+frame's outer face is the top edge a brick leaves over. Until
+2026-10-10 a 5 mm rim stood there and this was the check's second
+assumption.
+
 Part 2 rests on the assumptions below. None is measured;
 `_notes/backlog/bench-validation.md` carries the bench test.
 
@@ -41,12 +49,10 @@ Part 2 rests on the assumptions below. None is measured;
   reaches `MAX_TILT_DEG` before the nearest-starting brick reaches the
   edge. At a lower tilt the edge is higher and further out, and the
   probes are not built there.
-- **It leaves along the acrylic plane, over the frame's outer wall.**
-  The frame as modelled stands a 5 mm lip above the acrylic on that
-  edge (`turret_platform` `FRAME_TOP_RING_HEIGHT`). A brick sliding on
-  the acrylic meets that lip, and this check does not model how it gets
-  over. The exit point here is the acrylic plane continued to the
-  frame's outer face.
+- **It slides the whole way.** Across the acrylic and the 5 mm of
+  printed wall top beyond it, at one friction floor (`DUMP_MU_K_MIN`),
+  without catching on the joint between them or on the side rims' ends
+  either side of the exit.
 - **Point mass.** No tumble, no bounce off the funnel or the rim. A
   long brick whose centre lands inside is taken to follow it in.
 
