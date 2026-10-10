@@ -119,9 +119,9 @@ from .ramp_mechanism import assembly as _ramp
 
 # --- Top deck ----------------------------------------------------------
 #
-# Clear-acrylic disc capping the tower. Hopper / rotary-feed and
-# ceiling-sleeve mounting are deferred — see NEXT_STEPS "Top deck —
-# open detail".
+# Clear-acrylic disc capping the tower. The top feed (m03's DUMP into
+# a rotating flare) and the ceiling sleeve are not built — see
+# `_notes/state/m05-diverter.md` §"Top deck — open detail".
 # The OD is `params.TOP_DECK_OD` (a knob the top level tunes).
 TOP_DECK_T = 10.0
 TOP_DECK_APERTURE_D = 150.0  # clears top column's rotating collar (OD 138 at z 880..885)

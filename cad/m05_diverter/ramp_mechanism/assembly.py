@@ -56,20 +56,22 @@ z_lower_local = 220..225). Roles differ only in the column itself:
 - **middle**, **top** — column body extends 53..273; bottom face at
   z = 53 mates with the lower column's top flange (z_lower_local =
   268..273) at z_world = N·220 + 273. No bottom collar. Top floor
-  additionally has its rotating collar engaged from above by the
-  ceiling bearing in the hopper sub-assembly (not modeled here).
+  additionally has its rotating collar held by the ceiling sleeve in
+  the top deck's aperture (not modeled yet; there is no hopper).
 
 The bearing slot on **this** floor sits at z_local = 0..5 and engages
 the *lower* column's rotating collar — represented in the standalone
 middle/top assembly by `lower_column` placed at z = -FLOOR_H. Without
 that stand-in there is nothing here for this floor's bearing to grip.
 
-Motor pinion + ring gear and the ceiling bearing are deferred — see
-the rolling NEXT_STEPS docs. The trap servo is a bought-part envelope
+The motor pinion and ring gear are `base_floor/`'s. The ceiling sleeve
+is not built — see `_notes/state/m05-diverter.md` §"Top deck — open
+detail". The trap servo is a bought-part envelope
 (MG90S-class); its mount bracket and the horn-to-pin coupling are not
 modeled. Column-to-column joint
 torque transfer uses bas-relief bumps + depressions (Option A from
-NEXT_STEPS "Column-to-column joint"); outboard castellation
+`_notes/state/m05-diverter.md` §"Column-to-column joint"); outboard
+castellation
 (Option B) is held in reserve.
 
 Coordinate frame:

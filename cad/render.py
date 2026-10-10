@@ -12,8 +12,8 @@ Layers applied before rendering (per module):
 
   * ``detail_variations.apply_default_detail`` — swap each cheap
     20×20×L Box stub for a real V-slot profile from ``bd_warehouse``.
-    m03 and m05 expose this; m02 has none yet (its NEXT_STEPS lists
-    the slice).
+    m03 and m05 expose this; m02 has none yet
+    (`_notes/state/m02-singulator.md` lists the slice).
   * ``material_variations.DEFAULT_OVERRIDES`` — render-only material
     overrides for parts whose real-world material isn't yet in
     chitra-cad's table (m03 only). Keys are module-local tree paths;

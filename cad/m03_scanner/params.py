@@ -337,16 +337,13 @@ T_FRAME_RAIL_D_Y_BACK = +150.0                           # carries back-upper cl
 # forward of the back rail). It now stands on the back outrigger's
 # +Z face — the outrigger spans m03-local y ∈ [+27.3, +65] (turret-
 # local [+152.3, +190]) at x = ±TURRET_FRAME_SIDE_X = ±145, hosting
-# the full post body footprint. The outrigger end overhangs the
-# m05 deck cylinder edge (Ø660 at world (0, 0)) at world x = ±145
-# by ~18 mm; this is acceptable because the deck-foot in a follow-
-# up slice bolts at outrigger mid-span (turret-local y ≈ +171.2 =
-# world y ≈ +296.2, AT the deck cylinder boundary at x=±145) or
-# inboard (e.g. y ≈ +160 = world +285, well inside) — tip-over
-# resistance is set by the bolted foot's position, not the rail
-# end face. The mass past the deck edge (rail D back tail + arch
-# post + back-upper camera) is small and well within the restoring
-# moment from the m03 unit's CoM inboard of the foot.
+# the full post body footprint. The outrigger end (world y = +315
+# at x = ±145) stands on the m05 deck: the deck is
+# `m05_diverter/params.py:TOP_DECK_OD`, sized so the whole outrigger
+# footprint is inside its rim, and the top level's `on_deck_*`
+# claims hold that. (At the deck's earlier Ø660 the end overhung the
+# edge by ~18 mm.) The deck-foot that bolts the outrigger down is
+# not built.
 #
 # Coordinates m03-local.
 ARCH_POST_X = 145.0                                      # = TURRET_FRAME_SIDE_X (outrigger X; below)

@@ -87,10 +87,11 @@ from ..params import (
 
 # --- Parameters ---------------------------------------------------------
 
-# Basket outer wall is a cylindrical arc at r = R_BASKET_OUTER,
-# aligned with the clear-acrylic top deck OD/2 (660/2 = 330) so the
-# floor of buckets reads as a continuous cylindrical skirt below the
-# disc edge. Sits BASKET_HEX_OVERHANG mm outside R_HEX_OUTER along
+# Basket outer wall is a cylindrical arc at r = R_BASKET_OUTER, so
+# the floor of buckets reads as a continuous cylindrical skirt. It
+# was sized flush with the top deck's rim when the deck was Ø660; the
+# deck is now `params.TOP_DECK_OD` and overhangs the skirt. Sits
+# BASKET_HEX_OVERHANG mm outside R_HEX_OUTER along
 # the apothem direction, so the basket floor cantilevers past the
 # hex outer face by up to BASKET_HEX_OVERHANG. The floor still rests
 # on the hex outer extrusion top-face strip (r ∈ [260, 280] along
@@ -118,7 +119,7 @@ from ..params import (
 # at *both* radii on each flagged boundary azimuth. The inner channel
 # reaches the inner arc; the outer channel reaches the outer arc.
 BASKET_HEX_OVERHANG = 60.0
-R_BASKET_OUTER = R_HEX_OUTER + BASKET_HEX_OVERHANG   # 330 = top-deck OD/2
+R_BASKET_OUTER = R_HEX_OUTER + BASKET_HEX_OVERHANG   # 330
 BASKET_WALL_T = 3.0
 
 # Each basket takes its full 360°/N sector. An earlier design shrunk
