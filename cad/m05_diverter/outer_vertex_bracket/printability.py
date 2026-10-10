@@ -35,11 +35,13 @@ inspect(
         "overhang_max": Waiver(
             reason="crowns of the clamp arm's two Ø5.5 M5 clearance "
             "holes (horizontal, along X at z = 10 and 30) — "
-            "49.32 mm² past 45°, max 85.71°, nothing else; "
+            "25.89 mm² each, 51.79 mm² past 45°, nothing else "
+            "(read 2026-10-10; the exact quarter-arc crown of a "
+            "Ø5.5 × 6 bore is 25.92); "
             "print plan: bridge the 5.5 mm crowns unsupported "
             "(clearance holes tolerate the sag; chase with a "
             "5.5 drill if a bolt binds), no support material",
-            max_area_mm2=50.0, max_regions=2,
+            max_area_mm2=52.3, max_regions=2,
         ),
     },
 )

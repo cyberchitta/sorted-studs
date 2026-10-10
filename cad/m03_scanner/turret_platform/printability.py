@@ -69,9 +69,10 @@ inspect(
             "each (also `seat`'s). Bridged, no supports."
         ), max_area_mm2=111.0, max_regions=4)}),
         "pin_bores": Feature(Compound(list(pin_bore_cutters())), waive={"overhang_max": Waiver(reason=(
-            "2 Ø5.4 pin-bore crowns, 20.18 each, 40.35 mm²: bridged, then "
-            "drilled Ø5.4 through."
-        ), max_area_mm2=40.8, max_regions=2)}),
+            "2 Ø5.4 pin-bore crowns, 21.19 each, 42.37 mm² (read "
+            "2026-10-10; the exact quarter-arc crown of a Ø5.4 × 5 bore "
+            "is 21.21): bridged, then drilled Ø5.4 through."
+        ), max_area_mm2=42.8, max_regions=2)}),
         "exit_edge": Feature(exit_edge_cutter(), waive={"overhang_max": Waiver(reason=(
             "supported span on the exit edge, rim cut flush for DUMP "
             "(owner, 2026-10-10): 550.0 mm², the outer wall's top, one "

@@ -36,15 +36,15 @@ inspect(
     solid_count=1,
     waive={
         "overhang_max": Waiver(
-            reason="389.35 mm² at up to 90.0° (measured 2026-09-27, "
+            reason="373.08 mm² at up to 90.0° (read 2026-10-10, "
             "up +Z): the ceilings of the five horizontal bores and "
             "nothing else — the four Ø5.4 hinge-pin bores through the "
-            "bushing blocks at r 62.3–67.7, 88.78 mm² each, and the Ø4 "
-            "set-screw insert bore at heading +45°, 34.23 mm². Print "
+            "bushing blocks at r 62.3–67.7, 84.74 mm² each, and the Ø4 "
+            "set-screw insert bore at heading +45°, 34.11 mm². Print "
             "plan: bridged, no supports; run a Ø5.4 drill through each "
             "pin bore after printing to restore the 0.2 mm radial pin "
             "clearance the bridge droop eats.",
-            max_area_mm2=392.0, max_regions=5,
+            max_area_mm2=376.0, max_regions=5,
         ),
     },
 )

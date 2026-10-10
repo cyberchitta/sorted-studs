@@ -103,9 +103,9 @@ inspect(
             "(4), and the plate is centred on the hinge axis, so the whole "
             "plate underside floats 2 mm above the knuckle's lowest point "
             "— printed with support under the plate; pin-bore top bridges. "
-            "Read 2026-10-04 on the stepped plate: 7940 mm² in 3 regions "
-            "(plate underside 7269, knuckle 478, bore flat 193)",
-            max_area_mm2=7950.0, max_regions=3,
+            "Read 2026-10-10 on the stepped plate: 7964.01 mm² in 3 regions "
+            "(plate underside 7269.15, knuckle 502.19, bore flat 192.67)",
+            max_area_mm2=7975.0, max_regions=3,
         ),
     },
 )
