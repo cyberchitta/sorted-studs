@@ -44,14 +44,14 @@ inspect(
     name="servo_arm",
     waive={
         "overhang_max": Waiver(
-            reason="105.83 mm² at up to 89.8° (measured 2026-09-27, "
+            reason="102.55 mm² at up to 89.8° (read 2026-10-10, "
             "up turret −Z): the Ø16 hub disc's outboard arc (x −88…−72, "
-            "the part the beam does not meet), 76.24 mm² to 89.8°, and "
-            "the Ø4.5 servo-shaft bore's ceiling, 29.59 mm² to 89.3°. "
+            "the part the beam does not meet), 74.30 mm² to 89.8°, and "
+            "the Ø4.5 servo-shaft bore's ceiling, 28.25 mm² to 89.3°. "
             "Print plan: tree support from the bed under the hub arc "
             "only (a cosmetic face); the bore bridges, then a Ø4.5 drill "
             "through it.",
-            max_area_mm2=107.0, max_regions=2,
+            max_area_mm2=103.5, max_regions=2,
         ),
     },
 )

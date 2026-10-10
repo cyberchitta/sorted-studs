@@ -35,16 +35,16 @@ inspect(
     name="drive_bracket",
     waive={
         "overhang_max": Waiver(
-            reason="309.08 mm² at up to 90.0° (measured 2026-09-27, "
+            reason="295.03 mm² at up to 90.0° (read 2026-10-10, "
             "up turret +Y): the ceilings of the seven holes that print "
             "sideways and nothing else — the Ø22 motor centering pilot "
-            "in the plate, 144.68 mm²; the two Ø5.5 M5 foot-bolt holes "
-            "at x 106.1 and 124.1, 36.17 mm² each; the four Ø3.5 M3 "
-            "motor holes at (x 43.1 / 74.1, y ±15.5), 23.02 mm² each. "
+            "in the plate, 138.10 mm²; the two Ø5.5 M5 foot-bolt holes "
+            "at x 106.1 and 124.1, 34.52 mm² each; the four Ø3.5 M3 "
+            "motor holes at (x 43.1 / 74.1, y ±15.5), 21.97 mm² each. "
             "Print plan: every ceiling bridged, no supports; ream the "
             "Ø22 pilot to fit the motor boss; drill the Ø5.5 and M3 "
             "holes if they bind.",
-            max_area_mm2=312.0, max_regions=7,
+            max_area_mm2=297.0, max_regions=7,
         ),
     },
 )
