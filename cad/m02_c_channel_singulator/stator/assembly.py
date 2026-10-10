@@ -491,15 +491,17 @@ def build_stator(height: float = STATOR_WALL_H) -> Assembly:
     )
     # Each free end's boss keeps out of the exit opening's own volume
     # carried outward — the brick's way out — by the margin the tongue
-    # keeps from the same faces. Measured on the boss as unioned (it
-    # fuses into its arc, so no part-level claim can isolate it).
+    # keeps from the same faces. The boss fuses into its arc, and the
+    # arc spans the exit, so the claim reads the sector's material
+    # inside the boss as unioned (`arc_boss`, before its insert hole).
     if exit_splits_wall(height):
         corridor = _fastening.exit_corridor()
         for sign in _fastening.FREE_END_SIGNS:
-            a = a.assert_scalar(
-                f"arc_boss_{_fastening.free_end_name(sign)}_exit_clearance",
-                _fastening.arc_boss(sign).distance_to(corridor), ge=EXIT_FLOOR_SIDE_CLEAR,
-                detail="mm from the free end's boss to the exit wedge carried out past the skirt",
+            end = _fastening.free_end_name(sign)
+            a = a.with_region(exit_sector, f"boss_{end}", _fastening.arc_boss(sign))
+            a = a.assert_clear_of(
+                f"{exit_sector}@boss_{end}", corridor,
+                name=f"arc_boss_{end}_exit_clearance", min_mm=EXIT_FLOOR_SIDE_CLEAR,
             )
     return a
 

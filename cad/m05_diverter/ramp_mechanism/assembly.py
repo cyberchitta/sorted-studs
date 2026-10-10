@@ -649,7 +649,8 @@ def bearing_spider(role: str = "middle") -> Part:
         # The turntable must land on the seat, not on the saddle plates
         # poking up through it — bare, fired here where the seat is cut.
         # That the seat covers the turntable's ring is
-        # `turntable_within_seat` in `build_column_side_static`.
+        # `turntable_within_seat` in `build_column_side_static`, read on
+        # `seat_region` — which this same margin gives its height.
         assert SEAT_T >= SADDLE_CEIL_Z + SADDLE_T_TOP, (
             f"Seat top z={SEAT_T} sits below the saddle top plates "
             f"(z={SADDLE_CEIL_Z + SADDLE_T_TOP}); the turntable would rock "
@@ -701,6 +702,16 @@ def bearing_spider(role: str = "middle") -> Part:
         )
         body = body + saddle_env - cutout - bolt_hole
     return body
+
+
+def seat_region() -> Part:
+    """The base spider's turntable seat as a claim region, spider frame:
+    the slab from the saddle top plates' top face up to the seat top,
+    wider than the seat. Only the seat annulus stands in it — the
+    saddles stop at its floor — so a claim on it reads the seat and
+    nothing a saddle adds to the spider's footprint."""
+    z0, z1 = SADDLE_CEIL_Z + SADDLE_T_TOP, SEAT_T
+    return Pos(0, 0, (z0 + z1) / 2) * Cylinder(SEAT_OD, z1 - z0)
 
 
 def ring_bearing(role: str = "middle") -> Part:
@@ -1166,8 +1177,11 @@ def build_column_side_static(
         # with the turntable floating above six saddle pads.
         a = a.assert_tangent_contact(n_rb, n_sp, name="turntable_on_seat")
         # ...and the seat covers the turntable's ring in plan, bore
-        # included: contact alone passes on an overhanging ring.
-        a = a.assert_within(n_rb, n_sp, along="Z", name="turntable_within_seat")
+        # included: contact alone passes on an overhanging ring. The
+        # seat alone, not the whole spider — a ring overhanging the seat
+        # above a saddle is still inside the spider's footprint.
+        a = a.with_region(n_sp, "seat", seat_region())
+        a = a.assert_within(n_rb, f"{n_sp}@seat", along="Z", name="turntable_within_seat")
     return a
 
 

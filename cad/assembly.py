@@ -172,11 +172,12 @@ def _with_arc_screw_access(a: Assembly) -> Assembly:
     corridor starts on its head), the bowl sector it is driven into
     (the corridor starts in its countersink) and the liner sector it
     fastens (its boss sits right behind the skirt, 2.6 mm off the
-    corridor's start, and would mask whatever stands in front). Outside
-    the skirt the bowl sector carries only its seam ear pairs —
-    `arc_fastening_to_bowl_seam_deg` holds the fastening an ear's width
-    off every seam — and the liner only its cylinder zone above
-    SKIRT_TOP_Z, 11 mm above the corridor's top.
+    corridor's start). The last two are held in the stage itself, the
+    bowl less the screw's seat (`arc_screw_{end}_driver_own`,
+    `m02_c_channel_singulator/assembly.py`). They stay out of this
+    claim so that its reading is the nearest body that is not the
+    fastening: with them in, it would read the seat's own 1 mm on every
+    stage and say nothing of what stands in front.
     """
     split = [s for s in STAGES if exit_splits_wall(s.wall_h)]
     assert split, "no stage's liner is split — the claims would be vacuous"

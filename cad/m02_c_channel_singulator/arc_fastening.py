@@ -49,6 +49,7 @@ from .params import (
     ARC_INSERT_L,
     ARC_SCREW_ACCESS_D,
     ARC_SCREW_ACCESS_L,
+    ARC_SCREW_SEAT_CLEAR,
     ARC_SCREW_D,
     ARC_SCREW_HEAD_D,
     ARC_SCREW_HOLE_CLEAR,
@@ -203,6 +204,21 @@ def driver_corridor(sign: int) -> Part:
     return arc_screw_location(sign) * (
         Pos(0, 0, ARC_SCREW_ACCESS_L / 2.0) * Cylinder(ARC_SCREW_ACCESS_D / 2.0, ARC_SCREW_ACCESS_L)
     )
+
+
+def driver_seat(sign: int) -> Part:
+    """The screw's seat in the skirt at ``sign``, as a claim region on
+    the bowl sector it is driven into, m02-local (the sectors are drawn
+    there): a plug on the screw axis ARC_SCREW_SEAT_CLEAR wider all
+    round than the driver corridor, and only as deep as the skirt —
+    1 mm past each of its faces, which curve away from the axis. The
+    corridor starts inside the countersink, so this much of the bowl
+    cannot be held clear of it; everything else of the bowl can."""
+    x0, x1 = _X_SKIRT_IN - 1.0, _X_SKIRT_OUT + 1.0
+    plug = Pos((x0 + x1) / 2.0, _AXIS_Y, ARC_SCREW_Z) * Rot(0, 90, 0) * Cylinder(
+        ARC_SCREW_ACCESS_D / 2.0 + ARC_SCREW_SEAT_CLEAR, x1 - x0,
+    )
+    return _to_end(plug, sign)
 
 
 def exit_corridor() -> Part:

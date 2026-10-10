@@ -283,6 +283,7 @@ ARC_SCREW_ACCESS_L = 60.0
 ARC_SCREW_HOLE_CLEAR = 0.4     # diametral clearance through the skirt (as NEMA17_BOLT_HOLE_D over M3)
 ARC_CSINK_CLEAR = 0.4          # countersink Ø over the head Ø: the head seats ARC_CSINK_CLEAR/2 below the skirt face
 ARC_HOLE_TIP_CLEAR = 1.0       # insert hole depth past the screw tip
+ARC_SCREW_SEAT_CLEAR = 1.0     # round the driver corridor, through the skirt: the bowl material that is the screw's own seat, and so not held clear of the driver. Outside it the bowl is held this far off
 ARC_SCREW_IN_HOLE_MIN = 0.3    # least radial gap the modelled insert hole must leave round the screw's major Ø — a claim floor, independent of both
 ARC_BOSS_EXIT_CLEAR = 2.0      # boss's near face from the exit cut plane, on the wall side
 ARC_BOSS_W = 12.0              # boss width, perpendicular to the cut plane

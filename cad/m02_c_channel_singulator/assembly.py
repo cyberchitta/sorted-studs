@@ -73,6 +73,7 @@ from .params import (
     MESH_BACKLASH,
     PINION_TOP_CLEAR,
     ARC_SCREW_IN_HOLE_MIN,
+    ARC_SCREW_SEAT_CLEAR,
     EXIT_FLOOR_SIDE_CLEAR,
     ROTOR_STATOR_GAP,
     STATOR_WALL_H,
@@ -235,8 +236,14 @@ def _with_arc_screws(a: Assembly, bowl_seam_phase_deg: float) -> Assembly:
         it lands on one bowl sector, clear of the ear pair.
 
     Each screw's driver corridor is declared here as a named keep-out
-    (``arc_screw_{end}_driver``) and held in ``cad/assembly.py``: the
-    corridor reaches past the unit, into bodies only the machine has.
+    (``arc_screw_{end}_driver``) and held twice. Here, against the two
+    parts the screw joins: the liner sector whole, and the bowl sector
+    less the screw's seat in the skirt (``driver_seat``) — so an ear or
+    a motor pad of that sector in the driver's way is red, where
+    dropping the sector would pass it. The reading is the seat's own
+    ARC_SCREW_SEAT_CLEAR while nothing else of the two comes nearer.
+    And in ``cad/assembly.py``, against everything else: the corridor
+    reaches past the unit, into bodies only the machine has.
     """
     exit_liner = f"stator.{_stator.STATOR_PARTS[sector_index(0.0, LINER_SEAM_PHASE_DEG)]}"
     corridor = _fastening.exit_corridor()
@@ -271,6 +278,12 @@ def _with_arc_screws(a: Assembly, bowl_seam_phase_deg: float) -> Assembly:
             .assert_distance("rotor.rotor", screw, min_mm=ROTOR_STATOR_GAP)
             .assert_clear_of(screw, corridor, name=f"arc_screw_{end}_exit", min_mm=EXIT_FLOOR_SIDE_CLEAR)
             .with_keepout(f"arc_screw_{end}_driver", _fastening.driver_corridor(sign))
+            .with_region(bowl, f"screw_{end}", _fastening.driver_seat(sign))
+            .assert_clear_of(
+                [bowl, exit_liner], f"arc_screw_{end}_driver",
+                name=f"arc_screw_{end}_driver_own",
+                excluding=[f"{bowl}@screw_{end}"], min_mm=ARC_SCREW_SEAT_CLEAR,
+            )
         )
     return a
 
