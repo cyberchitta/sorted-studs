@@ -69,6 +69,8 @@ ROLE_OF: dict[str, Role | None] = {
     # the spider (same shade); re-tag CONSUMABLE if a periodic sleeve-
     # swap workflow becomes routine.
     "ring_bearing": Role.SECONDARY_STRUCTURE,
+    # The fifth sleeve, in the top deck's aperture — as ring_bearing.
+    "ceiling_sleeve": Role.SECONDARY_STRUCTURE,
     "column": Role.MECHANISM,
     "hinge_pin": None,                        # steel pin — outside palette
     "ramp": Role.SECONDARY_STRUCTURE,

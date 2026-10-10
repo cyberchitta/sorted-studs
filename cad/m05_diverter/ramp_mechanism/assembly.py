@@ -60,8 +60,8 @@ z_lower_local = 220..225). Roles differ only in the column itself:
   so no top flange and no bumps: the tube runs up into the feed flare
   (the FLARE_* parameters), a round funnel that turns with the column
   and catches what m03's DUMP platform tips off. Its rotating collar is
-  held by the ceiling sleeve in the top deck's aperture (not modeled
-  yet; there is no hopper).
+  held by the ceiling sleeve in the top deck's aperture (the tower's
+  part, `../assembly.py`; there is no hopper).
 
 The bearing slot on **this** floor sits at z_local = 0..5 and engages
 the *lower* column's rotating collar — represented in the standalone
@@ -69,8 +69,8 @@ middle/top assembly by `lower_column` placed at z = -FLOOR_H. Without
 that stand-in there is nothing here for this floor's bearing to grip.
 
 The motor pinion and ring gear are `base_floor/`'s. The ceiling sleeve
-is not built — see `_notes/state/m05-diverter.md` §"Top deck — open
-detail". The trap servo is a bought-part envelope
+is the tower's (`../assembly.py` `ceiling_sleeve`); its bore is this
+module's RING_BEARING_ID. The trap servo is a bought-part envelope
 (MG90S-class); its mount bracket and the horn-to-pin coupling are not
 modeled. Column-to-column joint
 torque transfer uses bas-relief bumps + depressions (Option A from

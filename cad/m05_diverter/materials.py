@@ -38,6 +38,7 @@ MATERIAL_OF: dict[str, str | None] = {
     **{f"inner_vertex_bracket_{k}": "pla_matte" for k in range(6)},
     "bearing_spider": "pla_matte",
     "ring_bearing": "pla_matte",
+    "ceiling_sleeve": "pla_matte",            # as ring_bearing, the other sleeves
     "column": "pla_matte",
     "ramp": "pla_matte",
     "trap": "pla_matte",

@@ -50,6 +50,10 @@ builders (role differences are builder parameters) and placed by one
   The other four outer vertices and all six inner ones keep the deck
   resting on the column top; their top-cap bracket variant is still
   open (`_notes/state/m05-diverter.md` §Top deck).
+- `ceiling_sleeve` — the fifth bearing slot: a printed sleeve ring set
+  in the deck's central aperture round the top column's rotating
+  collar, with a locating lip under the deck (root part; the
+  CEILING_SLEEVE_* parameters).
 
 Part identity is the dotted tree path
 (`rotating_stack.f0.column`); floor identity lives in the `f{idx}`
@@ -108,7 +112,10 @@ from .outer_vertex_bracket.assembly import (
     bracket as outer_bracket,
 )
 from .aim import ramp_exit_w_for
-from .params import FLOOR_H, FLOOR_LAYOUTS, R_VERT_OUTER, THROUGH_DECK_POSTS, TOP_DECK_OD, basket_name
+from .params import (
+    COLLAR_CLEARANCE, FLOOR_H, FLOOR_LAYOUTS, R_VERT_OUTER, THROUGH_DECK_POSTS,
+    TOP_DECK_OD, basket_name,
+)
 from .ramp_mechanism import assembly as _ramp
 
 
@@ -122,7 +129,7 @@ from .ramp_mechanism import assembly as _ramp
 #
 # Clear-acrylic disc capping the tower. The top feed is m03's DUMP
 # into the flare on the top column (`ramp_mechanism` FLARE_*; the m03
-# side is `cad/check_dump_feed.py`). The ceiling sleeve is not built —
+# side is `cad/check_dump_feed.py`). The ceiling sleeve is below —
 # see `_notes/state/m05-diverter.md` §"Top deck — open detail".
 # The OD is `params.TOP_DECK_OD` (a knob the top level tunes).
 TOP_DECK_T = 10.0
@@ -144,6 +151,38 @@ TOP_DECK_POST_CLEAR = 1.0
 # a hand reaches it.
 TOP_DECK_FLARE_CLEAR = 20.0
 _NOTCH_PAST_RIM = 10.0       # how far a run-out notch carries past the rim
+
+# --- Ceiling sleeve ----------------------------------------------------
+#
+# The fifth bearing slot. The top column's rotating collar (world z
+# 880..885) turns inside the deck's thickness, so its sleeve is set in
+# the deck's aperture instead of a spider: a printed ring whose barrel
+# fills the aperture round the collar, bore `ramp_mechanism`'s
+# RING_BEARING_ID (the other floors' sleeve bore: COLLAR_CLEARANCE
+# radial, on grease), and whose lip is *under* the deck — the top
+# column's trap coupler turns 0.85 above the deck top, so nothing may
+# stand proud of it. The barrel is as tall as the collar (BEARING_T, as
+# every other sleeve), which leaves the upper half of the aperture
+# empty under the coupler.
+#
+# Retention (a claim, not a decision — `_notes/state/m05-diverter.md`):
+# the sleeve goes in from below until the lip seats on the deck's
+# underside, and is held up by its fit in the aperture. It carries no
+# axial load; its own weight is a few grams. CEILING_SLEEVE_FIT_GAP is
+# the modelled radial gap in the aperture: 0 is line-to-line (a push
+# fit). No fastener and no deck feature beyond the aperture.
+CEILING_SLEEVE_FIT_GAP = 0.0
+CEILING_SLEEVE_LIP_T = 3.0
+CEILING_SLEEVE_LIP_W = 5.0     # the lip's bearing on the deck underside, radial
+# Print orientation, in the part's own frame (lip down, as installed):
+# the lip's underside is the bed and the barrel steps in above it.
+CEILING_SLEEVE_UP_AXIS = (0.0, 0.0, 1.0)
+# Floor on the gap to what turns over the sleeve — the top column's
+# trap servo, horn and coupler, and the flare (as FLARE_DRIVE_CLEARANCE).
+CEILING_SLEEVE_TURN_CLEAR = 5.0
+# Floor on the gap to the frame under the deck (inner column tops, the
+# top-cap brackets): room for the lip to grow, not an access claim.
+CEILING_SLEEVE_FRAME_CLEAR = 10.0
 
 # The `off_deck` keep-out (see `_add_top_deck`): a band on the deck-top
 # plane from the rim outward, this tall and this wide.
@@ -318,6 +357,64 @@ def _add_top_deck(
     )
 
 
+def ceiling_sleeve(
+    aperture_d: float = TOP_DECK_APERTURE_D,
+    bore_d: float = _ramp.RING_BEARING_ID,
+    barrel_h: float = _ramp.BEARING_T,
+    lip_t: float = CEILING_SLEEVE_LIP_T,
+    lip_w: float = CEILING_SLEEVE_LIP_W,
+    fit_gap: float = CEILING_SLEEVE_FIT_GAP,
+) -> Part:
+    """The ceiling sleeve, in its own frame: axis on Z, z = 0 the plane
+    of the deck's underside (the lip's top face). The barrel rises
+    `barrel_h` into the aperture; the lip hangs `lip_t` below and
+    reaches `lip_w` past the aperture. Printed as drawn, lip down
+    (`CEILING_SLEEVE_UP_AXIS`).
+
+    `ramp_mechanism.ring_bearing` is not reused: its OD is the spider
+    hub's (Ø159.8, wider than the aperture) and it has no lip."""
+    barrel_r = aperture_d / 2 - fit_gap
+    assert fit_gap >= 0.0, f"sleeve fit gap {fit_gap} < 0: model a press fit as a contact claim"
+    assert barrel_r - bore_d / 2 >= _ramp.WALL_MIN, (
+        f"sleeve barrel wall {barrel_r - bore_d / 2:.2f} under WALL_MIN "
+        f"{_ramp.WALL_MIN}: aperture Ø{aperture_d} is too tight round bore Ø{bore_d:.2f}"
+    )
+    assert 0.0 < barrel_h <= TOP_DECK_T, (
+        f"sleeve barrel {barrel_h} tall stands proud of the {TOP_DECK_T} deck"
+    )
+    assert lip_t >= _ramp.WALL_MIN and lip_w > 0.0, (
+        f"sleeve lip {lip_t} thick / {lip_w} wide: no lip to seat under the deck"
+    )
+    barrel = Pos(0, 0, barrel_h / 2) * Cylinder(barrel_r, barrel_h)
+    lip = Pos(0, 0, -lip_t / 2) * Cylinder(aperture_d / 2 + lip_w, lip_t)
+    bore = Cylinder(bore_d / 2, 4 * (barrel_h + lip_t))
+    return (barrel + lip) - bore
+
+
+def _add_ceiling_sleeve(a: Assembly, *, top_z: float) -> Assembly:
+    """The sleeve in the deck's aperture, lip against the deck's
+    underside at `top_z`, with its two features named as regions (in
+    the part's own frame): `barrel`, everything above the lip's top
+    face, and `lip`, everything below it."""
+    name = "ceiling_sleeve"
+    slab_r = TOP_DECK_APERTURE_D + CEILING_SLEEVE_LIP_W
+    return (
+        a.with_part(
+            name, ceiling_sleeve(),
+            location=Pos(0, 0, top_z),
+            material=material_of(name),
+        )
+        .with_region(
+            name, "barrel",
+            Pos(0, 0, TOP_DECK_T / 2) * Cylinder(slab_r, TOP_DECK_T),
+        )
+        .with_region(
+            name, "lip",
+            Pos(0, 0, -CEILING_SLEEVE_LIP_T / 2) * Cylinder(slab_r, CEILING_SLEEVE_LIP_T),
+        )
+    )
+
+
 def _add_top_cap(
     a: Assembly, *, top_z: float, posts: dict[int, float],
 ) -> Assembly:
@@ -441,6 +538,79 @@ def _add_top_deck_checks(
         a = a.assert_distance(
             "top_acrylic", _rot(top, "column") + "@flare",
             min_mm=TOP_DECK_FLARE_CLEAR, name="flare_over_deck",
+        )
+    return a
+
+
+def _add_ceiling_sleeve_checks(
+    a: Assembly, top: int, posts: dict[int, float], *, flare: bool,
+) -> Assembly:
+    """The ceiling sleeve's seat in the deck, its running fit round the
+    top column's collar, and its clearances — to everything that turns
+    with the stack (held over the turn by `check_stack_turn.py`) and to
+    the frame under the deck.
+
+    The trap's own joint is not driven here, and need not be for these
+    claims: the coupler and the horn are discs round the hinge pin, the
+    axis the trap turns them about, so their readings are the same at
+    every trap angle (true while both stay round — a horn with an arm
+    would need the trap swung)."""
+    s = "ceiling_sleeve"
+    col = _rot(top, "column")
+    a = (
+        a
+        .assert_solid_count(
+            s,
+            detail="above 1 the lip has come off the barrel — they join "
+                   "on the deck-underside plane; check the bore is not "
+                   "wider than the barrel",
+        )
+        # Seat: the lip's top face on the deck's underside (the stop the
+        # sleeve is pushed up to), and the barrel in the aperture at the
+        # modelled fit gap — constructed from the same constant as the
+        # bound (cad/CLAUDE.md §6, corollary 2).
+        .assert_no_interference(s, "top_acrylic")
+        .assert_tangent_contact(
+            f"{s}@lip", "top_acrylic", name="ceiling_sleeve_lip_under_deck",
+        )
+        .assert_distance(
+            f"{s}@barrel", "top_acrylic",
+            min_mm=CEILING_SLEEVE_FIT_GAP, max_mm=CEILING_SLEEVE_FIT_GAP,
+            name="ceiling_sleeve_in_aperture",
+        )
+        # Running fit: the bore stands COLLAR_CLEARANCE off the collar,
+        # the gap every other floor's sleeve runs at. Bounded both
+        # ways — a sleeve 5 mm off the collar locates nothing.
+        .assert_distance(
+            s, col, min_mm=COLLAR_CLEARANCE, max_mm=COLLAR_CLEARANCE,
+            name="ceiling_sleeve_collar_gap",
+        )
+        .assert_no_interference_between([s], f"rotating_stack.f{top}")
+    )
+    for part in ("trap_servo", "trap.trap_coupler", "trap.servo_horn"):
+        a = a.assert_distance(
+            s, _rot(top, part), min_mm=CEILING_SLEEVE_TURN_CLEAR,
+            name=f"ceiling_sleeve_under_{part.split('.')[-1]}",
+        )
+    if flare:
+        a = a.assert_distance(
+            s, col + "@flare", min_mm=CEILING_SLEEVE_TURN_CLEAR,
+            name="ceiling_sleeve_under_flare",
+        )
+    # Under the deck: the column tops the deck rests on and the top-cap
+    # brackets. (The top floor's own rails and bearing are a floor
+    # height below.)
+    frame = ["columns"] + (["top_cap"] if posts else [])
+    a = a.assert_no_interference_between([s], frame)
+    for k in range(6):
+        a = a.assert_distance(
+            s, f"columns.inner_vert_{k}", min_mm=CEILING_SLEEVE_FRAME_CLEAR,
+            name=f"ceiling_sleeve_clears_inner_vert_{k}",
+        )
+    for k in posts:
+        a = a.assert_distance(
+            s, f"top_cap.outer_vertex_bracket_{k}", min_mm=CEILING_SLEEVE_FRAME_CLEAR,
+            name=f"ceiling_sleeve_clears_vertex_bracket_{k}",
         )
     return a
 
@@ -692,6 +862,7 @@ def build_tower(
 
     if with_top_deck:
         a = _add_top_deck(a, top_z=top_z, posts=posts, deck_od=top_deck_od)
+        a = _add_ceiling_sleeve(a, top_z=top_z)
         if posts:
             a = _add_top_cap(a, top_z=top_z, posts=posts)
 
@@ -734,6 +905,9 @@ def build_tower(
     if with_top_deck:
         # Only a top-role column carries the flare (and its region).
         a = _add_top_deck_checks(
+            a, floors[-1], posts, flare=floor_plan[-1][1] == "top",
+        )
+        a = _add_ceiling_sleeve_checks(
             a, floors[-1], posts, flare=floor_plan[-1][1] == "top",
         )
 
