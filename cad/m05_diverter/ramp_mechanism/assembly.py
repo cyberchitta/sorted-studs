@@ -55,9 +55,13 @@ z_lower_local = 220..225). Roles differ only in the column itself:
   at 268..273.
 - **middle**, **top** — column body extends 53..273; bottom face at
   z = 53 mates with the lower column's top flange (z_lower_local =
-  268..273) at z_world = N·220 + 273. No bottom collar. Top floor
-  additionally has its rotating collar held by the ceiling sleeve in
-  the top deck's aperture (not modeled yet; there is no hopper).
+  268..273) at z_world = N·220 + 273. No bottom collar.
+- **top** — as middle below the joint plane. It has no column above,
+  so no top flange and no bumps: the tube runs up into the feed flare
+  (the FLARE_* parameters), a round funnel that turns with the column
+  and catches what m03's DUMP platform tips off. Its rotating collar is
+  held by the ceiling sleeve in the top deck's aperture (not modeled
+  yet; there is no hopper).
 
 The bearing slot on **this** floor sits at z_local = 0..5 and engages
 the *lower* column's rotating collar — represented in the standalone
@@ -94,7 +98,7 @@ import math
 from typing import Callable
 
 
-from build123d import Axis, Box, CenterOf, Cylinder, Location, Part, Plane, Polygon, Pos, Rot, extrude, mirror
+from build123d import Axis, Box, CenterOf, Cylinder, Location, Part, Plane, Polygon, Pos, Rot, extrude, mirror, revolve
 
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 from cad_khana.mechanism.assertions import JointWindow
@@ -526,6 +530,90 @@ def _col_z_bot(role: str) -> float:
         return LOWER_COL_TOP_Z_MAX
     raise ValueError(f"unknown floor role: {role!r} (expected one of {FLOOR_ROLES})")
 
+# --- Top-feed flare (top role only) ------------------------------------
+#
+# The top column has no column above it, so it carries no joint flange
+# and no bumps. It ends in a round flared mouth that turns with it and
+# catches what m03's DUMP platform tips off (owner 2026-10-06,
+# `_notes/state/m05-diverter.md` §Top deck "Top feed"). Round, so it is
+# its own rotation envelope: its clearance to the stationary m03 parts
+# above is the same at every stack azimuth.
+#
+# Section (r, z), revolved about the column axis:
+#   - the funnel face rises FLARE_DEG from the throat — the column's
+#     inner wall at COL_Z_TOP, so the exit opening keeps its lintel — out
+#     to FLARE_KNEE_R, under m03's tilted dump frame;
+#   - past the frame's reach it steepens to FLARE_LIP_DEG out to
+#     FLARE_MOUTH_R;
+#   - a vertical rim FLARE_RIM_T thick stands on the funnel's outer edge
+#     up to FLARE_RIM_Z, so a brick arriving fast meets a wall;
+#   - the underside falls FLARE_UNDER_DEG from the rim's outer foot back
+#     to the column, FLARE_WALL_T under the funnel face where the two
+#     come closest (the knee) and thickening inward. It is what lets
+#     the column print base-down.
+# The square tube runs up through the body to the funnel face, and the
+# exit-opening cut runs out through the body's root (see `column`).
+#
+# What bounds each number (floor-local z; world = + 3·FLOOR_H. Probed
+# 2026-10-10 on the composed machine over dump tilts 0..30°): m03's dump
+# frame hangs down to z 300.9 over r 68..79, and its outer edge sweeps
+# up and out from there (r 80 at 303.4, r 84 at 316, r 86 at 331); the
+# dump servo arm is at 319 from r 89; the turret's hub housing stands at
+# r 100. Below, this column's servo cage tops out at 255.3 at r 50 and
+# its trap servo / horn / coupler at 250.9 over r 57..95.
+# `cad/check_dump_feed.py` holds the m03 side over the tilt (5 mm; the
+# frame's corner lip over the 32° face reads 5.57, the hub housing 5.5,
+# the servo arm 6.0); `_with_flare_claims` holds this column's own
+# drive. The rim top, 53..313, also makes the column 260 tall.
+FLARE_DEG = 32.0                    # funnel face to the knee, from horizontal
+FLARE_KNEE_R = 83.0                 # where the face steepens
+FLARE_LIP_DEG = 50.0                # funnel face from the knee to the mouth
+FLARE_MOUTH_R = 92.0                # rim inner radius — the catch radius
+FLARE_RIM_T = 2.5                   # rim wall (≥ WALL_MIN)
+FLARE_RIM_Z = 313.0                 # rim top, floor-local
+# Underside, from horizontal. Not 45: cad-khana reads a true 45° cone as
+# up to 46.9° overhang (facet tilt on the tessellated cone), and 47° as
+# 45.1° beside the opening cut, so the FDM limit needs ~3° in hand.
+FLARE_UNDER_DEG = 48.0
+FLARE_WALL_T = 2.0                  # least funnel wall, normal to the underside
+FLARE_OUTER_R = FLARE_MOUTH_R + FLARE_RIM_T                                  # 94.5
+_FLARE_TAN = math.tan(math.radians(FLARE_DEG))
+_FLARE_LIP_TAN = math.tan(math.radians(FLARE_LIP_DEG))
+_FLARE_UNDER_TAN = math.tan(math.radians(FLARE_UNDER_DEG))
+FLARE_THROAT_R = COL_INTERIOR_SIDE / 2                                       # 45
+FLARE_THROAT_Z = COL_Z_TOP                                                   # 273
+FLARE_KNEE_Z = FLARE_THROAT_Z + (FLARE_KNEE_R - FLARE_THROAT_R) * _FLARE_TAN     # ≈ 296.75
+FLARE_MOUTH_Z = FLARE_KNEE_Z + (FLARE_MOUTH_R - FLARE_KNEE_R) * _FLARE_LIP_TAN   # ≈ 307.47
+# The rim's outer foot, where the underside starts: as high as leaves
+# FLARE_WALL_T under both corners of the funnel face.
+FLARE_FOOT_Z = min(
+    z - FLARE_WALL_T / math.cos(math.radians(FLARE_UNDER_DEG))
+    + (FLARE_OUTER_R - r) * _FLARE_UNDER_TAN
+    for r, z in ((FLARE_KNEE_R, FLARE_KNEE_Z), (FLARE_MOUTH_R, FLARE_MOUTH_Z))
+)                                                                            # ≈ 306.53
+
+
+def _flare_face_z(r: float) -> float:
+    """Funnel face height at radius r ≤ FLARE_KNEE_R (floor-local)."""
+    return FLARE_THROAT_Z + (r - FLARE_THROAT_R) * _FLARE_TAN
+
+
+def _flare_under_z(r: float) -> float:
+    """Flare underside height at radius r (floor-local)."""
+    return FLARE_FOOT_Z - (FLARE_OUTER_R - r) * _FLARE_UNDER_TAN
+
+
+# Lowest point of the flare body outside the column: the underside at
+# the middle of a column face.
+FLARE_ROOT_Z = _flare_under_z(COL_OUTER_SIDE / 2)                            # ≈ 254.88
+# Floor on the gap to this column's own trap servo / horn / coupler. A
+# floor, not an access claim: nothing checks that a hand or a driver
+# reaches the servo under the flare.
+FLARE_DRIVE_CLEARANCE = 5.0
+# Extent of the `flare_miss` keep-out past the rim: up, and outward.
+FLARE_MISS_H = 150.0
+FLARE_MISS_W = 150.0
+
 # Ring bearing
 RING_BEARING_ID = COLLAR_OD + 2 * COLLAR_CLEARANCE
 RING_BEARING_OD = RING_BEARING_ID + 20.0
@@ -770,16 +858,65 @@ def _joint_interlock(z_face: float, d: float, h: float) -> Part:
     return features
 
 
+def flare_body() -> Part:
+    """The top column's flare as a solid of revolution about the column
+    axis, floor-local: funnel face, rim, underside (the FLARE_*
+    parameters). It runs in to r = 0 so that it fuses with the tube
+    whatever the tube's section; `column` removes the bore. Also the
+    solid behind the `column@flare` region and the `flare_sweep`
+    keep-out (`_with_flare_claims`)."""
+    assert FLARE_RIM_T >= WALL_MIN and FLARE_WALL_T >= WALL_MIN, (
+        f"flare rim {FLARE_RIM_T} / wall {FLARE_WALL_T} under WALL_MIN {WALL_MIN}"
+    )
+    assert FLARE_RIM_Z > FLARE_MOUTH_Z, (
+        f"flare rim top {FLARE_RIM_Z} is not above the funnel's outer "
+        f"edge {FLARE_MOUTH_Z:.2f}: there is no rim"
+    )
+    section = Polygon(
+        (0.0, _flare_face_z(0.0)),
+        (FLARE_KNEE_R, FLARE_KNEE_Z),
+        (FLARE_MOUTH_R, FLARE_MOUTH_Z),
+        (FLARE_MOUTH_R, FLARE_RIM_Z),
+        (FLARE_OUTER_R, FLARE_RIM_Z),
+        (FLARE_OUTER_R, FLARE_FOOT_Z),
+        (0.0, _flare_under_z(0.0)),
+        align=None,
+    )
+    return revolve(Plane.XZ * section, Axis.Z, 360)
+
+
+def flare_void() -> Part:
+    """Everything above the funnel face inside the rim, floor-local:
+    what `column` clears so the square tube ends flush with the funnel
+    instead of standing in it as a parapet."""
+    z_hi = FLARE_RIM_Z + 10.0
+    section = Polygon(
+        (0.0, _flare_face_z(0.0)),
+        (FLARE_KNEE_R, FLARE_KNEE_Z),
+        (FLARE_MOUTH_R, FLARE_MOUTH_Z),
+        (FLARE_MOUTH_R, z_hi),
+        (0.0, z_hi),
+        align=None,
+    )
+    return revolve(Plane.XZ * section, Axis.Z, 360)
+
+
 def column(role: str = "middle") -> Part:
     """Square-section tube with a +X exit opening, −X hinge bosses, a
     servo cage on the +Y face, a
     rotating collar at mid-height (the bearing-engagement surface for
-    the floor *above*), a top joint flange, and — for the base role
-    only — a bottom collar where the motor pinion meets the ring gear.
+    the floor *above*), a top joint flange — or, on the top role, the
+    feed flare — and, for the base role
+    only, a bottom collar where the motor pinion meets the ring gear.
 
-    Roles differ only in what sits at the column bottom:
+    Roles differ in what sits at the column's two ends:
     - **base**: body 0..273, bottom collar at 0..5 (ring-gear interface).
-    - **middle**, **top**: body 53..273, mating face at z=53.
+    - **middle**, **top**: body 53.., mating face at z=53.
+    - **base**, **middle**: top joint flange + bumps at 268..274.5, for
+      the column above.
+    - **top**: no column above, so no flange and no bumps. The tube runs
+      up into the flare (`flare_body`) and ends flush with its funnel
+      face; the rim tops out at FLARE_RIM_Z.
     """
     # Packing sanity for the cut features this part carries. All of them
     # are parameter bounds over subtracted negative space (the opening,
@@ -811,8 +948,11 @@ def column(role: str = "middle") -> Part:
     )
 
     z_bot = _col_z_bot(role)
-    col_h = COL_Z_TOP - z_bot
-    col_z_center = (COL_Z_TOP + z_bot) / 2
+    # The top role's tube runs up to the rim plane and is trimmed back
+    # to the funnel face below; every other role ends at the joint plane.
+    tube_z_top = FLARE_RIM_Z if role == "top" else COL_Z_TOP
+    col_h = tube_z_top - z_bot
+    col_z_center = (tube_z_top + z_bot) / 2
 
     outer = Pos(0, 0, col_z_center) * Box(COL_OUTER_SIDE, COL_OUTER_SIDE, col_h)
     inner = Pos(0, 0, col_z_center) * Box(
@@ -825,15 +965,24 @@ def column(role: str = "middle") -> Part:
     # opening also slices the collar into a partial ring.
     tube = tube + _circular_feature(ROT_COLLAR_Z_BOT, ROT_COLLAR_Z_TOP)
 
-    # Top joint flange + bas-relief bumps. The disc carries 4
-    # cylindrical bumps at cardinal azimuths protruding +JOINT_BUMP_H
-    # above the flange face; they slot into matching depressions on
-    # the upper column's bottom flange to transfer torque across the
-    # joint without bolts or metal hardware.
-    tube = tube + _circular_feature(JOINT_FLANGE_Z_BOT, JOINT_FLANGE_Z_TOP)
-    tube = tube + _joint_interlock(
-        JOINT_FLANGE_Z_TOP, JOINT_BUMP_D, JOINT_BUMP_H,
-    )
+    if role == "top":
+        # The feed flare, in place of the joint flange; the bore is cut
+        # again to open the throat. Fused BEFORE the +X opening cut,
+        # which runs out through the flare's root, whose
+        # underside dips below the opening's top in front of it
+        # (FLARE_ROOT_Z < OPENING_Z_TOP) — left there it would stand in
+        # the exit path of a full-height brick.
+        tube = tube + flare_body() - flare_void() - inner
+    else:
+        # Top joint flange + bas-relief bumps. The disc carries 4
+        # cylindrical bumps at cardinal azimuths protruding +JOINT_BUMP_H
+        # above the flange face; they slot into matching depressions on
+        # the upper column's bottom flange to transfer torque across the
+        # joint without bolts or metal hardware.
+        tube = tube + _circular_feature(JOINT_FLANGE_Z_BOT, JOINT_FLANGE_Z_TOP)
+        tube = tube + _joint_interlock(
+            JOINT_FLANGE_Z_TOP, JOINT_BUMP_D, JOINT_BUMP_H,
+        )
 
     # Role-specific bottom feature.
     if role == "base":
@@ -1263,16 +1412,77 @@ def build_column_side_rotating(
         detail=f"stall / static torque at catch: solid-PLA plate + "
                f"{BRICK_MASS_BUDGET_G:.0f} g brick at the tip; impact not included",
     )
+    if role == "top":
+        a = _with_flare_claims(a)
     return a
+
+
+def _with_flare_claims(a: Assembly) -> Assembly:
+    """The top column's flare: named for claims, and held to what this
+    unit knows. Declared here so it rides into the tower and the machine;
+    what stands over the flare is m03's, so that side is
+    `cad/check_dump_feed.py`.
+
+    Exports, in the floor-local frame (the column is placed at identity,
+    so that is the part's frame too):
+      - region ``column@flare`` — the column's material inside
+        `flare_body`;
+      - keep-out ``flare_sweep`` — the volume the flare occupies at any
+        stack azimuth. It is round, so that is `flare_body` itself;
+      - keep-out ``flare_miss`` — where a brick has gone over the rim:
+        outside the rim's inner face, from the rim plane up. A path that
+        starts inside the mouth can leave the flare no other way.
+    """
+    a = a.with_region("column", "flare", flare_body())
+    a = a.with_keepout("flare_sweep", flare_body())
+    miss_h, miss_r = FLARE_MISS_H, FLARE_OUTER_R + FLARE_MISS_W
+    a = a.with_keepout(
+        "flare_miss",
+        Pos(0, 0, FLARE_RIM_Z + miss_h / 2)
+        * (Cylinder(miss_r, miss_h) - Cylinder(FLARE_MOUTH_R, miss_h * 2)),
+    )
+    # The miss zone's floor is where the built rim actually tops out.
+    a = a.assert_distance(
+        "column", Plane.XY.offset(FLARE_RIM_Z), along="Z",
+        min_mm=0.0, max_mm=0.0, name="flare_rim_at_rim_plane",
+    )
+    a = a.assert_scalar(
+        "flare_slide_margin", _FLARE_TAN,
+        ge=MU_STATIC_BUDGET, detail="µ_s budget, ABS brick on the PLA funnel face",
+    )
+    # Clear of this column's own trap drive, which sits under the flare
+    # on the +Y face. Rigid with the column but for the horn and coupler,
+    # which turn about the hinge (`make_assembly` holds the swing).
+    for name, path in (
+        ("trap_servo", "trap_servo"),
+        ("servo_horn", "trap.servo_horn"),
+        ("trap_coupler", "trap.trap_coupler"),
+    ):
+        a = a.assert_distance(
+            "column@flare", path,
+            min_mm=FLARE_DRIVE_CLEARANCE, name=f"flare_clear_of_{name}",
+        )
+    # The exit path stays open under the flare: the opening continued
+    # outward, as far as the flare reaches. The column touches it all
+    # round (it is the opening's own cut), so 0 is the reading; flare
+    # material left standing in it overlaps and fails.
+    exit_path = Pos(
+        (COL_OUTER_SIDE / 2 + FLARE_OUTER_R) / 2 + 1.0, 0,
+        (OPENING_Z_BOT + OPENING_Z_TOP) / 2,
+    ) * Box(
+        FLARE_OUTER_R - COL_OUTER_SIDE / 2 + 2.0, OPENING_W,
+        OPENING_Z_TOP - OPENING_Z_BOT,
+    )
+    return a.assert_clear_of("column", exit_path, name="flare_clear_of_exit_path")
 
 
 def make_assembly(role: str = "middle") -> Assembly:
     """Build the standalone single-floor assembly for the given role.
 
-    `role` ∈ FLOOR_ROLES. Middle and top are geometrically identical
-    here (both see the same lower-floor column + servo stand-ins);
-    base omits the lower-floor stand-ins and includes its bottom
-    collar instead.
+    `role` ∈ FLOOR_ROLES. Middle and top see the same lower-floor
+    column + servo stand-ins and differ only at the column's top (the
+    joint flange, or the flare and its claims); base omits the
+    lower-floor stand-ins and includes its bottom collar instead.
 
     Composes the same builders the tower consumes: static parts at
     the root (``build_column_side_static``), the revolving parts as

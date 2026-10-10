@@ -22,10 +22,11 @@ builders (role differences are builder parameters) and placed by one
 - `rotating_stack.f{idx}` — the floor's revolving parts: column +
   ramp + trap servo + the jointed `trap` subtree (plate, hinge pin,
   coupler, horn — hanging, at rest)
-  (`ramp_mechanism.build_column_side_rotating`). Roles differ only at
-  the column bottom: base has a bottom collar (motor + ring-gear
+  (`ramp_mechanism.build_column_side_rotating`). Roles differ at the
+  column's ends: base has a bottom collar (motor + ring-gear
   interface); middle/top have a bottom face flange that mates with
-  the column below at the joint plane (z_world = N·220 + 273). Each
+  the column below at the joint plane (z_world = N·220 + 273); top has
+  the feed flare in place of the top joint flange. Each
   column carries a rotating collar at z_local 220..225 that the
   bearing of the floor *above* grips.
 - `drive_train` — off-axis ring gear / pinion / motor / motor mount
@@ -119,9 +120,10 @@ from .ramp_mechanism import assembly as _ramp
 
 # --- Top deck ----------------------------------------------------------
 #
-# Clear-acrylic disc capping the tower. The top feed (m03's DUMP into
-# a rotating flare) and the ceiling sleeve are not built — see
-# `_notes/state/m05-diverter.md` §"Top deck — open detail".
+# Clear-acrylic disc capping the tower. The top feed is m03's DUMP
+# into the flare on the top column (`ramp_mechanism` FLARE_*; the m03
+# side is `cad/check_dump_feed.py`). The ceiling sleeve is not built —
+# see `_notes/state/m05-diverter.md` §"Top deck — open detail".
 # The OD is `params.TOP_DECK_OD` (a knob the top level tunes).
 TOP_DECK_T = 10.0
 TOP_DECK_APERTURE_D = 150.0  # clears top column's rotating collar (OD 138 at z 880..885)
@@ -137,6 +139,10 @@ TOP_DECK_APERTURE_D = 150.0  # clears top column's rotating collar (OD 138 at z 
 # At the grown OD for the top feed it is a closed hole (owner
 # 2026-10-06).
 TOP_DECK_POST_CLEAR = 1.0
+# Floor on the gap between the deck and the flare turning over it. The
+# top column's trap servo stands in that gap; this is not a claim that
+# a hand reaches it.
+TOP_DECK_FLARE_CLEAR = 20.0
 _NOTCH_PAST_RIM = 10.0       # how far a run-out notch carries past the rim
 
 # The `off_deck` keep-out (see `_add_top_deck`): a band on the deck-top
@@ -379,7 +385,7 @@ def _add_floor_pair_checks(a: Assembly, lower: int, upper: int) -> Assembly:
 
 
 def _add_top_deck_checks(
-    a: Assembly, top: int, posts: dict[int, float],
+    a: Assembly, top: int, posts: dict[int, float], *, flare: bool,
 ) -> Assembly:
     """Disc rests on the through-column tops (tangent contact at
     z = top_z) and clears the top floor's central column body +
@@ -424,11 +430,19 @@ def _add_top_deck_checks(
         )
     # The top floor's trap servo rides above the deck plane, radially
     # past the aperture (r up to ≈ 91 vs 75) — it must clear the disc.
-    return (
+    a = (
         a
         .assert_no_interference("top_acrylic", _rot(top, "column"))
         .assert_no_interference("top_acrylic", _rot(top, "trap_servo"))
     )
+    if flare:
+        # The flare turns over the deck; round, so one reading holds at
+        # every azimuth (and `check_stack_turn.py` turns it anyway).
+        a = a.assert_distance(
+            "top_acrylic", _rot(top, "column") + "@flare",
+            min_mm=TOP_DECK_FLARE_CLEAR, name="flare_over_deck",
+        )
+    return a
 
 
 def _add_base_bearing_checks(a: Assembly, base: int) -> Assembly:
@@ -718,7 +732,10 @@ def build_tower(
         a = _add_floor_pair_checks(a, floors[i], floors[i + 1])
 
     if with_top_deck:
-        a = _add_top_deck_checks(a, floors[-1], posts)
+        # Only a top-role column carries the flare (and its region).
+        a = _add_top_deck_checks(
+            a, floors[-1], posts, flare=floor_plan[-1][1] == "top",
+        )
 
     base_idx = next((idx for idx, role in floor_plan if role == "base"), None)
     if base_idx is not None:

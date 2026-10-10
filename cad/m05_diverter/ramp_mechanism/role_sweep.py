@@ -58,6 +58,25 @@ waivers = {
         "under the annular features and the cage web",
     },
 }
+# The top column is a different body since the flare (2026-10-10): no
+# joint flange, and a funnel on top. The waiver above was written
+# against a flanged column, so here it is bound to what it covered
+# that the top column still has: the pre-flare reading, 11400.94 mm² in
+# 19 regions, less the flange underside (5634.58 mm², one region), with
+# the lintel at its 3 mm wall depth (240 mm²). The flare's underside is
+# cut at FLARE_UNDER_DEG so that it adds nothing. What does go past the
+# bound is the lintel: the opening cut runs out through the flare's
+# root, so its ceiling is 774.08 mm² (11.4 mm past the wall) and the
+# reading is 6300.44 mm². That is not waived here — it is the owner's
+# call (`_notes/state/m05-ramp-mechanism.md`).
+top_column_waivers = {
+    "overhang_max": Waiver(
+        reason=waivers["column"]["overhang_max"]
+        + " (top role: no joint flange; bound to the pre-flare reading "
+        "less the flange underside)",
+        max_area_mm2=5767.0, max_regions=18,
+    ),
+}
 for role in FLOOR_ROLES:
     printed = [
         ("bearing_spider", bearing_spider(role)),
@@ -67,9 +86,12 @@ for role in FLOOR_ROLES:
         # The base floor's ring bearing is the bought turntable stub.
         printed.append(("ring_bearing", ring_bearing(role)))
     for name, part in printed:
+        waive = waivers.get(name)
+        if (role, name) == ("top", "column"):
+            waive = top_column_waivers
         inspect(
             part, method=method, out=f"outputs/{role}", name=name,
-            waive=waivers.get(name),
+            waive=waive,
         )
 # Trap and ramp are role-independent — inspect once at the top.
 inspect(

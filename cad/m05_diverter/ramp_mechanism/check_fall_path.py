@@ -19,7 +19,8 @@ so the probe follows the design. The yaws cover a half
 turn, so one floor's claims cover every floor whatever its opening
 azimuth.
 
-Scope: the middle role (top is identical here). The base floor's pass —
+Scope: the middle role (top has the same bore; it differs only above
+the joint plane, where its flare opens onto it). The base floor's pass —
 down through the turntable and the ring gear to the bottom catch — needs
 `base_floor`, a sibling, so it is `../check_base_fall_path.py` plus the
 tower's `base_fall_path` keep-out claim.
