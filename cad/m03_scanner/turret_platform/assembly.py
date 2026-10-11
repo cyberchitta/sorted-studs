@@ -672,7 +672,7 @@ STATION_ANGLES = {
 
 # Acrylic insert shape-truth color — faint blue-white at α=0.25 to
 # render as clear PMMA in cad-khana's flat-shaded GLB path. The
-# chitra-cad photo-real path uses ``acrylic_clear`` from its material
+# cad_khana.render photo-real path uses ``acrylic_clear`` from its material
 # catalog (transmission=1.0, ior=1.49) and ignores this color.
 ACRYLIC_INSERT_COLOR = Color(0.95, 0.97, 0.98, 0.25)
 

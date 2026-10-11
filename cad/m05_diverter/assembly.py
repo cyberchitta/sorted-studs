@@ -274,7 +274,7 @@ def _build_floor_static(role: str, basket_layout) -> Assembly:
 # Top-deck shape-truth color — faint blue-white at α=0.25 to render as
 # clear PMMA in cad-khana's flat-shaded GLB path (mirrors
 # m03_scanner/turret_platform/assembly.py:ACRYLIC_INSERT_COLOR). The
-# chitra-cad photo-real path uses ``acrylic_clear`` from its material
+# cad_khana.render photo-real path uses ``acrylic_clear`` from its material
 # catalog (transmission=1.0, ior=1.49) and effectively ignores this
 # color (alpha is stripped at render time and the RGB matches the
 # material's base_color).

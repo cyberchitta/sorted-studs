@@ -19,7 +19,7 @@ MATERIAL_OF: dict[str, str | None] = {
     "bowl_1":     "pla_matte",
     "bowl_2":     "pla_matte",
     "pinion":     "pla_matte",
-    "bearing":    "aluminium",
+    "bearing":    "aluminium_anodized",
     "motor":      "cast_aluminium_dark",
     "arc_screw_pos": "steel",
     "arc_screw_neg": "steel",

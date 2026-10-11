@@ -1,7 +1,7 @@
 """M03 scanner — cinematic mp4 of the animated rig.
 
 Three named camera moves (pick via ``CINE_CAMERA``) drive
-chitra_cad.animation's two entry points. Each move stays closer to
+cad_khana.render.animation's two entry points. Each move stays closer to
 the rig than the abandoned wide-orbital first pass — the rig is
 cubical, so wide framings leave dead background space.
 
@@ -56,7 +56,7 @@ Env knobs:
                    uniform under a moving camera.
   CINE_HDRI_ROT  — HDRI yaw rotation in degrees, or "auto" (default).
                    "auto" scans the HDRI's equator-band luminance via
-                   ``chitra_cad.lighting.scan_hdri`` and yaws so the
+                   ``cad_khana.render.lighting.scan_hdri`` and yaws so the
                    *backdrop* (widest uniformly-bright region — the
                    photographer's intended white/grey wall) lands at
                    the look-through-the-rig azimuth (60°, opposite
@@ -83,13 +83,13 @@ from .detail_variations import apply_default_detail  # noqa: E402
 from .hdri_framing import lookup as hdri_override_lookup  # noqa: E402
 from .material_variations import DEFAULT_OVERRIDES  # noqa: E402
 
-from chitra_cad import lighting  # noqa: E402
-from chitra_cad.animation import (  # noqa: E402
+from cad_khana.render import lighting  # noqa: E402
+from cad_khana.render.animation import (  # noqa: E402
     render_animation,
     render_animation_from_glb,
 )
-from chitra_cad.framing import FixedPose  # noqa: E402
-from chitra_cad.scene import Scene  # noqa: E402
+from cad_khana.render.framing import FixedPose  # noqa: E402
+from cad_khana.render.scene import Scene  # noqa: E402
 
 
 DEFAULT_GLB = (
@@ -152,7 +152,7 @@ def _resolve_hdri() -> str | Path:
 
 
 def _build_rig_and_framing() -> tuple[lighting.StudioRig, float, float]:
-    """Pick chitra-cad's HDRI rig and the (vfov, drift) framing that
+    """Pick cad_khana.render's HDRI rig and the (vfov, drift) framing that
     fit inside this HDRI's backdrop wall.
 
     ``CINE_HDRI=none`` falls back to the flat-grey ``DEFAULT`` rig

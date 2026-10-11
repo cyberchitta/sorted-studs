@@ -1,19 +1,19 @@
-"""M03 scanner — photo-real render via chitra-cad.
+"""M03 scanner — photo-real render via cad_khana.render.
 
 Imports the composed top-level assembly (already module-level in
 ``assembly.py``) and applies two override layers before handing it to
-chitra-cad:
+cad_khana.render:
 
   * ``detail_variations.default_detail`` — swap each cheap 20×20×L
     Box stub for a real V-slot profile from ``bd_warehouse``. Same
     pose, same material/color; only the underlying shape changes.
   * ``material_variations.DEFAULT_OVERRIDES`` — the render-only
     material overrides for parts whose real-world material isn't yet
-    representable in chitra-cad's table. Settled materials live on
+    representable in cad_khana.render's table. Settled materials live on
     the assembly itself; see ``material_variations.py`` for the
     promotion convention.
 
-Lighting and camera framing come from chitra-cad's defaults; do not
+Lighting and camera framing come from cad_khana.render's defaults; do not
 author them here.
 """
 
@@ -27,10 +27,10 @@ from .assembly import build_m03
 from .detail_variations import apply_default_detail
 from .material_variations import DEFAULT_OVERRIDES
 
-from chitra_cad import lighting
-from chitra_cad.framing import HERO_3Q
-from chitra_cad.render import render
-from chitra_cad.scene import Scene
+from cad_khana.render import lighting
+from cad_khana.render.framing import HERO_3Q
+from cad_khana.render.render import render
+from cad_khana.render.scene import Scene
 
 
 def build_scene(schema: str = DEFAULT_SCHEMA) -> Scene:
@@ -45,8 +45,8 @@ def build_scene(schema: str = DEFAULT_SCHEMA) -> Scene:
 
 
 def _pick_rig() -> lighting.StudioRig:
-    """``SORTED_STUDS_HDRI=studio`` (default) selects chitra-cad's HDRI
-    rig; ``none`` falls back to the flat-grey DEFAULT for diagnostic
+    """``SORTED_STUDS_HDRI=studio`` (default) selects cad_khana.render's HDRI
+    rig; ``none`` falls back to the grey-world, sun-keyed DEFAULT for diagnostic
     comparison; any other bundled name (``interior`` / ``courtyard`` /
     ``forest`` / …) swaps the environment; an absolute or
     relative-to-this-script path to an ``.exr`` / ``.hdr`` uses a
@@ -93,7 +93,7 @@ def render_m03(
     """Render m03 under ``schema`` into ``out``; returns the paths written.
 
     Callable in a loop from one process — ``render_all_ds.py`` renders
-    every palette that way. chitra-cad resets the Blender scene per
+    every palette that way. cad_khana.render resets the Blender scene per
     call, so successive schemas don't contaminate each other.
     """
     return render(

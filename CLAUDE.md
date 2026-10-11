@@ -22,7 +22,8 @@ The repository is in a **second CAD pass** — three modules (singulator, scanne
 - `subsite/` — Build-in-public eleventy site (bun-managed). Edits stay
   uncommitted until the user signals a publish.
 - `pyproject.toml` + `uv.lock` + `.venv/` — uv-managed Python environment.
-  `cad-khana` and `chitra-cad` are installed editable from sibling repos.
+  `cad-khana` is installed editable from a sibling repo, with its `render`
+  extra (Blender) for the photo-real renders.
 - `AGENTS.md` — Cross-tool agent guidance (Claude Code, Codex CLI).
 
 ## Architecture

@@ -57,7 +57,7 @@ def _srgb(r: float, g: float, b: float) -> Color:
 
     The returned ``build123d.Color`` carries the sRGB-encoded values
     *as-is*; consumers that need linear light (Blender Cycles via
-    ``chitra-cad.scene._color_to_rgb``) convert at their input
+    ``cad_khana.render.scene._color_to_rgb``) convert at their input
     boundary. Consumers that emit sRGB (cad-khana's glTF export, which
     labels OCP colours as ``Quantity_TOC_sRGB``) use the values
     directly — double-linearization would crush them to near-black,
@@ -472,7 +472,7 @@ def fill_palette_neutrals(assembly: Assembly, neutral: Color) -> Assembly:
     palette. Filling with the palette's mid-luminance neutral
     (``neutral_of``) reads cleanly against both themes.
 
-    Photo-real chitra-cad renders are unaffected: they go through a
+    Photo-real cad_khana.render renders are unaffected: they go through a
     different driver (``cad/render.py``) that builds its own Assembly
     per palette pass, so this in-place-style return value doesn't leak
     into Cycles' material catalog.

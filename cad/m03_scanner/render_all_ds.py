@@ -37,7 +37,7 @@ def main() -> None:
     _OUT_DIR.mkdir(parents=True, exist_ok=True)
     for ds in PALETTE_NAMES:
         dest = _OUT_DIR / f"{ds}.png"
-        # chitra-cad names its single-frame output ``render.png``, so
+        # cad_khana.render names its single-frame output ``render.png``, so
         # each pass renders into a scratch dir and moves the result to
         # the palette-named destination.
         with tempfile.TemporaryDirectory() as tmp:

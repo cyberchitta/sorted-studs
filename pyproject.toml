@@ -4,8 +4,7 @@ version = "0.0.1"
 description = "LEGO sorting system — design, build scripts, and documentation."
 requires-python = ">=3.13,<3.14"
 dependencies = [
-    "cad-khana",
-    "chitra-cad",
+    "cad-khana[render]",
 ]
 
 [tool.uv]
@@ -13,4 +12,3 @@ package = false
 
 [tool.uv.sources]
 cad-khana = { path = "../cad-khana", editable = true }
-chitra-cad = { path = "../chitra-cad", editable = true }

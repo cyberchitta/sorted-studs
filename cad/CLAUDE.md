@@ -303,7 +303,7 @@ package imports and force `importlib` workarounds.
 
 ## Running checks
 
-`cad-khana` and `chitra-cad` are installed (editable) in the repo's
+`cad-khana` is installed (editable, with its `render` extra) in the repo's
 `uv`-managed venv at `.venv/`. Invoke the CLI directly:
 
 ```

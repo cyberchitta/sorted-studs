@@ -3,7 +3,7 @@
 Settled materials live on the assembly itself (set at each
 ``.with_part(name=..., material=...)`` site). This module only carries
 *unsettled* assignments — parts whose real-world material isn't yet
-representable in chitra-cad's material table (transparent acrylic,
+representable in cad_khana.render's material table (transparent acrylic,
 first-surface mirror glass, FR4 PCB) or whose answer is genuinely open
 (opto-interrupter housing finish).
 
@@ -23,7 +23,7 @@ from __future__ import annotations
 # parts, unlike the leaf-keyed attribute maps in materials.py.
 DEFAULT_OVERRIDES: dict[str, str] = {
     # Camera mounts: PCB (FR4) and lens (glass) for each of the four
-    # tetrahedral cameras — chitra-cad has neither material yet.
+    # tetrahedral cameras — cad_khana.render has neither material yet.
     "rig.cam_front_low_pcb": "pla_matte",
     "rig.cam_back_upper_pcb": "pla_matte",
     "rig.cam_below_left_pcb": "pla_matte",

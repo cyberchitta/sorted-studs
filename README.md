@@ -170,14 +170,14 @@ cad/            Build123d / cad-khana assemblies — one directory per module
                 diverter + m03 turret unit + m02 chain).
 subsite/        Build-in-public eleventy site (bun-managed). Published
                 exhibits are GLB models exported from cad/.
-pyproject.toml  uv-managed Python environment. cad-khana and chitra-cad
-                are installed editable from sibling repos.
+pyproject.toml  uv-managed Python environment. cad-khana is installed
+                editable from a sibling repo.
 ```
 
 CAD tooling: [cad-khana](https://github.com/cyberchitta/cad-khana) wraps
 Build123d with assembly-level interference/clearance assertions and
-per-part printability checks. [chitra-cad](https://github.com/cyberchitta/chitra-cad)
-renders the same assemblies through Blender Cycles for the exhibits.
+per-part printability checks. Its `cad_khana.render` layer renders the
+same assemblies through Blender Cycles for the exhibits.
 Run checks with `.venv/bin/khana check <assembly.py>`.
 
 ---

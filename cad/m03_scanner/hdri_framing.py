@@ -1,6 +1,6 @@
 """Per-HDRI manual framing overrides for ``render_cinematic_mp4.py``.
 
-For each HDRI, ``chitra_cad.lighting.scan_hdri`` computes a backdrop
+For each HDRI, ``cad_khana.render.lighting.scan_hdri`` computes a backdrop
 azimuth + width + a recommended (vfov, drift) that fits the wall.
 The auto-computed values are usually fine. When they aren't —
 because the wall edge is diffuse, or the rig should sit slightly

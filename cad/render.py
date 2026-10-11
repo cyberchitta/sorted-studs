@@ -3,7 +3,7 @@ sorted-studs — top-level photo-real render.
 
 Composes the same three-module stack as ``cad/assembly.py`` and
 renders it under both design schemas (``workshop`` and ``bauhaus``)
-via chitra-cad. Output lands in
+via cad_khana.render. Output lands in
 ``cad/outputs/renders/<schema>/`` — under the existing
 ``cad/**/outputs/`` gitignore prefix, so renders don't bloat the
 repo.
@@ -16,7 +16,7 @@ Layers applied before rendering (per module):
     (`_notes/state/m02-singulator.md` lists the slice).
   * ``material_variations.DEFAULT_OVERRIDES`` — render-only material
     overrides for parts whose real-world material isn't yet in
-    chitra-cad's table (m03 only). Keys are module-local tree paths;
+    cad_khana.render's table (m03 only). Keys are module-local tree paths;
     composition qualifies them under the unit's subtree name
     (``rig.cam_front_low_pcb`` → ``m03.rig.cam_front_low_pcb``).
 
@@ -28,7 +28,7 @@ this file had to evict ``cad.m02_*`` / ``cad.m03_*`` / ``cad.m05_*``
 from ``sys.modules`` and re-import them to make the units re-read it —
 the last surviving eviction site in the tree, and now gone.
 
-Lighting and camera framing come from chitra-cad's defaults.
+Lighting and camera framing come from cad_khana.render's defaults.
 """
 
 from __future__ import annotations
@@ -39,9 +39,9 @@ import importlib.util
 from build123d import Pos
 
 from cad_khana.mechanism.assembly import Assembly
-from chitra_cad.framing import HERO_3Q
-from chitra_cad.render import render
-from chitra_cad.scene import Scene
+from cad_khana.render.framing import HERO_3Q
+from cad_khana.render.render import render
+from cad_khana.render.scene import Scene
 
 from .assembly import m03_pose
 from .m02_c_channel_singulator.assembly import build_m02
@@ -81,7 +81,7 @@ def _with_overrides(
     Returns ``(detailed_assembly, material_overrides)``. Material
     overrides are render-time-only and stay module-local here;
     ``_build_top_level`` qualifies them under the unit's subtree name
-    before they hit the chitra-cad scene. Both layers are optional —
+    before they hit the cad_khana.render scene. Both layers are optional —
     only m03 and m05 carry detail variations, only m03 carries
     material overrides — hence the spec probe rather than a plain
     import.

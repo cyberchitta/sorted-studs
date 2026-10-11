@@ -1,4 +1,4 @@
-"""M03 scanner — 4-camera POV render via chitra-cad.
+"""M03 scanner — 4-camera POV render via cad_khana.render.
 
 Sister to ``render.py``. Where ``render.py`` shoots the rig from the
 default 3/4 hero pose, this script pins the camera to each of the four
@@ -34,9 +34,9 @@ from .detail_variations import apply_default_detail
 from .material_variations import DEFAULT_OVERRIDES
 
 from build123d import Box, Color
-from chitra_cad.framing import FixedPose
-from chitra_cad.render import render
-from chitra_cad.scene import Scene
+from cad_khana.render.framing import FixedPose
+from cad_khana.render.render import render
+from cad_khana.render.scene import Scene
 
 
 BRICK_2X4 = (31.8, 15.8, 9.6)
