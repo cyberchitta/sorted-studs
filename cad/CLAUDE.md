@@ -311,16 +311,15 @@ package imports and force `importlib` workarounds.
 # resolve one member, run one verb. Nothing in the module executes.
 .venv/bin/khana check  <path/to/assembly.py>   # diagnostics + assertions
 .venv/bin/khana export <path/to/assembly.py>   # write STL + STEP
-.venv/bin/khana view   <path/to/assembly.py>   # push to the OCP viewer
+.venv/bin/khana view   <path/to/assembly.py>   # write a viewer page (outputs/page/)
 .venv/bin/khana draw   <path/to/assembly.py>   # ortho + iso engineering drawings
 
 # exec-model verb — runs a command script for effect
 .venv/bin/khana run    <path/to/printability.py>
 ```
 
-`uv run khana …` works too. `khana build` is **deprecated** and
-retires in the next cad-khana release — it is `run` plus exports, and
-nothing in this tree needs it any more.
+`uv run khana …` works too. `khana build` is **retired** — it was
+`run` plus exports, and nothing in this tree uses it.
 
 **Member resolution.** With no `:factory`, `check`/`export`/`view`/
 `draw` resolve the name `assembly` — a callable is called, a bare
