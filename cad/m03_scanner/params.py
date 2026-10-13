@@ -355,7 +355,7 @@ ARCH_POST_Z_TOP = T_FRAME_RAIL_D_TOP_Z                   # = +168.1
 # centerline) and at the post Y; they butt against rail D's east /
 # west faces with CORNER_GAP. Used by ``arch/assembly.py``.
 ARCH_CROSSBAR_Z = T_FRAME_RAIL_D_Z                       # = +158.1
-ARCH_CROSSBAR_Y = ARCH_POST_Y                            # = -3.3 (matches post Y)
+ARCH_CROSSBAR_Y = ARCH_POST_Y                            # matches post Y
 
 
 # --- Per-vertex camera-mount placement ---------------------------------
