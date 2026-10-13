@@ -76,8 +76,9 @@ at the vertices of a regular tetrahedron centred on the brick — 1 front-low,
 Pairwise lens-axis separation is 109.47° — provably the most informative
 4-view configuration. Multi-view fusion is the core innovation over existing
 sorters that rely on a single top-down view. An earlier mirrors-and-one-camera
-topology at the same four vertex positions was abandoned in 2026-05-04 for
-cost, optical-tolerancing, and host-agnosticism reasons; see
+topology at the same four vertex positions was abandoned on 2026-05-04, when a
+render from the camera's own position showed the two lower mirrors hidden
+behind the platform edges, with no line of sight to them from the camera; see
 `_notes/decisions/m03-cameras.md`.
 
 **Singulator (Module 2):** Cylindrical C-channel (spinning faceted rotor
