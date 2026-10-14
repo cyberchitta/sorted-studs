@@ -53,16 +53,19 @@ A gantry of 2020 aluminum extrusion, standing on the two through-deck posts, car
   .pane-multiview .cad-hidden  { stroke: var(--color-base-content); stroke-opacity: 0.35; stroke-width: 0.5; }
 </style>
 
-<figure class="pane pane-multiview my-6" data-asset-root="/assets/exhibits/">
-  <div class="grid grid-cols-2 gap-2">
-    <%- helpers.inlineSvg('assets/exhibits/singulator-iso-260918.svg') %>
-    <%- helpers.inlineSvg('assets/exhibits/chain-iso-260918.svg') %>
-    <%- helpers.inlineSvg('assets/exhibits/chain-front-260918.svg') %>
-    <%- helpers.inlineSvg('assets/exhibits/chain-top-260918.svg') %>
-  </div>
-</figure>
-
-One stage; then the chain on its posts and deck from three sides.
+<div class="not-prose bg-base-200 rounded-lg shadow-sm border border-base-300 overflow-hidden" style="margin: 2rem 0">
+  <figure class="pane-multiview m-0">
+    <div class="px-1 sm:px-4 py-1">
+      <div class="grid grid-cols-2 gap-2 bg-base-100 rounded border border-base-300 p-2">
+        <%- helpers.inlineSvg('assets/exhibits/singulator-iso-260918.svg') %>
+        <%- helpers.inlineSvg('assets/exhibits/chain-iso-260918.svg') %>
+        <%- helpers.inlineSvg('assets/exhibits/chain-front-260918.svg') %>
+        <%- helpers.inlineSvg('assets/exhibits/chain-top-260918.svg') %>
+      </div>
+    </div>
+    <figcaption class="px-1 sm:px-4 py-1 mt-0 mb-1" style="font-size: 0.8125rem; opacity: 0.7">One stage; then the chain on its posts and deck from three sides.</figcaption>
+  </figure>
+</div>
 
 ## Scanner: Four Cameras, Four Stations
 

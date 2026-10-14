@@ -1,6 +1,7 @@
 <%# Shadows SG's empty default. GLB infrastructure for <glb-pane>:
     Google's <model-viewer> custom element + the theme-aware src swapper
-    that picks the dark or light GLB variant. Both are no-ops on pages
+    that picks the dark or light GLB variant, and the reduced-motion
+    switch that drops autoplay. All are no-ops on pages
     that contain no <model-viewer[data-glb-base]>. %>
 <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.0.0/dist/model-viewer.min.js"></script>
 <script>
@@ -22,5 +23,25 @@
       apply();
     }
     new MutationObserver(apply).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+
+    // Reduced motion: no autoplay. Runs before <model-viewer> upgrades (the
+    // module script is deferred), so a model loaded under the preference never
+    // starts; a change while the page is open pauses or resumes.
+    var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)');
+    function motion() {
+      document.querySelectorAll('model-viewer[data-glb-base]').forEach(function (mv) {
+        if (reduce.matches) {
+          mv.removeAttribute('autoplay');
+          if (mv.pause) mv.pause();
+        } else {
+          mv.setAttribute('autoplay', '');
+          if (mv.play && mv.loaded) mv.play();
+        }
+      });
+    }
+    if (reduce) {
+      motion();
+      if (reduce.addEventListener) reduce.addEventListener('change', motion);
+    }
   })();
 </script>
