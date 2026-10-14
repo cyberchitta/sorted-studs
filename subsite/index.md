@@ -36,7 +36,7 @@ Bulk bricks go in at the top of a three-stage singulator, come out one at a time
 
 The diverter is the chassis, a hex tower 660 mm across. The scanner turret stands on the diverter's acrylic top deck with its dump station directly over the stack's axis. The singulator chain stands on two of the diverter's corner columns, which continue up through the deck as posts.
 
-<glb-pane src="/assets/exhibits/machine-260919.glb" orbit="140deg 65deg auto" alt="The whole machine: singulator gantry above the scanner turret, both standing on the hex-tower diverter" />
+<glb-pane themed="true" src="/assets/exhibits/machine-260919.glb" orbit="140deg 65deg auto" alt="The whole machine: singulator gantry above the scanner turret, both standing on the hex-tower diverter" />
 
 ## Singulator: Three Stages on a Curve
 
@@ -73,7 +73,7 @@ Four cameras sit at the vertices of a regular tetrahedron[^tetra-original] aroun
 
 A turret with four platforms indexes each brick through four stations: load, image, idle, dump. The platforms are clear acrylic, so the two lower cameras shoot up through them. At the dump station a stationary servo tips the platform and the brick falls into the diverter's stack.
 
-<glb-pane src="/assets/exhibits/scanner-260918.glb" orbit="-85deg 45deg auto" alt="Scanner rig — tetrahedral four-camera scanning station, turret rotating through its four stations" />
+<glb-pane themed="true" src="/assets/exhibits/scanner-260918.glb" orbit="-85deg 45deg auto" alt="Scanner rig — tetrahedral four-camera scanning station, turret rotating through its four stations" />
 
 ## Diverter: A Hex Tower of Baskets
 
@@ -85,7 +85,7 @@ Baskets come in four widths, all sharing the same inner and outer arcs, and each
 
 The layout drawn, fifty-one baskets in all, is an illustration; how a collection actually gets sorted will set which sizes go where.
 
-<glb-pane src="/assets/exhibits/diverter-260920.glb" orbit="0deg 75deg auto" alt="Diverter mechanism — hex tower with central rotating ramp and per-floor trap doors" caption="A three-floor build, most baskets removed, so the stack, ramps and traps show. Claude can redraw the tower at another floor count." />
+<glb-pane themed="true" src="/assets/exhibits/diverter-260920.glb" orbit="0deg 75deg auto" alt="Diverter mechanism — hex tower with central rotating ramp and per-floor trap doors" caption="A three-floor build, most baskets removed, so the stack, ramps and traps show. Claude can redraw the tower at another floor count." />
 
 ## What the Checker Knows
 

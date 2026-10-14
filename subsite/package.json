@@ -13,7 +13,7 @@
     "ejs": "^5.0.1"
   },
   "dependencies": {
-    "@cyberchitta/supramental-gold": "github:cyberchitta/supramental-gold#v0.4.20",
+    "@cyberchitta/supramental-gold": "github:cyberchitta/supramental-gold#v0.4.22",
     "marked": "^18.0.3"
   }
 }
