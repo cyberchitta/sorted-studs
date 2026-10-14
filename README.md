@@ -20,7 +20,7 @@ iterate on their own systems.
 **Second CAD pass; nothing fabricated yet.** Three modules
 (singulator, scanner, diverter) have detailed Build123d assemblies under
 `cad/` and rendered exhibits on the [build-in-public
-subsite](https://sortedstuds.cyberchitta.cc). The first CAD pass never
+subsite](https://sorted-studs.cyberchitta.cc). The first CAD pass never
 reached fabrication; this second pass carries forward the lessons and
 targets a workshop build. A handful of open mechanical questions
 remain before the first physical print.
@@ -174,6 +174,9 @@ pyproject.toml  uv-managed Python environment. cad-khana is installed
                 editable from a sibling repo.
 ```
 
+To set up, clone [cad-khana](https://github.com/cyberchitta/cad-khana) next
+to this repo (`../cad-khana`), then run `uv sync` here.
+
 CAD tooling: [cad-khana](https://github.com/cyberchitta/cad-khana) wraps
 Build123d with assembly-level interference/clearance assertions and
 per-part printability checks. Its `cad_khana.render` layer renders the
@@ -187,7 +190,7 @@ Run checks with `.venv/bin/khana check <assembly.py>`.
 **Phase 1 — CAD foundation (current).** Detailed Build123d assemblies
 for the singulator, scanner, and diverter, including interference and
 clearance assertions across the integrated rig. The
-[subsite](https://sortedstuds.cyberchitta.cc) publishes rendered
+[subsite](https://sorted-studs.cyberchitta.cc) publishes rendered
 exhibits as modules stabilize.
 
 **Phase 2 — First physical build.** Print and assemble Modules 2, 3, 5
@@ -208,6 +211,12 @@ bag-filling (Module 8).
 **Phase 6 — Polish & scale.** 2,000+ part recognition. Optional edge-
 accelerator (Coral / Jetson) deployment for standalone operation
 without a Mac. Community documentation.
+
+---
+
+## License
+
+[Apache License 2.0](LICENSE).
 
 ---
 

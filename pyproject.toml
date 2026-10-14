@@ -3,6 +3,7 @@ name = "sorted-studs"
 version = "0.0.1"
 description = "LEGO sorting system — design, build scripts, and documentation."
 requires-python = ">=3.13,<3.14"
+license = "Apache-2.0"
 dependencies = [
     "cad-khana[render]",
 ]

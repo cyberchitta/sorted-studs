@@ -290,15 +290,14 @@ A pass that finds nothing is a successful pass.
 
 Observed live 2026-07-21: one `working-notes` symlink, `ls ~/GitHub/working-notes`,
 or `git status` in `_notes/` exposes **every** project's notes — it is one repo.
-A session here pulled live operational data (resident names, account numbers,
-payment amounts) out of another project's corpus while looking for prior art on
-note organisation.
+A session here pulled private data out of another project's corpus while
+looking for prior art on note organisation.
 
 - When reading another project's notes for **prior art on structure**, read the
   *skill* (`.claude/skills/`, committed, written to be read) — not the corpus.
   `ls` for layout; never `cat`/`head` a worklist or handoff.
-- `annam` holds data about identifiable people. Treat its `_notes/` as **out of
-  bounds** from any sorted-studs session.
+- Other projects' corpora can hold data about identifiable people. Treat them as
+  **out of bounds** from any sorted-studs session.
 - Redaction is not the fix and neither is care — the reachability is structural.
   The finding itself, and re-pricing the repo-split deferral, live in
   `working-notes/DESIGN.md`; that is the owner's call, not this skill's.
