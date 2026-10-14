@@ -34,3 +34,7 @@
   for = "/assets/exhibits/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+    # www.cyberchitta.cc's cad-khana article loads the diverter GLB from here.
+    # `*` so its local dev server and deploy previews load it too; the
+    # exhibits are public files.
+    Access-Control-Allow-Origin = "*"
