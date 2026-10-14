@@ -10,7 +10,7 @@ const featuredImage = {
   url: `${env.mainSiteUrl}/assets/images/heroes/lego-scanner-tight-26050702.webp`,
   ogFormat: 'png',
   credit:
-    "Rotating Turret Scanner vibe Caded with @claude-opus-4.7 using the <a href='https://github.com/cyberchitta/cad-khana'>cad-khana</a> skill.",
+    "Rotating Turret Scanner vibe Caded with @claude-opus-4.7 using the <a href='https://github.com/cyberchitta/cad-khana'>CAD Khana</a> skill.",
 };
 
 export default {

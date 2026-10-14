@@ -24,7 +24,7 @@ updates:
 
 > Work in progress: designed, not yet built. This page is rewritten whole as the design moves.
 
-A LEGO sorting machine, vibe Caded with Claude using [cad-khana](https://github.com/cyberchitta/cad-khana): Claude writes the parts as code, writes the checks they must pass, and cad-khana runs them. 356 parts, 305 commits over six months, eleven models in the co-author trailers.
+A LEGO sorting machine, vibe Caded with Claude using [CAD Khana](https://github.com/cyberchitta/cad-khana): Claude writes the parts as code, writes the checks they must pass, and CAD Khana runs them. 356 parts, 305 commits over six months, eleven models in the co-author trailers.
 
 @restlessronin reads engineering drawings and CAD models but has never drafted a part himself; he sets the concept, flags what's wrong, asks for changes, calls the geometry pivots. The expertise is thin. The output isn't.
 
@@ -89,9 +89,9 @@ The layout drawn, fifty-one baskets in all, is an illustration; how a collection
 
 ## What the Checker Knows
 
-Claude writes each assembly's claims alongside its parts: no two parts overlap, moving parts keep their clearance through a swept motion, a bar actually rests on its post rather than floating above it, no opaque part crosses a lower camera's sightline. cad-khana also checks printed parts for wall thickness and overhang.
+Claude writes each assembly's claims alongside its parts: no two parts overlap, moving parts keep their clearance through a swept motion, a bar actually rests on its post rather than floating above it, no opaque part crosses a lower camera's sightline. CAD Khana also checks printed parts for wall thickness and overhang.
 
-The top-level check alone carries 34,226 claims across the three units, all but about 250 of them the pairwise no-overlap test, and passes.
+The top-level check alone carries 34,226 claims across the three units, all but about 250 of them the pairwise no-overlap test, and passes. [Four defects this build turned up](https://www.cyberchitta.cc/articles/cad-khana.html): three caught by those claims, one by a render.
 
 ## Credits
 
