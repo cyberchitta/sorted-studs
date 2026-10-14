@@ -36,7 +36,7 @@ Bulk bricks go in at the top of a three-stage singulator, come out one at a time
 
 The diverter is the chassis, a hex tower 660 mm across. The scanner turret stands on the diverter's acrylic top deck with its dump station directly over the stack's axis. The singulator chain stands on two of the diverter's corner columns, which continue up through the deck as posts.
 
-<glb-pane src="/assets/exhibits/machine-260919.glb" orbit="140deg 65deg auto" alt="The whole machine: singulator gantry above the scanner turret, both standing on the hex-tower diverter" />
+<glb-pane themed="true" src="/assets/exhibits/machine-260919.glb" orbit="140deg 65deg auto" alt="The whole machine: singulator gantry above the scanner turret, both standing on the hex-tower diverter" />
 
 ## Singulator: Three Stages on a Curve
 
@@ -53,16 +53,19 @@ A gantry of 2020 aluminum extrusion, standing on the two through-deck posts, car
   .pane-multiview .cad-hidden  { stroke: var(--color-base-content); stroke-opacity: 0.35; stroke-width: 0.5; }
 </style>
 
-<figure class="pane pane-multiview my-6" data-asset-root="/assets/exhibits/">
-  <div class="grid grid-cols-2 gap-2">
-    <%- helpers.inlineSvg('assets/exhibits/singulator-iso-260918.svg') %>
-    <%- helpers.inlineSvg('assets/exhibits/chain-iso-260918.svg') %>
-    <%- helpers.inlineSvg('assets/exhibits/chain-front-260918.svg') %>
-    <%- helpers.inlineSvg('assets/exhibits/chain-top-260918.svg') %>
-  </div>
-</figure>
-
-One stage; then the chain on its posts and deck from three sides.
+<div class="not-prose bg-base-200 rounded-lg shadow-sm border border-base-300 overflow-hidden" style="margin: 2rem 0">
+  <figure class="pane-multiview m-0">
+    <div class="px-1 sm:px-4 py-1">
+      <div class="grid grid-cols-2 gap-2 bg-base-100 rounded border border-base-300 p-2">
+        <%- helpers.inlineSvg('assets/exhibits/singulator-iso-260918.svg') %>
+        <%- helpers.inlineSvg('assets/exhibits/chain-iso-260918.svg') %>
+        <%- helpers.inlineSvg('assets/exhibits/chain-front-260918.svg') %>
+        <%- helpers.inlineSvg('assets/exhibits/chain-top-260918.svg') %>
+      </div>
+    </div>
+    <figcaption class="px-1 sm:px-4 py-1 mt-0 mb-1" style="font-size: 0.8125rem; opacity: 0.7">One stage; then the chain on its posts and deck from three sides.</figcaption>
+  </figure>
+</div>
 
 ## Scanner: Four Cameras, Four Stations
 
@@ -70,7 +73,7 @@ Four cameras sit at the vertices of a regular tetrahedron[^tetra-original] aroun
 
 A turret with four platforms indexes each brick through four stations: load, image, idle, dump. The platforms are clear acrylic, so the two lower cameras shoot up through them. At the dump station a stationary servo tips the platform and the brick falls into the diverter's stack.
 
-<glb-pane src="/assets/exhibits/scanner-260918.glb" orbit="-85deg 45deg auto" alt="Scanner rig — tetrahedral four-camera scanning station, turret rotating through its four stations" />
+<glb-pane themed="true" src="/assets/exhibits/scanner-260918.glb" orbit="-85deg 45deg auto" alt="Scanner rig — tetrahedral four-camera scanning station, turret rotating through its four stations" />
 
 ## Diverter: A Hex Tower of Baskets
 
@@ -82,9 +85,7 @@ Baskets come in four widths, all sharing the same inner and outer arcs, and each
 
 The layout drawn, fifty-one baskets in all, is an illustration; how a collection actually gets sorted will set which sizes go where.
 
-<glb-pane src="/assets/exhibits/diverter-260920.glb" orbit="0deg 75deg auto" alt="Diverter mechanism — hex tower with central rotating ramp and per-floor trap doors" />
-
-Claude can redraw the tower at another floor count: the exhibit is a three-floor build, most baskets removed, so the stack, ramps and traps show.
+<glb-pane themed="true" src="/assets/exhibits/diverter-260920.glb" orbit="0deg 75deg auto" alt="Diverter mechanism — hex tower with central rotating ramp and per-floor trap doors" caption="A three-floor build, most baskets removed, so the stack, ramps and traps show. Claude can redraw the tower at another floor count." />
 
 ## What the Checker Knows
 

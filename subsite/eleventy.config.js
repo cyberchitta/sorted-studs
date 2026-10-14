@@ -18,7 +18,7 @@ export default function (eleventyConfig) {
   eleventyConfig.addPlugin(sgPlugin);
 
   const renderCustomElements = createCustomElementRenderer(
-    { 'glb-pane': 'elements/glb-pane.ejs' },
+    { 'glb-pane': 'primitives/glb-figure.ejs' },
     path.join(__dirname, '_includes'),
   );
   eleventyConfig.addTransform('renderCustomElements', async function (content, outputPath) {

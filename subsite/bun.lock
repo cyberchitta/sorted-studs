@@ -5,7 +5,7 @@
     "": {
       "name": "sorted-studs-subsite",
       "dependencies": {
-        "@cyberchitta/supramental-gold": "github:cyberchitta/supramental-gold#v0.4.18",
+        "@cyberchitta/supramental-gold": "github:cyberchitta/supramental-gold#v0.4.22",
         "marked": "^18.0.3",
       },
       "devDependencies": {
@@ -36,7 +36,7 @@
 
     "@11ty/recursive-copy": ["@11ty/recursive-copy@4.0.4", "", { "dependencies": { "errno": "^1.0.0", "junk": "^3.1.0", "minimatch": "^3.1.5", "slash": "^3.0.0" } }, "sha512-oI7m8pa7/IAU/3lqRU9vjBbs20iKFo7x+1K9kT3aVira6scc1X9MjBdgLCHzLJeJ7iB6wydioA+kr9/qPnvmlQ=="],
 
-    "@cyberchitta/supramental-gold": ["@cyberchitta/supramental-gold@github:cyberchitta/supramental-gold#a073cb2", { "dependencies": { "ejs": "^5.0.2", "gray-matter": "^4.0.3", "highlight.js": "^11.12.0", "highlightjs-lean4": "github:cyberchitta/highlightjs-lean4#v0.3.0", "markdown-it": "^14.1.0", "markdown-it-anchor": "^9.2.0", "markdown-it-external-links": "^0.0.6", "markdown-it-footnote": "^4.0.0" } }, "cyberchitta-supramental-gold-a073cb2", "sha512-fOP+gYZgBN8YiLIxNhU5JtIhM+ppQ9o6cWTZ/L7/VsJp5/VCSurJjwTcVVn+h+IJBhOJrWdpe/jc84dQGk6aeQ=="],
+    "@cyberchitta/supramental-gold": ["@cyberchitta/supramental-gold@github:cyberchitta/supramental-gold#e6a1643", { "dependencies": { "ejs": "^5.0.2", "gray-matter": "^4.0.3", "highlight.js": "^11.12.0", "highlightjs-lean4": "github:cyberchitta/highlightjs-lean4#v0.3.0", "markdown-it": "^14.1.0", "markdown-it-anchor": "^9.2.0", "markdown-it-external-links": "^0.0.6", "markdown-it-footnote": "^4.0.0" } }, "cyberchitta-supramental-gold-e6a1643", "sha512-RMO5yKhmfOV6HW4xIFlsYVlY15yZhbZTNrUWdtoO0JCQHZsk9LNBUqbaD3zxyy6Z2HRKbyu7LRrp4G2jQyHChA=="],
 
     "@sindresorhus/slugify": ["@sindresorhus/slugify@2.2.1", "", { "dependencies": { "@sindresorhus/transliterate": "^1.0.0", "escape-string-regexp": "^5.0.0" } }, "sha512-MkngSCRZ8JdSOCHRaYd+D01XhvU3Hjy6MGl06zhOk614hp9EOAp5gIkBeQg7wtmxpitU6eAL4kdiRMcJa2dlrw=="],
 
