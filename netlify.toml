@@ -6,7 +6,7 @@
   # design; _headers is per-deploy, hence the append.
   command = "bun run build && { [ \"$CONTEXT\" = production ] || printf '\\n/*\\n  X-Robots-Tag: noindex\\n' >> ./_site/_headers; }"
   publish = "_site"
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ../netlify.toml"
+  ignore = "[ -n \"$CACHED_COMMIT_REF\" ] && [ \"$CACHED_COMMIT_REF\" != \"$COMMIT_REF\" ] && git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ../netlify.toml"
 
 [build.environment]
   GIT_LFS_ENABLED = "true"
