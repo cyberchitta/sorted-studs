@@ -85,9 +85,7 @@ Baskets come in four widths, all sharing the same inner and outer arcs, and each
 
 The layout drawn, fifty-one baskets in all, is an illustration; how a collection actually gets sorted will set which sizes go where.
 
-<glb-pane src="/assets/exhibits/diverter-260920.glb" orbit="0deg 75deg auto" alt="Diverter mechanism — hex tower with central rotating ramp and per-floor trap doors" />
-
-Claude can redraw the tower at another floor count: the exhibit is a three-floor build, most baskets removed, so the stack, ramps and traps show.
+<glb-pane src="/assets/exhibits/diverter-260920.glb" orbit="0deg 75deg auto" alt="Diverter mechanism — hex tower with central rotating ramp and per-floor trap doors" caption="A three-floor build, most baskets removed, so the stack, ramps and traps show. Claude can redraw the tower at another floor count." />
 
 ## What the Checker Knows
 
