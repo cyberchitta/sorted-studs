@@ -1,216 +1,65 @@
 # sorted-studs
 
-**An open-source AI-powered LEGO brick sorting, cataloging, and build-planning system.**
+**CAD for a LEGO sorting machine: designed, not yet built.**
 
-sorted-studs takes a pile of loose LEGO bricks and turns them into buildable sets. It
-mechanically singulates and scans each brick, identifies it using computer vision,
-catalogs it into a digital inventory synced with Rebrickable, determines which official
-sets or MOCs can be built from the current collection, and generates step-grouped
-"build packets" — bagged groups of bricks corresponding to stages of the build
-instructions.
+The machine is meant to take a pile of loose bricks, singulate them, photograph each
+one from four directions at once, and drop it into a basket by part and colour. This
+repo holds the mechanical design so far: Build123d assemblies checked with
+[CAD Khana](https://github.com/cyberchitta/cad-khana), and the
+[build-in-public site](https://sorted-studs.cyberchitta.cc) that publishes them.
+Classification, firmware and inventory come later; none of that is here yet.
 
-sorted-studs is a practical tool for LEGO enthusiasts dealing with bulk unsorted
-bricks. It is designed to be open-source and reproducible, so others can build and
-iterate on their own systems.
-
----
-
-## Status
-
-**Second CAD pass; nothing fabricated yet.** Three modules
-(singulator, scanner, diverter) have detailed Build123d assemblies under
-`cad/` and rendered exhibits on the [build-in-public
-subsite](https://sorted-studs.cyberchitta.cc). The first CAD pass never
-reached fabrication; this second pass carries forward the lessons and
-targets a workshop build. A handful of open mechanical questions
-remain before the first physical print.
+Nothing has been printed. The checks are computational: interference, clearance and
+printability. Fit, tolerance and print success are still unknown.
 
 ---
 
-## System Overview
+## The machine
 
-### Physical Flow
+Bulk bricks go in at the top of a three-stage singulator, come out one at a time onto
+a ramp, and land on a scanner turret that photographs each brick from four angles. The
+turret tips the brick into the diverter's central stack, which drops it into a basket.
 
-```
- ┌──────────────┐    ┌──────────────┐    ┌────────────┐    ┌───────────┐
- │  C-CHANNEL   │───▶│  MULTI-VIEW  │───▶│  HEX-TOWER │───▶│  OUTPUT   │
- │  SINGULATOR  │    │   SCANNER    │    │  DIVERTER  │    │   BINS    │
- └──────────────┘    └──────────────┘    └────────────┘    └───────────┘
-                            │
-                            ▼
-                     ┌──────────────┐
-                     │CLASSIFICATION│
-                     │   ENGINE     │
-                     └──────┬───────┘
-                            │
-                            ▼
-                     ┌──────────────┐    ┌──────────────┐    ┌───────────┐
-                     │  INVENTORY   │───▶│ SET COVERAGE │───▶│  PACKET   │
-                     │   DATABASE   │    │  & PLANNER   │    │ GENERATOR │
-                     └──────────────┘    └──────────────┘    └───────────┘
-```
+**Diverter — the chassis.** A hex tower 660 mm across: four floors of 2020 hex frame
+around a central stack of rotating segments, turned by one motor at the base. Each
+segment carries a ramp and a trap door; the stack aims the ramps, a servo per floor
+picks the floor. The concept is [Basically](https://basically.website/sorter-v2)'s,
+first adapted to extrusion and 3D prints by Cristian Cuevas.
 
-### Compute Architecture
+**Scanner — four cameras, four stations.** Four cameras at the vertices of a regular
+tetrahedron around the brick, every pair of lens axes 109.47° apart. A turret of clear
+acrylic platforms indexes each brick through load, image, idle and dump; the two lower
+cameras shoot up through the platform. It stands on the diverter's top deck, its dump
+station over the stack's axis.
 
-Three compute layers connected over local WiFi:
+**Singulator — three stages on a curve.** Three cylindrical c-channel stages (the
+Basically team's idea) step down a chain that bends 30° at each hop. The top stage
+doubles as the hopper; the bottom one singulates onto the ramp. A 2020 gantry carries
+the chain on two of the diverter's columns, which continue up through the deck.
 
-**Real-time layer** — Arduino handles motor control, sensors, and diverter
-positioning. An ESP32 bridges the Arduino's serial interface to WiFi as HTTP
-endpoints.
-
-**Capture layer** — four ESP32-CAM nodes (AI-Thinker boards with the M12
-lens variant) at the vertices of a regular tetrahedron around the brick.
-Each runs stock `CameraWebServer` firmware exposing an HTTP `/capture`
-endpoint as `cameraN.local`. Pure capture devices, no on-board inference.
-
-**Application layer** — Mac runs the classification pipeline, inventory,
-planning, and UI. During each scan the Mac fans 4 parallel HTTP GETs to
-`cameraN.local/capture`, fuses the views, runs PyTorch inference, and
-returns a routing decision to the Arduino. An iPhone-as-host path was
-considered earlier and is deferred indefinitely; the Mac is the live
-capture + inference host. A future edge accelerator (Coral / Jetson) can
-take the Mac's role without changing the cameras.
-
-### Data Flow
-
-```
-4 camera frames (one per tetrahedral vertex, captured in parallel)
-  → Image preprocessing (per-view crop, normalize, background subtract)
-    → Multi-view classification model (part ID + color ID + confidence)
-      → Inventory record { part_id, color_id, quantity, bin_location, timestamp }
-        → Rebrickable sync (push inventory, pull set/MOC part lists)
-          → Coverage analysis (which sets can be built, what's missing)
-            → Packet generation (group parts by instruction step ranges)
-```
-
-### Design Principles
-
-- **Modular construction.** Each physical stage is a self-contained unit that can be
-  developed, tested, and improved independently. Stages connect via simple mechanical
-  interfaces (a brick drops or slides from one stage to the next).
-- **Software-defined sorting.** The physical diverter receives a simple command
-  ("send to bin N") from the classification engine. All intelligence lives in software.
-- **Fail-safe defaults.** Any brick the system can't confidently identify goes to a
-  designated "uncertain" bin for manual review or re-scanning.
-- **Capture/inference decoupling.** The capture layer (ESP32-CAM nodes) and the
-  inference layer (Mac) talk over HTTP only, so either side can be swapped
-  independently — e.g. moving inference to an edge accelerator later for
-  standalone operation without changing the cameras.
-- **Open source, reproducible.** All 3D-printed parts designed for common FDM printers
-  (≥200mm build plate). Mechanical structure is 2020 aluminum extrusion plus printed
-  brackets and bodies. Electronics use widely available off-the-shelf components.
-
-### Inspiration and Divergence
-
-The project began as a port of the
-[Colour Sorting Machine for Lego](https://hackaday.io/project/194170-colour-sorting-machine-for-lego)
-by RobG on Hackaday.io, replacing the TCS34725 colour sensor with a
-multi-view camera + ML pipeline. As the CAD work progressed the
-constraint of "FDM-printable + aluminum extrusion only" pushed us
-away from RobG's non-printed pieces (V-channel, rotary diverter); we
-ended up at a singulator + diverter architecture much closer to
-[the Basically LEGO Sorter](https://basically.website/sorter-v2) by
-LegoSpencer and team. The classification approach (multi-view tetrahedral
-camera station + ML) remains the sorted-studs original innovation.
-
-| What changed                     | sorted-studs choice                                        |
-| -------------------------------- | ---------------------------------------------------------- |
-| TCS34725 colour sensor           | 4-camera tetrahedral scanning station (Module 3)           |
-| Arduino HSL classifier           | Mac + ConvNeXt V2 + 4× ESP32-CAM (Module 4)                |
-| Flat V-channel singulator        | Cylindrical C-channel with faceted rotor (Module 2)        |
-| Small rotary diverter            | Hex tower cascade (Module 5)                               |
+The project began as a port of RobG's
+[Colour Sorting Machine for Lego](https://hackaday.io/project/194170-colour-sorting-machine-for-lego),
+swapping its colour sensor for cameras. Keeping everything FDM-printable on aluminum
+extrusion pushed the singulator and diverter toward Basically's architecture; the
+tetrahedral camera station is this build's own.
 
 ---
 
-## Modules
-
-Status tiers: **Design** = worked out but no CAD yet; **CAD** = `cad/mNN_*/`
-Build123d assembly in progress; **Built** = physically fabricated and tested.
-
-> **On specifications.** Earlier drafts of the module specs were aspirational
-> rather than descriptive — they changed faster than the design did, and were
-> working notes wearing a spec's clothes. They have been pulled out of this
-> repo rather than left to mislead. Accurate specs will be written back, per
-> module, as each design actually settles.
-
-### Hardware
-
-| #   | Module                      | Status |
-| --- | --------------------------- | ------ |
-| 2   | C-Channel Singulator        | CAD    |
-| 3   | Multi-View Scanning Station | CAD    |
-| 5   | Hex Tower Diverter          | CAD    |
-
-The C-channel singulator integrates the bulk-input hopper into its own
-extended-wall lid (the "Module 1" hopper / drum feeder is no longer a
-separate stage). Earlier hopper and singulation variants — drum feeder,
-vibrating hopper, two-stage vibratory singulation — were explored and
-dropped; they are not part of the current build path.
-
-### Software
-
-| #   | Module                       | Status |
-| --- | ---------------------------- | ------ |
-| 4   | Brick Classification Engine  | Design |
-| 6   | Inventory & Rebrickable Sync | Design |
-| 7   | Set Coverage & Build Planner | Design |
-| 8   | Packet Generator             | Design |
-| 9   | Control & Orchestration      | Design |
-| 10  | User Interface               | Design |
-
----
-
-## Repository Layout
+## Repository layout
 
 ```
-cad/            Build123d / cad-khana assemblies — one directory per module
-                under active CAD. Live design state is tracked in private
-                working notes. Top-level cad/assembly.py composes the
-                modules that have integrated cross-checks (currently m05
-                diverter + m03 turret unit + m02 chain).
-subsite/        Build-in-public eleventy site (bun-managed). Published
-                exhibits are GLB models exported from cad/.
-pyproject.toml  uv-managed Python environment. cad-khana is installed
-                editable from a sibling repo.
+cad/            Build123d / CAD Khana assemblies, one directory per unit
+                (m02 singulator and chain, m03 scanner, m05 diverter).
+                cad/assembly.py composes all three and runs the
+                cross-unit checks.
+subsite/        The build-in-public eleventy site (bun-managed). Its
+                exhibits are GLB models and drawings exported from cad/.
+pyproject.toml  uv-managed Python environment.
 ```
 
-To set up, clone [cad-khana](https://github.com/cyberchitta/cad-khana) next
-to this repo (`../cad-khana`), then run `uv sync` here.
-
-CAD tooling: [cad-khana](https://github.com/cyberchitta/cad-khana) wraps
-Build123d with assembly-level interference/clearance assertions and
-per-part printability checks. Its `cad_khana.render` layer renders the
-same assemblies through Blender Cycles for the exhibits.
-Run checks with `.venv/bin/khana check <assembly.py>`.
-
----
-
-## Development Phases
-
-**Phase 1 — CAD foundation (current).** Detailed Build123d assemblies
-for the singulator, scanner, and diverter, including interference and
-clearance assertions across the integrated rig. The
-[subsite](https://sorted-studs.cyberchitta.cc) publishes rendered
-exhibits as modules stabilize.
-
-**Phase 2 — First physical build.** Print and assemble Modules 2, 3, 5
-together. Verify mechanical flow end-to-end with manual brick routing,
-no classification yet.
-
-**Phase 3 — Capture + classification.** Bring up the four ESP32-CAM
-nodes against the printed scanner rig. Train ConvNeXt V2 on synthetic
-LDraw renders (Module 4), benchmark against Brickognize API as a
-reference oracle.
-
-**Phase 4 — Inventory & planning.** Rebrickable integration, coverage
-analysis, web dashboard (Modules 6, 7, 10).
-
-**Phase 5 — Packet generation.** Step-level mapping, pick lists,
-bag-filling (Module 8).
-
-**Phase 6 — Polish & scale.** 2,000+ part recognition. Optional edge-
-accelerator (Coral / Jetson) deployment for standalone operation
-without a Mac. Community documentation.
+To set up, clone [cad-khana](https://github.com/cyberchitta/cad-khana) next to this
+repo (`../cad-khana`), then run `uv sync` here. Run checks with
+`.venv/bin/khana check <assembly.py>`.
 
 ---
 

@@ -10,7 +10,8 @@ The repository is in a **second CAD pass** — three modules (singulator, scanne
 
 ## Repository Structure
 
-- `README.md` — System overview, modules table, dev phases (public-facing).
+- `README.md` — Public-facing: the mechanical rig as designed, repo layout,
+  setup. Describes only what is in the repo; the long-term system lives below.
   (No `docs/` — the aspirational module specs moved to `_notes/specs/`
   on 2026-07-21; accurate ones get written back per module as designs settle.)
 - `cad/` — Build123d / cad-khana assemblies. One directory per module under
