@@ -86,6 +86,52 @@ WALL_MIN = 1.5
 
 # --- Part functions ----------------------------------------------------
 
+def rotor_cavity(
+    *,
+    base_diameter: float = ROTOR_BASE_DIAMETER,
+    height: float = ROTOR_HEIGHT,
+    n_facets: int = ROTOR_FACET_COUNT,
+    flank_angle_deg: float = V_HALF_ANGLE_DEG,
+    kink_z_frac: float = ROTOR_FACET_KINK_Z_FRAC,
+    peak_bulge: float = ROTOR_FACET_PEAK_BULGE,
+    valley_dent: float = ROTOR_FACET_VALLEY_DENT,
+    shell_wall_t: float = ROTOR_SHELL_WALL_T,
+    top_cap_t: float = ROTOR_TOP_CAP_T,
+) -> Part:
+    """The cutter `rotor()` hollows the shell with, open at the base and
+    stopping ``top_cap_t`` under the apex. Its top face is the cavity
+    ceiling, so `printability.py` declares it as that ceiling's feature.
+    """
+    base_r = base_diameter / 2.0
+    tan_flank = math.tan(math.radians(flank_angle_deg))
+    kink_z = height * kink_z_frac
+    nominal_r_at_kink = base_r - kink_z * tan_flank
+    r_peak = nominal_r_at_kink + peak_bulge
+    r_valley = nominal_r_at_kink - valley_dent
+    # Simple tapered 10-gon cavity. Its vertices align angularly
+    # with outer peaks (both at angles 0, 36°, …), so its apothem
+    # faces the outer valleys. Size it so the wall is ≥ shell_wall_t
+    # at *both* angular positions, with the kink height being the
+    # tightest section:
+    #   wall at peak   = r_peak   − cavity_r          ≥ shell_wall_t
+    #   wall at valley = r_valley − cavity_r·cos(π/N) ≥ shell_wall_t
+    cos_apothem = math.cos(math.pi / n_facets)
+    cavity_r_at_kink = min(
+        r_peak - shell_wall_t,
+        (r_valley - shell_wall_t) / cos_apothem,
+    )
+    # Tapered cavity shares the flank angle so wall thickness tracks
+    # the outer taper; base radius is back-derived from the kink.
+    cavity_base_r = cavity_r_at_kink + kink_z * tan_flank
+    cavity_bottom_pad = 1.0
+    cavity_height = (height - top_cap_t) + cavity_bottom_pad
+    return Pos(0, 0, -cavity_bottom_pad) * extrude(
+        RegularPolygon(radius=cavity_base_r, side_count=n_facets),
+        amount=cavity_height,
+        taper=flank_angle_deg,
+    )
+
+
 def rotor(
     *,
     base_diameter: float = ROTOR_BASE_DIAMETER,
@@ -167,27 +213,11 @@ def rotor(
         ruled=True,
     )
 
-    # Simple tapered 10-gon cavity. Its vertices align angularly
-    # with outer peaks (both at angles 0, 36°, …), so its apothem
-    # faces the outer valleys. Size it so the wall is ≥ shell_wall_t
-    # at *both* angular positions, with the kink height being the
-    # tightest section:
-    #   wall at peak   = r_peak   − cavity_r          ≥ shell_wall_t
-    #   wall at valley = r_valley − cavity_r·cos(π/N) ≥ shell_wall_t
-    cos_apothem = math.cos(math.pi / n_facets)
-    cavity_r_at_kink = min(
-        r_peak - shell_wall_t,
-        (r_valley - shell_wall_t) / cos_apothem,
-    )
-    # Tapered cavity shares the flank angle so wall thickness tracks
-    # the outer taper; base radius is back-derived from the kink.
-    cavity_base_r = cavity_r_at_kink + kink_z * tan_flank
-    cavity_bottom_pad = 1.0
-    cavity_height = (height - top_cap_t) + cavity_bottom_pad
-    cavity = Pos(0, 0, -cavity_bottom_pad) * extrude(
-        RegularPolygon(radius=cavity_base_r, side_count=n_facets),
-        amount=cavity_height,
-        taper=flank_angle_deg,
+    cavity = rotor_cavity(
+        base_diameter=base_diameter, height=height, n_facets=n_facets,
+        flank_angle_deg=flank_angle_deg, kink_z_frac=kink_z_frac,
+        peak_bulge=peak_bulge, valley_dent=valley_dent,
+        shell_wall_t=shell_wall_t, top_cap_t=top_cap_t,
     )
 
     # Flange: ring-gear pitch annulus under the rim, top face at z=0.

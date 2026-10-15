@@ -12,12 +12,15 @@ inspected is the one the turret places (`turret.rotor.arm.spider`);
 the hub axis at the pin-axis plane, disc spanning z ±12.5).
 """
 
+from build123d import Compound
+
+from cad_khana.printability.feature import Feature
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 from cad_khana.printability.waiver import Waiver
 
 from ..params import WALL_MIN
-from .assembly import build_turret_arm
+from .assembly import build_turret_arm, pin_bore_cutters, set_screw_cutter
 
 
 # Print orientation: flat, the disc's bottom face (4418 mm²) on the
@@ -28,23 +31,33 @@ from .assembly import build_turret_arm
 # The Ø8.4 shaft bore prints vertical. Every orientation prints at
 # least two of the four pin bores sideways, so that is the part's,
 # not this choice's.
+#
+# The ceilings are waived per feature, each against the cutter that
+# made it (the same solids `spider()` cuts with), so a new ceiling
+# anywhere else on the body traces to no feature and fails. Measured
+# 2026-10-15, up +Z: 373.08 mm² over 5 regions, the horizontal bores
+# and nothing else.
 inspect(
     build_turret_arm().part("spider").part,
     method=FDM(wall_min_mm=WALL_MIN, up_axis=(0, 0, 1)),
     out="outputs",
     name="spider",
     solid_count=1,
-    waive={
-        "overhang_max": Waiver(
-            reason="373.08 mm² at up to 90.0° (read 2026-10-10, "
-            "up +Z): the ceilings of the five horizontal bores and "
-            "nothing else — the four Ø5.4 hinge-pin bores through the "
-            "bushing blocks at r 62.3–67.7, 84.74 mm² each, and the Ø4 "
-            "set-screw insert bore at heading +45°, 34.11 mm². Print "
-            "plan: bridged, no supports; run a Ø5.4 drill through each "
-            "pin bore after printing to restore the 0.2 mm radial pin "
-            "clearance the bridge droop eats.",
-            max_area_mm2=376.0, max_regions=5,
-        ),
+    features={
+        "pin_bores": Feature(Compound(list(pin_bore_cutters())), waive={"overhang_max": Waiver(
+            reason="the four Ø5.4 hinge-pin bore ceilings through the "
+            "bushing blocks at r 62.3–67.7, 84.74 mm² each, 338.97 mm² at "
+            "up to 88.6° (read 2026-10-15, up +Z). Print plan: bridged, no "
+            "supports; run a Ø5.4 drill through each pin bore after "
+            "printing to restore the 0.2 mm radial pin clearance the "
+            "bridge droop eats.",
+            max_area_mm2=339.5, max_regions=4,
+        )}),
+        "set_screw_bore": Feature(set_screw_cutter(), waive={"overhang_max": Waiver(
+            reason="the Ø4 set-screw insert bore's ceiling at heading "
+            "+45°, 34.11 mm² to 89.6° (read 2026-10-15, up +Z). Bridged, no "
+            "supports; the heat-set insert is pressed in after printing.",
+            max_area_mm2=34.3, max_regions=1,
+        )}),
     },
 )

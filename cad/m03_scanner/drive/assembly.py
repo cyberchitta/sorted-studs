@@ -349,6 +349,45 @@ def motor():
     return body + shaft
 
 
+def foot_bolt_cutters():
+    """The Ø BRACKET_BOLT_HOLE_D foot-bolt holes, one per
+    `BRACKET_BOLT_XS`, axis ±Z through the foot. `bracket()` cuts with
+    them; `printability.py` declares them as the `foot_bolt_holes`
+    feature."""
+    return tuple(
+        Pos(bolt_x, 0, _BRACKET_FOOT_CENTER_Z)
+        * Cylinder(BRACKET_BOLT_HOLE_D / 2, BRACKET_FOOT_Z * 3)
+        for bolt_x in BRACKET_BOLT_XS
+    )
+
+
+def boss_pilot_cutter():
+    """The Ø22 centering-boss pass-through in the cantilever plate
+    (axis ±Z = build123d default). `bracket()` cuts with it;
+    `printability.py` declares it as the `boss_pilot` feature."""
+    return (
+        Pos(MOTOR_X, 0, _BRACKET_PLATE_CENTER_Z)
+        * Cylinder(MOTOR_BOSS_D / 2, BRACKET_PLATE_T * 3)
+    )
+
+
+def motor_bolt_cutters():
+    """The 4× M3 motor mounting clearance holes on a 31 × 31 mm pattern
+    centered on the motor shaft, axis ±Z. `bracket()` cuts with them;
+    `printability.py` declares them as the `motor_bolt_holes`
+    feature."""
+    return tuple(
+        Pos(
+            MOTOR_X + sx * MOTOR_BOLT_PATTERN / 2,
+            sy * MOTOR_BOLT_PATTERN / 2,
+            _BRACKET_PLATE_CENTER_Z,
+        )
+        * Cylinder(MOTOR_BOLT_HOLE_D / 2, BRACKET_PLATE_T * 3)
+        for sx in (-1, 1)
+        for sy in (-1, 1)
+    )
+
+
 def bracket():
     """Printed L-bracket: foot + outboard wall + horizontal cantilever
     plate. Foot bolts vertically into the cross-rail's top T-slot at
@@ -417,11 +456,8 @@ def bracket():
         Pos(_BRACKET_FOOT_CENTER_X, 0, _BRACKET_FOOT_CENTER_Z)
         * Box(BRACKET_FOOT_X, BRACKET_FOOT_Y, BRACKET_FOOT_Z)
     )
-    for bolt_x in BRACKET_BOLT_XS:
-        foot -= (
-            Pos(bolt_x, 0, _BRACKET_FOOT_CENTER_Z)
-            * Cylinder(BRACKET_BOLT_HOLE_D / 2, BRACKET_FOOT_Z * 3)
-        )
+    for bolt_hole in foot_bolt_cutters():
+        foot -= bolt_hole
 
     wall = (
         Pos(_BRACKET_WALL_CENTER_X, 0, _BRACKET_WALL_CENTER_Z)
@@ -432,23 +468,9 @@ def bracket():
         Pos(_BRACKET_PLATE_CENTER_X, 0, _BRACKET_PLATE_CENTER_Z)
         * Box(BRACKET_PLATE_X_LEN, BRACKET_PLATE_Y, BRACKET_PLATE_T)
     )
-    # Ø22 centering-boss pass-through (axis ±Z = build123d default).
-    plate -= (
-        Pos(MOTOR_X, 0, _BRACKET_PLATE_CENTER_Z)
-        * Cylinder(MOTOR_BOSS_D / 2, BRACKET_PLATE_T * 3)
-    )
-    # 4× M3 mounting clearance holes on a 31 × 31 mm pattern centered
-    # on the motor shaft. Axis ±Z (vertical).
-    for sx in (-1, 1):
-        for sy in (-1, 1):
-            plate -= (
-                Pos(
-                    MOTOR_X + sx * MOTOR_BOLT_PATTERN / 2,
-                    sy * MOTOR_BOLT_PATTERN / 2,
-                    _BRACKET_PLATE_CENTER_Z,
-                )
-                * Cylinder(MOTOR_BOLT_HOLE_D / 2, BRACKET_PLATE_T * 3)
-            )
+    plate -= boss_pilot_cutter()
+    for bolt_hole in motor_bolt_cutters():
+        plate -= bolt_hole
 
     return foot + wall + plate
 

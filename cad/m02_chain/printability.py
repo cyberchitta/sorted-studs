@@ -25,13 +25,17 @@ handed, and `build_m02`'s defaults are S1's. Before 2026-09-27 only
 that default bowl was inspected, so S2's and S3's were never looked at.
 """
 
+from cad_khana.printability.feature import Feature
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 from cad_khana.printability.waiver import Waiver
 
-from ..m02_c_channel_singulator.drive.assembly import BOWL_PARTS, WALL_MIN, bowl_part_at
+from ..m02_c_channel_singulator.drive.assembly import (
+    BOWL_PARTS, WALL_MIN, bowl_part_at, motor_cbore_skirt_foot,
+)
 from .assembly import build_chain
-from .params import BRACE_COLS, S1, S3, STAGES
+from .joints import brace_foot_wedge_edges
+from .params import BRACE_COLS, BRACE_FOOT_STOP_H, S1, S3, STAGES, brace_run
 
 
 # Every joint body is built in its print orientation: the seats
@@ -51,29 +55,33 @@ chain = build_chain()
 # has both, and only the thinner shows). Alignment 0.65 ≈ cos 48.1° =
 # 0.67 is the edge's own dihedral, not two near-parallel faces, and a
 # chamfer on the ridge would take height off the face the brace bears
-# on. Owner's call, 2026-09-22. The waiver is per kind (`wall_min`):
-# it would also cover a later real sliver on either foot, and
-# `stale_waiver` cannot fire while the wedge tip keeps failing — re-read
-# both feet's witnesses after any foot geometry change.
-FOOT_WAIVE = {
-    "wall_min": Waiver(
-        reason="48.1° wedge tip, not a sliver: min_wall_at on the stop "
-        "wall's top ridge (foot_3, 0.594) or the channel floor's end lip "
-        "(foot_5, 0.582), alignment 0.65 ≈ cos 48.1°; the edge prints as "
-        "an ordinary 48° corner",
-        min_wall_mm=0.55,
-    ),
-}
+# on. Owner's call, 2026-09-22. The waiver is scoped to the two edges
+# (`joints.brace_foot_wedge_edges`, built from each foot's own
+# arguments), so a thin wall anywhere else on a foot traces to no
+# feature and fails.
+def _foot_features(col: int) -> dict[str, Feature]:
+    az, el, _ = brace_run(col)
+    return {"wedge_edges": Feature(
+        brace_foot_wedge_edges(az + 180.0, el, BRACE_FOOT_STOP_H),
+        waive={"wall_min": Waiver(
+            reason="48.1° wedge tip, not a sliver: min_wall_at on the stop "
+            "wall's top ridge (foot_3, 0.594) or the channel floor's end lip "
+            "(foot_5, 0.582), alignment 0.65 ≈ cos 48.1°; the edge prints as "
+            "an ordinary 48° corner",
+            min_wall_mm=0.55,
+        )},
+    )}
 
-for name, waive in (
+
+for name, features in (
     (f"{S1.name}_post_seat", None),
     (f"{S3.name}_post_seat", None),
     ("brace_head", None),
-    *((f"brace_foot_{col}", FOOT_WAIVE) for col in BRACE_COLS),
+    *((f"brace_foot_{col}", _foot_features(col)) for col in BRACE_COLS),
 ):
     inspect(
         chain.part(f"gantry.{name}").part,
-        method=FDM(), out="outputs", name=name, waive=waive,
+        method=FDM(), out="outputs", name=name, features=features,
     )
 
 # The bowl sectors print floor-down: the drive places each at identity
@@ -91,6 +99,11 @@ for name, waive in (
 # vertices against the skirt's inner face at r 152. Owner accepted the
 # waiver as written, 2026-09-17; that the first layer bridges the
 # slivers is unsliced (`_notes/backlog/bench-validation.md` item 14).
+#
+# The waiver is scoped to `motor_cbore_skirt_foot`, the skirt ring
+# intersected with the counterbore cutters `bowl()` cuts: its bottom
+# face is exactly those two slivers, so a down-facing face anywhere
+# else on the sector traces to no feature and fails.
 #
 # Keyed by (stage, motor azimuth, seam phase): the measurement covers
 # that configuration only, so a changed stage parameter is a KeyError
@@ -125,9 +138,12 @@ for s in STAGES:
         inspect(
             chain.part(f"{s.name}.drive.{leaf}").part,
             method=FDM(wall_min_mm=WALL_MIN), out="outputs", name=f"{s.name}_{leaf}",
-            waive={"overhang_max": Waiver(
-                reason=_MOTOR_WAIVER[(s.name, s.motor_azimuth_deg, s.bowl_seam_phase_deg)],
-                max_area_mm2=0.85, max_regions=2,
+            features={"cbore_skirt_foot": Feature(
+                motor_cbore_skirt_foot(motor_azimuth_deg=s.motor_azimuth_deg),
+                waive={"overhang_max": Waiver(
+                    reason=_MOTOR_WAIVER[(s.name, s.motor_azimuth_deg, s.bowl_seam_phase_deg)],
+                    max_area_mm2=0.85, max_regions=2,
+                )},
             )}
             if leaf == motor_sector else None,
         )

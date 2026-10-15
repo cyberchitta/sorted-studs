@@ -137,12 +137,12 @@ def _brace_prism_beyond(az_deg: float, el_deg: float, stop_h: float, sign: float
     return prism.split(stop, keep=Keep.TOP)
 
 
-def _vertical_strip(az_deg: float, pts_hz: list[tuple[float, float]]) -> Part:
+def _vertical_strip(az_deg: float, pts_hz: list[tuple[float, float]], width: float = CHANNEL_W) -> Part:
     """Extrude an (h, z) profile — h out along the azimuth, z up —
-    symmetric CHANNEL_W across the azimuth line."""
+    symmetric ``width`` across the azimuth line."""
     c, s = math.cos(math.radians(az_deg)), math.sin(math.radians(az_deg))
     pl = Plane(origin=(0.0, 0.0, 0.0), x_dir=(c, s, 0.0), z_dir=(s, -c, 0.0))
-    return pl.location * extrude(Polygon(*pts_hz, align=None), amount=CHANNEL_W / 2.0, both=True)
+    return pl.location * extrude(Polygon(*pts_hz, align=None), amount=width / 2.0, both=True)
 
 
 def brace_head(
@@ -191,3 +191,34 @@ def brace_foot(
             (-COLLAR_OD / 2.0, 0.0), (start_h + 1.0, 0.0), (start_h + 1.0, WALL), (-COLLAR_OD / 2.0, WALL),
         ])
     return block - _brace_prism_beyond(az_deg, el_deg, stop_h, +1.0, 4.0 * s_out)
+
+
+def brace_foot_wedge_edges(
+    az_deg: float, el_deg: float, stop_h: float, wall_min_mm: float = 1.5,
+) -> Part:
+    """The foot's two 48.1°-class edges as a feature solid for
+    `printability.py` — measuring geometry, never placed or unioned. A
+    vertical face meeting a face parallel to the brace leaves a
+    (90° − `el_deg`) edge twice: the stop wall's top ridge (the stop
+    face under the block's top) and the channel floor's end lip (the
+    floor over the block's end face). Each is a triangular prism the
+    channel's width plus ``reach`` each side — at the channel's corners
+    a reading leaves the edge sideways onto the side wall's top (foot_3,
+    y 10.16 against the channel's 10, 2026-10-15) — whose two faces lie
+    on the edge's own two faces out
+    to ``wall_min_mm / cos(el)`` from the edge: a ray leaving one face at
+    δ from the edge reaches the other after δ·tan(90° − el), at
+    δ / sin(el) along it, so that is as far as a reading under
+    ``wall_min_mm`` lands. Same arguments as `brace_foot`, same frame.
+    Deliberately not the whole block: a thin wall anywhere else on the
+    foot traces to no feature and fails."""
+    s_out = stop_h + BRACE_ENGAGE
+    t, hd = math.tan(math.radians(el_deg)), _half_diag(el_deg)
+    reach = wall_min_mm / math.cos(math.radians(el_deg))
+    dh, dz = reach * math.cos(math.radians(el_deg)), reach * math.sin(math.radians(el_deg))
+    edges = []
+    for h, z in ((stop_h, stop_h * t + hd), (s_out, s_out * t - hd)):
+        edges.append(_vertical_strip(
+            az_deg, [(h, z), (h, z - reach), (h - dh, z - dz)], width=EXT_SIZE + 2.0 * reach,
+        ))
+    return edges[0] + edges[1]

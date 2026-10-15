@@ -59,7 +59,7 @@ bought.
 
 import math
 
-from build123d import Axis, Box, Circle, Cylinder, Location, Part, Plane, Polygon, Pos, Rot, extrude
+from build123d import Axis, Box, Circle, Compound, Cylinder, Location, Part, Plane, Polygon, Pos, Rot, extrude
 
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 
@@ -118,6 +118,44 @@ PINION_AXIS_XY = (CENTER_DIST * math.cos(_AZ), CENTER_DIST * math.sin(_AZ))
 
 
 # --- Part functions ----------------------------------------------------
+
+def _skirt(*, r_out: float, skirt_r_in: float, skirt_top_z: float) -> Part:
+    """The bowl's skirt ring, from the floor top to ``skirt_top_z``."""
+    return Pos(0, 0, PLATE_TOP_Z) * extrude(
+        Circle(r_out) - Circle(skirt_r_in), amount=skirt_top_z - PLATE_TOP_Z,
+    )
+
+
+def _motor_holes(
+    *,
+    t: float,
+    motor_xy: tuple[float, float],
+    motor_rot_deg: float,
+    pilot_hole_d: float,
+    bolt_pattern: float,
+    bolt_hole_d: float,
+    bolt_cbore_d: float,
+    bolt_cbore_depth: float,
+) -> tuple[Part, Part]:
+    """The motor's floor cutters, placed: all of them (pilot, M3 holes,
+    counterbores) and the four counterbores alone, the second being the
+    same placed cylinders the first is built from."""
+    half = bolt_pattern / 2.0
+    cut_h = t + 2.0
+    holes = Cylinder(pilot_hole_d / 2.0, cut_h)
+    cbores = []
+    for sx, sy in ((1, 1), (1, -1), (-1, 1), (-1, -1)):
+        holes += Pos(sx * half, sy * half, 0) * Cylinder(bolt_hole_d / 2.0, cut_h)
+        # Counterbore from the floor's top face down, so the head sits
+        # flush; the cutter extends 1 mm above the top face.
+        cbore = Pos(sx * half, sy * half, t / 2.0 - bolt_cbore_depth / 2.0 + 0.5) * Cylinder(
+            bolt_cbore_d / 2.0, bolt_cbore_depth + 1.0,
+        )
+        holes += cbore
+        cbores.append(cbore)
+    place = Pos(motor_xy[0], motor_xy[1], PLATE_BOTTOM_Z + t / 2.0) * Rot(0, 0, motor_rot_deg)
+    return place * holes, place * Compound(cbores)
+
 
 def bowl(
     *,
@@ -178,9 +216,7 @@ def bowl(
     plate = Pos(0, 0, PLATE_BOTTOM_Z) * extrude(
         Circle(r_out) - Circle(r_in), amount=t,
     )
-    skirt = Pos(0, 0, PLATE_TOP_Z) * extrude(
-        Circle(r_out) - Circle(skirt_r_in), amount=skirt_top_z - PLATE_TOP_Z,
-    )
+    skirt = _skirt(r_out=r_out, skirt_r_in=skirt_r_in, skirt_top_z=skirt_top_z)
     # Exit-arc slot through the skirt — the same isoceles cutter the
     # stator wall uses (duplicated, not imported: cad/CLAUDE.md
     # principle 2), from the slot bottom up past the skirt's top.
@@ -195,19 +231,10 @@ def bowl(
     wedge = Pos(0, 0, skirt_cut_bottom_z) * extrude(
         wedge_sketch, amount=skirt_top_z - skirt_cut_bottom_z + 1.0,
     )
-    cut_h = t + 2.0
-    holes = Cylinder(pilot_hole_d / 2.0, cut_h)
-    for sx, sy in ((1, 1), (1, -1), (-1, 1), (-1, -1)):
-        holes += Pos(sx * half, sy * half, 0) * Cylinder(bolt_hole_d / 2.0, cut_h)
-        # Counterbore from the floor's top face down, so the head sits
-        # flush; the cutter extends 1 mm above the top face.
-        holes += Pos(sx * half, sy * half, t / 2.0 - bolt_cbore_depth / 2.0 + 0.5) * Cylinder(
-            bolt_cbore_d / 2.0, bolt_cbore_depth + 1.0,
-        )
-    holes = (
-        Pos(motor_xy[0], motor_xy[1], PLATE_BOTTOM_Z + t / 2.0)
-        * Rot(0, 0, motor_rot_deg)
-        * holes
+    holes, _ = _motor_holes(
+        t=t, motor_xy=motor_xy, motor_rot_deg=motor_rot_deg, pilot_hole_d=pilot_hole_d,
+        bolt_pattern=bolt_pattern, bolt_hole_d=bolt_hole_d,
+        bolt_cbore_d=bolt_cbore_d, bolt_cbore_depth=bolt_cbore_depth,
     )
     # Holes before the skirt: the two outboard counterbores reach
     # ~0.3 mm under the skirt's foot, and the foot's first layer
@@ -240,6 +267,24 @@ def bowl_sectors(
     return split_ring(
         whole, phase_deg=phase_deg, r_out=PLATE_R_OUT, ear_z=(PLATE_BOTTOM_Z, SKIRT_TOP_Z),
     )
+
+
+def motor_cbore_skirt_foot(*, motor_azimuth_deg: float = MOTOR_AZIMUTH_DEG) -> Part:
+    """Where the motor's counterbores reach under the skirt — measuring
+    geometry for `printability.py`, never placed or unioned. The skirt
+    ring intersected with the counterbore cutters `bowl()` cuts, built
+    from the same helpers at the same motor pose `bowl_sectors()` gives
+    it; its bottom face is the skirt foot's first layer over each
+    outboard counterbore's rim, the only down-facing area on the bowl.
+    Empty of material where a counterbore stays inside the skirt."""
+    az = math.radians(motor_azimuth_deg)
+    _, cbores = _motor_holes(
+        t=PLATE_T, motor_xy=(CENTER_DIST * math.cos(az), CENTER_DIST * math.sin(az)),
+        motor_rot_deg=motor_azimuth_deg, pilot_hole_d=PLATE_MOTOR_HOLE_D,
+        bolt_pattern=NEMA17_BOLT_PATTERN, bolt_hole_d=NEMA17_BOLT_HOLE_D,
+        bolt_cbore_d=NEMA17_BOLT_CBORE_D, bolt_cbore_depth=NEMA17_BOLT_CBORE_DEPTH,
+    )
+    return _skirt(r_out=PLATE_R_OUT, skirt_r_in=SKIRT_R_IN, skirt_top_z=SKIRT_TOP_Z) & cbores
 
 
 def bowl_part(k: int) -> str:

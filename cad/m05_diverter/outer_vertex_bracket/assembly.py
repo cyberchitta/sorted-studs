@@ -121,6 +121,18 @@ def _through_hole_x(hole_d: float, plate_t: float) -> Part:
     return Rot(0, 90, 0) * Cylinder(hole_d / 2, plate_t * 3)
 
 
+def clamp_bolt_holes() -> tuple[Part, Part]:
+    """The vertical arm's two horizontal M5 clearance holes (along X at
+    z = VERT_BOLT_Z_1, VERT_BOLT_Z_2), as the cutters `bracket()`
+    subtracts. Their crowns are the bracket's only overhang;
+    `printability.py` waives them against these solids."""
+    va_x_center = -EXT_SIZE / 2 - PLATE_T / 2
+    return (
+        Pos(va_x_center, 0, VERT_BOLT_Z_1) * _through_hole_x(BOLT_HOLE_D, PLATE_T),
+        Pos(va_x_center, 0, VERT_BOLT_Z_2) * _through_hole_x(BOLT_HOLE_D, PLATE_T),
+    )
+
+
 def bracket() -> Part:
     """Single-body outer-vertex bracket: hub + two hex-edge arms +
     one radial arm + one vertical arm. Hub + horizontal arms live at
@@ -169,11 +181,8 @@ def bracket() -> Part:
     va_h_total = va_z_top - va_z_bot
     va_z_center = (va_z_bot + va_z_top) / 2
     v_plate = Pos(va_x_center, 0, va_z_center) * Box(PLATE_T, ARM_W, va_h_total)
-    vert_arm = (
-        v_plate
-        - Pos(va_x_center, 0, VERT_BOLT_Z_1) * _through_hole_x(BOLT_HOLE_D, PLATE_T)
-        - Pos(va_x_center, 0, VERT_BOLT_Z_2) * _through_hole_x(BOLT_HOLE_D, PLATE_T)
-    )
+    hole_1, hole_2 = clamp_bolt_holes()
+    vert_arm = v_plate - hole_1 - hole_2
 
     # The through-column passes through the hub's Z range. Cut its
     # footprint out of the hub plate (the vertical arm at x ∈

@@ -12,12 +12,20 @@ body inspected is the one the turret places (`turret.drive.drive_bracket`);
 is placed at identity).
 """
 
+from build123d import Compound
+
+from cad_khana.printability.feature import Feature
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 from cad_khana.printability.waiver import Waiver
 
 from ..params import WALL_MIN
-from .assembly import build_turret_drive_static
+from .assembly import (
+    boss_pilot_cutter,
+    build_turret_drive_static,
+    foot_bolt_cutters,
+    motor_bolt_cutters,
+)
 
 
 # Print orientation: on its side, turret +Y up, the flat L-profile face
@@ -28,23 +36,36 @@ from .assembly import build_turret_drive_static
 # on, upside down (−Z) 2057.66 mm² under the foot's bolt-head seat, and
 # ±X 2881 mm². On its side every layer holds the whole L, so the motor's
 # cantilever moment runs along the layers.
+#
+# The ceilings are those of the seven holes that print sideways and
+# nothing else, waived per feature against the cutters that made them
+# (the same solids `bracket()` cuts with), so a new ceiling anywhere
+# else on the body traces to no feature and fails. Measured 2026-10-15,
+# up turret +Y: 295.03 mm² over 7 regions. Every ceiling is bridged,
+# no supports.
 inspect(
     build_turret_drive_static().part("drive_bracket").part,
     method=FDM(wall_min_mm=WALL_MIN, up_axis=(0, 1, 0)),
     out="outputs",
     name="drive_bracket",
-    waive={
-        "overhang_max": Waiver(
-            reason="295.03 mm² at up to 90.0° (read 2026-10-10, "
-            "up turret +Y): the ceilings of the seven holes that print "
-            "sideways and nothing else — the Ø22 motor centering pilot "
-            "in the plate, 138.10 mm²; the two Ø5.5 M5 foot-bolt holes "
-            "at x 106.1 and 124.1, 34.52 mm² each; the four Ø3.5 M3 "
-            "motor holes at (x 43.1 / 74.1, y ±15.5), 21.97 mm² each. "
-            "Print plan: every ceiling bridged, no supports; ream the "
-            "Ø22 pilot to fit the motor boss; drill the Ø5.5 and M3 "
-            "holes if they bind.",
-            max_area_mm2=297.0, max_regions=7,
-        ),
+    features={
+        "boss_pilot": Feature(boss_pilot_cutter(), waive={"overhang_max": Waiver(
+            reason="the Ø22 motor centering pilot's ceiling in the plate, "
+            "138.10 mm² (read 2026-10-15, up turret +Y). Bridged; ream "
+            "the pilot to fit the motor boss.",
+            max_area_mm2=138.3, max_regions=1,
+        )}),
+        "foot_bolt_holes": Feature(Compound(list(foot_bolt_cutters())), waive={"overhang_max": Waiver(
+            reason="the two Ø5.5 M5 foot-bolt hole ceilings at x 106.1 "
+            "and 124.1, 34.52 mm² each, 69.05 mm² (read 2026-10-15, up "
+            "turret +Y). Bridged; drill Ø5.5 if they bind.",
+            max_area_mm2=69.2, max_regions=2,
+        )}),
+        "motor_bolt_holes": Feature(Compound(list(motor_bolt_cutters())), waive={"overhang_max": Waiver(
+            reason="the four Ø3.5 M3 motor hole ceilings at (x 43.1 / "
+            "74.1, y ±15.5), 21.97 mm² each, 87.88 mm² (read 2026-10-15, "
+            "up turret +Y). Bridged; drill if they bind.",
+            max_area_mm2=88.1, max_regions=4,
+        )}),
     },
 )

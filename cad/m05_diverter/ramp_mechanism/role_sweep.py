@@ -19,7 +19,10 @@ three roles and every inspect run and every JSON on disk is
 current before the roll-up exits nonzero.
 """
 
+from build123d import Compound
+
 from cad_khana.mechanism.check import check
+from cad_khana.printability.feature import Feature
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 from cad_khana.printability.waiver import Waiver
@@ -31,11 +34,23 @@ from .assembly import (
     WALL_MIN,
     bearing_spider,
     column,
+    exit_opening_cutter,
+    hinge_bosses,
+    hinge_pin_bore,
+    joint_depressions,
+    joint_flange,
     make_assembly,
     ramp,
     ring_bearing,
+    rotating_collar,
+    saddle_cutouts,
+    servo_cage_parts,
+    spider_hub,
     trap,
     trap_coupler,
+    trap_knuckle,
+    trap_pin_bore,
+    trap_plate,
 )
 
 
@@ -43,41 +58,119 @@ for role in FLOOR_ROLES:
     check(make_assembly(role), out=f"outputs/{role}")
 
 method = FDM(wall_min_mm=WALL_MIN)
-waivers = {
-    "bearing_spider": {
-        "overhang_max": "flat 90° ceilings are real: saddle jaws drop "
-        "to z=-7 below the hub ring (z=0..5), so the hub underside and "
-        "jaw-channel ceilings face down — printed jaws-down with "
-        "support in the jaw channels",
-    },
-    "column": {
-        "overhang_max": "flat 90° ceilings are real: collar / joint-"
-        "flange / hinge-boss undersides, the exit-opening lintel, and "
-        "the servo cage's web underside and cut-out lintel on a "
-        "vertically printed tube — printed base-down with support "
-        "under the annular features and the cage web",
-    },
-}
-# The top column is a different body since the flare (2026-10-10): no
-# joint flange, and a funnel on top. The waiver above was written
-# against a flanged column, so here it is bound to what the top column
-# reads: the pre-flare 11400.94 mm² in 19 regions, less the flange
-# underside (5634.58 mm², one region), plus the lintel's growth. The
-# opening cut runs out through the flare's root, so the lintel ceiling
-# is 774.08 mm² (11.4 mm past the wall) where it was 240, and the
-# reading is 6300.44 mm². The flare's underside is cut at
-# FLARE_UNDER_DEG so that it adds nothing. The deeper lintel is accepted
-# as the same supported ceiling (owner, 2026-10-10); the bound is the
-# reading, so any further growth is red.
-top_column_waivers = {
-    "overhang_max": Waiver(
-        reason=waivers["column"]["overhang_max"]
-        + " (top role: no joint flange; the exit-opening lintel runs "
-        "11.4 mm out through the flare's root, supported like the rest "
-        "of it)",
-        max_area_mm2=6305.0, max_regions=18,
-    ),
-}
+# The bearing spider's ceilings, per feature: the saddle jaws drop to
+# z = -7 below the hub (z = 0..5, or the base seat's 0..8), so the hub
+# underside and the six jaw-channel ceilings face down. Each is waived
+# against the solid that makes it (`spider_hub`, `saddle_cutouts`, the
+# same ones `bearing_spider` builds from), so a ceiling anywhere else on
+# the body traces to no feature and fails. Read 2026-10-15, up +Z: the
+# channels 4059.06 mm² in 6 regions (676.51 each) on every role; the
+# hub 2362.74 mm² (middle / top) and 13580.02 (base, the seat), one
+# region each.
+_SPIDER_REASON = (
+    "flat 90° ceilings are real: saddle jaws drop to z=-7 below the hub "
+    "ring, so the hub underside and jaw-channel ceilings face down — "
+    "printed jaws-down with support in the jaw channels"
+)
+_SPIDER_HUB_MAX_MM2 = {"base": 13581.0, "middle": 2363.5, "top": 2363.5}
+
+
+def _spider_features(role: str) -> dict[str, Feature]:
+    hub_mm2 = _SPIDER_HUB_MAX_MM2[role]
+    return {
+        "hub": Feature(spider_hub(role), waive={"overhang_max": Waiver(
+            reason=f"{_SPIDER_REASON}: the hub underside, one face",
+            max_area_mm2=hub_mm2, max_regions=1,
+        )}),
+        "saddle_channels": Feature(Compound(saddle_cutouts()), waive={"overhang_max": Waiver(
+            reason=f"{_SPIDER_REASON}: the 6 channel ceilings, 676.51 mm² each",
+            max_area_mm2=4060.0, max_regions=6,
+        )}),
+    }
+
+
+# The column's ceilings, per feature, each against the block or cutter
+# `column()` builds it from, so a ceiling anywhere else on the tube
+# traces to no feature and fails. Printed base-down, vertically: support
+# under the annular features and the cage web; the small crowns bridge.
+# Read 2026-10-15, up +Z: base 10902.09 mm² in 15 regions, middle
+# 11398.99 in 19, top 6298.49 in 18. The top role has no joint flange,
+# and its exit-opening lintel runs out through the flare's root (the
+# flare's underside is cut at FLARE_UNDER_DEG so it adds nothing).
+
+
+def _waive(reason: str, max_area_mm2: float, max_regions: int) -> dict:
+    return {"overhang_max": Waiver(
+        reason=reason, max_area_mm2=max_area_mm2, max_regions=max_regions,
+    )}
+
+
+def _column_features(role: str) -> dict[str, Feature]:
+    blocks, cage_cut, tab_holes = servo_cage_parts()
+    features = {
+        "rotating_collar": Feature(rotating_collar(), waive=_waive(
+            "the rotating collar's underside at z 220, cut back by the "
+            "exit opening — supported. 4303.34 mm², one face",
+            4304.0, 1,
+        )),
+        "exit_opening": Feature(exit_opening_cutter(), waive=_waive(
+            "the exit opening's lintel at z 267.5, an 80 mm span — "
+            "supported. 240.00 mm², one face",
+            240.5, 1,
+        ) if role != "top" else _waive(
+            "the exit opening's lintel at z 267.5, which runs 11.4 mm out "
+            "through the flare's root — supported like the rest of it "
+            "(owner, 2026-10-10). 774.08 mm², one face",
+            774.5, 1,
+        )),
+        "servo_cage": Feature(Compound(blocks), waive=_waive(
+            "the cage web's underside at z 252.3 (470.52 mm², over the "
+            "horn) — supported; and the plate and cheek undersides at "
+            "z 234.8, level with the case bottom (67.05 + 16.95) — "
+            "bridged (owner, 2026-10-15). 554.52 mm², 3 faces",
+            555.0, 3,
+        )),
+        "cage_cutout": Feature(cage_cut, waive=_waive(
+            "the case cut-out's lintel at z 247.2, 22.9 mm across the "
+            "plate. 68.70 mm², one face",
+            69.0, 1,
+        )),
+        "cage_tab_holes": Feature(Compound(tab_holes), waive=_waive(
+            "crowns of the 2 Ø1.5 M2 tab pilots, 3.53 mm² each — bridged "
+            "(owner, 2026-10-15). 7.06 mm²",
+            7.1, 2,
+        )),
+        "hinge_bosses": Feature(Compound(hinge_bosses()), waive=_waive(
+            "the 2 hinge-boss undersides at z 234.9, 30.00 mm² each — "
+            "supported with the cage below",
+            60.5, 2,
+        )),
+        "hinge_pin_bore": Feature(hinge_pin_bore(), waive=_waive(
+            "crowns of the Ø3.6 pin bore through both bosses and both "
+            "±Y walls, 8.47 mm² each — bridged (owner, 2026-10-15). "
+            "33.90 mm², 4 faces",
+            34.0, 4,
+        )),
+    }
+    if role != "top":
+        features["joint_flange"] = Feature(joint_flange(), waive=_waive(
+            "the top joint flange's underside at z 268 — supported. "
+            "5634.58 mm², one face",
+            5635.0, 1,
+        ))
+    if role != "base":
+        features["joint_depressions"] = Feature(joint_depressions(role), waive=_waive(
+            "roofs of the 4 Ø12.6 joint depressions in the bottom "
+            "flange, 2.0 deep (z 55.0, 3.0 mm of flange above) over a "
+            "1.5 bump — each a 12.6 mm bridge, accepted with ≥0.5 mm "
+            "sag allowance over the bump (owner, 2026-10-15; the "
+            "allowance is a claim, unverified until printed). 124.23 mm² "
+            "each, 496.90 mm²",
+            497.5, 4,
+        ))
+    return features
+
+
 for role in FLOOR_ROLES:
     printed = [
         ("bearing_spider", bearing_spider(role)),
@@ -87,26 +180,41 @@ for role in FLOOR_ROLES:
         # The base floor's ring bearing is the bought turntable stub.
         printed.append(("ring_bearing", ring_bearing(role)))
     for name, part in printed:
-        waive = waivers.get(name)
-        if (role, name) == ("top", "column"):
-            waive = top_column_waivers
+        features = None
+        if name == "bearing_spider":
+            features = _spider_features(role)
+        elif name == "column":
+            features = _column_features(role)
         inspect(
             part, method=method, out=f"outputs/{role}", name=name,
-            waive=waive,
+            features=features,
         )
 # Trap and ramp are role-independent — inspect once at the top.
+# The trap's ceilings, per feature, each against the solid `trap()`
+# builds it from: KNUCKLE_OD (8) exceeds TRAP_T (4) and the plate is
+# centred on the hinge axis, so the whole plate underside floats 2 mm
+# above the knuckle's lowest point, the knuckle's lower half faces down
+# beside it, and the D-bore's flat roofs the bore. Read 2026-10-15 on the
+# stepped plate (unchanged from 2026-10-10): 7964.01 mm² in 3 regions.
 inspect(
     trap(), method=method, out="outputs", name="trap", solid_count=1,
-    waive={
-        "overhang_max": Waiver(
-            reason="real ceilings: KNUCKLE_OD (8) exceeds TRAP_T "
-            "(4), and the plate is centred on the hinge axis, so the whole "
-            "plate underside floats 2 mm above the knuckle's lowest point "
-            "— printed with support under the plate; pin-bore top bridges. "
-            "Read 2026-10-10 on the stepped plate: 7964.01 mm² in 3 regions "
-            "(plate underside 7269.15, knuckle 502.19, bore flat 192.67)",
-            max_area_mm2=7975.0, max_regions=3,
-        ),
+    features={
+        "plate": Feature(trap_plate(), waive={"overhang_max": Waiver(
+            reason="real ceiling: the plate underside, 2 mm above the "
+            "knuckle's lowest point — printed with support under the "
+            "plate. 7269.15 mm², one face",
+            max_area_mm2=7270.0, max_regions=1,
+        )}),
+        "knuckle": Feature(trap_knuckle(), waive={"overhang_max": Waiver(
+            reason="the knuckle's underside below the plate, supported "
+            "with it. 502.19 mm², one face",
+            max_area_mm2=503.0, max_regions=1,
+        )}),
+        "pin_bore": Feature(trap_pin_bore(), waive={"overhang_max": Waiver(
+            reason="the D-bore's flat, the bore's roof: bridged. "
+            "192.67 mm², one face",
+            max_area_mm2=193.0, max_regions=1,
+        )}),
     },
 )
 inspect(ramp(), method=method, out="outputs", name="ramp")

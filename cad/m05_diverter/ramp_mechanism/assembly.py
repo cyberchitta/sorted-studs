@@ -482,7 +482,11 @@ JOINT_BUMP_CENTERLINE_R = 56.0    # midway between r=45 (column hole) and r=69 (
 JOINT_BUMP_D = 12.0
 JOINT_BUMP_H = 1.5
 JOINT_BUMP_CLEARANCE_R = 0.3      # depression is this much larger in radius (per side)
-JOINT_BUMP_CLEARANCE_Z = 0.2      # depression is this much deeper than the bump is tall
+# Depression is this much deeper than the bump is tall. 0.5, not 0.2
+# (owner, 2026-10-15): the depression's roof prints as a 12.6 mm bridge,
+# and the extra depth is sag allowance over the bump — unverified until
+# printed. The mating faces at the joint plane don't move.
+JOINT_BUMP_CLEARANCE_Z = 0.5
 JOINT_DEPRESSION_D = JOINT_BUMP_D + 2 * JOINT_BUMP_CLEARANCE_R
 JOINT_DEPRESSION_H = JOINT_BUMP_H + JOINT_BUMP_CLEARANCE_Z
 
@@ -676,12 +680,13 @@ def _d_cyl(r: float, flat: float, length: float) -> Part:
     return Cylinder(r, length) - Pos(0, flat + r, 0) * Box(2 * r, 2 * r, length * 2)
 
 
-def _servo_cage() -> Part:
-    """The servo cage in the floor-local frame, to be fused onto the
-    column's +Y face (see the CAGE_* parameters). Open at the bottom:
-    the plate's cut-out runs out through its lower edge, which sits
-    level with the case bottom, so nothing of the cage reaches lower
-    than the servo does."""
+def servo_cage_parts() -> tuple[list[Part], Part, list[Part]]:
+    """The servo cage's pieces in the floor-local frame — the solid
+    blocks (plate, web, cheek), the case cut-out, and the two tab-hole
+    cutters — as `_servo_cage` combines them. Exposed so
+    `role_sweep.py` can waive each ceiling against the solid that makes
+    it: the web's and the blocks' undersides, the cut-out's lintel, the
+    tab holes' crowns."""
     hx, hz = TRAP_HINGE_X, TRAP_HINGE_Z
     body_x0 = hx - SERVO_SHAFT_FROM_END
     body_x1 = body_x0 + SERVO_BODY_L
@@ -707,15 +712,73 @@ def _servo_cage() -> Part:
         CAGE_PLATE_Y_MIN - 1.0, CAGE_PLATE_Y_MAX + 1.0,
         z0 - 1.0, hz + SERVO_BODY_W / 2 + CAGE_CUT_CLEAR,
     )
-    cage = plate + web + cheek - cut
-    for dx in (-CAGE_TAB_HOLE_PITCH / 2, CAGE_TAB_HOLE_PITCH / 2):
-        cage = cage - Pos(x_mid + dx, CAGE_PLATE_Y_MAX, hz) * _cyl_along_y(
+    tab_holes = [
+        Pos(x_mid + dx, CAGE_PLATE_Y_MAX, hz) * _cyl_along_y(
             CAGE_TAB_HOLE_D / 2, 4 * CAGE_T
         )
+        for dx in (-CAGE_TAB_HOLE_PITCH / 2, CAGE_TAB_HOLE_PITCH / 2)
+    ]
+    return [plate, web, cheek], cut, tab_holes
+
+
+def _servo_cage() -> Part:
+    """The servo cage in the floor-local frame, to be fused onto the
+    column's +Y face (see the CAGE_* parameters). Open at the bottom:
+    the plate's cut-out runs out through its lower edge, which sits
+    level with the case bottom, so nothing of the cage reaches lower
+    than the servo does."""
+    (plate, web, cheek), cut, tab_holes = servo_cage_parts()
+    cage = plate + web + cheek - cut
+    for hole in tab_holes:
+        cage = cage - hole
     return cage
 
 
 # --- Part functions -----------------------------------------------------
+
+def _saddle_rot(i: int) -> Rot:
+    """Saddle i at (i+0.5)·step — basket boundaries / inner-hex vertex
+    azimuths, aligned with the radial rails they grip."""
+    return Rot(0, 0, (i + 0.5) * 360.0 / N_SPIDER_SADDLES)
+
+
+def spider_hub(role: str = "middle") -> Part:
+    """The bearing spider's hub annulus, spider frame — the ring that
+    holds the printed bearing (middle / top) or the turntable seat
+    (base); see `bearing_spider`. Its underside at z = 0 faces the bed
+    (the saddle walls stand to z = -7), so `role_sweep.py` waives it
+    against this solid."""
+    if role == "base":
+        hub_id, hub_od, hub_z_top = SEAT_ID, SEAT_OD, SEAT_T
+    else:
+        hub_id, hub_od, hub_z_top = SPIDER_HUB_ID, SPIDER_HUB_OD, BEARING_Z_TOP
+    hub_z_bot = BEARING_Z_BOT
+    hub_t = hub_z_top - hub_z_bot
+    hub_z_center = (hub_z_bot + hub_z_top) / 2
+    hub_outer = Pos(0, 0, hub_z_center) * Cylinder(hub_od / 2, hub_t)
+    hub_inner = Pos(0, 0, hub_z_center) * Cylinder(hub_id / 2, hub_t * 2)
+    return hub_outer - hub_inner
+
+
+def saddle_cutouts() -> list[Part]:
+    """The six rail channels `bearing_spider` cuts through its saddles,
+    one per saddle, spider frame. Each channel's ceiling is the rail's
+    top face (SADDLE_CEIL_Z), so it faces down; `role_sweep.py` waives
+    those ceilings against these solids. Uniform across roles."""
+    ext_top_z = SADDLE_CEIL_Z
+    saddle_x_out = SPIDER_HUB_OD / 2 + SADDLE_L
+    cutout_x_in = SPIDER_HUB_OD / 2
+    cutout_x_out = saddle_x_out + 5.0
+    cutout_z_top = ext_top_z
+    cutout_z_bot = ext_top_z - SADDLE_COVER_H - 1.0
+    return [
+        _saddle_rot(i) * Pos(
+            (cutout_x_in + cutout_x_out) / 2, 0,
+            (cutout_z_bot + cutout_z_top) / 2,
+        ) * Box(cutout_x_out - cutout_x_in, EXT_SIDE, cutout_z_top - cutout_z_bot)
+        for i in range(N_SPIDER_SADDLES)
+    ]
+
 
 def bearing_spider(role: str = "middle") -> Part:
     """Printed hub that holds the ring bearing coaxial with the column.
@@ -744,17 +807,8 @@ def bearing_spider(role: str = "middle") -> Part:
             f"(z={SADDLE_CEIL_Z + SADDLE_T_TOP}); the turntable would rock "
             f"on six pads. Raise TURNTABLE_Z_BOT."
         )
-        hub_id, hub_od, hub_z_top = SEAT_ID, SEAT_OD, SEAT_T
-    else:
-        hub_id, hub_od, hub_z_top = SPIDER_HUB_ID, SPIDER_HUB_OD, BEARING_Z_TOP
-    hub_z_bot = BEARING_Z_BOT
-    hub_t = hub_z_top - hub_z_bot
-    hub_z_center = (hub_z_bot + hub_z_top) / 2
     ext_top_z = SADDLE_CEIL_Z                          # top plate bears on the rail
-
-    hub_outer = Pos(0, 0, hub_z_center) * Cylinder(hub_od / 2, hub_t)
-    hub_inner = Pos(0, 0, hub_z_center) * Cylinder(hub_id / 2, hub_t * 2)
-    body = hub_outer - hub_inner
+    body = spider_hub(role)
 
     saddle_w = EXT_SIDE + 2 * SADDLE_T_WALL
     saddle_h = SADDLE_COVER_H + SADDLE_T_TOP
@@ -763,28 +817,16 @@ def bearing_spider(role: str = "middle") -> Part:
     saddle_z_bot = ext_top_z - SADDLE_COVER_H
     saddle_z_top = ext_top_z + SADDLE_T_TOP
 
-    cutout_x_in = SPIDER_HUB_OD / 2
-    cutout_x_out = saddle_x_out + 5.0
-    cutout_z_top = ext_top_z
-    cutout_z_bot = saddle_z_bot - 1.0
-
     bolt_x = SPIDER_HUB_OD / 2 + SADDLE_BOLT_OFFSET
     bolt_z_bot = ext_top_z - 1.0
     bolt_z_top = saddle_z_top + 1.0
 
-    # Saddles at (i+0.5) * step = basket boundaries / inner-hex vertex
-    # azimuths, aligned with the radial rails they grip.
-    for i in range(N_SPIDER_SADDLES):
-        theta = (i + 0.5) * 360.0 / N_SPIDER_SADDLES
-        rot = Rot(0, 0, theta)
+    for i, cutout in enumerate(saddle_cutouts()):
+        rot = _saddle_rot(i)
         saddle_env = rot * Pos(
             (saddle_x_in + saddle_x_out) / 2, 0,
             (saddle_z_bot + saddle_z_top) / 2,
         ) * Box(saddle_x_out - saddle_x_in, saddle_w, saddle_h)
-        cutout = rot * Pos(
-            (cutout_x_in + cutout_x_out) / 2, 0,
-            (cutout_z_bot + cutout_z_top) / 2,
-        ) * Box(cutout_x_out - cutout_x_in, EXT_SIDE, cutout_z_top - cutout_z_bot)
         bolt_hole = rot * Pos(bolt_x, 0, (bolt_z_bot + bolt_z_top) / 2) * Cylinder(
             SADDLE_BOLT_D / 2, bolt_z_top - bolt_z_bot,
         )
@@ -901,6 +943,58 @@ def flare_void() -> Part:
     return revolve(Plane.XZ * section, Axis.Z, 360)
 
 
+def rotating_collar() -> Part:
+    """The rotating collar, floor-local: the circular band at z
+    ROT_COLLAR_Z_BOT..TOP that the bearing on the floor above grips
+    (before the exit opening slices it)."""
+    return _circular_feature(ROT_COLLAR_Z_BOT, ROT_COLLAR_Z_TOP)
+
+
+def joint_flange() -> Part:
+    """The top joint flange (base / middle roles), floor-local, without
+    its bumps."""
+    return _circular_feature(JOINT_FLANGE_Z_BOT, JOINT_FLANGE_Z_TOP)
+
+
+def joint_depressions(role: str = "middle") -> Part:
+    """The depression pockets cut up into the middle / top column's
+    bottom flange from its mating face, floor-local — the cutter
+    `column` subtracts."""
+    return _joint_interlock(
+        _col_z_bot(role), JOINT_DEPRESSION_D, JOINT_DEPRESSION_H,
+    )
+
+
+def exit_opening_cutter() -> Part:
+    """The +X exit opening's cutter, floor-local: it cuts the tube and
+    every circular feature in its z range, and its top face is the
+    opening's lintel."""
+    cut_z_center = (OPENING_Z_TOP + OPENING_Z_BOT) / 2
+    cut_h = OPENING_Z_TOP - OPENING_Z_BOT
+    return Pos(COL_OUTER_SIDE, 0, cut_z_center) * Box(
+        COL_OUTER_SIDE * 2, OPENING_W, cut_h
+    )
+
+
+def hinge_bosses() -> list[Part]:
+    """The two hinge bosses on the −X wall's inside, ±Y of the trap,
+    floor-local."""
+    return [
+        Pos(BOSS_X_CENTER, sign * BOSS_Y_OFFSET, TRAP_HINGE_Z) * Box(
+            BOSS_X, BOSS_Y, BOSS_H_Z
+        )
+        for sign in (+1, -1)
+    ]
+
+
+def hinge_pin_bore() -> Part:
+    """The pin bore through both bosses and both ±Y walls, floor-local —
+    the cutter `column` subtracts last."""
+    return Pos(TRAP_HINGE_X, 0, TRAP_HINGE_Z) * _cyl_along_y(
+        PIN_HOLE_D / 2, COL_OUTER_SIDE + 4.0
+    )
+
+
 def column(role: str = "middle") -> Part:
     """Square-section tube with a +X exit opening, −X hinge bosses, a
     servo cage on the +Y face, a
@@ -963,7 +1057,7 @@ def column(role: str = "middle") -> Part:
     # Rotating collar — circular OD at z 220..225 that the bearing on
     # the floor *above* grips. Added BEFORE the +X opening cut so the
     # opening also slices the collar into a partial ring.
-    tube = tube + _circular_feature(ROT_COLLAR_Z_BOT, ROT_COLLAR_Z_TOP)
+    tube = tube + rotating_collar()
 
     if role == "top":
         # The feed flare, in place of the joint flange; the bore is cut
@@ -979,7 +1073,7 @@ def column(role: str = "middle") -> Part:
         # above the flange face; they slot into matching depressions on
         # the upper column's bottom flange to transfer torque across the
         # joint without bolts or metal hardware.
-        tube = tube + _circular_feature(JOINT_FLANGE_Z_BOT, JOINT_FLANGE_Z_TOP)
+        tube = tube + joint_flange()
         tube = tube + _joint_interlock(
             JOINT_FLANGE_Z_TOP, JOINT_BUMP_D, JOINT_BUMP_H,
         )
@@ -1000,35 +1094,20 @@ def column(role: str = "middle") -> Part:
         # mating face carries depression voids that receive the lower
         # column's bumps.
         tube = tube + _circular_feature(z_bot, z_bot + JOINT_FLANGE_T)
-        tube = tube - _joint_interlock(
-            z_bot, JOINT_DEPRESSION_D, JOINT_DEPRESSION_H,
-        )
+        tube = tube - joint_depressions(role)
 
     # Exit opening on +X wall — cuts the tube AND any circular feature
     # that overlaps its z range (rotating collar at 220..225 ⊂ ≈174..268).
-    cut_z_center = (OPENING_Z_TOP + OPENING_Z_BOT) / 2
-    cut_h = OPENING_Z_TOP - OPENING_Z_BOT
-    cut = Pos(COL_OUTER_SIDE, 0, cut_z_center) * Box(
-        COL_OUTER_SIDE * 2, OPENING_W, cut_h
-    )
-    tube = tube - cut
+    tube = tube - exit_opening_cutter()
 
     # Hinge bosses — inside surface of −X wall, ±Y of the trap, at
     # TRAP_HINGE_Z. They extend +X (inward) to anchor the pin, which
     # runs through both ±Y walls; the servo drives its +Y end.
-    boss_plus = Pos(BOSS_X_CENTER, +BOSS_Y_OFFSET, TRAP_HINGE_Z) * Box(
-        BOSS_X, BOSS_Y, BOSS_H_Z
-    )
-    boss_minus = Pos(BOSS_X_CENTER, -BOSS_Y_OFFSET, TRAP_HINGE_Z) * Box(
-        BOSS_X, BOSS_Y, BOSS_H_Z
-    )
+    boss_plus, boss_minus = hinge_bosses()
     tube = tube + boss_plus + boss_minus + _servo_cage()
 
     # Pin bore through bosses and both ±Y walls (and the air between)
-    pin_bore = Pos(TRAP_HINGE_X, 0, TRAP_HINGE_Z) * _cyl_along_y(
-        PIN_HOLE_D / 2, COL_OUTER_SIDE + 4.0
-    )
-    return tube - pin_bore
+    return tube - hinge_pin_bore()
 
 
 def hinge_pin() -> Part:
@@ -1039,6 +1118,36 @@ def hinge_pin() -> Part:
     exports.
     """
     return _d_cyl(PIN_D / 2, PIN_FLAT, PIN_LEN)
+
+
+def trap_plate() -> Part:
+    """The trap's stepped plate alone, hinge frame: the plan outline
+    `trap()` describes, TRAP_T thick, centred on the hinge axis. Its
+    underside floats above the knuckle's lowest point, so
+    `role_sweep.py` waives it against this solid."""
+    plate_len = TRAP_L + KNUCKLE_OD / 2
+    tip_half = TRAP_GUIDE_EXIT_W / 2 + TRAP_GUIDE_T
+    half = TRAP_W / 2
+    outline = [
+        (0, -half), (TRAP_STEP_S, -half), (TRAP_WING_S, -TRAP_WING_HALF_W),
+        (plate_len, -tip_half), (plate_len, tip_half),
+        (TRAP_WING_S, TRAP_WING_HALF_W), (TRAP_STEP_S, half), (0, half),
+    ]
+    return Pos(0, 0, -TRAP_T / 2) * extrude(
+        Polygon(*outline, align=None), amount=TRAP_T, dir=(0, 0, 1),
+    )
+
+
+def trap_knuckle() -> Part:
+    """The trap's hinge knuckle, hinge frame: Ø KNUCKLE_OD along Y over
+    TRAP_W, centred on the axis."""
+    return _cyl_along_y(KNUCKLE_OD / 2, TRAP_W)
+
+
+def trap_pin_bore() -> Part:
+    """The knuckle's keyed (D) bore, flat facing +Z, as the cutter
+    `trap()` subtracts."""
+    return Rot(90, 0, 0) * _d_cyl(PIN_D_BORE_D / 2, PIN_D_BORE_FLAT, TRAP_W * 2)
 
 
 def trap() -> Part:
@@ -1075,18 +1184,7 @@ def trap() -> Part:
         f"guide taper {taper_deg:.1f}° not in (0, RAMP_FUNNEL_DEG={RAMP_FUNNEL_DEG}]"
     )
 
-    def _up(outline) -> Part:
-        """Extrude a plan outline TRAP_T up from the plate underside."""
-        return Pos(0, 0, -TRAP_T / 2) * extrude(
-            Polygon(*outline, align=None), amount=TRAP_T, dir=(0, 0, 1),
-        )
-
-    half = TRAP_W / 2
-    plate = _up([
-        (0, -half), (TRAP_STEP_S, -half), (TRAP_WING_S, -TRAP_WING_HALF_W),
-        (plate_len, -tip_half), (plate_len, tip_half),
-        (TRAP_WING_S, TRAP_WING_HALF_W), (TRAP_STEP_S, half), (0, half),
-    ])
+    plate = trap_plate()
     guide = Pos(0, 0, TRAP_T / 2) * extrude(
         Polygon(
             (TRAP_WING_S, TRAP_WING_HALF_W - TRAP_GUIDE_T),
@@ -1103,10 +1201,8 @@ def trap() -> Part:
     guide = guide - Pos(TRAP_WING_S, 0, TRAP_T / 2) * Rot(0, 45, 0) * Pos(-big / 2, 0, 0) * Box(
         big, big, big
     )
-    knuckle = _cyl_along_y(KNUCKLE_OD / 2, TRAP_W)
-    body = plate + knuckle + guide + mirror(guide, about=Plane.XZ)
-    pin_bore = Rot(90, 0, 0) * _d_cyl(PIN_D_BORE_D / 2, PIN_D_BORE_FLAT, TRAP_W * 2)
-    return body - pin_bore
+    body = plate + trap_knuckle() + guide + mirror(guide, about=Plane.XZ)
+    return body - trap_pin_bore()
 
 
 def trap_coupler() -> Part:

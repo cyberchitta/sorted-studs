@@ -12,12 +12,18 @@ body inspected is the one the turret places under its servo joint
 rest pose in turret-local coordinates.
 """
 
+from cad_khana.printability.feature import Feature
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 from cad_khana.printability.waiver import Waiver
 
 from ..params import WALL_MIN
-from .assembly import build_turret_dump_servo_arm, servo_bracket
+from .assembly import (
+    build_turret_dump_servo_arm,
+    hub_disc,
+    servo_bracket,
+    shaft_bore_cutter,
+)
 
 
 # servo_bracket has no downward face above the bed (overhang null,
@@ -37,21 +43,29 @@ inspect(
 # (556 mm² at 90°), ±X 614–716 mm². "Beam flat on the bed" (the
 # module docstring's old plan) has no bed face at all: the Ø16 hub
 # and the pad both stand proud of the 6 mm beam.
+#
+# The two ceilings are waived per feature, each against the solid that
+# made it (the same solids `servo_arm()` builds from), so a new ceiling
+# anywhere else on the body traces to no feature and fails. Measured
+# 2026-10-15, up turret −Z: 102.55 mm² over 2 regions.
 inspect(
     build_turret_dump_servo_arm().part("servo_arm").part,
     method=FDM(wall_min_mm=WALL_MIN, up_axis=(0, 0, -1)),
     out="outputs",
     name="servo_arm",
-    waive={
-        "overhang_max": Waiver(
-            reason="102.55 mm² at up to 89.8° (read 2026-10-10, "
-            "up turret −Z): the Ø16 hub disc's outboard arc (x −88…−72, "
-            "the part the beam does not meet), 74.30 mm² to 89.8°, and "
-            "the Ø4.5 servo-shaft bore's ceiling, 28.25 mm² to 89.3°. "
-            "Print plan: tree support from the bed under the hub arc "
-            "only (a cosmetic face); the bore bridges, then a Ø4.5 drill "
-            "through it.",
-            max_area_mm2=103.5, max_regions=2,
-        ),
+    features={
+        "hub_disc": Feature(hub_disc(), waive={"overhang_max": Waiver(
+            reason="the Ø16 hub disc's outboard arc (x −86…−77, the part "
+            "the beam does not meet), 74.30 mm² to 88.8° (read "
+            "2026-10-15, up turret −Z). Print plan: tree support from the "
+            "bed under the hub arc only (a cosmetic face).",
+            max_area_mm2=74.6, max_regions=1,
+        )}),
+        "shaft_bore": Feature(shaft_bore_cutter(), waive={"overhang_max": Waiver(
+            reason="the Ø4.5 servo-shaft bore's ceiling, 28.25 mm² to "
+            "89.3° (read 2026-10-15, up turret −Z). Print plan: the bore "
+            "bridges, then a Ø4.5 drill through it.",
+            max_area_mm2=28.4, max_regions=1,
+        )}),
     },
 )

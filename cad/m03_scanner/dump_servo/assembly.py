@@ -258,6 +258,36 @@ def servo_bracket():
     return plate
 
 
+def hub_disc():
+    """The arm's Ø HUB_DISC_OD hub disc on the servo shaft axis (±Y),
+    uncut, in turret-local coordinates. `servo_arm()` builds from it;
+    `printability.py` declares it as the `hub_disc` feature."""
+    return (
+        Pos(
+            TURRET_DUMP_SERVO_PIVOT_X,
+            TURRET_DUMP_SERVO_PIVOT_Y,
+            TURRET_DUMP_SERVO_PIVOT_Z,
+        )
+        * Rot(90, 0, 0)
+        * Cylinder(HUB_DISC_OD / 2, HUB_DISC_Y_LEN)
+    )
+
+
+def shaft_bore_cutter():
+    """The Ø HUB_BORE_D servo-shaft bore through the hub disc (axis
+    ±Y). `servo_arm()` cuts with it; `printability.py` declares it as
+    the `shaft_bore` feature."""
+    return (
+        Pos(
+            TURRET_DUMP_SERVO_PIVOT_X,
+            TURRET_DUMP_SERVO_PIVOT_Y,
+            TURRET_DUMP_SERVO_PIVOT_Z,
+        )
+        * Rot(90, 0, 0)
+        * Cylinder(HUB_BORE_D / 2, HUB_DISC_Y_LEN * 3)
+    )
+
+
 def servo_arm():
     """Printed lifter arm: hub disc at the servo shaft + slanted beam +
     pad block at the tip. Single rigid body; the whole part rotates
@@ -269,24 +299,7 @@ def servo_arm():
         f"({WALL_MIN}); raise HUB_DISC_OD"
     )
 
-    hub = (
-        Pos(
-            TURRET_DUMP_SERVO_PIVOT_X,
-            TURRET_DUMP_SERVO_PIVOT_Y,
-            TURRET_DUMP_SERVO_PIVOT_Z,
-        )
-        * Rot(90, 0, 0)
-        * Cylinder(HUB_DISC_OD / 2, HUB_DISC_Y_LEN)
-    )
-    hub -= (
-        Pos(
-            TURRET_DUMP_SERVO_PIVOT_X,
-            TURRET_DUMP_SERVO_PIVOT_Y,
-            TURRET_DUMP_SERVO_PIVOT_Z,
-        )
-        * Rot(90, 0, 0)
-        * Cylinder(HUB_BORE_D / 2, HUB_DISC_Y_LEN * 3)
-    )
+    hub = hub_disc() - shaft_bore_cutter()
 
     beam = (
         Pos(_BEAM_CENTER_X, _BEAM_CENTER_Y, _BEAM_CENTER_Z)

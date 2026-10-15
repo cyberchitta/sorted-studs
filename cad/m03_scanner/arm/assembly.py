@@ -163,11 +163,53 @@ PIN_LENGTH = BUSHING_BLOCK_W + 2 * _PIN_PROTRUSION   # = 30
 
 # --- Part functions ----------------------------------------------------
 
+_ARM_HEADINGS_DEG = (0, 90, 180, 270)
+
+
+def _pin_bore_cutter():
+    """The pin bore through the +X heading's bushing block (axis ±Y =
+    tangential at +X heading). Default Cylinder axis is +Z; rotate to
+    lift onto ±Y."""
+    return (
+        Pos(TURRET_HINGE_PIN_RADIAL, 0, 0)
+        * Rot(90, 0, 0)
+        * Cylinder(PIN_BORE_D / 2, BUSHING_BLOCK_W * 3)
+    )
+
+
+def pin_bore_cutters():
+    """The four Ø PIN_BORE_D hinge-pin bores, one per arm heading, in
+    spider-local coordinates. `spider()` cuts with them (via
+    `_arm_unit`); `printability.py` declares them as the `pin_bores`
+    feature."""
+    return tuple(Rot(0, 0, h) * _pin_bore_cutter() for h in _ARM_HEADINGS_DEG)
+
+
+def set_screw_cutter():
+    """The Ø SET_SCREW_INSERT_D radial set-screw insert bore at heading
+    +45° in the XY horizontal plane. Cylinder centred on the radial
+    midpoint between shaft bore and disc OD; length spans bore + small
+    overshoot so it exits the disc cleanly on both ends (only one end
+    actually creates an OD opening — the inner end pokes into the
+    already-empty shaft bore). `spider()` cuts with it;
+    `printability.py` declares it as the `set_screw_bore` feature."""
+    ss_radial_mid = (HUB_OD / 2 + HUB_BORE_D / 2) / 2
+    ss_length = (HUB_OD - HUB_BORE_D) / 2 + 4.0
+    c45 = math.sqrt(0.5)
+    # Rot(-90, 45, 0) maps default Cylinder axis +Z onto (c45, c45, 0)
+    # — heading +45° in the XY horizontal plane.
+    return (
+        Pos(ss_radial_mid * c45, ss_radial_mid * c45, 0)
+        * Rot(-90, 45, 0)
+        * Cylinder(SET_SCREW_INSERT_D / 2, ss_length)
+    )
+
+
 def _arm_unit():
     """One arm + bushing block in the +X heading orientation, centred
-    on spider-local origin at the hub axis. Pin bore axis along ±Y
-    (= tangential at +X heading). Caller composes the full spider by
-    rotating around Z for headings (0, 90, 180, 270)."""
+    on spider-local origin at the hub axis, with its pin bore cut.
+    Caller composes the full spider by rotating around Z for headings
+    `_ARM_HEADINGS_DEG`."""
     arm_x_center = (_ARM_INNER_R + _BUSHING_BLOCK_INNER_R) / 2
     arm_x_len = _BUSHING_BLOCK_INNER_R - _ARM_INNER_R
     beam = Pos(arm_x_center, 0, 0) * Box(arm_x_len, ARM_BEAM_W, HUB_HEIGHT)
@@ -177,15 +219,7 @@ def _arm_unit():
         * Box(BUSHING_BLOCK_RADIAL_LEN, BUSHING_BLOCK_W, HUB_HEIGHT)
     )
 
-    # Pin bore through the bushing block (axis ±Y = tangential at +X
-    # heading). Default Cylinder axis is +Z; rotate to lift onto ±Y.
-    pin_bore = (
-        Pos(TURRET_HINGE_PIN_RADIAL, 0, 0)
-        * Rot(90, 0, 0)
-        * Cylinder(PIN_BORE_D / 2, BUSHING_BLOCK_W * 3)
-    )
-
-    return beam + block - pin_bore
+    return beam + block - _pin_bore_cutter()
 
 
 def spider():
@@ -241,25 +275,11 @@ def spider():
     # Subtract the central shaft bore (axis ±Z).
     body -= Cylinder(HUB_BORE_D / 2, HUB_HEIGHT * 3)
 
-    # Subtract the M3 set-screw bore at heading +45° in the XY
-    # horizontal plane. Cylinder centred on the radial midpoint
-    # between shaft bore and disc OD; length spans bore + small
-    # overshoot so it exits the disc cleanly on both ends (only one
-    # end actually creates an OD opening — the inner end pokes into
-    # the already-empty shaft bore).
-    ss_radial_mid = (HUB_OD / 2 + HUB_BORE_D / 2) / 2
-    ss_length = (HUB_OD - HUB_BORE_D) / 2 + 4.0
-    c45 = math.sqrt(0.5)
-    # Rot(-90, 45, 0) maps default Cylinder axis +Z onto (c45, c45, 0)
-    # — heading +45° in the XY horizontal plane.
-    body -= (
-        Pos(ss_radial_mid * c45, ss_radial_mid * c45, 0)
-        * Rot(-90, 45, 0)
-        * Cylinder(SET_SCREW_INSERT_D / 2, ss_length)
-    )
+    # Subtract the M3 set-screw bore at heading +45°.
+    body -= set_screw_cutter()
 
     # Add 4 arm units by rotating one canonical arm around the Z axis.
-    for heading_deg in (0, 90, 180, 270):
+    for heading_deg in _ARM_HEADINGS_DEG:
         body = body + (Rot(0, 0, heading_deg) * _arm_unit())
 
     return body
