@@ -51,6 +51,10 @@ MATERIAL_OF: dict[str, str | None] = {
     # Hardware
     "hinge_pin": "steel",
     "motor": "cast_aluminium_dark",
+    # The base floor's ring_bearing: the bought 8" turntable, as m02's
+    # bearing (decisions/m02-rotor-drive.md). Not a leaf name — the
+    # ramp_mechanism builder looks it up for the base role.
+    "turntable": "aluminium_anodized",
     "pinion": "steel",
     # Bought hobby servo — plastic case; m03's servo_body renders the same.
     "trap_servo": "pla_matte",

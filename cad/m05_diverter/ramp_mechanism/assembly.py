@@ -1414,7 +1414,12 @@ def build_column_side_static(
     a = (
         Assembly()
         .with_part(n_sp, bearing_spider(role), material=_mt(n_sp))
-        .with_part(n_rb, ring_bearing(role), material=_mt(n_rb))
+        # The base role's ring is the bought aluminium turntable, so its
+        # material is looked up under its own key, not the printed ring's.
+        .with_part(
+            n_rb, ring_bearing(role),
+            material=_mt("turntable" if role == "base" else n_rb),
+        )
     )
     if role == "base":
         # The turntable rests on the seat — that rest is the stack's
