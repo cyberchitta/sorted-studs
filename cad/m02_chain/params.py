@@ -426,6 +426,64 @@ RAMP_WALL_T = 4.0
 RAMP_LIP_LEN = 5.0
 
 
+# --- LOAD beam-break (option A, owner 2026-10-17) ----------------------
+
+# The brick-released sensor: a through-beam across the chute near the
+# outlet, square to the run and parallel to the floor. Emitter outboard
+# of the +Y side wall, looking through a hole in it; receiver lying on a
+# tab grown off the floor's −Y edge (the half-chute has no −Y wall there
+# — the stator cut took it), looking back across the chute. The tab is
+# a shelf: the floor carried on past its edge, floor-thick and flush with
+# the floor top, so it adds no face that hangs down when the ramp prints
+# on its side (chain −Y up, `printability.py`). A wall behind the
+# receiver with a hole in it was tried first (2026-10-17): its
+# chute-side face must lean out ≥ 45° from vertical in print, and the
+# hole breaking that slant leaves a 40° wedge at its rim (min wall 1.39,
+# alignment 0.77 = cos 40°) — red without a waiver.
+#
+# Where the beam sits, chute-local (from the exit edge): BEAM_S up the
+# slope (≈ 6.9 in plan, 7.2 in z) and, because the receiver lies on the
+# tab, one sensor radius above the floor top.
+BEAM_S = 10.0
+# The thinnest brick that has to break the beam: a plate or tile lying
+# flat (3.2 mm), on a 1×1's 7.8 side. The beam's core must lie wholly
+# under it; the claim is `check_load_beam.py`'s.
+THINNEST_BRICK_H = 3.2
+THINNEST_BRICK_W = 7.8
+# The emitter's aperture through the +Y wall (the beam's full width at
+# the chute), and the part of it a brick has to cover for the receiver
+# to count a break — a placeholder for the receiver's threshold, not a
+# measurement.
+BEAM_HOLE_D = 3.0
+BEAM_CORE_D = 1.5
+
+# Bought sensor envelope — PLACEHOLDER dims for a generic 3 mm IR
+# LED / phototransistor pair (T-1 package): flange Ø3.8, body + dome
+# 5.3 long, then the leads bent to a 2-pin connector behind it. Each
+# half is one cylinder of SENSOR_ENV_D × SENSOR_ENV_L on the beam axis.
+# Derived from these: the envelopes, and so every clearance claim that
+# reads them; the beam's height (BEAM_H, the receiver lying on the
+# tab), and so whether the thinnest brick still covers its core — a
+# 5 mm package (Ø5.8) puts the core's top at 3.65, over a plate, and
+# `check_load_beam.py` goes red; and the tab's width. How each half is
+# held (clip, cradle, glue) is not modelled.
+SENSOR_FLANGE_D = 3.8
+SENSOR_BODY_L = 5.3
+SENSOR_LEAD_L = 8.0
+SENSOR_ENV_D = SENSOR_FLANGE_D
+SENSOR_ENV_L = SENSOR_BODY_L + SENSOR_LEAD_L                          # 13.3
+BEAM_H = SENSOR_ENV_D / 2.0                                           # 1.9
+
+# The receiver tab, chute-local: from the exit edge BEAM_TAB_LEN up the
+# slope, from the floor's −Y edge out to BEAM_TAB_LIP past the
+# receiver's back. The receiver's front face stands on the floor's edge
+# at the exit edge, the edge's innermost point over the tab (it curves
+# out up the slope, toward S1's axis's x), so the receiver lies wholly
+# where the stator cut removed the ramp.
+BEAM_TAB_LEN = 16.0
+BEAM_TAB_LIP = 2.0
+
+
 # --- Gantry ------------------------------------------------------------
 
 # 2020 aluminum extrusion — matches m05's EXT_SIZE.

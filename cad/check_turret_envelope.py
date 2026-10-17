@@ -108,6 +108,14 @@ def build_turret_envelope_check(schema: str = DEFAULT_SCHEMA) -> Assembly:
         a = a.assert_distance(
             "turret_loaded_envelope", f"m02_chain.{pp.name}", min_mm=TURRET_SWEEP_CLEAR,
         )
+    # The LOAD beam-break's tab, read on its own: the ramp's claim above
+    # is its nearest point (the exit edge), so it says nothing about the
+    # tab grown off the floor's −Y edge beside it. The two sensor halves
+    # are chain parts, so the loop holds them.
+    a = a.assert_distance(
+        "turret_loaded_envelope", "m02_chain.load_ramp@beam_tab", min_mm=TURRET_SWEEP_CLEAR,
+        name="turret_loaded_envelope_to_load_beam_tab",
+    )
     return a
 
 

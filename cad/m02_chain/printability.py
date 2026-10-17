@@ -161,6 +161,12 @@ for s in STAGES:
 # Chosen 2026-09-27 from a sweep of ±X/±Y/±Z and the large faces'
 # normals; every other candidate leaves ≥ 2574 mm² past 45° (the
 # nearest, landing end down, is the slope's underside at 46.3°).
+# The LOAD beam-break keeps it so (2026-10-17): the receiver tab is the
+# floor carried on past its −Y edge, flush with the floor top, so in
+# print it is the floor growing upward with nothing over air; the
+# emitter's Ø3 hole runs through the bed-side wall along the up axis.
+# A wall-with-a-hole tab was rejected here — see `params.py` §LOAD
+# beam-break.
 inspect(
     chain.part("load_ramp").part,
     method=FDM(up_axis=(0, -1, 0)), out="outputs", name="load_ramp",

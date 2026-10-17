@@ -45,6 +45,13 @@ Claims within the chain:
   must not crash the outer stator wall; ramp pitch inside its window.
   (The outlet's clearance from the turret's loaded sweep is the
   envelope check's, below — it is why the outlet sits where it does.)
+- LOAD beam-break (option A, owner 2026-10-17): the beam's core clear
+  of the ramp through the emitter's hole; the emitter on the +Y wall's
+  outer face and the receiver lying on its tab off the floor's −Y edge
+  (tangent); tab and receiver inside the stator cut's footprint and
+  RAMP_STATOR_CLEAR from S1's rotor, exit liner, exit floor, bowl
+  sector, bearing and prop bar. That the thinnest brick breaks the
+  beam is `check_load_beam.py`'s.
 
 m05 column tops + top deck and m03 turret parts are EXTERNAL to the
 chain — cross-unit asserts live in `cad/assembly.py`, and the
@@ -86,6 +93,12 @@ from .params import (
     ARM_TEE_LEN,
     ARM_TOP_Z_LOCAL,
     BAR_DEPTH,
+    BEAM_CORE_D,
+    BEAM_H,
+    BEAM_HOLE_D,
+    BEAM_S,
+    BEAM_TAB_LEN,
+    BEAM_TAB_LIP,
     BOWL_SEAM_BAR_CLEAR_MIN_DEG,
     BRACE_COLS,
     BRACE_FOOT_START_H,
@@ -118,6 +131,8 @@ from .params import (
     RAMP_WALL_H,
     RAMP_WALL_T,
     RAMP_WIDTH,
+    SENSOR_ENV_D,
+    SENSOR_ENV_L,
     STAGE_CLEAR,
     STAGES,
     Stage,
@@ -161,18 +176,114 @@ def _load_ramp(s: Stage) -> Part:
     to the vertical plane through the outlet: the chute's side walls
     stand normal to the floor, and at a 51° pitch their top corners
     would otherwise reach 15 mm back past the lip, over the turret's
-    loaded sweep (the envelope check found exactly that).
+    loaded sweep (the envelope check found exactly that). Near the
+    outlet it carries the LOAD beam-break's ramp side: the receiver tab
+    off the floor's −Y edge (`_beam_tab`) and the emitter's hole through
+    the +Y wall (`_beam_hole`).
     """
     yaw = Rot(0, 0, RAMP_AZIMUTH_DEG)
-    slope = Pos(*RAMP_OUTLET_LOCAL) * yaw * Rot(0, -RAMP_PITCH_DEG, 0) * _chute(RAMP_SLOPE_LEN)
+    slope = load_beam_frame() * _chute(RAMP_SLOPE_LEN)
     inlet = (*s.chute_exit_xy, s.chute_exit_z)
     landing = Pos(*inlet) * yaw * _chute(RAMP_LANDING_LEN)
-    cut = Pos(s.axis_xy[0], s.axis_xy[1], s.vbot_z) * Cylinder(
-        R_STATOR_OUTER_KINK + RAMP_STATOR_CLEAR, 4.0 * RAMP_WALL_H + 2.0 * RAMP_FLOOR_T + 200.0,
-    )
     big = 4.0 * RAMP_SLOPE_LEN
     end_trim = Pos(*RAMP_OUTLET_LOCAL) * yaw * Pos(-big / 2.0, 0.0, 0.0) * Box(big, big, big)
-    return (slope + landing) - cut - end_trim
+    return (slope + landing) - _stator_cut(s) + _beam_tab(s) - _beam_hole(s) - end_trim
+
+
+def _stator_cut(s: Stage) -> Part:
+    """Everything within RAMP_STATOR_CLEAR of S1's stator (its kink
+    radius about the axis), as a vertical cylinder in the chain frame."""
+    return Pos(s.axis_xy[0], s.axis_xy[1], s.vbot_z) * Cylinder(
+        R_STATOR_OUTER_KINK + RAMP_STATOR_CLEAR, 4.0 * RAMP_WALL_H + 2.0 * RAMP_FLOOR_T + 200.0,
+    )
+
+
+# --- LOAD beam-break (option A) ------------------------------------------
+#
+# Built in the slope's own chute frame (`load_beam_frame`), where the
+# beam is the line (BEAM_S, y, BEAM_H): square to the run, parallel to
+# the floor. Sizes and the sensor's placeholder envelope: `params.py`
+# §LOAD beam-break.
+
+def load_beam_frame() -> Location:
+    """The slope's chute frame, chain-local: origin on the exit edge at
+    the chute's centreline (floor top), +X up the slope, +Y across the
+    chute (toward the +Y wall), +Z normal to the floor."""
+    return Pos(*RAMP_OUTLET_LOCAL) * Rot(0, 0, RAMP_AZIMUTH_DEG) * Rot(0, -RAMP_PITCH_DEG, 0)
+
+
+def _floor_edge_at_exit(s: Stage) -> float:
+    """Chute-frame y of the floor's −Y edge (the stator cut) on the exit
+    edge — where the line across the chute at the outlet meets the cut
+    circle on the chute's side."""
+    a = math.radians(RAMP_AZIMUTH_DEG)
+    ux, uy = -math.sin(a), math.cos(a)
+    dx, dy = RAMP_OUTLET_LOCAL[0] - s.axis_xy[0], RAMP_OUTLET_LOCAL[1] - s.axis_xy[1]
+    b = dx * ux + dy * uy
+    c = dx * dx + dy * dy - (R_STATOR_OUTER_KINK + RAMP_STATOR_CLEAR) ** 2
+    return -b + math.sqrt(b * b - c)
+
+
+def _beam_tab(s: Stage) -> Part:
+    """The receiver tab, chain-local: the floor carried on past its −Y
+    edge, floor-thick and flush with the floor top, from the exit edge
+    BEAM_TAB_LEN up the slope and out to BEAM_TAB_LIP past the
+    receiver's back. Intersected with the stator cut, so it lies wholly
+    where the cut removed the ramp and meets the floor along the cut
+    face (it is built reaching well past that face)."""
+    foot = _floor_edge_at_exit(s)
+    outer = foot - SENSOR_ENV_L - BEAM_TAB_LIP
+    inner = foot + RAMP_WIDTH / 4.0
+    slab = Pos(BEAM_TAB_LEN / 2.0, (outer + inner) / 2.0, -RAMP_FLOOR_T / 2.0) * Box(
+        BEAM_TAB_LEN, inner - outer, RAMP_FLOOR_T,
+    )
+    return (load_beam_frame() * slab) & _stator_cut(s)
+
+
+def _beam_on_axis(y0: float, y1: float, d: float) -> Part:
+    """A cylinder of diameter ``d`` on the beam axis from chute-frame
+    y0 to y1, chain-local."""
+    assert y1 > y0
+    return load_beam_frame() * Pos(BEAM_S, (y0 + y1) / 2.0, BEAM_H) * Rot(90, 0, 0) * Cylinder(d / 2.0, y1 - y0)
+
+
+def _beam_hole(s: Stage) -> Part:
+    """The emitter's aperture: Ø BEAM_HOLE_D on the beam axis from the
+    receiver's face across the chute and out through the +Y wall. Over
+    the floor and the tab it cuts nothing (it clears their top by
+    BEAM_H − BEAM_HOLE_D / 2)."""
+    assert BEAM_H - BEAM_HOLE_D / 2.0 > 0.0, "the beam hole would cut the floor"
+    return _beam_on_axis(_floor_edge_at_exit(s), RAMP_WIDTH, BEAM_HOLE_D)
+
+
+def load_beam_core(s: Stage) -> Part:
+    """The beam's core (Ø BEAM_CORE_D) from the receiver's face to the
+    emitter's on the +Y wall, chain-local — the keep-out the ramp must
+    leave clear, and what a brick has to cover."""
+    return _beam_on_axis(_floor_edge_at_exit(s), RAMP_WIDTH / 2.0, BEAM_CORE_D)
+
+
+def _beam_emitter() -> Part:
+    """Emitter envelope (bought; placeholder dims): outboard of the +Y
+    wall, its front face on the wall's outer face."""
+    w = RAMP_WIDTH / 2.0
+    return _beam_on_axis(w, w + SENSOR_ENV_L, SENSOR_ENV_D)
+
+
+def _beam_receiver(s: Stage) -> Part:
+    """Receiver envelope (bought; placeholder dims): lying on the tab
+    (BEAM_H is its radius), its front face on the floor's −Y edge at
+    the exit edge, looking across the chute."""
+    foot = _floor_edge_at_exit(s)
+    return _beam_on_axis(foot - SENSOR_ENV_L, foot, SENSOR_ENV_D)
+
+
+def _outside_stator_cut(s: Stage) -> Part:
+    """Keep-out: everything outside the stator cut, in plan, over the
+    tab's height band — what the tab and the receiver must not reach."""
+    r = R_STATOR_OUTER_KINK + RAMP_STATOR_CLEAR
+    h = 4.0 * RAMP_WALL_H + 2.0 * RAMP_FLOOR_T + 200.0
+    return Pos(s.axis_xy[0], s.axis_xy[1], s.vbot_z) * (Cylinder(r + RAMP_WIDTH, h) - Cylinder(r, h + 2.0))
 
 
 def _ramp_outlet_pose() -> Location:
@@ -421,6 +532,8 @@ def _s1_exit_liner() -> str:
     """The liner sector the LOAD ramp wraps: the one spanning S1's exit."""
     return STATOR_PARTS[sector_index(0.0, LINER_SEAM_PHASE_DEG)]
 _STAGE_NAMES = tuple(s.name for s in STAGES)
+# The ramp and the two bought halves of its beam-break.
+_RAMP_PARTS = ("load_ramp", "load_beam_emitter", "load_beam_receiver")
 
 
 # Cached because the degenerate ``assembly`` memo below and any
@@ -561,6 +674,13 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
         # against the platform it delivers to (`cad/assembly.py`
         # `load_ramp_lip_*`) — the chain has no LOAD platform of its own.
         .with_region("load_ramp", "exit_lip", _ramp_exit_lip_region())
+        # The LOAD beam-break (option A, owner 2026-10-17): the bought
+        # halves on the ramp, the receiver's tab named so its own
+        # clearances read apart from the rest of the ramp's.
+        .with_region("load_ramp", "beam_tab", _beam_tab(s1))
+        .with_part("load_beam_emitter", _beam_emitter(), **mat("load_beam_emitter"))
+        .with_part("load_beam_receiver", _beam_receiver(s1), **mat("load_beam_receiver"))
+        .with_keepout("load_beam", load_beam_core(s1))
         .with_subassembly("gantry", build_gantry())
     )
 
@@ -626,6 +746,51 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
             "load_ramp", f"s1.arc_screw_{free_end_name(sign)}", min_mm=RAMP_STATOR_CLEAR,
         )
 
+    # LOAD beam-break. The beam's core crosses the chute and leaves
+    # through the emitter's hole touching no ramp material: hole and
+    # core share an axis, so the reading is the hole's radial clearance
+    # exactly while nothing else comes nearer. The emitter sits on the
+    # +Y wall's outer face and the receiver lies on the tab (tangent
+    # contact; it pins each one's seat, not its facing — both are
+    # cylinders on the beam axis by construction). The tab and the
+    # receiver lie wholly where the stator cut removed the ramp, and
+    # keep the ramp's stator clearance from every S1 part near them.
+    a = (
+        a
+        .assert_clear_of(
+            ["load_ramp"], "load_beam", min_mm=(BEAM_HOLE_D - BEAM_CORE_D) / 2.0,
+            name="load_beam_clear_of_ramp",
+        )
+        .assert_tangent_contact("load_beam_emitter", "load_ramp")
+        .assert_tangent_contact("load_beam_receiver", "load_ramp")
+        .assert_clear_of(
+            ["load_ramp@beam_tab", "load_beam_receiver"], _outside_stator_cut(s1),
+            name="load_beam_tab_inside_stator_cut",
+        )
+    )
+    beam_xy = (load_beam_frame() * Pos(BEAM_S, 0.0, BEAM_H)).position
+    beside = (
+        "rotor.rotor",
+        f"stator.{_s1_exit_liner()}",
+        "stator.exit_floor",
+        f"drive.{bowl_part_at(_stage_local_az(s1, (beam_xy.X, beam_xy.Y)), s1.bowl_seam_phase_deg)}",
+        "drive.bearing",
+    )
+    for op, label in (
+        ("load_ramp@beam_tab", "tab"),
+        ("load_beam_receiver", "receiver"),
+        ("load_beam_emitter", "emitter"),
+    ):
+        for leaf in beside:
+            a = a.assert_distance(
+                op, f"s1.{leaf}", min_mm=RAMP_STATOR_CLEAR,
+                name=f"load_beam_{label}_to_s1_{leaf.split('.')[-1]}",
+            )
+        a = a.assert_distance(
+            op, "gantry.s1_prop_bar", min_mm=RAMP_STATOR_CLEAR,
+            name=f"load_beam_{label}_to_s1_prop_bar",
+        )
+
     # Gantry rests: each bar tangent under the bowl sector(s) its ends
     # lie under — and no bowl seam lands on, or under, a bar. The seams
     # are radial; a bar through the axis meets the floor along one
@@ -685,9 +850,9 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
         a = (
             a
             .assert_no_interference_between("gantry", s.name)
-            .assert_no_interference_between(["load_ramp"], s.name)
+            .assert_no_interference_between(_RAMP_PARTS, s.name)
         )
-    a = a.assert_no_interference_between(["load_ramp"], "gantry")
+    a = a.assert_no_interference_between(_RAMP_PARTS, "gantry")
 
     return paint(a, design_system(schema), skip=_STAGE_NAMES)
 
@@ -766,7 +931,7 @@ def build_chain_standalone(schema: str = DEFAULT_SCHEMA) -> Assembly:
     a = a.assert_distance("gantry.brace_foot_5", "post_5", min_mm=1.0, name="brace_foot_5_clears_post_5")
     a = (
         a
-        .assert_no_interference_between(_STUBS, ["load_ramp"])
+        .assert_no_interference_between(_STUBS, _RAMP_PARTS)
         .assert_no_interference_between(_STUBS, "gantry")
     )
     for s in STAGES:
