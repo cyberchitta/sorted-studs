@@ -110,8 +110,9 @@ def _column_features(role: str) -> dict[str, Feature]:
     features = {
         "rotating_collar": Feature(rotating_collar(), waive=_waive(
             "the rotating collar's underside at z 220, cut back by the "
-            "exit opening — supported. 4303.34 mm², one face",
-            4304.0, 1,
+            "exit opening and the Ø9 harness channel — supported. "
+            "4239.96 mm², one face (2026-10-17)",
+            4240.5, 1,
         )),
         "exit_opening": Feature(exit_opening_cutter(), waive=_waive(
             "the exit opening's lintel at z 267.5, an 80 mm span — "
@@ -154,9 +155,10 @@ def _column_features(role: str) -> dict[str, Feature]:
     }
     if role != "top":
         features["joint_flange"] = Feature(joint_flange(), waive=_waive(
-            "the top joint flange's underside at z 268 — supported. "
-            "5634.58 mm², one face",
-            5635.0, 1,
+            "the top joint flange's underside at z 268, less the Ø9 "
+            "harness channel — supported. 5571.20 mm², one face "
+            "(2026-10-17)",
+            5571.5, 1,
         ))
     if role != "base":
         features["joint_depressions"] = Feature(joint_depressions(role), waive=_waive(

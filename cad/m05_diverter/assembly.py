@@ -113,8 +113,9 @@ from .outer_vertex_bracket.assembly import (
 )
 from .aim import ramp_exit_w_for
 from .params import (
-    COLLAR_CLEARANCE, FLOOR_H, FLOOR_LAYOUTS, R_VERT_OUTER, THROUGH_DECK_POSTS,
-    TOP_DECK_OD, basket_name,
+    CABLE_DROP_D, CABLE_DROP_R, CABLE_DROP_Z_BOT, CABLE_LOOP_H,
+    CABLE_LOOP_R_OUT, CABLE_LOOP_Z_BOT, COLLAR_CLEARANCE, FLOOR_H,
+    FLOOR_LAYOUTS, R_VERT_OUTER, THROUGH_DECK_POSTS, TOP_DECK_OD, basket_name,
 )
 from .ramp_mechanism import assembly as _ramp
 
@@ -743,6 +744,83 @@ def _add_drive_train_checks(a: Assembly, base: int) -> Assembly:
     return a
 
 
+# The servo wires (params.HARNESS_*, CABLE_*). Static parts that turn
+# nothing are held this far off the bundle and the loop: the bundle must
+# not rub as the stack turns, and the loop's cable flexes inside its
+# envelope.
+HARNESS_STATIC_CLEAR = 2.0
+CABLE_LOOP_CLEAR = 1.0
+# A claim selects the parts whose bounding box enters the claim's region
+# grown by this much. A part that ever comes within it of the region is
+# in that box at every azimuth (a turning point stays on its circle, and
+# the box holds the whole disc), so the selection is a superset of every
+# part that could read under the margins above.
+_SELECT_MARGIN = 15.0
+
+
+def _parts_near(
+    a: Assembly, r: float, z_lo: float, z_hi: float, *, rotating: bool,
+) -> list[str]:
+    """Part paths — static, or inside `rotating_stack` — whose bounding
+    box enters the box round the upright cylinder of radius `r` over
+    z_lo..z_hi, grown by _SELECT_MARGIN, in this assembly's frame."""
+    r += _SELECT_MARGIN
+    z_lo, z_hi = z_lo - _SELECT_MARGIN, z_hi + _SELECT_MARGIN
+    out = []
+    for p in a.placed_parts:
+        if p.name.startswith("rotating_stack.") != rotating:
+            continue
+        bb = (p.location * p.part).bounding_box()
+        if bb.max.Z < z_lo or bb.min.Z > z_hi:
+            continue
+        if bb.min.X > r or bb.max.X < -r or bb.min.Y > r or bb.max.Y < -r:
+            continue
+        out.append(p.name)
+    return sorted(out)
+
+
+def _add_harness_checks(
+    a: Assembly, floor_plan: list[tuple[int, str]], *, with_drive_train: bool,
+) -> Assembly:
+    """The servo-wire bundle on each floor's column, held clear of every
+    static part (it turns with the stack — `check_stack_turn.py` holds
+    these over the turn); and, with the drive train, the base's loop and
+    static drop held clear of everything but the bundle's own lead-in.
+    The keep-outs are declared where their geometry is known
+    (`ramp_mechanism.build_column_side_rotating`'s `harness_path`,
+    `base_floor.build_drive_train`'s `cable_loop` / `cable_drop`)."""
+    for idx, role in floor_plan:
+        bb = _ramp.harness(role).bounding_box()
+        reach = math.hypot(
+            max(abs(bb.min.X), abs(bb.max.X)), max(abs(bb.min.Y), abs(bb.max.Y)),
+        )
+        z0 = idx * FLOOR_H
+        a = a.assert_clear_of(
+            _parts_near(a, reach, z0 + bb.min.Z, z0 + bb.max.Z, rotating=False),
+            f"rotating_stack.f{idx}.harness_path",
+            min_mm=HARNESS_STATIC_CLEAR, name=f"harness_f{idx}_clear_of_static",
+        )
+    if not with_drive_train:
+        return a
+    base = next(idx for idx, role in floor_plan if role == "base")
+    z0 = base * FLOOR_H
+    lead_in = [_rot(base, "harness")]
+    for kp, r, z_lo, z_hi in (
+        ("cable_loop", CABLE_LOOP_R_OUT, CABLE_LOOP_Z_BOT, CABLE_LOOP_Z_BOT + CABLE_LOOP_H),
+        ("cable_drop", CABLE_DROP_R + CABLE_DROP_D / 2, CABLE_DROP_Z_BOT, CABLE_LOOP_Z_BOT),
+    ):
+        for rotating, label in ((False, "static"), (True, "stack")):
+            sel = [
+                p for p in _parts_near(a, r, z0 + z_lo, z0 + z_hi, rotating=rotating)
+                if p not in lead_in
+            ]
+            a = a.assert_clear_of(
+                sel, f"drive_train.{kp}",
+                min_mm=CABLE_LOOP_CLEAR, name=f"{kp}_clear_of_{label}",
+            )
+    return a
+
+
 def _add_catch_checks(a: Assembly, base: int) -> Assembly:
     """The fall path out of the base column and the bottom catch, against
     the frame. The keep-outs are declared in the base_floor builders
@@ -917,6 +995,7 @@ def build_tower(
     if with_drive_train:
         a = _add_drive_train_checks(a, base_idx)
         a = _add_catch_checks(a, base_idx)
+    a = _add_harness_checks(a, floor_plan, with_drive_train=with_drive_train)
 
     # Paint last, once the tree is complete: ``paint`` also carries the
     # coverage check that ``_assert_design_system_coverage`` used to do

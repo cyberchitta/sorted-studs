@@ -100,6 +100,53 @@ TURNTABLE_Z_TOP = TURNTABLE_Z_BOT + TURNTABLE_H            # 16.5
 BASE_COL_Z_BOT = TURNTABLE_Z_TOP                            # base column bottom / ring-gear standoff top
 BASE_FLANGE_OD = TURNTABLE_OD + 4.0                         # 204 — covers the turntable's top ring
 
+# Trap-servo power and signal: a cable loop, no slip ring (owner,
+# 2026-10-17). Bricks fall down the column axis, so no slip ring can sit
+# on it; instead the stack turns within one revolution and the wires
+# reach it through a clock-spring loop on the base flange.
+#
+# Six wires, straight to the servos — shared V+ and GND plus one signal
+# per trap servo — so nothing electronic rides the column. They run down
+# the column's +Y face in one bundle (`HARNESS_*`), through a channel in
+# every collar and flange they cross (`ramp_mechanism.harness_channel`),
+# into the loop. Off the +Y centreline on purpose: the joint bumps sit
+# at x = 0 (depressions to |x| = 6.3) and the servo cage, horn and
+# coupler at x ≤ −12. HARNESS_Y leaves 2.5 mm of collar between the
+# channel and the tube's outer face (y = 48).
+HARNESS_X = 14.0
+HARNESS_Y = 55.0
+HARNESS_D = 6.0                  # bundle stand-in: six servo conductors
+HARNESS_CHANNEL_D = 9.0          # 1.5 mm radial clearance round the bundle
+#
+# The loop: a flat-cable clock spring in an annulus on the base flange's
+# top face (z 21.5), inner end on the column, outer end static. Its
+# envelope is the same annulus at every azimuth, so it is a static
+# keep-out. The space r 70..125, z 21.5..130 holds no part at all
+# (probed 2026-10-17); the ramp's sweep starts at z 137.
+CABLE_LOOP_R_IN = 70.0           # the base column's corners reach r 67.9
+CABLE_LOOP_R_OUT = 118.0
+CABLE_LOOP_Z_BOT = BASE_COL_Z_BOT + 5.0 + 1.5   # 23 — 1.5 over the flange top
+CABLE_LOOP_H = 20.0
+# The loop's static end drops outside the base flange (r 102) between
+# the spider's saddles to below the rails, toward the electronics
+# (placement not yet designed). Azimuth 180: clear of the motor (120),
+# the tray's draw-out (−Y, 270) and the exit side (+X).
+CABLE_DROP_AZ_DEG = 180.0
+CABLE_DROP_D = 12.0
+CABLE_DROP_R = CABLE_LOOP_R_OUT - CABLE_DROP_D / 2    # 112, flush with the loop's rim
+CABLE_DROP_Z_BOT = -70.0
+#
+# The seam: the stack's joint angle stays inside
+# (STACK_TURN_SEAM_DEG − 360, STACK_TURN_SEAM_DEG) and control never
+# turns it across. Every basket aim of every floor layout falls in
+# 24.5°-wide gaps centred on 30 + 60k (2026-10-17, `aim.py`), so a seam
+# there is never a target; 210 keeps the rest pose 0 well inside. It is
+# a control rule, not geometry: the loop's envelope is the same annulus
+# at every angle, so the 0..358 `stack_turn` sweeps already cover every
+# pose the range allows. A hard stop or a homing flag at the seam is
+# detail not yet designed.
+STACK_TURN_SEAM_DEG = 210.0
+
 # Through-deck posts (2026-09-15, owner). The m02 singulator chain's
 # gantry stands on two of the outer-hex through-columns *continued
 # through the top deck* — no foot joint, no separate post: V_4

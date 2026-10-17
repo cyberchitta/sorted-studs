@@ -87,7 +87,9 @@ from build123d import Box, Cone, Cylinder, Part, Plane, Polygon, Pos, Rot, extru
 from cad_khana.mechanism.assembly import Assembly
 
 from ..params import (
-    BASE_COL_Z_BOT, COL_INTERIOR_SIDE, COLLAR_OD, RAIL_INNER_R, RAIL_SIZE,
+    BASE_COL_Z_BOT, CABLE_DROP_AZ_DEG, CABLE_DROP_D, CABLE_DROP_R,
+    CABLE_DROP_Z_BOT, CABLE_LOOP_H, CABLE_LOOP_R_IN, CABLE_LOOP_R_OUT,
+    CABLE_LOOP_Z_BOT, COL_INTERIOR_SIDE, COLLAR_OD, RAIL_INNER_R, RAIL_SIZE,
 )
 
 
@@ -429,6 +431,27 @@ def catch_pull_path() -> Part:
     return Rot(0, 0, CATCH_PULL_AZIMUTH_DEG) * (start + slab + end)
 
 
+def cable_loop() -> Part:
+    """Keep-out: the servo wires' clock-spring loop on the base flange
+    (params.CABLE_LOOP_*) — the annulus the flat cable fills at every
+    azimuth of the stack's one-revolution range, so it does not turn."""
+    zc = CABLE_LOOP_Z_BOT + CABLE_LOOP_H / 2
+    return Pos(0, 0, zc) * (
+        Cylinder(CABLE_LOOP_R_OUT, CABLE_LOOP_H) - Cylinder(CABLE_LOOP_R_IN, CABLE_LOOP_H)
+    )
+
+
+def cable_drop() -> Part:
+    """Keep-out: the loop's static end, dropping from the loop's floor
+    outside the base flange to below the rails (params.CABLE_DROP_*)."""
+    a = math.radians(CABLE_DROP_AZ_DEG)
+    h = CABLE_LOOP_Z_BOT - CABLE_DROP_Z_BOT
+    return Pos(
+        CABLE_DROP_R * math.cos(a), CABLE_DROP_R * math.sin(a),
+        (CABLE_LOOP_Z_BOT + CABLE_DROP_Z_BOT) / 2,
+    ) * Cylinder(CABLE_DROP_D / 2, h)
+
+
 # --- Assembly -----------------------------------------------------------
 
 def build_drive_train(
@@ -463,6 +486,11 @@ def build_drive_train(
         .with_keepout("fall_path", fall_path())
         .assert_clear_of(["motor", "pinion", "motor_mount"], "fall_path",
                          min_mm=FALL_CLEAR, name="drive_clear_of_fall_path")
+        # The servo wires' loop and its static drop. Declared here, with
+        # the base's other keep-outs; held against the whole tower at its
+        # root (`_add_harness_checks`), where the column and the frame are.
+        .with_keepout("cable_loop", cable_loop())
+        .with_keepout("cable_drop", cable_drop())
     )
     # Mesh validity — close but not touching: the cheap pitch blanks
     # must sit in the [MESH_BACKLASH, MESH_BACKLASH + 0.1] band (too

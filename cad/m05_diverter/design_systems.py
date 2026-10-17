@@ -78,6 +78,7 @@ ROLE_OF: dict[str, Role | None] = {
     "trap_coupler": Role.MECHANISM,           # printed pin-to-horn disc
     "servo_horn": None,                       # bought with the servo — outside palette
     "trap_servo": None,                       # bought hobby servo — outside palette
+    "harness": None,                          # bought servo wire stand-in — outside palette
     # ``single_floor.py`` stand-in for the floor below's servo.
     "lower_trap_servo": None,
     # Baskets — textbook CONSUMABLE ("holds bricks; swapped often").

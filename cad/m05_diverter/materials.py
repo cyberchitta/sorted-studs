@@ -60,6 +60,9 @@ MATERIAL_OF: dict[str, str | None] = {
     "trap_servo": "pla_matte",
     "servo_horn": "pla_matte",
     "lower_trap_servo": "pla_matte",
+    # Servo wire bundle down the column (params.HARNESS_*) — bought, and
+    # no wire material in the render table yet; left to the default.
+    "harness": None,
     # Top deck
     "top_acrylic": "acrylic_clear",
 }

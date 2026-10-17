@@ -108,6 +108,13 @@ from ..params import (
     BASE_COL_Z_BOT,
     BASE_FLANGE_OD,
     BASKET_RIM_Z,
+    CABLE_LOOP_H,
+    CABLE_LOOP_R_IN,
+    CABLE_LOOP_Z_BOT,
+    HARNESS_CHANNEL_D,
+    HARNESS_D,
+    HARNESS_X,
+    HARNESS_Y,
     COL_INTERIOR_SIDE,
     COL_OUTER_SIDE,
     COLLAR_CLEARANCE,
@@ -956,6 +963,55 @@ def joint_flange() -> Part:
     return _circular_feature(JOINT_FLANGE_Z_BOT, JOINT_FLANGE_Z_TOP)
 
 
+def _harness_z_span(role: str) -> tuple[float, float]:
+    """Where the servo-wire bundle runs on this floor's column,
+    floor-local. Base: from the loop (mid-height of the clock-spring
+    annulus on the base flange) up to the joint plane. Middle: joint
+    plane to joint plane — the next floor's segment starts where this
+    one ends. Top: up to its own servo's underside, which is where the
+    run starts (the flare is above)."""
+    servo_bottom_z = TRAP_HINGE_Z - SERVO_BODY_W / 2
+    if role == "base":
+        return CABLE_LOOP_Z_BOT + CABLE_LOOP_H / 2, COL_Z_TOP
+    if role == "top":
+        return _col_z_bot(role), servo_bottom_z
+    return _col_z_bot(role), COL_Z_TOP
+
+
+def harness_channel(role: str = "middle") -> Part:
+    """The servo-wire channel `column` cuts, floor-local: a vertical
+    Ø HARNESS_CHANNEL_D bore on the harness line through every collar
+    and flange the bundle passes. Base: it stops above the base flange,
+    since the bundle leaves into the loop over it. A named cutter, so a
+    printability waiver on the bore can be scoped to it."""
+    z_lo, z_hi = _harness_z_span(role)
+    if role == "base":
+        z_lo = BASE_COL_Z_BOT + COLLAR_T + 1.0   # never through the base flange
+    h = z_hi - z_lo
+    return Pos(HARNESS_X, HARNESS_Y, (z_lo + z_hi) / 2) * Cylinder(HARNESS_CHANNEL_D / 2, h)
+
+
+def harness(role: str = "middle") -> Part:
+    """Stand-in for this floor's run of the servo-wire bundle, floor-
+    local: Ø HARNESS_D along the harness line (params.HARNESS_*),
+    coaxial with `harness_channel`. Base adds the lead-out into the
+    loop: a radial stub at the loop's mid-height, out to 2 mm inside
+    the loop's inner radius. Each servo's own lead, from the case to
+    the trunk just under it, is not modelled."""
+    z_lo, z_hi = _harness_z_span(role)
+    trunk = Pos(HARNESS_X, HARNESS_Y, (z_lo + z_hi) / 2) * Cylinder(HARNESS_D / 2, z_hi - z_lo)
+    if role != "base":
+        return trunk
+    r0 = math.hypot(HARNESS_X, HARNESS_Y)
+    r1 = CABLE_LOOP_R_IN + 2.0
+    az = math.degrees(math.atan2(HARNESS_Y, HARNESS_X))
+    stub = (
+        Rot(0, 0, az) * Pos((r0 + r1) / 2, 0, z_lo) * Rot(0, 90, 0)
+        * Cylinder(HARNESS_D / 2, r1 - r0)
+    )
+    return trunk + stub
+
+
 def joint_depressions(role: str = "middle") -> Part:
     """The depression pockets cut up into the middle / top column's
     bottom flange from its mating face, floor-local — the cutter
@@ -1095,6 +1151,11 @@ def column(role: str = "middle") -> Part:
         # column's bumps.
         tube = tube + _circular_feature(z_bot, z_bot + JOINT_FLANGE_T)
         tube = tube - joint_depressions(role)
+
+    # The servo-wire channel through every collar and flange on the
+    # harness line (params.HARNESS_*). It stands off the tube's face, so
+    # it cuts only those circular features.
+    tube = tube - harness_channel(role)
 
     # Exit opening on +X wall — cuts the tube AND any circular feature
     # that overlaps its z range (rotating collar at 220..225 ⊂ ≈174..268).
@@ -1468,6 +1529,16 @@ def build_column_side_rotating(
     a = a.with_subassembly(
         "trap", build_trap_drive(material_fn),
         location=hinge_loc, joint=_trap_joint(TRAP_REST_DEG),
+    )
+    # The servo-wire bundle on this floor's column, and the same solid
+    # as a keep-out, so the tower root can hold it clear of every
+    # static part as the stack turns (`_add_harness_checks`). In its
+    # channel it is coaxial, so the gap is the channel's own clearance.
+    a = _add(a, "harness", harness(role))
+    a = a.with_keepout("harness_path", harness(role))
+    a = a.assert_distance(
+        "harness", "column", min_mm=(HARNESS_CHANNEL_D - HARNESS_D) / 2,
+        name="harness_in_channel",
     )
 
     # Declared once here, where the ramp lives; standalone runs
