@@ -32,6 +32,10 @@ MATERIAL_OF: dict[str, str | None] = {
     # LOAD beam-break halves (bought sensor envelopes) — left to the default.
     "load_beam_emitter": None,
     "load_beam_receiver": None,
+    # The receiver guard (printed) and its two M3 screws (bought steel).
+    "load_beam_guard": "pla_matte",
+    "load_beam_guard_screw_a": "steel",
+    "load_beam_guard_screw_b": "steel",
 }
 
 

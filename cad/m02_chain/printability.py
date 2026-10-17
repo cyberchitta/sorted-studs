@@ -8,7 +8,8 @@ script runs the per-part `inspect()` pass over the five printed joint
 bodies from `joints.py`, each at the angles the chain actually places
 it at, over every stage's three bowl sectors, each cut at that
 stage's own seam phase and motor azimuth, and over the LOAD ramp in
-its print orientation (on its side — see the call). The 2020 members
+its print orientation (on its side — see the call), and over the LOAD
+beam-break's receiver guard, on its chute face. The 2020 members
 and the corner brackets are bought and are not inspected.
 
 Each body comes out of the assembly by name (`Assembly.part`) rather
@@ -170,4 +171,17 @@ for s in STAGES:
 inspect(
     chain.part("load_ramp").part,
     method=FDM(up_axis=(0, -1, 0)), out="outputs", name="load_ramp",
+)
+
+# The LOAD beam-break's receiver guard prints on its chute face (chain
+# +Y face down, up chain −Y), like the ramp: it is a prism across the
+# chute — block, outlet trim, the cap under S1's bowl, the square ends —
+# so every face but the bed and the top stands vertical. The receiver's
+# pocket runs along the up axis; the two insert holes run across it and
+# are teardrops roofed GUARD_HOLE_ROOF_DEG (params §LOAD beam-break). The
+# chain places it at identity, like the ramp, so the body is in the
+# chain frame.
+inspect(
+    chain.part("load_beam_guard").part,
+    method=FDM(up_axis=(0, -1, 0)), out="outputs", name="load_beam_guard", solid_count=1,
 )

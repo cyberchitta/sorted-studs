@@ -459,29 +459,77 @@ BEAM_CORE_D = 1.5
 
 # Bought sensor envelope — PLACEHOLDER dims for a generic 3 mm IR
 # LED / phototransistor pair (T-1 package): flange Ø3.8, body + dome
-# 5.3 long, then the leads bent to a 2-pin connector behind it. Each
-# half is one cylinder of SENSOR_ENV_D × SENSOR_ENV_L on the beam axis.
+# 5.3 long. Behind the flange, SENSOR_LEAD_L is how far the leads stand
+# out along the beam before they turn: bent 90° about 1 mm behind the
+# flange and soldered to the wire, heat-shrunk, the bend radius and the
+# sleeve's depth make ~3 (owner 2026-10-17: shortened from 8, a straight
+# lead into a 2-pin connector, which put the emitter's end 1.7 from the
+# +X service reach). The wire's run beyond the bend is not modelled.
+# Each half is one cylinder of SENSOR_ENV_D × SENSOR_ENV_L on the beam
+# axis.
 # Derived from these: the envelopes, and so every clearance claim that
 # reads them; the beam's height (BEAM_H, the receiver lying on the
 # tab), and so whether the thinnest brick still covers its core — a
 # 5 mm package (Ø5.8) puts the core's top at 3.65, over a plate, and
-# `check_load_beam.py` goes red; and the tab's width. How each half is
-# held (clip, cradle, glue) is not modelled.
+# `check_load_beam.py` goes red; and the tab's and the guard's width.
+# The receiver is captive in the guard's pocket (below); how the emitter
+# is held on the +Y wall is not modelled.
 SENSOR_FLANGE_D = 3.8
 SENSOR_BODY_L = 5.3
-SENSOR_LEAD_L = 8.0
+SENSOR_LEAD_L = 3.0
 SENSOR_ENV_D = SENSOR_FLANGE_D
-SENSOR_ENV_L = SENSOR_BODY_L + SENSOR_LEAD_L                          # 13.3
+SENSOR_ENV_L = SENSOR_BODY_L + SENSOR_LEAD_L                          # 8.3
 BEAM_H = SENSOR_ENV_D / 2.0                                           # 1.9
 
-# The receiver tab, chute-local: from the exit edge BEAM_TAB_LEN up the
-# slope, from the floor's −Y edge out to BEAM_TAB_LIP past the
-# receiver's back. The receiver's front face stands on the floor's edge
-# at the exit edge, the edge's innermost point over the tab (it curves
-# out up the slope, toward S1's axis's x), so the receiver lies wholly
-# where the stator cut removed the ramp.
-BEAM_TAB_LEN = 16.0
+# The receiver guard (owner 2026-10-17): a separate printed block on the
+# tab that shields the receiver from a brick overhanging the floor's −Y
+# edge, holds it captive in a pocket against the tab, and — because the
+# same block runs on up the slope until it meets S1's bowl overhead — is
+# also the ramp's −Y side wall over the run the stator cut left open.
+# Chute-local: its chute face is the plane through the receiver's front
+# (the floor's −Y edge at the exit edge, its innermost point, so the
+# guard lies wholly inside the stator cut and a strip of tab, flush with
+# the floor, runs between the two), its back BEAM_TAB_LIP past the
+# receiver's. It stands GUARD_H above the floor top from GUARD_S0 up the
+# slope (a square end there; the outlet's vertical plane trims it above),
+# capped RAMP_STATOR_CLEAR under S1's bowl floor, and ends square where
+# that cap leaves GUARD_END_H of it. It prints on its chute face (the
+# guard is a prism across the chute, so every other face stands
+# vertical); the pocket runs along the up axis.
+GUARD_H = 20.0                   # = the +Y wall's RAMP_WALL_H
+GUARD_S0 = 3.0                   # its square end stands GUARD_S0 / tan(pitch) ≈ 2.9 before the trim
+GUARD_END_H = 3.0
+GUARD_POCKET_CLEAR = 0.2         # radial, round the receiver: a slip fit
+GUARD_TOP_Z_LOCAL = S1.vbot_z + PLATE_BOTTOM_Z - RAMP_STATOR_CLEAR    # 39.5: S1's bowl floor less the cut clearance
+GUARD_S_END = (
+    GUARD_TOP_Z_LOCAL - RAMP_OUTLET_LOCAL[2] - GUARD_END_H * math.cos(math.radians(RAMP_PITCH_DEG))
+) / math.sin(math.radians(RAMP_PITCH_DEG))                            # ≈ 42.1
+
+# The tab under it: the floor carried on past its −Y edge, from the exit
+# edge to the guard's end, out to the guard's back.
+BEAM_TAB_LEN = GUARD_S_END
 BEAM_TAB_LIP = 2.0
+
+# The guard is held by two screws up through the tab into heat-set
+# inserts in its underside (the same M3 insert as S1's liner free ends,
+# `m02_c_channel_singulator/params.py` ARC_INSERT_*): the screw is the
+# only fixing that both locates (two of them, along the slope, fix it in
+# plan) and holds against a brick's knock, and the insert puts the
+# thread in the thick guard rather than the 5 mm tab. Bought: ISO 4762
+# M3×10 and an M3 × 5.7 brass insert. The screw heads sit on the tab's
+# underside. In the ramp's print the clearance holes run across the up
+# axis, so they are teardrops roofed GUARD_HOLE_ROOF_DEG toward it; in
+# the guard's, so are the insert holes.
+GUARD_SCREW_D = 3.0
+GUARD_SCREW_HEAD_D = 5.5         # ISO 4762 M3 dk
+GUARD_SCREW_HEAD_H = 3.0         # ISO 4762 M3 k
+GUARD_SCREW_L = 10.0
+GUARD_SCREW_HOLE_D = 3.4         # ISO 273 medium clearance, through the tab
+GUARD_INSERT_L = 5.7
+GUARD_INSERT_HOLE_D = 4.0
+GUARD_INSERT_HOLE_DEPTH = 6.0    # ≥ GUARD_INSERT_L, and past the screw's tip (GUARD_SCREW_L − RAMP_FLOOR_T = 5)
+GUARD_SCREW_S = (16.0, 24.0)     # up the slope from the exit edge, upstream of the receiver
+GUARD_HOLE_ROOF_DEG = 40.0
 
 
 # --- Gantry ------------------------------------------------------------

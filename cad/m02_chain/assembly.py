@@ -50,8 +50,11 @@ Claims within the chain:
   outer face and the receiver lying on its tab off the floor's −Y edge
   (tangent); tab and receiver inside the stator cut's footprint and
   RAMP_STATOR_CLEAR from S1's rotor, exit liner, exit floor, bowl
-  sector, bearing and prop bar. That the thinnest brick breaks the
-  beam is `check_load_beam.py`'s.
+  sectors, bearing and prop bar. The receiver's guard (a printed block,
+  owner 2026-10-17) sits on the tab, holds the receiver captive in its
+  pocket, leaves the beam's core clear and is the −Y side wall up to
+  S1's bowl; its two M3 screws seat on the tab's underside. That the
+  thinnest brick breaks the beam is `check_load_beam.py`'s.
 
 m05 column tops + top deck and m03 turret parts are EXTERNAL to the
 chain — cross-unit asserts live in `cad/assembly.py`, and the
@@ -71,7 +74,7 @@ from __future__ import annotations
 import math
 from functools import cache
 
-from build123d import Box, Cylinder, Keep, Location, Part, Plane, Pos, Rot
+from build123d import Box, Circle, Cylinder, Keep, Location, Part, Plane, Polygon, Pos, Rot, extrude
 
 from cad_khana.mechanism.assembly import Assembly
 
@@ -99,6 +102,22 @@ from .params import (
     BEAM_S,
     BEAM_TAB_LEN,
     BEAM_TAB_LIP,
+    GUARD_END_H,
+    GUARD_H,
+    GUARD_HOLE_ROOF_DEG,
+    GUARD_INSERT_HOLE_D,
+    GUARD_INSERT_HOLE_DEPTH,
+    GUARD_INSERT_L,
+    GUARD_POCKET_CLEAR,
+    GUARD_S0,
+    GUARD_S_END,
+    GUARD_SCREW_D,
+    GUARD_SCREW_HEAD_D,
+    GUARD_SCREW_HEAD_H,
+    GUARD_SCREW_HOLE_D,
+    GUARD_SCREW_L,
+    GUARD_SCREW_S,
+    GUARD_TOP_Z_LOCAL,
     BOWL_SEAM_BAR_CLEAR_MIN_DEG,
     BRACE_COLS,
     BRACE_FOOT_START_H,
@@ -197,9 +216,17 @@ def _load_ramp(s: Stage) -> Part:
     slope = load_beam_frame() * _chute(RAMP_SLOPE_LEN)
     inlet = (*s.chute_exit_xy, s.chute_exit_z)
     landing = Pos(*inlet) * yaw * _chute(RAMP_LANDING_LEN)
+    return (
+        (slope + landing) - _stator_cut(s) + _beam_tab(s) - _beam_hole(s)
+        - _guard_screw_holes(s) - _outlet_trim()
+    )
+
+
+def _outlet_trim() -> Part:
+    """Everything past the vertical plane through the outlet's exit
+    edge, toward LOAD."""
     big = 4.0 * RAMP_SLOPE_LEN
-    end_trim = Pos(*RAMP_OUTLET_LOCAL) * yaw * Pos(-big / 2.0, 0.0, 0.0) * Box(big, big, big)
-    return (slope + landing) - _stator_cut(s) + _beam_tab(s) - _beam_hole(s) - end_trim
+    return Pos(*RAMP_OUTLET_LOCAL) * Rot(0, 0, RAMP_AZIMUTH_DEG) * Pos(-big / 2.0, 0.0, 0.0) * Box(big, big, big)
 
 
 def _stator_cut(s: Stage) -> Part:
@@ -239,12 +266,11 @@ def _floor_edge_at_exit(s: Stage) -> float:
 def _beam_tab(s: Stage) -> Part:
     """The receiver tab, chain-local: the floor carried on past its −Y
     edge, floor-thick and flush with the floor top, from the exit edge
-    BEAM_TAB_LEN up the slope and out to BEAM_TAB_LIP past the
-    receiver's back. Intersected with the stator cut, so it lies wholly
+    BEAM_TAB_LEN up the slope (the guard's length) and out to the
+    guard's back. Intersected with the stator cut, so it lies wholly
     where the cut removed the ramp and meets the floor along the cut
     face (it is built reaching well past that face)."""
-    foot = _floor_edge_at_exit(s)
-    outer = foot - SENSOR_ENV_L - BEAM_TAB_LIP
+    foot, outer = _guard_y(s)
     inner = foot + RAMP_WIDTH / 4.0
     slab = Pos(BEAM_TAB_LEN / 2.0, (outer + inner) / 2.0, -RAMP_FLOOR_T / 2.0) * Box(
         BEAM_TAB_LEN, inner - outer, RAMP_FLOOR_T,
@@ -288,6 +314,90 @@ def _beam_receiver(s: Stage) -> Part:
     the exit edge, looking across the chute."""
     foot = _floor_edge_at_exit(s)
     return _beam_on_axis(foot - SENSOR_ENV_L, foot, SENSOR_ENV_D)
+
+
+# --- The receiver guard ----------------------------------------------------
+
+def _guard_y(s: Stage) -> tuple[float, float]:
+    """Chute-frame y of the guard's chute face (the receiver's front, on
+    the floor's −Y edge at the exit edge) and of its back."""
+    front = _floor_edge_at_exit(s)
+    return front, front - SENSOR_ENV_L - BEAM_TAB_LIP
+
+
+def _guard_screw_y(s: Stage) -> float:
+    """Chute-frame y of both guard screws: mid-way across the guard."""
+    return sum(_guard_y(s)) / 2.0
+
+
+def _teardrop_along_normal(d: float, s_at: float, y_at: float, z0: float, z1: float, roof_deg: float) -> Part:
+    """A hole of diameter ``d`` along the chute frame's +Z (normal to the
+    floor) at (s_at, y_at), from z0 to z1, roofed ``roof_deg`` from its
+    axis toward chain −Y — the print-up of the ramp and of the guard —
+    chain-local."""
+    r = d / 2.0
+    apex = r / math.sin(math.radians(roof_deg))
+    phi = math.radians(90.0 - roof_deg)           # tangent points, from the apex direction (−y)
+    pts = [(0.0, -apex), (r * math.sin(phi), -r * math.cos(phi)), (0.0, 0.0), (-r * math.sin(phi), -r * math.cos(phi))]
+    face = Circle(r) + Polygon(*pts, align=None)
+    return load_beam_frame() * Pos(s_at, y_at, z0) * extrude(face, z1 - z0)
+
+
+def _guard_screw_holes(s: Stage) -> Part:
+    """The screws' clearance holes through the tab, teardrops."""
+    y = _guard_screw_y(s)
+    holes = [
+        _teardrop_along_normal(GUARD_SCREW_HOLE_D, s_at, y, -RAMP_FLOOR_T - 1.0, 1.0, GUARD_HOLE_ROOF_DEG)
+        for s_at in GUARD_SCREW_S
+    ]
+    return holes[0] + holes[1]
+
+
+def _guard_cap() -> Part:
+    """Everything above GUARD_TOP_Z_LOCAL (S1's bowl floor less the cut
+    clearance), chain-local."""
+    big = 4.0 * RAMP_SLOPE_LEN
+    return Pos(RAMP_OUTLET_LOCAL[0], RAMP_OUTLET_LOCAL[1], GUARD_TOP_Z_LOCAL + big / 2.0) * Box(big, big, big)
+
+
+def _beam_guard(s: Stage) -> Part:
+    """The receiver guard, chain-local (params §LOAD beam-break): a block
+    across the chute's −Y side on the tab, from GUARD_S0 to GUARD_S_END
+    up the slope and GUARD_H high, trimmed at the outlet's plane, capped
+    under S1's bowl, with the receiver's pocket through it along the
+    beam (open at the chute face, out the back for the wire, and down
+    onto the tab, which closes it underneath) and the two
+    insert holes up from its underside."""
+    assert GUARD_INSERT_HOLE_DEPTH >= GUARD_INSERT_L, "insert hole shorter than the insert"
+    assert GUARD_INSERT_HOLE_DEPTH > GUARD_SCREW_L - RAMP_FLOOR_T, "the screw would bottom in its hole"
+    front, back = _guard_y(s)
+    length = GUARD_S_END - GUARD_S0
+    block = load_beam_frame() * Pos(GUARD_S0 + length / 2.0, (front + back) / 2.0, GUARD_H / 2.0) * Box(
+        length, front - back, GUARD_H,
+    )
+    # The pocket: round over the beam axis, square-sided below it to the
+    # underside — a round bore alone would graze the underside and leave
+    # two knife edges along it (min wall 0.05).
+    pocket_d = SENSOR_ENV_D + 2.0 * GUARD_POCKET_CLEAR
+    pocket = _beam_on_axis(back - 1.0, front + 1.0, pocket_d) + load_beam_frame() * Pos(
+        BEAM_S, (front + back) / 2.0, (BEAM_H - 1.0) / 2.0,
+    ) * Box(pocket_d, front - back + 2.0, BEAM_H + 1.0)
+    y = _guard_screw_y(s)
+    inserts = [
+        _teardrop_along_normal(GUARD_INSERT_HOLE_D, s_at, y, -1.0, GUARD_INSERT_HOLE_DEPTH, GUARD_HOLE_ROOF_DEG)
+        for s_at in GUARD_SCREW_S
+    ]
+    return block - _outlet_trim() - _guard_cap() - pocket - inserts[0] - inserts[1]
+
+
+def _guard_screw(s: Stage, s_at: float) -> Part:
+    """One guard screw (bought, ISO 4762 M3 × GUARD_SCREW_L), chain-local:
+    its head on the tab's underside, the shank up through the tab into
+    the guard's insert."""
+    y = _guard_screw_y(s)
+    head = Pos(0, 0, -RAMP_FLOOR_T - GUARD_SCREW_HEAD_H / 2.0) * Cylinder(GUARD_SCREW_HEAD_D / 2.0, GUARD_SCREW_HEAD_H)
+    shank = Pos(0, 0, -RAMP_FLOOR_T + GUARD_SCREW_L / 2.0) * Cylinder(GUARD_SCREW_D / 2.0, GUARD_SCREW_L)
+    return load_beam_frame() * Pos(s_at, y, 0.0) * (head + shank)
 
 
 def _outside_stator_cut(s: Stage) -> Part:
@@ -544,8 +654,12 @@ def _s1_exit_liner() -> str:
     """The liner sector the LOAD ramp wraps: the one spanning S1's exit."""
     return STATOR_PARTS[sector_index(0.0, LINER_SEAM_PHASE_DEG)]
 _STAGE_NAMES = tuple(s.name for s in STAGES)
-# The ramp and the two bought halves of its beam-break.
-_RAMP_PARTS = ("load_ramp", "load_beam_emitter", "load_beam_receiver")
+# The ramp, the two bought halves of its beam-break, and the receiver's
+# guard with its screws.
+_RAMP_PARTS = (
+    "load_ramp", "load_beam_emitter", "load_beam_receiver",
+    "load_beam_guard", "load_beam_guard_screw_a", "load_beam_guard_screw_b",
+)
 
 
 # V_3's foot bolt: the foot's (hole Ø, washer-seat Ø).
@@ -736,6 +850,10 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
         .with_region("load_ramp", "beam_tab", _beam_tab(s1))
         .with_part("load_beam_emitter", _beam_emitter(), **mat("load_beam_emitter"))
         .with_part("load_beam_receiver", _beam_receiver(s1), **mat("load_beam_receiver"))
+        # The receiver's guard (printed, separate) and its two screws.
+        .with_part("load_beam_guard", _beam_guard(s1), **mat("load_beam_guard"))
+        .with_part("load_beam_guard_screw_a", _guard_screw(s1, GUARD_SCREW_S[0]), **mat("load_beam_guard_screw_a"))
+        .with_part("load_beam_guard_screw_b", _guard_screw(s1, GUARD_SCREW_S[1]), **mat("load_beam_guard_screw_b"))
         .with_keepout("load_beam", load_beam_core(s1))
         .with_subassembly("gantry", build_gantry())
     )
@@ -820,22 +938,58 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
         .assert_tangent_contact("load_beam_emitter", "load_ramp")
         .assert_tangent_contact("load_beam_receiver", "load_ramp")
         .assert_clear_of(
-            ["load_ramp@beam_tab", "load_beam_receiver"], _outside_stator_cut(s1),
+            ["load_ramp@beam_tab", "load_beam_receiver", "load_beam_guard"], _outside_stator_cut(s1),
             name="load_beam_tab_inside_stator_cut",
         )
     )
-    beam_xy = (load_beam_frame() * Pos(BEAM_S, 0.0, BEAM_H)).position
+    # The guard: seated on the tab (tangent), the beam's core clear of
+    # its pocket by the pocket's radial room less the core's (built from
+    # the same constants, so the reading is exact), the receiver captive
+    # in the pocket with GUARD_POCKET_CLEAR all round, each screw's head
+    # on the tab's underside and its shank clear of the guard's insert
+    # hole — radially and at the tip. The insert itself is not modelled.
+    a = (
+        a
+        .assert_tangent_contact("load_beam_guard", "load_ramp")
+        .assert_clear_of(
+            ["load_beam_guard"], "load_beam",
+            min_mm=(SENSOR_ENV_D + 2.0 * GUARD_POCKET_CLEAR - BEAM_CORE_D) / 2.0,
+            name="load_beam_clear_of_guard",
+        )
+        .assert_distance(
+            "load_beam_receiver", "load_beam_guard", min_mm=GUARD_POCKET_CLEAR, max_mm=GUARD_POCKET_CLEAR,
+            name="load_beam_receiver_in_guard_pocket",
+        )
+        .assert_no_interference("load_beam_guard", "load_beam_emitter")
+    )
+    for k in ("a", "b"):
+        screw = f"load_beam_guard_screw_{k}"
+        a = (
+            a
+            .assert_tangent_contact(screw, "load_ramp")
+            .assert_distance(
+                screw, "load_beam_guard", min_mm=(GUARD_INSERT_HOLE_D - GUARD_SCREW_D) / 2.0,
+                name=f"{screw}_clear_in_insert_hole",
+            )
+        )
+    a = a.assert_scalar(
+        "load_beam_guard_screw_engagement_mm", GUARD_SCREW_L - RAMP_FLOOR_T, ge=1.5 * GUARD_SCREW_D,
+        detail="screw length past the tab's top, into the guard's insert (≥ 1.5 D)",
+    )
     beside = (
         "rotor.rotor",
         f"stator.{_s1_exit_liner()}",
         "stator.exit_floor",
-        f"drive.{bowl_part_at(_stage_local_az(s1, (beam_xy.X, beam_xy.Y)), s1.bowl_seam_phase_deg)}",
+        *(f"drive.{b}" for b in BOWL_PARTS),
         "drive.bearing",
     )
     for op, label in (
         ("load_ramp@beam_tab", "tab"),
         ("load_beam_receiver", "receiver"),
         ("load_beam_emitter", "emitter"),
+        ("load_beam_guard", "guard"),
+        ("load_beam_guard_screw_a", "guard_screw_a"),
+        ("load_beam_guard_screw_b", "guard_screw_b"),
     ):
         for leaf in beside:
             a = a.assert_distance(

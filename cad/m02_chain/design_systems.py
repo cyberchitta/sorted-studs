@@ -67,6 +67,9 @@ ROLE_OF: dict[str, Role | None] = {
     # Bought sensor envelopes, outside the palette.
     "load_beam_emitter": None,
     "load_beam_receiver": None,
+    "load_beam_guard": Role.SECONDARY_STRUCTURE,
+    "load_beam_guard_screw_a": None,
+    "load_beam_guard_screw_b": None,
 }
 
 
@@ -84,6 +87,9 @@ MODULE_OF: dict[str, Module | None] = {
     "foot_washer_3": None,
     "load_beam_emitter": None,
     "load_beam_receiver": None,
+    "load_beam_guard": Module.SINGULATOR,
+    "load_beam_guard_screw_a": None,
+    "load_beam_guard_screw_b": None,
 }
 
 
