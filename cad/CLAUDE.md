@@ -203,7 +203,10 @@ call site, including the degenerate `assembly = build_x(DEFAULT_SCHEMA)`
 memo.** `functools.cache` keys on the call signature, so `build_x()`
 and `build_x(DEFAULT_SCHEMA)` are two entries building identical
 geometry twice. The symptom is invisible — same output, double the
-work; `cache_info().misses` is the only tell.
+work; `cache_info().misses` is the only tell. The same memo **defeats
+a monkeypatch probe**: patch a module constant and call the builder
+again in one process, and it returns the first build. One variant per
+fresh process (the ramp-length probes, 2026-09-21).
 
 ## World axes: Z is up
 
@@ -299,7 +302,9 @@ cad/
 Imports are relative (`.params` at unit level, `..params` in
 sub-modules); no `sys.path` manipulation anywhere. Use underscores in
 directory names so Python can import them normally; hyphens block
-package imports and force `importlib` workarounds.
+package imports and force `importlib` workarounds. Nor a stdlib name:
+a `platform/` unit loses to the stdlib copy `cad_khana` has already
+imported (hence `turret_platform/`).
 
 ## Running checks
 
@@ -483,6 +488,30 @@ A slice lands in **two repos**, and neither is optional:
 Update both in the same edit batch. Don't leave one current and the
 other stale. They cannot land atomically (different repos), and that
 drift is accepted — but only when both sides are actually written.
+
+Before either side says what a change did, measure it:
+
+- **"No external change" is a measurement, not a derivation.** Take
+  `khana diff`, or `volume` and `bounding_box()` before and after. Corner
+  arithmetic said the spider's arm roots landed inside the hub disc;
+  the chord-vs-arc web added 789 mm³, and the claim had already gone
+  into three durable places (2026-09-20). Likewise, measure a body's
+  reach (`along=`) rather than bound it by a circle: a disc bound on a
+  rolled square put the arch's post gap at 3.12 when it was 1.40
+  (2026-09-22).
+- **A reading that disagrees with direct probing stays red, unwaived,
+  and goes to cad-khana.** Four bodies read `min_wall` 0.12–0.34
+  against probed 5.75–6.32 in 2026-07; it was a library bug
+  (`5d1ff27`), and a waiver would have hidden it.
+- **After renaming an inspected part, delete its old JSON.**
+  `outputs/` is gitignored, so an orphan never shows in `git status`
+  and reads as current (`stator-printability.json`, 2026-09-20).
+  `ls -lt outputs/`.
+- **Red-test from a scratch module, not by editing and restoring a
+  source.** A restore within the same second at the same size keeps
+  the edited `.pyc` in force, and the restored file then runs red
+  (`PINION_TEETH`, 2026-10-05). If you must, `touch` it and drop its
+  `__pycache__`.
 
 Commit message convention, pathspec discipline and the notes commit
 cadence all come from the global `~/.claude/CLAUDE.md` and the
