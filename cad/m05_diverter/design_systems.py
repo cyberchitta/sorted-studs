@@ -105,6 +105,7 @@ ROLE_OF: dict[str, Role | None] = {
     "top_acrylic": None,
     # Deck fasteners — bought hardware, outside the palette.
     **{f"sleeve_{i}_{p}": None for i in range(3) for p in ("screw", "washer", "insert")},
+    **{f"corner_{k}_{p}": None for k in range(6) for p in ("bolt", "washer", "nut", "nut_washer")},
 }
 
 

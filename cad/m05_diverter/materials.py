@@ -81,6 +81,7 @@ MATERIAL_OF: dict[str, str | None] = {
     **{f"sleeve_{i}_screw": "steel" for i in range(3)},
     **{f"sleeve_{i}_washer": "steel" for i in range(3)},
     **{f"sleeve_{i}_insert": None for i in range(3)},
+    **{f"corner_{k}_{p}": "steel" for k in range(6) for p in ("bolt", "washer", "nut", "nut_washer")},
 }
 
 

@@ -36,7 +36,10 @@ split by whether a standard 90° 2020 bracket fits the geometry:
 - `brace_foot` — printed. The same U-channel-and-stop on the deck at
   V_3 / V_5, rising toward V_4; flat on the deck, nothing faces down.
   V_3's runs over its column axis with a flange behind; V_5's starts
-  clear of the post and its vertex bracket (`params.py`).
+  clear of the post and its vertex bracket (`params.py`). V_3's is
+  bolted down its column's axis (`foot_bolt` / `foot_washer`, bought
+  envelopes) into the column's tapped bore, the washer in a seat cut
+  through the block to the flange.
 
 Frames (all +Z up, chain axes):
     post_seat    origin = column axis at the column's END face; the
@@ -175,12 +178,19 @@ def brace_head(
 
 def brace_foot(
     az_deg: float, el_deg: float, stop_h: float, start_h: float, flange: bool,
+    bolt: tuple[float, float] | None = None,
 ) -> Part:
     """Block on the deck from `start_h` out along the azimuth with a
     channel for a brace rising at `el_deg`, stopped `stop_h` out.
     Origin at the column axis on the deck top. `flange` adds a plate
     behind the block over the axis (V_3, where nothing stands on the
-    deck)."""
+    deck).
+
+    `bolt` = (hole Ø, seat Ø) bolts the flanged foot down the column
+    axis: a clearance hole through the flange, and a washer seat cut
+    down through the block to the flange's top face (z = WALL), so the
+    washer bears on the flange. Printed deck face down, the seat's floor
+    faces up and its walls are vertical."""
     s_out = stop_h + BRACE_ENGAGE
     t, hd = math.tan(math.radians(el_deg)), _half_diag(el_deg)
     block = _vertical_strip(az_deg, [
@@ -190,7 +200,37 @@ def brace_foot(
         block = block + _vertical_strip(az_deg, [
             (-COLLAR_OD / 2.0, 0.0), (start_h + 1.0, 0.0), (start_h + 1.0, WALL), (-COLLAR_OD / 2.0, WALL),
         ])
-    return block - _brace_prism_beyond(az_deg, el_deg, stop_h, +1.0, 4.0 * s_out)
+    foot = block - _brace_prism_beyond(az_deg, el_deg, stop_h, +1.0, 4.0 * s_out)
+    if bolt is not None:
+        hole_d, seat_d = bolt
+        assert flange, "only the flanged foot sits over its column's axis"
+        assert seat_d / 2.0 + WALL <= stop_h, (
+            f"washer seat Ø{seat_d} runs into the brace stop {stop_h} out"
+        )
+        assert seat_d < CHANNEL_W, f"washer seat Ø{seat_d} wider than the {CHANNEL_W} foot"
+        h = 4.0 * s_out
+        foot = (
+            foot
+            - Pos(0.0, 0.0, 0.0) * Cylinder(hole_d / 2.0, 4.0 * WALL)
+            - Pos(0.0, 0.0, WALL + h / 2.0) * Cylinder(seat_d / 2.0, h)
+        )
+    return foot
+
+
+def foot_bolt(
+    d: float, head_d: float, head_h: float, length: float, washer_t: float,
+) -> Part:
+    """Socket-head cap screw envelope (bought), z = 0 the face its
+    washer stands on: head on the washer, shank `length` down from the
+    head's underside."""
+    head = Pos(0.0, 0.0, washer_t + head_h / 2.0) * Cylinder(head_d / 2.0, head_h)
+    shank = Pos(0.0, 0.0, washer_t - length / 2.0) * Cylinder(d / 2.0, length)
+    return head + shank
+
+
+def foot_washer(od: float, id_: float, t: float) -> Part:
+    """Plain washer (bought), standing on z = 0."""
+    return Pos(0.0, 0.0, t / 2.0) * (Cylinder(od / 2.0, t) - Cylinder(id_ / 2.0, 2.0 * t))
 
 
 def brace_foot_wedge_edges(

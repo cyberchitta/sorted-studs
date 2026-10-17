@@ -67,7 +67,7 @@ import math
 from typing import Callable
 
 
-from build123d import Box, Part, Pos, Rot
+from build123d import Box, Cylinder, Part, Pos, Rot
 
 from cad_khana.mechanism.assembly import Assembly
 
@@ -286,6 +286,7 @@ def build_through_columns(
     material_fn: Callable[[str], str | None] | None = None,
     *,
     outer_z_top: dict[int, float] | None = None,
+    outer_top_tap: dict[int, tuple[float, float]] | None = None,
 ) -> Assembly:
     """The twelve vertical 2020 corner columns spanning [z_bot, z_top]
     as a sub-`Assembly`: six at the outer-hex vertices and six at the
@@ -311,13 +312,25 @@ def build_through_columns(
     posts (`params.THROUGH_DECK_POSTS`) that continue above the deck
     as the m02 gantry's posts. Same extrusion, same footprint, same
     name — only the length differs.
+
+    `outer_top_tap` maps outer vertex k → (Ø, depth) of a tapped hole
+    down the column's centre bore from its top end (the deck's corner
+    bolts, `../assembly.py` DECK_BOLT_*). The cheap column is a solid
+    box, so the hole is cut at the thread's envelope Ø; the detail
+    tier's V-slot profile swaps in whole and does not carry it.
     """
     a = Assembly()
     outer_z_top = outer_z_top or {}
+    outer_top_tap = outer_top_tap or {}
 
-    def _column(top: float) -> Part:
+    def _column(top: float, tap: tuple[float, float] | None = None) -> Part:
         length = top - z_bot
-        return Pos(0, 0, (z_bot + top) / 2.0) * Box(EXT_SIZE, EXT_SIZE, length)
+        body = Pos(0, 0, (z_bot + top) / 2.0) * Box(EXT_SIZE, EXT_SIZE, length)
+        if tap is not None:
+            d, depth = tap
+            assert 0.0 < depth < length, f"tapped hole {depth} deep in a {length} column"
+            body = body - Pos(0, 0, top - depth / 2.0 + 0.5) * Cylinder(d / 2.0, depth + 1.0)
+        return body
 
     column = _column(z_top)
     for k in range(6):
@@ -335,6 +348,8 @@ def build_through_columns(
             body = column
             if ring == "outer" and k in outer_z_top:
                 body = _column(outer_z_top[k])
+            elif ring == "outer" and k in outer_top_tap:
+                body = _column(z_top, outer_top_tap[k])
             a = a.with_part(
                 n,
                 body,

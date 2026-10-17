@@ -78,10 +78,10 @@ from .m02_c_channel_singulator.params import LINER_SEAM_PHASE_DEG
 from .m02_c_channel_singulator.seams import sector_index
 from .m02_c_channel_singulator.stator.assembly import STATOR_PARTS, exit_splits_wall
 from .m02_chain.assembly import build_chain
-from .m02_chain.params import BRACE_COLS, PROP_POST, STAGES
+from .m02_chain.params import BRACE_COLS, FOOT_BOLT_COL, PROP_POST, STAGES
 from .m03_scanner.assembly import build_m03
 from .m03_scanner.params import PLATFORM_ACRYLIC_SIZE, TURRET_ARM_R
-from .m05_diverter.assembly import build_m05
+from .m05_diverter.assembly import DECK_BOLT_D, DECK_BOLT_HOLE_D, build_m05
 
 
 # m05 at world identity — its local frame IS the world frame.
@@ -523,8 +523,42 @@ def build_top(schema: str = DEFAULT_SCHEMA) -> Assembly:
         .assert_distance("m02_chain.gantry.brace_foot_5", "m05.top_cap.outer_vertex_bracket_5", min_mm=1.0,
                          name="brace_foot_5_clears_vertex_bracket_5")
     )
+    a = _with_foot_bolt(a)
     return _with_load_delivery(
         _with_on_deck(_with_service_access(_with_arc_screw_access(a)))
+    )
+
+
+def _with_foot_bolt(a: Assembly) -> Assembly:
+    """V_3's foot bolt (the chain's) clamps the brace foot and m05's deck
+    to V_3's column: its shank fills the column's tapped bore — so any
+    offset overlaps the column and any gap misses it — and centres in
+    the deck's clearance hole (constructed at the hole's radial
+    clearance, bounded both ways). Its head and washer stand on the
+    foot, which they clamp, so the deck-equipment claim holds them
+    clear of m03 only (`_with_on_deck` holds m05's own heads)."""
+    bolt = f"m02_chain.gantry.foot_bolt_{FOOT_BOLT_COL}"
+    gap = (DECK_BOLT_HOLE_D - DECK_BOLT_D) / 2.0
+    a = (
+        a
+        .assert_tangent_contact(
+            bolt, f"m05.columns.outer_vert_{FOOT_BOLT_COL}",
+            name=f"foot_bolt_{FOOT_BOLT_COL}_in_column_bore",
+        )
+        .assert_distance(
+            bolt, "m05.top_acrylic", min_mm=gap, max_mm=gap,
+            name=f"foot_bolt_{FOOT_BOLT_COL}_through_deck",
+        )
+    )
+    tops = []
+    for name in (bolt, f"m02_chain.gantry.foot_washer_{FOOT_BOLT_COL}"):
+        pp = a.part(name)
+        tops.append(pp.location * pp.part)
+    head = (tops[0] + tops[1]) & (
+        Pos(0, 0, a.anchor("m05.deck_top").position.Z + 50.0) * Box(2000, 2000, 100)
+    )
+    return a.assert_clear_of(
+        ["m03"], head, name=f"foot_bolt_{FOOT_BOLT_COL}_head_clear_of_m03", min_mm=DECK_EDGE_MARGIN,
     )
 
 

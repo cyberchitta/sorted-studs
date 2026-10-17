@@ -111,8 +111,12 @@ from .design_systems import (
 from .materials import material_of
 from .frame import assembly as _frame
 from .outer_vertex_bracket.assembly import (
+    BOLT_FROM_EXT_END as OUTER_BRACKET_BOLT_FROM_END,
+    BOLT_HOLE_D as OUTER_BRACKET_BOLT_HOLE_D,
+    BOLT_SPACING as OUTER_BRACKET_BOLT_SPACING,
     BRACKET_Z_TOP,
     EXT_SIZE,
+    HOR_INNER_OFFSET as OUTER_BRACKET_ARM_INNER,
     PLATE_T as OUTER_BRACKET_PLATE_T,
     bracket as outer_bracket,
 )
@@ -226,12 +230,58 @@ DECK_WASHER_T = 0.8         # ISO 7093 M3 h
 DECK_INSERT_D = 4.0         # pilot-hole Ø of a short M3 heat-set insert
 DECK_INSERT_L = 5.7         # its length
 DECK_HOLE_D = 3.4           # ISO 273 medium clearance for M3, in the acrylic
+
+# The corner bolts (owner 2026-10-17): M5, from the same family — an
+# ISO 4762 socket-head cap screw on an ISO 7093 wide washer, through a
+# clearance hole in the deck. At the four short corner columns it
+# threads straight into the 2020's centre bore, tapped M5 (no printed
+# cap); V3's is the m02 brace foot's, through the foot as well
+# (`DECK_BOLT_PEER_CORNERS`). At the two post vertices it goes down
+# through the deck and one of the top-cap vertex bracket's unused
+# horizontal-arm holes (the bracket is unchanged) into a nut on a plain
+# washer under the arm. Cheap envelopes as for the M3s: the nut a
+# cylinder at its across-corners Ø with the thread's major Ø as bore.
+DECK_BOLT_D = 5.0             # M5 thread major Ø — the shank envelope
+DECK_BOLT_HEAD_D = 8.5        # ISO 4762 M5 dk
+DECK_BOLT_HEAD_H = 5.0        # ISO 4762 M5 k
+DECK_BOLT_L_TAPPED = 20.0     # into a column's bore, a stock size
+DECK_BOLT_L_NUTTED = 25.0     # through a top-cap bracket arm, a stock size
+DECK_BOLT_WASHER_OD = 15.0    # ISO 7093 M5 d2
+DECK_BOLT_WASHER_ID = 5.3     # ISO 7093 M5 d1
+DECK_BOLT_WASHER_T = 1.2      # ISO 7093 M5 h
+DECK_BOLT_HOLE_D = 5.5        # ISO 273 medium clearance for M5, in the acrylic
+DECK_NUT_E = 8.79             # ISO 4032 M5 across corners (s 8)
+DECK_NUT_M = 4.7              # ISO 4032 M5 height
+DECK_NUT_WASHER_OD = 10.0     # ISO 7089 M5 d2 — the nut's washer on the printed arm
+DECK_NUT_WASHER_ID = 5.3      # ISO 7089 M5 d1
+DECK_NUT_WASHER_T = 1.0       # ISO 7089 M5 h
+# The tapped hole: M5 tap drill Ø4.2 is what the real profile's centre
+# bore is made for; bd_warehouse's V-slot model draws that bore at Ø4.6
+# (2026-10-17 — not changed here; the cheap column is solid and takes
+# the tapped hole at the thread's envelope Ø, DECK_BOLT_D). Tapped this
+# deep, and a bolt engages at least 1.5 Ø of it (steel into aluminium).
+DECK_BOLT_TAP_DRILL_D = 4.2
+DECK_BOLT_TAP_DEPTH = 12.0
+DECK_BOLT_ENGAGE_MIN = 1.5 * DECK_BOLT_D
+# Corners whose bolt a peer brings: V3's goes through m02's
+# `brace_foot_3` too, so the chain owns it (`m02_chain/joints.py`); the
+# tower still cuts its deck hole and taps its column.
+DECK_BOLT_PEER_CORNERS = (3,)
+# At a post vertex: which top-cap bracket arm hole takes the bolt, as
+# (the arm's azimuth in the bracket's frame — 0 the radial arm, ±60
+# the hex-edge arms — and which of its two holes, 0 the inner). The
+# −60° arm's inner hole at both: at V5 the radial and +60° arms run
+# under m02's `brace_foot_5` (a head there reads 0..4.2 to it, measured
+# 2026-10-17); at V4 every arm hole is clear, and the same choice keeps
+# one rule.
+TOP_CAP_BOLT_HOLE = {4: (-60.0, 0), 5: (-60.0, 0)}
+
 # Edge distance of a hole in the acrylic, to the rim, the aperture or
 # another hole: a hole near an edge is where cast acrylic cracks. The
-# common rule is 2× the hole's Ø (6.8 here); the deck's post holes
-# already keep no strip thinner than the sheet (`_post_hole_runs_out`),
-# and the stricter of the two governs.
-DECK_HOLE_EDGE_MIN = max(2 * DECK_HOLE_D, TOP_DECK_T)
+# common rule is 2× the hole's Ø (11 for the M5 holes); the deck's post
+# holes already keep no strip thinner than the sheet
+# (`_post_hole_runs_out`), and the stricter governs.
+DECK_HOLE_EDGE_MIN = max(2 * DECK_BOLT_HOLE_D, 2 * DECK_HOLE_D, TOP_DECK_T)
 
 CEILING_SLEEVE_LIP_W = (
     CEILING_SLEEVE_SCREW_R + DECK_INSERT_D / 2 + CEILING_SLEEVE_INSERT_WALL
@@ -381,22 +431,46 @@ def _circle_points(r: float, azimuths_deg) -> list[tuple[float, float]]:
     ]
 
 
-def _fastener_holes(fastener_xy, hole_d: float = DECK_HOLE_D) -> list[Part]:
-    """The deck's clearance holes, in deck-local coordinates (z = 0 the
-    sheet's mid-plane), one per deck fastener at (x, y)."""
-    return [Pos(x, y, 0) * Cylinder(hole_d / 2, TOP_DECK_T * 2) for x, y in fastener_xy]
+def corner_bolt_xy(posts: dict[int, float]) -> dict[int, tuple[float, float]]:
+    """(x, y) of each outer corner's deck bolt, in the tower frame: on
+    the column axis at a short column, and at the chosen top-cap
+    bracket arm hole (`TOP_CAP_BOLT_HOLE`) at a post vertex."""
+    out = {}
+    for k in range(6):
+        if k in posts:
+            az, n = TOP_CAP_BOLT_HOLE[k]
+            bx = OUTER_BRACKET_ARM_INNER + OUTER_BRACKET_BOLT_FROM_END + n * OUTER_BRACKET_BOLT_SPACING
+            p = (
+                _post_vertex_pose(k, 0.0)
+                * Pos(bx * math.cos(math.radians(az)), bx * math.sin(math.radians(az)), 0.0)
+            ).position
+            out[k] = (p.X, p.Y)
+        else:
+            v = math.radians((k + 0.5) * 60.0)
+            out[k] = (R_VERT_OUTER * math.cos(v), R_VERT_OUTER * math.sin(v))
+    return out
 
 
-def deck_holes(deck_od: float, posts: dict[int, float], fastener_xy) -> dict[str, Part]:
+def deck_fastener_holes(posts: dict[int, float]) -> dict[str, tuple[float, float, float]]:
+    """Every fastener's clearance hole in the deck, by name, as
+    (x, y, Ø): the ceiling sleeve's M3 screws (`sleeve_{i}`) and the
+    six corner M5 bolts (`corner_{k}`)."""
+    holes = {f"sleeve_{i}": (x, y, DECK_HOLE_D) for i, (x, y) in enumerate(sleeve_screw_xy())}
+    for k, (x, y) in corner_bolt_xy(posts).items():
+        holes[f"corner_{k}"] = (x, y, DECK_BOLT_HOLE_D)
+    return holes
+
+
+def deck_holes(deck_od: float, posts: dict[int, float]) -> dict[str, Part]:
     """Every hole cut in the deck sheet but its central aperture, by
-    name, in deck-local coordinates: the post holes (`post_hole_{k}`)
-    and the fastener clearance holes (`fastener_hole_{i}`, in the order
-    of `fastener_xy`)."""
+    name, in deck-local coordinates (z = 0 the sheet's mid-plane): the
+    post holes (`post_{k}`) and the fastener clearance holes
+    (`deck_fastener_holes`)."""
     holes = {
-        f"post_hole_{k}": _post_vertex_pose(k, 0.0) * _post_notch(deck_od) for k in posts
+        f"post_{k}": _post_vertex_pose(k, 0.0) * _post_notch(deck_od) for k in posts
     }
-    for i, h in enumerate(_fastener_holes(fastener_xy)):
-        holes[f"fastener_hole_{i}"] = h
+    for name, (x, y, d) in deck_fastener_holes(posts).items():
+        holes[name] = Pos(x, y, 0) * Cylinder(d / 2, TOP_DECK_T * 2)
     return holes
 
 
@@ -415,11 +489,10 @@ def hole_edge_distance(deck: Part, hole: Part, deck_od: float) -> float:
 
 def _add_top_deck(
     a: Assembly, *, top_z: float, posts: dict[int, float], deck_od: float,
-    fastener_xy=(),
 ) -> Assembly:
     """Clear-acrylic cap disc; bottom face tangent to through-column
     tops, cut at each through-deck post vertex and with a clearance
-    hole (DECK_HOLE_D) at each deck fastener's (x, y) in `fastener_xy`.
+    hole at each deck fastener (`deck_fastener_holes`).
 
     Also declares the keep-out ``off_deck``: the band just above the
     deck's top face from its rim outward. It is not a part — a
@@ -431,7 +504,7 @@ def _add_top_deck(
         - Cylinder(TOP_DECK_APERTURE_D / 2, TOP_DECK_T * 2)
     )
     # The disc is placed at z = top_z + T/2, so cut in deck-local z.
-    for hole in deck_holes(deck_od, posts, fastener_xy).values():
+    for hole in deck_holes(deck_od, posts).values():
         top_deck = top_deck - hole
     deck_top_z = top_z + TOP_DECK_T
     # A 1 mm band standing on the deck-top plane: a part resting on the
@@ -604,21 +677,117 @@ def _add_deck_fastener(
     )
 
 
-def _add_deck_fasteners(a: Assembly, *, top_z: float) -> Assembly:
-    """The ceiling sleeve's screws (`sleeve_{i}_*`), and the keep-out
-    ``deck_fasteners``: every head and washer standing on the deck top,
-    which a composing parent holds clear of what stands on the deck
-    (`cad/assembly.py`). Not a part — the same solids as the heads, so
-    a stander's distance to it is its distance to the nearest head."""
+def deck_bolt(length: float) -> Part:
+    """An M5 corner bolt's envelope (`deck_screw` at DECK_BOLT_* sizes),
+    z = 0 the face its washer stands on."""
+    return deck_screw(
+        d=DECK_BOLT_D, head_d=DECK_BOLT_HEAD_D, head_h=DECK_BOLT_HEAD_H,
+        length=length, washer_t=DECK_BOLT_WASHER_T,
+    )
+
+
+def deck_bolt_washer() -> Part:
+    return deck_washer(od=DECK_BOLT_WASHER_OD, id_=DECK_BOLT_WASHER_ID, t=DECK_BOLT_WASHER_T)
+
+
+def deck_nut_washer() -> Part:
+    """The plain washer under a post vertex's nut, hanging from z = 0
+    (the bracket arm's underside)."""
+    return Pos(0, 0, -DECK_NUT_WASHER_T) * deck_washer(
+        od=DECK_NUT_WASHER_OD, id_=DECK_NUT_WASHER_ID, t=DECK_NUT_WASHER_T,
+    )
+
+
+def deck_nut() -> Part:
+    """Hex nut envelope (a cylinder at its across-corners Ø, bore at the
+    thread's major Ø), hanging from z = 0 (its top face)."""
+    return deck_insert(d=DECK_NUT_E, bore_d=DECK_BOLT_D, length=DECK_NUT_M)
+
+
+def _add_corner_bolt(
+    a: Assembly, k: int, x: float, y: float, *, top_z: float, post: bool,
+) -> Assembly:
+    """Corner k's M5 bolt at (x, y), washer on the deck top. At a short
+    column it threads into the column's tapped bore; at a post vertex
+    it passes the top-cap bracket's arm under the deck and takes a nut
+    on a plain washer under the arm. Parts `corner_{k}_bolt`,
+    `corner_{k}_washer` (+ `corner_{k}_nut`, `corner_{k}_nut_washer`)."""
+    deck_top_z = top_z + TOP_DECK_T
+    n = f"corner_{k}"
+    below_deck = DECK_BOLT_WASHER_T + TOP_DECK_T
+    if post:
+        length = DECK_BOLT_L_NUTTED
+        # Past the nut by at least a thread pitch (M5 coarse, 0.8).
+        stack = below_deck + OUTER_BRACKET_PLATE_T + DECK_NUT_WASHER_T + DECK_NUT_M
+        assert length - stack >= 0.8, (
+            f"a {length} bolt stands {length - stack:.2f} past its nut at a post vertex"
+        )
+    else:
+        length = DECK_BOLT_L_TAPPED
+        engage = length - below_deck
+        assert DECK_BOLT_ENGAGE_MIN <= engage < DECK_BOLT_TAP_DEPTH, (
+            f"a {length} bolt engages {engage:.2f} of a {DECK_BOLT_TAP_DEPTH} tapped bore "
+            f"(needs {DECK_BOLT_ENGAGE_MIN})"
+        )
+    a = (
+        a.with_part(
+            f"{n}_washer", deck_bolt_washer(), location=Pos(x, y, deck_top_z),
+            material=material_of(f"{n}_washer"),
+        )
+        .with_part(
+            f"{n}_bolt", deck_bolt(length), location=Pos(x, y, deck_top_z),
+            material=material_of(f"{n}_bolt"),
+        )
+    )
+    if post:
+        arm_under_z = top_z - OUTER_BRACKET_PLATE_T
+        a = (
+            a.with_part(
+                f"{n}_nut_washer", deck_nut_washer(), location=Pos(x, y, arm_under_z),
+                material=material_of(f"{n}_nut_washer"),
+            )
+            .with_part(
+                f"{n}_nut", deck_nut(), location=Pos(x, y, arm_under_z - DECK_NUT_WASHER_T),
+                material=material_of(f"{n}_nut"),
+            )
+        )
+    return a
+
+
+def _head_above(body: Part) -> Part:
+    """What of a screw or bolt envelope stands above its seat (z > 0)."""
+    return body & Pos(0, 0, 50) * Cylinder(50, 100)
+
+
+def _add_deck_fasteners(
+    a: Assembly, *, top_z: float, posts: dict[int, float], peer_corners=(),
+) -> Assembly:
+    """The ceiling sleeve's screws (`sleeve_{i}_*`) and the corner bolts
+    (`corner_{k}_*`; none at `peer_corners`, whose bolt a composing
+    peer brings), and the keep-out ``deck_fasteners``: every head and
+    washer standing on the deck top, which a composing parent holds
+    clear of what stands on the deck (`cad/assembly.py`). Not a part —
+    the same solids as the heads, so a stander's distance to it is its
+    distance to the nearest head."""
     deck_top_z = top_z + TOP_DECK_T
     tops = []
     for i, (x, y) in enumerate(sleeve_screw_xy()):
         a = _add_deck_fastener(a, f"sleeve_{i}", x, y, top_z=top_z)
-        tops.append(Pos(x, y, deck_top_z) * (deck_washer() + (deck_screw() & Pos(0, 0, 50) * Cylinder(50, 100))))
+        tops.append(Pos(x, y, deck_top_z) * (deck_washer() + _head_above(deck_screw())))
+    for k, (x, y) in corner_bolt_xy(posts).items():
+        if k in peer_corners:
+            continue
+        a = _add_corner_bolt(a, k, x, y, top_z=top_z, post=k in posts)
+        tops.append(Pos(x, y, deck_top_z) * (deck_bolt_washer() + _head_above(deck_bolt(DECK_BOLT_L_TAPPED))))
     keepout = tops[0]
     for t in tops[1:]:
         keepout = keepout + t
     return a.with_keepout("deck_fasteners", keepout)
+
+
+def deck_bolt_corners(posts: dict[int, float], peer_corners=()) -> list[int]:
+    """The corners the tower bolts itself."""
+    return [k for k in range(6) if k not in peer_corners]
 
 
 def _add_top_cap(
@@ -822,7 +991,7 @@ def _add_ceiling_sleeve_checks(
 
 
 def _add_deck_hole_checks(
-    a: Assembly, *, deck_od: float, posts: dict[int, float], fastener_xy,
+    a: Assembly, *, deck_od: float, posts: dict[int, float],
 ) -> Assembly:
     """Every hole in the acrylic — post holes and fastener clearance
     holes — keeps DECK_HOLE_EDGE_MIN of sheet to the rim, the aperture
@@ -830,7 +999,7 @@ def _add_deck_hole_checks(
     (`hole_edge_distance`) and recorded per hole; the deck is static,
     so the build pose is every pose."""
     deck = a.part("top_acrylic").part
-    for name, hole in deck_holes(deck_od, posts, fastener_xy).items():
+    for name, hole in deck_holes(deck_od, posts).items():
         a = a.assert_scalar(
             f"deck_{name}_edge_distance", hole_edge_distance(deck, hole, deck_od),
             ge=DECK_HOLE_EDGE_MIN,
@@ -884,6 +1053,56 @@ def _add_sleeve_fastener_checks(a: Assembly, top: int, *, flare: bool) -> Assemb
                     p, col, min_mm=CEILING_SLEEVE_TURN_CLEAR,
                     name=f"{p}_under_column",
                 )
+    return a
+
+
+def _add_corner_bolt_checks(
+    a: Assembly, posts: dict[int, float], *, peer_corners=(),
+) -> Assembly:
+    """Each corner bolt the tower carries: washer on the deck, head on
+    the washer, shank through the deck's clearance hole without touching
+    it. At a short column, coaxial with the column's tapped bore (the
+    shank fills the bore's thread envelope, so any offset overlaps). At
+    a post vertex, through the top-cap bracket arm's hole without
+    touching it — constructed centred in it, so bounded both ways — and
+    the nut on its washer on the arm's underside, coaxial with the bolt.
+    The twelve-point deck seating is `_add_top_deck_checks`'s and
+    stands unchanged: the tapped hole leaves the column's end face."""
+    gap = (DECK_BOLT_HOLE_D - DECK_BOLT_D) / 2
+    arm_gap = (OUTER_BRACKET_BOLT_HOLE_D - DECK_BOLT_D) / 2
+    frame = ["columns"] + (["top_cap"] if posts else [])
+    for k in deck_bolt_corners(posts, peer_corners):
+        n = f"corner_{k}"
+        bolt, wsh = f"{n}_bolt", f"{n}_washer"
+        col = f"columns.outer_vert_{k}"
+        parts = [bolt, wsh]
+        a = (
+            a
+            .assert_tangent_contact(wsh, "top_acrylic", name=f"{n}_washer_on_deck")
+            .assert_tangent_contact(bolt, wsh, name=f"{n}_head_on_washer")
+            .assert_distance(
+                bolt, "top_acrylic", min_mm=gap, max_mm=gap, name=f"{n}_bolt_through_deck",
+            )
+        )
+        if k in posts:
+            brk = f"top_cap.outer_vertex_bracket_{k}"
+            nut, nw = f"{n}_nut", f"{n}_nut_washer"
+            parts += [nut, nw]
+            a = (
+                a
+                .assert_distance(bolt, brk, min_mm=arm_gap, max_mm=arm_gap, name=f"{n}_bolt_through_arm")
+                .assert_tangent_contact(nw, brk, name=f"{n}_nut_washer_under_arm")
+                .assert_tangent_contact(nut, nw, name=f"{n}_nut_on_washer")
+                .assert_tangent_contact(bolt, nut, name=f"{n}_bolt_in_nut")
+                .assert_no_interference(bolt, nut)
+            )
+        else:
+            a = (
+                a
+                .assert_tangent_contact(bolt, col, name=f"{n}_bolt_in_column_bore")
+                .assert_no_interference(bolt, col)
+            )
+        a = a.assert_no_interference_between(parts, frame)
     return a
 
 
@@ -1187,6 +1406,7 @@ def build_tower(
     with_drive_train: bool = True,
     through_posts: dict[int, float] | None = None,
     top_deck_od: float = TOP_DECK_OD,
+    deck_bolt_peer_corners: tuple[int, ...] = (),
 ) -> Assembly:
     """Compose a hex-tower diverter assembly with cross-floor +
     drive-train + top-deck checks, parameterised on which floors,
@@ -1213,6 +1433,11 @@ def build_tower(
     exhibits pass none). Requires the top deck.
 
     `top_deck_od` is the deck disc's OD (`params.TOP_DECK_OD`).
+
+    `deck_bolt_peer_corners` are the outer corners whose deck bolt a
+    composing peer brings (`DECK_BOLT_PEER_CORNERS` in production — the
+    m02 brace foot's at V3): the deck hole and the tapped column are
+    cut, the bolt is not added.
     """
     posts = dict(through_posts or {})
     if posts and not with_top_deck:
@@ -1231,6 +1456,10 @@ def build_tower(
             z_bot=-_frame.VERT_EXT_BELOW, z_top=top_z,
             material_fn=material_of,
             outer_z_top={k: deck_top_z + h for k, h in posts.items()},
+            outer_top_tap=(
+                {k: (DECK_BOLT_D, DECK_BOLT_TAP_DEPTH) for k in range(6) if k not in posts}
+                if with_top_deck else None
+            ),
         ),
     )
 
@@ -1255,10 +1484,11 @@ def build_tower(
     if with_top_deck:
         a = _add_top_deck(
             a, top_z=top_z, posts=posts, deck_od=top_deck_od,
-            fastener_xy=sleeve_screw_xy(),
         )
         a = _add_ceiling_sleeve(a, top_z=top_z)
-        a = _add_deck_fasteners(a, top_z=top_z)
+        a = _add_deck_fasteners(
+            a, top_z=top_z, posts=posts, peer_corners=deck_bolt_peer_corners,
+        )
         if posts:
             a = _add_top_cap(a, top_z=top_z, posts=posts)
 
@@ -1314,8 +1544,9 @@ def build_tower(
         a = _add_sleeve_fastener_checks(
             a, floors[-1], flare=floor_plan[-1][1] == "top",
         )
+        a = _add_corner_bolt_checks(a, posts, peer_corners=deck_bolt_peer_corners)
         a = _add_deck_hole_checks(
-            a, deck_od=top_deck_od, posts=posts, fastener_xy=sleeve_screw_xy(),
+            a, deck_od=top_deck_od, posts=posts,
         )
 
     base_idx = next((idx for idx, role in floor_plan if role == "base"), None)
@@ -1373,7 +1604,7 @@ def build_m05(schema: str = DEFAULT_SCHEMA, top_deck_od: float = TOP_DECK_OD) ->
     a = (
         build_tower(
             FLOOR_PLAN, schema=schema, through_posts=THROUGH_DECK_POSTS,
-            top_deck_od=top_deck_od,
+            top_deck_od=top_deck_od, deck_bolt_peer_corners=DECK_BOLT_PEER_CORNERS,
         )
         .with_anchor("deck_top", Pos(0, 0, _DECK_TOP_Z))
         .with_anchor(

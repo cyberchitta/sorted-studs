@@ -577,6 +577,35 @@ BRACE_HEAD_STOP_H = 25.0
 BRACE_FOOT_STOP_H = 30.0
 BRACE_FOOT_START_H = {3: 0.0, 5: 15.0}
 
+# V_3's foot is bolted down (owner 2026-10-17): one M5 socket-head cap
+# screw (ISO 4762) on an ISO 7093 wide washer, down the column axis
+# through the foot's flange and m05's deck into V_3's tapped centre bore
+# — it clamps the foot and the deck to the column together. Bought;
+# cheap envelopes (head and washer cylinders, shank at the thread's
+# major Ø). The same M5 family as m05's corner bolts
+# (`m05_diverter/assembly.py` DECK_BOLT_*), kept here so the chain
+# builds standalone; the top level's claims that this shank fills the
+# column's tapped bore and centres in the deck's hole are what catch a
+# mismatch. The foot's hole, its washer seat, the deck stand-in's hole
+# and the length check derive from these.
+FOOT_BOLT_COL = 3
+FOOT_BOLT_D = 5.0             # M5 thread major Ø
+FOOT_BOLT_HEAD_D = 8.5        # ISO 4762 M5 dk
+FOOT_BOLT_HEAD_H = 5.0        # ISO 4762 M5 k
+FOOT_BOLT_L = 25.0            # a stock size
+FOOT_BOLT_WASHER_OD = 15.0    # ISO 7093 M5 d2
+FOOT_BOLT_WASHER_ID = 5.3     # ISO 7093 M5 d1
+FOOT_BOLT_WASHER_T = 1.2      # ISO 7093 M5 h
+FOOT_BOLT_HOLE_D = 5.5        # ISO 273 medium clearance, in the foot and in m05's deck
+# Radial room round the washer in the foot's seat, a counterbore down
+# to the flange's top face through the block that rises over the axis.
+FOOT_BOLT_SEAT_CLEAR = 1.0
+# Thread engaged in the column's tapped bore, at least (steel into
+# aluminium, 1.5 Ø).
+FOOT_BOLT_ENGAGE_MIN = 1.5 * FOOT_BOLT_D
+# Floor on the head's gap to the brace it sits beside.
+FOOT_BOLT_BRACE_CLEAR = 5.0
+
 
 def brace_run(col: int) -> tuple[float, float, float]:
     """(azimuth from V_4 toward V_col in degrees, descent angle in

@@ -83,7 +83,7 @@ from ..m02_c_channel_singulator.seams import angular_gap_to_span_deg, seam_azimu
 from ..m02_c_channel_singulator.stator.assembly import STATOR_PARTS
 from ..m02_c_channel_singulator.params import ROTOR_BASE_DIAMETER
 from .design_systems import design_system
-from .joints import brace_foot, brace_head, corner_bracket, post_seat
+from .joints import brace_foot, brace_head, corner_bracket, foot_bolt, foot_washer, post_seat
 from .materials import material_of
 from .params import (
     ARM_POST,
@@ -105,6 +105,18 @@ from .params import (
     BRACE_FOOT_STOP_H,
     BRACE_HEAD_STOP_H,
     BRACE_H_ABOVE_DECK,
+    FOOT_BOLT_BRACE_CLEAR,
+    FOOT_BOLT_COL,
+    FOOT_BOLT_D,
+    FOOT_BOLT_ENGAGE_MIN,
+    FOOT_BOLT_HEAD_D,
+    FOOT_BOLT_HEAD_H,
+    FOOT_BOLT_HOLE_D,
+    FOOT_BOLT_L,
+    FOOT_BOLT_SEAT_CLEAR,
+    FOOT_BOLT_WASHER_ID,
+    FOOT_BOLT_WASHER_OD,
+    FOOT_BOLT_WASHER_T,
     CHUTE_LAND_R,
     CROSS_HALF_LEN,
     DECK_TOP_Z_LOCAL,
@@ -536,6 +548,46 @@ _STAGE_NAMES = tuple(s.name for s in STAGES)
 _RAMP_PARTS = ("load_ramp", "load_beam_emitter", "load_beam_receiver")
 
 
+# V_3's foot bolt: the foot's (hole Ø, washer-seat Ø).
+_FOOT_BOLT_CUT = (FOOT_BOLT_HOLE_D, FOOT_BOLT_WASHER_OD + 2.0 * FOOT_BOLT_SEAT_CLEAR)
+
+
+def _with_foot_bolt(a: Assembly) -> Assembly:
+    """V_3's foot bolt and washer, on the column axis, the washer on the
+    foot's seat (the flange's top face, `joints.WALL` above the deck).
+    Its claims within the gantry: washer on the seat, head on the
+    washer, shank centred in the foot's hole, head clear of the brace.
+    That it centres in m05's deck hole and fills V_3's tapped bore is
+    the top level's (`cad/assembly.py`)."""
+    from .joints import WALL
+    col = FOOT_BOLT_COL
+    engage = FOOT_BOLT_L - FOOT_BOLT_WASHER_T - WALL - M05_TOP_DECK_T
+    assert engage >= FOOT_BOLT_ENGAGE_MIN, (
+        f"a {FOOT_BOLT_L} foot bolt engages {engage:.2f} of the column (needs {FOOT_BOLT_ENGAGE_MIN})"
+    )
+    seat = _foot_pose(col) * Pos(0.0, 0.0, WALL)
+    foot, bolt, wsh = f"brace_foot_{col}", f"foot_bolt_{col}", f"foot_washer_{col}"
+    gap = (FOOT_BOLT_HOLE_D - FOOT_BOLT_D) / 2.0
+    return (
+        a.with_part(
+            wsh, foot_washer(FOOT_BOLT_WASHER_OD, FOOT_BOLT_WASHER_ID, FOOT_BOLT_WASHER_T),
+            location=seat, material=material_of(wsh),
+        )
+        .with_part(
+            bolt,
+            foot_bolt(FOOT_BOLT_D, FOOT_BOLT_HEAD_D, FOOT_BOLT_HEAD_H, FOOT_BOLT_L, FOOT_BOLT_WASHER_T),
+            location=seat, material=material_of(bolt),
+        )
+        .assert_tangent_contact(wsh, foot, name=f"{foot}_washer_on_seat")
+        .assert_tangent_contact(bolt, wsh, name=f"{bolt}_head_on_washer")
+        # Centred in the foot's hole: constructed at exactly the hole's
+        # radial clearance, bounded both ways.
+        .assert_distance(bolt, foot, min_mm=gap, max_mm=gap, name=f"{bolt}_through_foot")
+        .assert_distance(bolt, f"brace_{col}", min_mm=FOOT_BOLT_BRACE_CLEAR, name=f"{bolt}_clears_brace")
+        .assert_distance(wsh, f"brace_{col}", min_mm=FOOT_BOLT_BRACE_CLEAR, name=f"{wsh}_clears_brace")
+    )
+
+
 # Cached because the degenerate ``assembly`` memo below and any
 # composing parent (``cad/assembly.py``, ``cad/render.py``) each ask
 # for the same schema, and the build is seconds of OCCT work. Safe to
@@ -590,9 +642,13 @@ def build_gantry() -> Assembly:
         az, el, _ = brace_run(col)
         a = a.with_part(
             f"brace_foot_{col}",
-            brace_foot(az + 180.0, el, BRACE_FOOT_STOP_H, BRACE_FOOT_START_H[col], flange=(col == 3)),
+            brace_foot(
+                az + 180.0, el, BRACE_FOOT_STOP_H, BRACE_FOOT_START_H[col], flange=(col == 3),
+                bolt=_FOOT_BOLT_CUT if col == FOOT_BOLT_COL else None,
+            ),
             location=_foot_pose(col), **mat(f"brace_foot_{col}"),
         )
+    a = _with_foot_bolt(a)
     for name, loc in _bracket_poses(s2, s3).items():
         a = a.with_part(name, corner_bracket(), location=loc, **mat(name))
 
@@ -869,12 +925,15 @@ def _post_stub(k: int) -> Part:
 
 
 def _deck_stub() -> Part:
-    """m05's top deck as a plain disc with its central aperture — no
-    post notches, no bolt holes. Origin at the deck top on the m05
-    axis."""
+    """m05's top deck as a plain disc with its central aperture and the
+    hole V_3's foot bolt passes — no post notches, none of m05's other
+    holes. Origin at the deck top on the m05 axis."""
+    x, y = m05_outer_vertex_local_xy(FOOT_BOLT_COL)
     return Pos(0.0, 0.0, -M05_TOP_DECK_T / 2.0) * (
         Cylinder(M05_TOP_DECK_OD / 2.0, M05_TOP_DECK_T)
         - Cylinder(M05_TOP_DECK_APERTURE_D / 2.0, M05_TOP_DECK_T + 2.0)
+        - Pos(x - M05_AXIS_LOCAL_XY[0], y - M05_AXIS_LOCAL_XY[1], 0.0)
+        * Cylinder(FOOT_BOLT_HOLE_D / 2.0, M05_TOP_DECK_T + 2.0)
     )
 
 
@@ -929,6 +988,13 @@ def build_chain_standalone(schema: str = DEFAULT_SCHEMA) -> Assembly:
             .assert_tangent_contact(f"gantry.brace_foot_{col}", "deck", name=f"brace_foot_{col}_on_deck")
         )
     a = a.assert_distance("gantry.brace_foot_5", "post_5", min_mm=1.0, name="brace_foot_5_clears_post_5")
+    # V_3's foot bolt passes the stand-in deck's hole, centred in it —
+    # the chain's belief; the top level holds it against m05's deck.
+    gap = (FOOT_BOLT_HOLE_D - FOOT_BOLT_D) / 2.0
+    a = a.assert_distance(
+        f"gantry.foot_bolt_{FOOT_BOLT_COL}", "deck", min_mm=gap, max_mm=gap,
+        name=f"foot_bolt_{FOOT_BOLT_COL}_through_deck_stub",
+    )
     a = (
         a
         .assert_no_interference_between(_STUBS, _RAMP_PARTS)

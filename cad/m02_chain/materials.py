@@ -26,6 +26,9 @@ MATERIAL_OF: dict[str, str | None] = {
         "s1_post_seat", "s3_post_seat", "brace_head", "brace_foot_3", "brace_foot_5",
     )},
     "load_ramp":    "pla_matte",
+    # V_3's foot bolt and washer (bought steel).
+    "foot_bolt_3": "steel",
+    "foot_washer_3": "steel",
     # LOAD beam-break halves (bought sensor envelopes) — left to the default.
     "load_beam_emitter": None,
     "load_beam_receiver": None,

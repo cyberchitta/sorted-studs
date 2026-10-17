@@ -61,6 +61,9 @@ ROLE_OF: dict[str, Role | None] = {
     **{name: Role.PRIMARY_STRUCTURE for name in _GANTRY + _BRACKETS},
     **{name: Role.SECONDARY_STRUCTURE for name in _PRINTED_JOINTS},
     "load_ramp":    Role.SECONDARY_STRUCTURE,
+    # V_3's foot bolt and washer — bought hardware, outside the palette.
+    "foot_bolt_3": None,
+    "foot_washer_3": None,
     # Bought sensor envelopes, outside the palette.
     "load_beam_emitter": None,
     "load_beam_receiver": None,
@@ -77,6 +80,8 @@ MODULE_OF: dict[str, Module | None] = {
     **{name: Module.DIVERTER for name in _GANTRY + _BRACKETS + _PRINTED_JOINTS},
     # The ramp is singulator-side hardware.
     "load_ramp":    Module.SINGULATOR,
+    "foot_bolt_3": None,
+    "foot_washer_3": None,
     "load_beam_emitter": None,
     "load_beam_receiver": None,
 }
