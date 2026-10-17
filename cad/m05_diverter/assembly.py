@@ -52,8 +52,12 @@ builders (role differences are builder parameters) and placed by one
   open (`_notes/state/m05-diverter.md` §Top deck).
 - `ceiling_sleeve` — the fifth bearing slot: a printed sleeve ring set
   in the deck's central aperture round the top column's rotating
-  collar, with a locating lip under the deck (root part; the
-  CEILING_SLEEVE_* parameters).
+  collar, with a lip under the deck (root part; the
+  CEILING_SLEEVE_* parameters). Three M3 screws come down through the
+  deck into heat-set inserts in the lip (`sleeve_{i}_screw` /
+  `_washer` / `_insert`, root parts; the DECK_* fastener family), and
+  their heads and washers are the keep-out `deck_fasteners` the top
+  level holds clear of what stands on the deck.
 
 Part identity is the dotted tree path
 (`rotating_stack.f0.column`); floor identity lives in the `f{idx}`
@@ -167,15 +171,27 @@ _NOTCH_PAST_RIM = 10.0       # how far a run-out notch carries past the rim
 # every other sleeve), which leaves the upper half of the aperture
 # empty under the coupler.
 #
-# Retention (a claim, not a decision — `_notes/state/m05-diverter.md`):
-# the sleeve goes in from below until the lip seats on the deck's
-# underside, and is held up by its fit in the aperture. It carries no
-# axial load; its own weight is a few grams. CEILING_SLEEVE_FIT_GAP is
-# the modelled radial gap in the aperture: 0 is line-to-line (a push
-# fit). No fastener and no deck feature beyond the aperture.
+# Retention (owner 2026-10-17): screws down through the deck into
+# heat-set inserts in the lip (the deck fasteners below). The sleeve
+# goes in from below until the lip seats on the deck's underside, and
+# the screws hold it there. CEILING_SLEEVE_FIT_GAP is the modelled
+# radial gap in the aperture: 0 is line-to-line (a push fit) — it
+# locates the sleeve; it no longer has to hold it up.
 CEILING_SLEEVE_FIT_GAP = 0.0
-CEILING_SLEEVE_LIP_T = 3.0
-CEILING_SLEEVE_LIP_W = 5.0     # the lip's bearing on the deck underside, radial
+# The screw heads stand on the deck top, where the top column's trap
+# servo turns over them 4.8 above the deck; its reach is r ≈ 95, so the
+# screw circle sits outside it (held at CEILING_SLEEVE_TURN_CLEAR by
+# `sleeve_screw_*_under_*`). Three screws, kept off +Y, where m03's
+# floor cross bar stands on the deck from y 115.
+CEILING_SLEEVE_SCREW_R = 106.0
+CEILING_SLEEVE_SCREW_AZ = (30.0, 150.0, 270.0)
+# Printed wall left round an insert's pilot hole out to the lip's rim.
+CEILING_SLEEVE_INSERT_WALL = 5.0
+# The lip carries the inserts: at least as thick as an insert is long
+# (`ceiling_sleeve` holds it), and wide enough to take the screw circle
+# with its insert and that wall (CEILING_SLEEVE_LIP_W, derived after the
+# deck fasteners below).
+CEILING_SLEEVE_LIP_T = 6.0
 # Print orientation, in the part's own frame (lip down, as installed):
 # the lip's underside is the bed and the barrel steps in above it.
 CEILING_SLEEVE_UP_AXIS = (0.0, 0.0, 1.0)
@@ -185,6 +201,42 @@ CEILING_SLEEVE_TURN_CLEAR = 5.0
 # Floor on the gap to the frame under the deck (inner column tops, the
 # top-cap brackets): room for the lip to grow, not an access claim.
 CEILING_SLEEVE_FRAME_CLEAR = 10.0
+
+# --- Deck fasteners ----------------------------------------------------
+#
+# Bought, one family for every screw through the acrylic: an M3
+# socket-head cap screw (ISO 4762) on a wide plain washer (ISO 7093,
+# "DIN 9021" — spreads the clamp on acrylic, which crazes under a bare
+# head), down through a clearance hole in the deck (acrylic does not
+# tap) into an M3 heat-set insert in the printed part below. Cheap
+# envelopes: head and washer as cylinders, the shank at the thread's
+# major Ø (an outer envelope of the thread), the insert a plain sleeve
+# at its pilot-hole Ø with the thread's major Ø as its bore. A
+# substitute is a change here: the deck holes (DECK_HOLE_D), the
+# inserts' pilot holes (DECK_INSERT_D), the lip's thickness and width,
+# the screw-length check in `_add_deck_fastener` and the edge-distance
+# floor all derive from these.
+DECK_SCREW_D = 3.0          # M3 thread major Ø — the shank envelope
+DECK_SCREW_HEAD_D = 5.5     # ISO 4762 M3 dk
+DECK_SCREW_HEAD_H = 3.0     # ISO 4762 M3 k
+DECK_SCREW_L = 16.0         # under-head length, a stock size
+DECK_WASHER_OD = 9.0        # ISO 7093 M3 d2
+DECK_WASHER_ID = 3.2        # ISO 7093 M3 d1
+DECK_WASHER_T = 0.8         # ISO 7093 M3 h
+DECK_INSERT_D = 4.0         # pilot-hole Ø of a short M3 heat-set insert
+DECK_INSERT_L = 5.7         # its length
+DECK_HOLE_D = 3.4           # ISO 273 medium clearance for M3, in the acrylic
+# Edge distance of a hole in the acrylic, to the rim, the aperture or
+# another hole: a hole near an edge is where cast acrylic cracks. The
+# common rule is 2× the hole's Ø (6.8 here); the deck's post holes
+# already keep no strip thinner than the sheet (`_post_hole_runs_out`),
+# and the stricter of the two governs.
+DECK_HOLE_EDGE_MIN = max(2 * DECK_HOLE_D, TOP_DECK_T)
+
+CEILING_SLEEVE_LIP_W = (
+    CEILING_SLEEVE_SCREW_R + DECK_INSERT_D / 2 + CEILING_SLEEVE_INSERT_WALL
+    - TOP_DECK_APERTURE_D / 2
+)  # 38: the lip's reach past the aperture, radial
 
 # The `off_deck` keep-out (see `_add_top_deck`): a band on the deck-top
 # plane from the rim outward, this tall and this wide.
@@ -321,11 +373,53 @@ def _post_notch(deck_od: float) -> Part:
     return Pos((x_in + x_out) / 2, 0, 0) * Box(x_in - x_out, _POST_HOLE_W, TOP_DECK_T * 2)
 
 
+def _circle_points(r: float, azimuths_deg) -> list[tuple[float, float]]:
+    """(x, y) of each azimuth (degrees from +X) on a circle of radius r."""
+    return [
+        (r * math.cos(math.radians(az)), r * math.sin(math.radians(az)))
+        for az in azimuths_deg
+    ]
+
+
+def _fastener_holes(fastener_xy, hole_d: float = DECK_HOLE_D) -> list[Part]:
+    """The deck's clearance holes, in deck-local coordinates (z = 0 the
+    sheet's mid-plane), one per deck fastener at (x, y)."""
+    return [Pos(x, y, 0) * Cylinder(hole_d / 2, TOP_DECK_T * 2) for x, y in fastener_xy]
+
+
+def deck_holes(deck_od: float, posts: dict[int, float], fastener_xy) -> dict[str, Part]:
+    """Every hole cut in the deck sheet but its central aperture, by
+    name, in deck-local coordinates: the post holes (`post_hole_{k}`)
+    and the fastener clearance holes (`fastener_hole_{i}`, in the order
+    of `fastener_xy`)."""
+    holes = {
+        f"post_hole_{k}": _post_vertex_pose(k, 0.0) * _post_notch(deck_od) for k in posts
+    }
+    for i, h in enumerate(_fastener_holes(fastener_xy)):
+        holes[f"fastener_hole_{i}"] = h
+    return holes
+
+
+def hole_edge_distance(deck: Part, hole: Part, deck_od: float) -> float:
+    """How much acrylic stands between one hole and the nearest other
+    edge of the sheet — its rim, the aperture or another hole. `deck`
+    is the cut sheet in deck-local coordinates and `hole` the solid that
+    cut this hole: the sheet with this one hole filled back in is
+    subtracted from a disc past the rim, which leaves every *other* void,
+    and the hole's distance to that is its edge distance. Measured on
+    the cut geometry, so it holds for any hole shape."""
+    slab = Cylinder(deck_od / 2, TOP_DECK_T)
+    others = Cylinder(deck_od / 2 + 10.0, TOP_DECK_T) - (deck + (slab & hole))
+    return (slab & hole).distance_to(others)
+
+
 def _add_top_deck(
     a: Assembly, *, top_z: float, posts: dict[int, float], deck_od: float,
+    fastener_xy=(),
 ) -> Assembly:
     """Clear-acrylic cap disc; bottom face tangent to through-column
-    tops, cut at each through-deck post vertex.
+    tops, cut at each through-deck post vertex and with a clearance
+    hole (DECK_HOLE_D) at each deck fastener's (x, y) in `fastener_xy`.
 
     Also declares the keep-out ``off_deck``: the band just above the
     deck's top face from its rim outward. It is not a part — a
@@ -337,8 +431,8 @@ def _add_top_deck(
         - Cylinder(TOP_DECK_APERTURE_D / 2, TOP_DECK_T * 2)
     )
     # The disc is placed at z = top_z + T/2, so cut in deck-local z.
-    for k in posts:
-        top_deck = top_deck - _post_vertex_pose(k, 0.0) * _post_notch(deck_od)
+    for hole in deck_holes(deck_od, posts, fastener_xy).values():
+        top_deck = top_deck - hole
     deck_top_z = top_z + TOP_DECK_T
     # A 1 mm band standing on the deck-top plane: a part resting on the
     # deck meets it only with its bottom millimetre, so the distance is
@@ -366,6 +460,10 @@ def ceiling_sleeve(
     lip_t: float = CEILING_SLEEVE_LIP_T,
     lip_w: float = CEILING_SLEEVE_LIP_W,
     fit_gap: float = CEILING_SLEEVE_FIT_GAP,
+    screw_r: float = CEILING_SLEEVE_SCREW_R,
+    screw_az: tuple[float, ...] = CEILING_SLEEVE_SCREW_AZ,
+    insert_d: float = DECK_INSERT_D,
+    insert_l: float = DECK_INSERT_L,
 ) -> Part:
     """The ceiling sleeve, in its own frame: axis on Z, z = 0 the plane
     of the deck's underside (the lip's top face). The barrel rises
@@ -373,8 +471,33 @@ def ceiling_sleeve(
     reaches `lip_w` past the aperture. Printed as drawn, lip down
     (`CEILING_SLEEVE_UP_AXIS`).
 
-    `ramp_mechanism.ring_bearing` is not reused: its OD is the spider
-    hub's (Ø159.8, wider than the aperture) and it has no lip."""
+    The lip carries a heat-set insert's pilot hole, through the lip, at
+    each `screw_az` on the `screw_r` circle — the screws come down
+    through the deck into them (`_add_deck_fastener`)."""
+    lip_r = aperture_d / 2 + lip_w
+    assert lip_t >= insert_l, (
+        f"sleeve lip {lip_t} thick is shorter than its {insert_l} inserts"
+    )
+    assert screw_r - insert_d / 2 - aperture_d / 2 >= _ramp.WALL_MIN, (
+        f"sleeve insert hole at r {screw_r} breaks into the barrel's aperture"
+    )
+    assert lip_r - (screw_r + insert_d / 2) >= _ramp.WALL_MIN, (
+        f"sleeve insert hole at r {screw_r} leaves under WALL_MIN to the lip's rim r {lip_r}"
+    )
+    body = _ceiling_sleeve_body(aperture_d, bore_d, barrel_h, lip_t, lip_w, fit_gap)
+    for x, y in _circle_points(screw_r, screw_az):
+        body = body - Pos(x, y, -lip_t / 2) * Cylinder(insert_d / 2, 2 * lip_t)
+    return body
+
+
+def _ceiling_sleeve_body(
+    aperture_d: float, bore_d: float, barrel_h: float,
+    lip_t: float, lip_w: float, fit_gap: float,
+) -> Part:
+    """The sleeve's barrel and lip without the insert holes — see
+    `ceiling_sleeve`. `ramp_mechanism.ring_bearing` is not reused: its
+    OD is the spider hub's (Ø159.8, wider than the aperture) and it has
+    no lip."""
     barrel_r = aperture_d / 2 - fit_gap
     assert fit_gap >= 0.0, f"sleeve fit gap {fit_gap} < 0: model a press fit as a contact claim"
     assert barrel_r - bore_d / 2 >= _ramp.WALL_MIN, (
@@ -415,6 +538,87 @@ def _add_ceiling_sleeve(a: Assembly, *, top_z: float) -> Assembly:
             Pos(0, 0, -CEILING_SLEEVE_LIP_T / 2) * Cylinder(slab_r, CEILING_SLEEVE_LIP_T),
         )
     )
+
+
+def sleeve_screw_xy() -> list[tuple[float, float]]:
+    """(x, y) of the ceiling sleeve's screws, in the tower frame."""
+    return _circle_points(CEILING_SLEEVE_SCREW_R, CEILING_SLEEVE_SCREW_AZ)
+
+
+def deck_screw(
+    d: float = DECK_SCREW_D, head_d: float = DECK_SCREW_HEAD_D,
+    head_h: float = DECK_SCREW_HEAD_H, length: float = DECK_SCREW_L,
+    washer_t: float = DECK_WASHER_T,
+) -> Part:
+    """Socket-head cap screw envelope, in its seat's frame: z = 0 the
+    face the washer stands on, the head on top of the washer, the shank
+    `length` down from the head's underside."""
+    head = Pos(0, 0, washer_t + head_h / 2) * Cylinder(head_d / 2, head_h)
+    shank = Pos(0, 0, washer_t - length / 2) * Cylinder(d / 2, length)
+    return head + shank
+
+
+def deck_washer(
+    od: float = DECK_WASHER_OD, id_: float = DECK_WASHER_ID, t: float = DECK_WASHER_T,
+) -> Part:
+    """Plain washer, standing on z = 0."""
+    return Pos(0, 0, t / 2) * (Cylinder(od / 2, t) - Cylinder(id_ / 2, 2 * t))
+
+
+def deck_insert(
+    d: float = DECK_INSERT_D, bore_d: float = DECK_SCREW_D, length: float = DECK_INSERT_L,
+) -> Part:
+    """Heat-set insert envelope, hanging from z = 0 (its top, flush with
+    the printed face it is set into): OD at the pilot-hole Ø, bore at
+    the screw's major Ø."""
+    return Pos(0, 0, -length / 2) * (Cylinder(d / 2, length) - Cylinder(bore_d / 2, 2 * length))
+
+
+def _add_deck_fastener(
+    a: Assembly, name: str, x: float, y: float, *, top_z: float,
+) -> Assembly:
+    """One deck fastener at (x, y): washer and screw on the deck's top
+    face, the insert's top flush with the deck's underside at `top_z`
+    (the face of the printed part it is set into). Parts
+    `{name}_screw`, `{name}_washer`, `{name}_insert`."""
+    deck_top_z = top_z + TOP_DECK_T
+    # The tip must reach into the insert and stop inside it.
+    reach = DECK_SCREW_L - DECK_WASHER_T - TOP_DECK_T
+    assert 0.0 < reach <= DECK_INSERT_L, (
+        f"a {DECK_SCREW_L} screw reaches {reach:.2f} below the deck: "
+        f"outside its {DECK_INSERT_L} insert"
+    )
+    return (
+        a.with_part(
+            f"{name}_washer", deck_washer(), location=Pos(x, y, deck_top_z),
+            material=material_of(f"{name}_washer"),
+        )
+        .with_part(
+            f"{name}_screw", deck_screw(), location=Pos(x, y, deck_top_z),
+            material=material_of(f"{name}_screw"),
+        )
+        .with_part(
+            f"{name}_insert", deck_insert(), location=Pos(x, y, top_z),
+            material=material_of(f"{name}_insert"),
+        )
+    )
+
+
+def _add_deck_fasteners(a: Assembly, *, top_z: float) -> Assembly:
+    """The ceiling sleeve's screws (`sleeve_{i}_*`), and the keep-out
+    ``deck_fasteners``: every head and washer standing on the deck top,
+    which a composing parent holds clear of what stands on the deck
+    (`cad/assembly.py`). Not a part — the same solids as the heads, so
+    a stander's distance to it is its distance to the nearest head."""
+    deck_top_z = top_z + TOP_DECK_T
+    tops = []
+    for i, (x, y) in enumerate(sleeve_screw_xy()):
+        a = _add_deck_fastener(a, f"sleeve_{i}", x, y, top_z=top_z)
+        tops.append(Pos(x, y, deck_top_z) * (deck_washer() + (deck_screw() & Pos(0, 0, 50) * Cylinder(50, 100))))
+    keepout = tops[0]
+    for t in tops[1:]:
+        keepout = keepout + t
+    return a.with_keepout("deck_fasteners", keepout)
 
 
 def _add_top_cap(
@@ -614,6 +818,72 @@ def _add_ceiling_sleeve_checks(
             s, f"top_cap.outer_vertex_bracket_{k}", min_mm=CEILING_SLEEVE_FRAME_CLEAR,
             name=f"ceiling_sleeve_clears_vertex_bracket_{k}",
         )
+    return a
+
+
+def _add_deck_hole_checks(
+    a: Assembly, *, deck_od: float, posts: dict[int, float], fastener_xy,
+) -> Assembly:
+    """Every hole in the acrylic — post holes and fastener clearance
+    holes — keeps DECK_HOLE_EDGE_MIN of sheet to the rim, the aperture
+    and every other hole. Measured on the deck body as cut
+    (`hole_edge_distance`) and recorded per hole; the deck is static,
+    so the build pose is every pose."""
+    deck = a.part("top_acrylic").part
+    for name, hole in deck_holes(deck_od, posts, fastener_xy).items():
+        a = a.assert_scalar(
+            f"deck_{name}_edge_distance", hole_edge_distance(deck, hole, deck_od),
+            ge=DECK_HOLE_EDGE_MIN,
+            detail="mm of acrylic from this hole to the nearest other edge of the sheet",
+        )
+    return a
+
+
+def _add_sleeve_fastener_checks(a: Assembly, top: int, *, flare: bool) -> Assembly:
+    """Each ceiling-sleeve screw: washer on the deck, head on the washer,
+    shank through the deck's clearance hole without touching it, coaxial
+    with its insert, the insert seated in the lip's pilot hole — and the
+    head and washer clear of what turns over them by
+    CEILING_SLEEVE_TURN_CLEAR (held over the turn by
+    `check_stack_turn.py`; the screws are static, the stack turns)."""
+    col = _rot(top, "column")
+    turning = ["trap_servo", "trap.trap_coupler", "trap.servo_horn"]
+    for i in range(len(CEILING_SLEEVE_SCREW_AZ)):
+        n = f"sleeve_{i}"
+        scr, wsh, ins = f"{n}_screw", f"{n}_washer", f"{n}_insert"
+        a = (
+            a
+            .assert_tangent_contact(wsh, "top_acrylic", name=f"{n}_washer_on_deck")
+            .assert_tangent_contact(scr, wsh, name=f"{n}_head_on_washer")
+            # Through the clearance hole, centred in it: constructed at
+            # exactly the hole's radial clearance, bounded both ways.
+            .assert_distance(
+                scr, "top_acrylic",
+                min_mm=(DECK_HOLE_D - DECK_SCREW_D) / 2,
+                max_mm=(DECK_HOLE_D - DECK_SCREW_D) / 2,
+                name=f"{n}_screw_through_deck",
+            )
+            # Coaxial with its insert: the shank fills the insert's bore,
+            # so any offset is an overlap and any gap a miss.
+            .assert_tangent_contact(scr, ins, name=f"{n}_screw_in_insert")
+            .assert_no_interference(scr, ins)
+            .assert_tangent_contact(ins, "ceiling_sleeve", name=f"{n}_insert_in_lip")
+            .assert_no_interference(ins, "ceiling_sleeve")
+            .assert_no_interference(scr, "ceiling_sleeve")
+            .assert_no_interference_between([scr, wsh, ins], f"rotating_stack.f{top}")
+        )
+        for part in turning:
+            for p in (scr, wsh):
+                a = a.assert_distance(
+                    p, _rot(top, part), min_mm=CEILING_SLEEVE_TURN_CLEAR,
+                    name=f"{p}_under_{part.split('.')[-1]}",
+                )
+        if flare:
+            for p in (scr, wsh):
+                a = a.assert_distance(
+                    p, col, min_mm=CEILING_SLEEVE_TURN_CLEAR,
+                    name=f"{p}_under_column",
+                )
     return a
 
 
@@ -983,8 +1253,12 @@ def build_tower(
         )
 
     if with_top_deck:
-        a = _add_top_deck(a, top_z=top_z, posts=posts, deck_od=top_deck_od)
+        a = _add_top_deck(
+            a, top_z=top_z, posts=posts, deck_od=top_deck_od,
+            fastener_xy=sleeve_screw_xy(),
+        )
         a = _add_ceiling_sleeve(a, top_z=top_z)
+        a = _add_deck_fasteners(a, top_z=top_z)
         if posts:
             a = _add_top_cap(a, top_z=top_z, posts=posts)
 
@@ -1036,6 +1310,12 @@ def build_tower(
         )
         a = _add_ceiling_sleeve_checks(
             a, floors[-1], posts, flare=floor_plan[-1][1] == "top",
+        )
+        a = _add_sleeve_fastener_checks(
+            a, floors[-1], flare=floor_plan[-1][1] == "top",
+        )
+        a = _add_deck_hole_checks(
+            a, deck_od=top_deck_od, posts=posts, fastener_xy=sleeve_screw_xy(),
         )
 
     base_idx = next((idx for idx, role in floor_plan if role == "base"), None)

@@ -75,6 +75,12 @@ MATERIAL_OF: dict[str, str | None] = {
     "psu": None,
     # Top deck
     "top_acrylic": "acrylic_clear",
+    # Deck fasteners (assembly.py DECK_*): bought steel screws and
+    # washers; the heat-set inserts are brass, which the render table
+    # does not carry yet — left to the default.
+    **{f"sleeve_{i}_screw": "steel" for i in range(3)},
+    **{f"sleeve_{i}_washer": "steel" for i in range(3)},
+    **{f"sleeve_{i}_insert": None for i in range(3)},
 }
 
 

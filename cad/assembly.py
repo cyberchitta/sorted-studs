@@ -293,7 +293,16 @@ def _with_on_deck(a: Assembly) -> Assembly:
         a = a.assert_clear_of(
             path, "m05.off_deck", name=f"on_deck_{path}", min_mm=DECK_EDGE_MARGIN,
         )
-    return a
+    # m05's deck fasteners stand on the same face: every head and washer
+    # (the `deck_fasteners` keep-out) held clear of all of m03 and the
+    # chain — not only the standers, since a part overhanging the deck
+    # low fouls a head as surely as a foot set down on it. The margin is
+    # DECK_EDGE_MARGIN's, for the same reason: the m03 frame is set on
+    # the deck by hand with no locating feature.
+    return a.assert_clear_of(
+        ["m03", "m02_chain"], "m05.deck_fasteners",
+        name="deck_fasteners_clear_of_deck_equipment", min_mm=DECK_EDGE_MARGIN,
+    )
 
 
 # The LOAD ramp delivers to LOAD (gap found 2026-10-06): the chain is
