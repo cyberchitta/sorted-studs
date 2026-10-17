@@ -97,6 +97,7 @@ from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 
 from .base_floor import assembly as _base
 from .basket import assembly as _bkt
+from .electronics import assembly as _elec
 from ..design_systems import DEFAULT_SCHEMA, paint
 from .design_systems import (
     basename_of,
@@ -862,6 +863,49 @@ def _add_catch_checks(a: Assembly, base: int) -> Assembly:
     return a
 
 
+def _add_electronics_checks(a: Assembly, base: int) -> Assembly:
+    """The electronics plates under the base floor, against everything
+    static near them. Each plate's own rests and reach slot are declared
+    in `electronics.build_electronics`; here: the hangers bolt up to
+    their sector's rails, nothing of the electronics meets the frame,
+    the drive train or the catch, the catch still draws out and the
+    cable drop still runs, each reach slot is open to the frame, and no
+    plate hangs below the catch (the clearance a stand already
+    leaves)."""
+    static = [f"f{base}", "columns", "drive_train", "catch"]
+    a = a.assert_no_interference_between("electronics", static)
+    for side, face in (("logic", _elec.LOGIC_FACE_DEG), ("power", _elec.POWER_FACE_DEG)):
+        k = _elec.face_rail_index(face)
+        a = (
+            a
+            .assert_tangent_contact(f"electronics.{side}.hanger_in", _rail(base, f"inner_horiz_{k}"))
+            .assert_tangent_contact(f"electronics.{side}.hanger_out_pos", _rail(base, f"outer_horiz_{k}"))
+            .assert_tangent_contact(f"electronics.{side}.hanger_out_neg", _rail(base, f"outer_horiz_{k}"))
+            .assert_clear_of(
+                static + [f"electronics.{other}" for other in ("logic", "power") if other != side],
+                f"electronics.{side}.service_reach", name=f"electronics_{side}_reach_open",
+            )
+        )
+    a = (
+        a
+        .assert_clear_of("electronics", "catch.pull_path", name="electronics_clear_of_catch_pull")
+        .assert_clear_of("electronics", "drive_train.cable_drop", min_mm=5.0,
+                         name="electronics_clear_of_cable_drop")
+    )
+    placed = {pp.name: pp for pp in a.placed_parts}
+    def _min_z(name: str) -> float:
+        pp = placed[name]
+        return (pp.location * pp.part).bounding_box().min.Z
+    floor = _min_z("catch.catch_cradle")
+    for side in ("logic", "power"):
+        a = a.assert_scalar(
+            f"electronics_{side}_above_catch_bottom_mm",
+            _min_z(f"electronics.{side}.board_plate") - floor, ge=0.0,
+            detail="plate underside above the catch cradle's: the stand clearance does not deepen",
+        )
+    return a
+
+
 # --- Public composition ------------------------------------------------
 
 def build_tower(
@@ -970,6 +1014,11 @@ def build_tower(
             _base.build_bottom_catch(material_fn=material_of),
             location=Pos(0, 0, base_idx * FLOOR_H),
         )
+        a = a.with_subassembly(
+            "electronics",
+            _elec.build_electronics(material_fn=material_of),
+            location=Pos(0, 0, base_idx * FLOOR_H),
+        )
 
     # Adjacent-floor pairs only. Non-adjacent floors are >1·FLOOR_H
     # apart and the servo — the highest rotating part outside the
@@ -995,6 +1044,7 @@ def build_tower(
     if with_drive_train:
         a = _add_drive_train_checks(a, base_idx)
         a = _add_catch_checks(a, base_idx)
+        a = _add_electronics_checks(a, base_idx)
     a = _add_harness_checks(a, floor_plan, with_drive_train=with_drive_train)
 
     # Paint last, once the tree is complete: ``paint`` also carries the

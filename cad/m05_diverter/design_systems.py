@@ -91,6 +91,16 @@ ROLE_OF: dict[str, Role | None] = {
     # Bottom catch — the tray holds bricks and is emptied like a basket.
     "catch_tray": Role.CONSUMABLE,
     "catch_cradle": Role.SECONDARY_STRUCTURE,
+    # Electronics under the base floor — printed plate, 2020 drops,
+    # bought boards outside the palette.
+    "board_plate": Role.SECONDARY_STRUCTURE,
+    "hanger_in": Role.PRIMARY_STRUCTURE,
+    "hanger_out_pos": Role.PRIMARY_STRUCTURE,
+    "hanger_out_neg": Role.PRIMARY_STRUCTURE,
+    "mcu_stack": None,
+    "bridge": None,
+    "servo_buck": None,
+    "psu": None,
     # Top deck — clear acrylic, outside the palette (renders via material).
     "top_acrylic": None,
 }

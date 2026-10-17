@@ -63,6 +63,16 @@ MATERIAL_OF: dict[str, str | None] = {
     # Servo wire bundle down the column (params.HARNESS_*) — bought, and
     # no wire material in the render table yet; left to the default.
     "harness": None,
+    # Electronics under the base floor (electronics/assembly.py): the
+    # printed plate, 2020 drops, and bought boards left to the default.
+    "board_plate": "pla_matte",
+    "hanger_in": "aluminium_anodized",
+    "hanger_out_pos": "aluminium_anodized",
+    "hanger_out_neg": "aluminium_anodized",
+    "mcu_stack": None,
+    "bridge": None,
+    "servo_buck": None,
+    "psu": None,
     # Top deck
     "top_acrylic": "acrylic_clear",
 }
