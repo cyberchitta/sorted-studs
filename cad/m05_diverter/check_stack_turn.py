@@ -5,18 +5,22 @@ the tower.
 
 `build_m05` / `build_tower` deliberately declare **no** motion. A unit's motion is
 held at every root that composes it, and `cad/assembly.py` composes
-m05, so a `with_motion` inside the factory would put a 181-pose sweep
+m05, so a `with_motion` inside the factory would put a 180-pose sweep
 on every whole-machine check — minutes, on every run, for a DOF the
 top level has nothing new to say about. cad-khana ships no switch to
 opt out per root, so the only place to put it is a target the top
 level does not import. This is that target.
 
-What it adds over `khana check assembly.py`: the ~20 tower claims that
-span the `rotating_stack` joint and are not rigid — column vs each
-floor's bearing and ring bearing, trap servo vs the same, the drive
-train's motor / mount / pinion / ring gear against the base column,
-and `top_acrylic` against the top floor's column and trap servo. Every
-one of those was a claim about azimuth 0 only.
+What it adds over `khana check assembly.py`: the tower claims that
+span the `rotating_stack` joint and are not rigid (152 on 2026-10-19;
+the run prints the count). They include column vs each floor's bearing
+and ring bearing, trap servo vs the same, the drive train's motor /
+mount / pinion / ring gear against the base column, `top_acrylic` and
+the ceiling sleeve against the top column, its trap drive and the
+flare, each floor's servo-wire harness and the base cable loop and drop
+against the parts near them, and the sleeve's lip screws against the
+trap drive. Every one of those is a claim about azimuth 0 only at the
+other roots.
 
 What it does **not** cover: the intra-floor pairs. Those are
 z-translations of one another across the four floors, so
