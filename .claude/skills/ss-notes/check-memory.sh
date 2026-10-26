@@ -46,8 +46,10 @@ done
 
 # the pipe above runs in a subshell; recompute rc from a marker instead
 if /usr/bin/grep -oh '\[\[[^]]*\]\]' *.md | tr -d '[]' | sort -u |
-     while read -r l; do [ -z "$l" ] && continue; [ -f "$l.md" ] || exit 1; done
-then :; else rc=1; fi
+  while read -r l; do
+    [ -z "$l" ] && continue
+    [ -f "$l.md" ] || exit 1
+  done; then :; else rc=1; fi
 
 [ "$rc" = 0 ] && echo "check-memory: clean"
 exit "$rc"
