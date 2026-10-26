@@ -120,6 +120,10 @@ bin for manual review — fail-safe default throughout the design.
 - **Rebrickable REST API** (`rebrickable.com/api/`) — inventory sync, set/MOC part lists
 - **Brickognize API** (`api.brickognize.com`) — reference oracle for classification bootstrapping
 
+## Code style
+
+Code follows the global `code-style` skill, with `python-style` for Python and `javascript-style` for JavaScript; load them before writing code.
+
 ## Working in this repo
 
 - **Working notes — `_notes/`.** A symlink to a private `working-notes` repo,
