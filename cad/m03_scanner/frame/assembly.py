@@ -83,10 +83,9 @@ brackets at the rail joints land in a later slice.
 """
 
 from build123d import Box, Part, Pos
-
 from cad_khana.mechanism.assembly import Assembly
 
-
+from ..materials import material_of
 from ..params import (
     TURRET_FRAME_BACK_Y,
     TURRET_FRAME_CROSS_Y,
@@ -94,8 +93,6 @@ from ..params import (
     TURRET_FRAME_FRONT_Y,
     TURRET_FRAME_SIDE_X,
 )
-from ..materials import material_of
-
 
 # --- Member cross-section ----------------------------------------------
 

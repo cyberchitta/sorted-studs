@@ -14,10 +14,8 @@ subtree path, not the name.
 
 from __future__ import annotations
 
-
 from .design_systems import basename_of
 from .params import all_basket_names
-
 
 # --- Basket name expansion --------------------------------------------
 
@@ -47,7 +45,7 @@ MATERIAL_OF: dict[str, str | None] = {
     "ring_gear": "pla_matte",
     "catch_tray": "pla_matte",
     "catch_cradle": "pla_matte",
-    **{name: "pla_matte" for name in _basket_basenames()},
+    **dict.fromkeys(_basket_basenames(), "pla_matte"),
     # Hardware
     "hinge_pin": "steel",
     "motor": "cast_aluminium_dark",

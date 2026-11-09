@@ -19,7 +19,6 @@ from cad_khana.printability.methods import FDM
 
 from .assembly import WALL_MIN, pinion
 
-
 # The pinion prints gear-face down (hub up): the step from the pitch
 # cylinder down to the hub is then a top face, not a 90° overhang.
 inspect(

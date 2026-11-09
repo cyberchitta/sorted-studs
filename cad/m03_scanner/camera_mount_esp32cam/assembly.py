@@ -76,25 +76,19 @@ from build123d import (
     extrude,
     make_face,
 )
-
 from cad_khana.mechanism.assembly import Assembly
-
 
 from ..params import (
     CAMERA_MOUNT_PLATE_T,
-    RAIL_PAD_CLAMP_BACK_UPPER_CLAMP_ROT,
-    RAIL_PAD_CLAMP_BACK_UPPER_POS,
     RAIL_PAD_CLAMP_BELOW_LEFT_CLAMP_ROT,
     RAIL_PAD_CLAMP_BELOW_LEFT_POS,
     SKELETON_RAIL_MEMBER,
-    VERTEX_BACK_UPPER_POS,
     VERTEX_BELOW_LEFT_POS,
     WALL_MIN,
     horizontal_x_roll_deg,
     lens_axis_unit,
     rotation_for_normal,
 )
-
 
 # --- AI-Thinker ESP32-CAM PCB geometry (private) ------------------------
 

@@ -57,9 +57,7 @@ side T-slot (bolts fire +X).
 """
 
 from build123d import Box, Cylinder, Part, Pos, Rot
-
 from cad_khana.mechanism.assembly import Assembly
-
 
 # --- Parameters ---------------------------------------------------------
 

@@ -24,12 +24,11 @@ what the receiver counts as a break is the placeholder in
 from __future__ import annotations
 
 from build123d import Box, Pos
-
 from cad_khana.mechanism.assembly import Assembly
 
 from ..design_systems import DEFAULT_SCHEMA
 from .assembly import build_chain, load_beam_core, load_beam_frame
-from .params import BEAM_S, S1, RAMP_WIDTH, RAMP_WALL_T, THINNEST_BRICK_H, THINNEST_BRICK_W
+from .params import BEAM_S, RAMP_WALL_T, RAMP_WIDTH, S1, THINNEST_BRICK_H, THINNEST_BRICK_W
 
 
 def build_load_beam_check(schema: str = DEFAULT_SCHEMA) -> Assembly:

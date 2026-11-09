@@ -29,7 +29,6 @@ from ..assembly import build_m03
 from ..params import WALL_MIN
 from .assembly import PRINT_UP
 
-
 # Print orientation: clamp base on the build plate, clamp-local +Y up
 # — the direction `clamp_mount` shapes each plate against.
 method = FDM(up_axis=PRINT_UP, wall_min_mm=WALL_MIN)

@@ -25,7 +25,6 @@ from cad_khana.mechanism.assembly import Assembly
 from ..design_systems import DEFAULT_SCHEMA
 from .assembly import build_tower
 
-
 # Three floors: base + middle + top. Enough vertical extent to show
 # the column-to-column joints and the top acrylic deck; one role of
 # each.

@@ -64,11 +64,11 @@ from .params import (
     ARC_INSERT_L,
     ARC_SCREW_ACCESS_D,
     ARC_SCREW_ACCESS_L,
-    ARC_SCREW_SEAT_CLEAR,
     ARC_SCREW_D,
     ARC_SCREW_HEAD_D,
     ARC_SCREW_HOLE_CLEAR,
     ARC_SCREW_L,
+    ARC_SCREW_SEAT_CLEAR,
     ARC_SCREW_Z,
     EXIT_ARC_DEG,
     EXIT_FLOOR_T,
@@ -82,7 +82,6 @@ from .params import (
 )
 from .seams import SEAM_EAR_OVERLAP
 from .teardrop import teardrop_cutter, teardrop_face
-
 
 FREE_END_SIGNS = (+1, -1)
 

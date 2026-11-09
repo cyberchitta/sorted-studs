@@ -84,10 +84,9 @@ no `inspect()` calls.
 import math
 
 from build123d import Box, Part, Pos
-
 from cad_khana.mechanism.assembly import Assembly
 
-
+from ..materials import material_of
 from ..params import (
     ARCH_CROSSBAR_Y,
     ARCH_CROSSBAR_Z,
@@ -97,16 +96,14 @@ from ..params import (
     ARCH_POST_Z_TOP,
     PLATFORM_ACRYLIC_SIZE,
     SKELETON_RAIL_MEMBER,
-    TURRET_FRAME_SIDE_X,
     T_FRAME_RAIL_D_Y_BACK,
     T_FRAME_RAIL_D_Y_FRONT,
     T_FRAME_RAIL_D_Z,
     TURRET_ARM_R,
+    TURRET_FRAME_SIDE_X,
     VERTEX_BACK_UPPER_POS,
     VERTEX_FRONT_LOW_POS,
 )
-from ..materials import material_of
-
 
 # --- Member cross-section ----------------------------------------------
 

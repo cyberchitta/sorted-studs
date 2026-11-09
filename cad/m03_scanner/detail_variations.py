@@ -36,20 +36,16 @@ at the root the override was applied to (see ``_drive_foot_bolts``).
 
 from __future__ import annotations
 
-
 from bd_warehouse.fastener import SocketHeadCapScrew
 from bd_warehouse.open_builds import VSlotLinearRail
 from build123d import Part, Pos, Rot
-
 from cad_khana.mechanism.assembly import Assembly, DetailOverride
-
 
 from .drive.assembly import BRACKET_BOLT_XS, BRACKET_FOOT_Z
 from .params import (
     TURRET_FRAME_CROSS_Y,
     TURRET_FRAME_FLOOR_Z,
 )
-
 
 _MEMBER = 20.0
 _AXIS_TOL = 0.5
@@ -154,7 +150,7 @@ def _drive_foot_bolts(unit_path: str) -> dict[str, DetailOverride]:
     """
     prefix = f"{unit_path}." if unit_path else ""
     overrides: dict[str, DetailOverride] = {}
-    for bolt_x, label in zip(BRACKET_BOLT_XS, ("inner", "outer")):
+    for bolt_x, label in zip(BRACKET_BOLT_XS, ("inner", "outer"), strict=True):
         overrides[f"{prefix}drive_foot_bolt_{label}"] = DetailOverride(
             part=SocketHeadCapScrew(
                 size="M5-0.8",

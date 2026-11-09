@@ -18,7 +18,6 @@ strings at the standalone-test ``.with_part(...)`` sites.
 
 from __future__ import annotations
 
-
 MATERIAL_OF: dict[str, str | None] = {
     # camera_rig.arch — Phase-2 integrated frame (2020 extrusions)
     "arch_post_pos_x": "aluminium_anodized",

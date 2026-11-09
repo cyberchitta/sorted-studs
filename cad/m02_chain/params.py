@@ -78,16 +78,13 @@ from dataclasses import dataclass
 
 from ..m02_c_channel_singulator.params import (
     EXIT_ARC_DEG,
+    HOPPER_WALL_H,
     MOTOR_AZIMUTH_DEG,
     PLATE_BOTTOM_Z,
-    PLATE_R_IN,
     R_STATOR_OUTER_KINK,
-    ROTOR_BASE_DIAMETER,
     ROTOR_HEIGHT,
-    HOPPER_WALL_H,
     STATOR_WALL_H,
 )
-
 
 # --- Mirror from cad/m05_diverter/params.py ----------------------------
 

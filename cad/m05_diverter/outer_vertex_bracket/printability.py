@@ -14,14 +14,12 @@ this body's volume, area, face count and local bbox.
 """
 
 from build123d import Compound
-
 from cad_khana.printability.feature import Feature
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 from cad_khana.printability.waiver import Waiver
 
 from .assembly import WALL_MIN, bracket, clamp_bolt_holes
-
 
 # Prints as installed, +Z up: the hub + three arms' bottom face
 # (z = -26, 3111 mm²) is the bed and the clamp arm rises from it.

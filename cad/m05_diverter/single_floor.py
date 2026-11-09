@@ -48,18 +48,16 @@ baskets and the inner frame members below.
 
 from functools import cache
 
-
 from build123d import Axis
-
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 from cad_khana.mechanism.motion import Motion
 
 from ..design_systems import DEFAULT_SCHEMA, paint
+from .aim import ramp_exit_w_for
 from .basket import assembly as _bkt
 from .design_systems import color_for, design_system
-from .materials import material_of
 from .frame import assembly as _frame
-from .aim import ramp_exit_w_for
+from .materials import material_of
 from .params import FLOOR_LAYOUTS
 from .ramp_mechanism import assembly as _ramp
 

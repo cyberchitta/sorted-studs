@@ -16,7 +16,6 @@ from ..design_systems import DEFAULT_SCHEMA
 from .assembly import CEILING_SLEEVE_UP_AXIS, build_m05
 from .ramp_mechanism.assembly import WALL_MIN
 
-
 # The body the tower places, in its own frame: lip down, as installed
 # and as printed. The lip's underside is the bed and the barrel steps
 # *in* above it, so nothing faces down off the bed.

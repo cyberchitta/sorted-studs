@@ -29,15 +29,11 @@ cross-module imports.
 
 from __future__ import annotations
 
-
 from bd_warehouse.open_builds import VSlotLinearRail
 from build123d import Part, Pos, Rot
-
 from cad_khana.mechanism.assembly import Assembly
 
-
 from .design_systems import basename_of
-
 
 _MEMBER = 20.0
 _AXIS_TOL = 0.5

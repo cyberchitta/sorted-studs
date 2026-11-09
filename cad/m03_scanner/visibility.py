@@ -37,14 +37,6 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-
-from .sizing import (
-    _LENS_CANDIDATES,
-    Geometry,
-    _camera_basis,
-    _dot,
-    compute_geometry,
-)
 from .params import (
     ARCH_CROSSBAR_Y,
     ARCH_CROSSBAR_Z,
@@ -52,13 +44,19 @@ from .params import (
     ARCH_POST_Y,
     ARCH_POST_Z_BOTTOM,
     ARCH_POST_Z_TOP,
-    SHARED_BACK_RAIL_Y,
     SHARED_BACK_RAIL_TOP_Z,
+    SHARED_BACK_RAIL_Y,
     T_FRAME_RAIL_D_Y_BACK,
     T_FRAME_RAIL_D_Y_FRONT,
     T_FRAME_RAIL_D_Z,
 )
-
+from .sizing import (
+    _LENS_CANDIDATES,
+    Geometry,
+    _camera_basis,
+    _dot,
+    compute_geometry,
+)
 
 # ============================================================================
 # RIG MODEL
@@ -167,7 +165,7 @@ def _liang_barsky_clip(u1, v1, u2, v2, umin, umax, vmin, vmax):
     p = [-dx, dx, -dy, dy]
     q = [u1 - umin, umax - u1, v1 - vmin, vmax - v1]
     t0, t1 = 0.0, 1.0
-    for pi, qi in zip(p, q):
+    for pi, qi in zip(p, q, strict=True):
         if pi == 0:
             if qi < 0:
                 return None
@@ -235,7 +233,7 @@ def _project_member(member: RigMember, cam_pos, axis, right, up, h_lim, v_lim):
     t_b = max(0.0, min(1.0, t_b))
     z_a = z1 + t_a * (z2 - z1)
     z_b = z1 + t_b * (z2 - z1)
-    return dict(u1=cu1, v1=cv1, u2=cu2, v2=cv2, w1=half_cs / z_a / h_lim, w2=half_cs / z_b / h_lim)
+    return {"u1": cu1, "v1": cv1, "u2": cu2, "v2": cv2, "w1": half_cs / z_a / h_lim, "w2": half_cs / z_b / h_lim}
 
 
 def _intrusion_metrics(proj):
@@ -284,10 +282,7 @@ def _intrusion_metrics(proj):
 
     uniform_frac = uniform_acc / 4.0
     weighted_frac = weighted_acc / 4.0
-    if in_frame_count:
-        centroid_dist = math.hypot(cx / in_frame_count, cy / in_frame_count)
-    else:
-        centroid_dist = math.inf
+    centroid_dist = math.hypot(cx / in_frame_count, cy / in_frame_count) if in_frame_count else math.inf
     return uniform_frac, weighted_frac, centroid_dist
 
 
@@ -319,7 +314,12 @@ def aggregate(per_cam):
         for name, (_, w, _d) in members.items():
             if w > worst_w:
                 worst_name, worst_w = name, w
-        out[cam] = dict(total_uniform=tot_u, total_weighted=tot_w, worst_name=worst_name, worst_weighted=worst_w)
+        out[cam] = {
+            "total_uniform": tot_u,
+            "total_weighted": tot_w,
+            "worst_name": worst_name,
+            "worst_weighted": worst_w,
+        }
     return out
 
 

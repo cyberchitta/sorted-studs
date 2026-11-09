@@ -15,9 +15,6 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
-from .animated_assembly import build_m03_at  # noqa: E402
-from .detail_variations import apply_default_detail  # noqa: E402
-
 from cad_khana.export import export_glb  # noqa: E402
 
 from ..design_systems import (  # noqa: E402
@@ -25,8 +22,9 @@ from ..design_systems import (  # noqa: E402
     neutral_of,
     schema_from_env,
 )
-
+from .animated_assembly import build_m03_at  # noqa: E402
 from .design_systems import design_system  # noqa: E402
+from .detail_variations import apply_default_detail  # noqa: E402
 
 OUT_DIR = HERE.parent.parent / "subsite" / "assets" / "exhibits"
 

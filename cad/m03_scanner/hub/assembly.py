@@ -47,10 +47,9 @@ threshold.
 """
 
 from build123d import Box, Cylinder, Pos
-
 from cad_khana.mechanism.assembly import Assembly
 
-
+from ..materials import material_of
 from ..params import (
     TURRET_FRAME_CROSS_Y,
     TURRET_FRAME_FLOOR_Z,
@@ -60,8 +59,6 @@ from ..params import (
     TURRET_SHAFT_TOP_Z,
     WALL_MIN,
 )
-from ..materials import material_of
-
 
 # --- Bearing + housing geometry (private to this sub-assembly) ----------
 

@@ -48,7 +48,6 @@ from ..design_systems import DEFAULT_SCHEMA, paint
 from .assembly import add_m03, add_m03_internal_checks
 from .design_systems import design_system
 
-
 # Number of stations on the turret (= number of dwells per
 # revolution). The scanner is a 4-station turret; the dwell/transit
 # schedule below assumes this.
@@ -92,10 +91,7 @@ def rotor_schedule(t: float, *, dwell_frac: float = DWELL_FRAC) -> float:
     then snaps 90° to the next station over the remaining
     ``1 - dwell_frac`` of the quarter."""
     q, local_t = _quarter(t)
-    if local_t < dwell_frac:
-        sub = 0.0
-    else:
-        sub = (local_t - dwell_frac) / (1.0 - dwell_frac)
+    sub = 0.0 if local_t < dwell_frac else (local_t - dwell_frac) / (1.0 - dwell_frac)
     return 90.0 * (q + sub)
 
 

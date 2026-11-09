@@ -22,7 +22,6 @@ from .assembly import (
     stator_sectors,
 )
 
-
 # Printed inverted (top face on the bed): the cylinder zone and the
 # flange rise from the bed, the V-cone hangs inward at 45° — the
 # brick-facing inner face is the overhung one, at the 50° threshold

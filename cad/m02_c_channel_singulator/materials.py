@@ -10,7 +10,6 @@ from __future__ import annotations
 
 from .seams import SEAM_BOLT_NAMES
 
-
 MATERIAL_OF: dict[str, str | None] = {
     "rotor":      "pla_matte",
     "stator_0":   "pla_matte",
@@ -25,7 +24,7 @@ MATERIAL_OF: dict[str, str | None] = {
     "motor":      "cast_aluminium_dark",
     "arc_screw_pos": "steel",
     "arc_screw_neg": "steel",
-    **{name: "steel" for name in SEAM_BOLT_NAMES},
+    **dict.fromkeys(SEAM_BOLT_NAMES, "steel"),
 }
 
 

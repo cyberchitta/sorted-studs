@@ -18,17 +18,16 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
-from .assembly import build_top  # noqa: E402
-from .m03_scanner import detail_variations as m03_detail  # noqa: E402
-from .m05_diverter import detail_variations as m05_detail  # noqa: E402
-
 from cad_khana.export import export_glb  # noqa: E402
 
+from .assembly import build_top  # noqa: E402
 from .design_systems import (  # noqa: E402
     fill_palette_neutrals,
     neutral_of,
     schema_from_env,
 )
+from .m03_scanner import detail_variations as m03_detail  # noqa: E402
+from .m05_diverter import detail_variations as m05_detail  # noqa: E402
 
 # The neutral fill is a property of the palette's axis, not of a unit;
 # m05's binding of the shared palettes answers for the whole machine.

@@ -13,7 +13,6 @@ the hub axis at the pin-axis plane, disc spanning z ±12.5).
 """
 
 from build123d import Compound
-
 from cad_khana.printability.feature import Feature
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
@@ -21,7 +20,6 @@ from cad_khana.printability.waiver import Waiver
 
 from ..params import WALL_MIN
 from .assembly import build_turret_arm, pin_bore_cutters, set_screw_cutter
-
 
 # Print orientation: flat, the disc's bottom face (4418 mm²) on the
 # bed, +Z up — swept 2026-09-27 against ±X/±Y/±Z. On its side (±X,

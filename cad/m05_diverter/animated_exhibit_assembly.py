@@ -30,17 +30,15 @@ from __future__ import annotations
 import math
 from dataclasses import replace
 
-
 from cad_khana.mechanism.assembly import Assembly
 
 from ..design_systems import DEFAULT_SCHEMA
 from .assembly import build_tower
-from .ramp_mechanism.assembly import TRAP_CATCH_DEG, TRAP_REST_DEG
 from .exhibit_assembly import (
     EXHIBIT_BASKETS_BY_FLOOR,
     EXHIBIT_FLOOR_PLAN,
 )
-
+from .ramp_mechanism.assembly import TRAP_CATCH_DEG, TRAP_REST_DEG
 
 # Per-floor basket azimuths. Mirrors ``EXHIBIT_BASKETS_BY_FLOOR``
 # (first entry is phase A's target on each floor, second is phase B's).

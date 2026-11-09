@@ -21,16 +21,15 @@ import dataclasses
 import os
 from pathlib import Path
 
+from cad_khana.render import lighting
+from cad_khana.render.framing import HERO_3Q
+from cad_khana.render.render import render
+from cad_khana.render.scene import Scene
 
 from ..design_systems import DEFAULT_SCHEMA, schema_from_env
 from .assembly import build_m03
 from .detail_variations import apply_default_detail
 from .material_variations import DEFAULT_OVERRIDES
-
-from cad_khana.render import lighting
-from cad_khana.render.framing import HERO_3Q
-from cad_khana.render.render import render
-from cad_khana.render.scene import Scene
 
 
 def build_scene(schema: str = DEFAULT_SCHEMA) -> Scene:

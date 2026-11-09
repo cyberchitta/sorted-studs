@@ -12,7 +12,6 @@ from cad_khana.printability.methods import FDM
 
 from .assembly import WALL_MIN, catch_cradle, catch_tray, motor_mount, ring_gear
 
-
 # Default 45° threshold: no part here has a downward face above the
 # bed (overhang reads null at any threshold, 2026-09-22), so the 90°
 # this used to carry switched off nothing — and now a new overhang

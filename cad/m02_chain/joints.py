@@ -77,7 +77,6 @@ from build123d import (
 
 from .params import BAR_DEPTH, EXT_SIZE
 
-
 # --- Printed-joint parameters (internal to the joint family) -----------
 
 # fmt: off

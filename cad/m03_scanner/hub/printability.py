@@ -13,7 +13,6 @@ from cad_khana.printability.methods import FDM
 from ..params import WALL_MIN
 from .assembly import housing
 
-
 # Print orientation: bottom face on the build plate, +Z up
 # (build123d default). All bores are vertical cylinders → no
 # overhangs to lift the threshold for; default 45° is enough.

@@ -95,11 +95,9 @@ stable without active force.
 """
 
 import math
-from typing import Callable
-
+from collections.abc import Callable
 
 from build123d import Axis, Box, CenterOf, Cylinder, Location, Part, Plane, Polygon, Pos, Rot, extrude, mirror, revolve
-
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 from cad_khana.mechanism.assertions import JointWindow
 from cad_khana.mechanism.motion import Motion
@@ -111,25 +109,24 @@ from ..params import (
     CABLE_LOOP_H,
     CABLE_LOOP_R_IN,
     CABLE_LOOP_Z_BOT,
-    HARNESS_CHANNEL_D,
-    HARNESS_D,
-    HARNESS_X,
-    HARNESS_Y,
     COL_INTERIOR_SIDE,
     COL_OUTER_SIDE,
     COLLAR_CLEARANCE,
     COLLAR_OD,
     FLOOR_H,
+    HARNESS_CHANNEL_D,
+    HARNESS_D,
+    HARNESS_X,
+    HARNESS_Y,
     MAX_BRICK_DIM,
+    R_VERT_INNER,
     RAIL_INNER_R,
     RAIL_SIZE,
-    R_VERT_INNER,
     TURNTABLE_ID,
     TURNTABLE_OD,
     TURNTABLE_Z_BOT,
     TURNTABLE_Z_TOP,
 )
-
 
 # --- Derived parameters -------------------------------------------------
 

@@ -28,7 +28,6 @@ The trap is at rest (hanging) — the swing is `make_assembly`'s.
 """
 
 from build123d import Box, Pos, Rot
-
 from cad_khana.mechanism.assembly import Assembly
 
 from ..params import COL_INTERIOR_SIDE, MAX_BRICK_DIM

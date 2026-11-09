@@ -37,7 +37,6 @@ import math
 
 from build123d import Rot
 
-
 # --- Project-wide policy -----------------------------------------------
 
 # FDM printability floor — minimum wall thickness any printed
@@ -191,11 +190,8 @@ def rotation_for_normal(
     #   tan a = -ny / nz     →  a = atan2(-ny, nz)   (for cos b > 0)
     beta = math.degrees(math.asin(nx))
     cb = math.cos(math.radians(beta))
-    if abs(cb) < 1e-9:
-        # Degenerate (local +Z maps onto ±X): any alpha works.
-        alpha = 0.0
-    else:
-        alpha = math.degrees(math.atan2(-ny / cb, nz / cb))
+    # Degenerate where local +Z maps onto ±X: any alpha works.
+    alpha = 0.0 if abs(cb) < 1e-9 else math.degrees(math.atan2(-ny / cb, nz / cb))
     return Rot(alpha, beta, roll_deg)
 
 

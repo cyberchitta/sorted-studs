@@ -13,7 +13,6 @@ is placed at identity).
 """
 
 from build123d import Compound
-
 from cad_khana.printability.feature import Feature
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
@@ -26,7 +25,6 @@ from .assembly import (
     foot_bolt_cutters,
     motor_bolt_cutters,
 )
-
 
 # Print orientation: on its side, turret +Y up, the flat L-profile face
 # at y = −25 (1635.6 mm²) on the bed — owner decision 2026-09-27, from a

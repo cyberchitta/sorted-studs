@@ -13,7 +13,6 @@ from cad_khana.printability.methods import FDM
 from ..params import FLOOR_LAYOUTS
 from .assembly import WALL_MIN, basket
 
-
 # Every distinct printed body across all four floor layouts: a basket
 # is fixed by its size N and which boundaries carry a column channel.
 # Until 2026-09-22 only the N=6 with both channels was inspected.

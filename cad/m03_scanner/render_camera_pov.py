@@ -21,23 +21,21 @@ module-level ``params.py`` (the manual `sizing.py` mirror).
 from dataclasses import replace
 from pathlib import Path
 
+from build123d import Box, Color
+from cad_khana.render.framing import FixedPose
+from cad_khana.render.render import render
+from cad_khana.render.scene import Scene
 
 from ..design_systems import DEFAULT_SCHEMA, schema_from_env
 from .assembly import build_m03
+from .detail_variations import apply_default_detail
+from .material_variations import DEFAULT_OVERRIDES
 from .params import (
     VERTEX_BACK_UPPER_POS,
     VERTEX_BELOW_LEFT_POS,
     VERTEX_BELOW_RIGHT_POS,
     VERTEX_FRONT_LOW_POS,
 )
-from .detail_variations import apply_default_detail
-from .material_variations import DEFAULT_OVERRIDES
-
-from build123d import Box, Color
-from cad_khana.render.framing import FixedPose
-from cad_khana.render.render import render
-from cad_khana.render.scene import Scene
-
 
 BRICK_2X4 = (31.8, 15.8, 9.6)
 

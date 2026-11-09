@@ -66,7 +66,6 @@ from __future__ import annotations
 import math
 
 from build123d import Location, Plane, Polygon, Pos, Vector, extrude
-
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.motion import Motion
 

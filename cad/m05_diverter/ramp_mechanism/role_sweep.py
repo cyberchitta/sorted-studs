@@ -20,7 +20,6 @@ current before the roll-up exits nonzero.
 """
 
 from build123d import Compound
-
 from cad_khana.mechanism.check import check
 from cad_khana.printability.feature import Feature
 from cad_khana.printability.inspect import inspect
@@ -52,7 +51,6 @@ from .assembly import (
     trap_pin_bore,
     trap_plate,
 )
-
 
 for role in FLOOR_ROLES:
     check(make_assembly(role), out=f"outputs/{role}")

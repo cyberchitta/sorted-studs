@@ -101,13 +101,10 @@ included by owner decision 2026-09-27 and are sanded or cleaned flat
 after printing (see the script's waivers).
 """
 
-import math
-
 from build123d import Box, Color, Cylinder, Plane, Pos, Rot
-
 from cad_khana.mechanism.assembly import Assembly
 
-
+from ..materials import material_of
 from ..params import (
     PLATFORM_ACRYLIC_SIZE,
     PLATFORM_ACRYLIC_T,
@@ -120,8 +117,6 @@ from ..params import (
     TURRET_HINGE_PIN_Z,
     WALL_MIN,
 )
-from ..materials import material_of
-
 
 # --- Cartridge-local IMAGE-pose references -----------------------------
 

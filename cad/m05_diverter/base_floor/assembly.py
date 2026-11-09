@@ -79,11 +79,9 @@ Coordinate frame (matches ramp_mechanism / params):
 """
 
 import math
-from typing import Callable
-
+from collections.abc import Callable
 
 from build123d import Box, Cone, Cylinder, Part, Plane, Polygon, Pos, Rot, extrude
-
 from cad_khana.mechanism.assembly import Assembly
 
 from ..params import (
@@ -101,7 +99,6 @@ from ..params import (
     RAIL_INNER_R,
     RAIL_SIZE,
 )
-
 
 # --- Gear train ---------------------------------------------------------
 #
@@ -435,7 +432,6 @@ def catch_cradle() -> Part:
             0,
             (MOUNT_Z_TOP + shelf_z_bot) / 2,
         ) * Box(CATCH_POST_W, CATCH_POST_W, h)
-    curb_z = shelf_z_top + CATCH_CURB_H / 2
     curb_r = CATCH_OUTER_R + CATCH_CURB_GAP + CATCH_CURB_W / 2
     curb_full_h = CATCH_CURB_H + CATCH_SHELF_T
     curb_zc = (shelf_z_top + CATCH_CURB_H + shelf_z_bot) / 2

@@ -60,7 +60,6 @@ from build123d import (
     extrude,
     loft,
 )
-
 from cad_khana.mechanism.assembly import Assembly
 
 from ..materials import material_of
@@ -79,7 +78,6 @@ from ..params import (
     ROTOR_TOP_DIAMETER,
     V_HALF_ANGLE_DEG,
 )
-
 
 WALL_MIN = 1.5
 

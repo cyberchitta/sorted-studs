@@ -63,12 +63,10 @@ only the cross-unit claims are declared here.
 
 from __future__ import annotations
 
+import math
 from functools import cache
 
-import math
-
 from build123d import Box, Location, Plane, Pos, Rot
-
 from cad_khana.mechanism.assembly import Assembly
 
 from .design_systems import DEFAULT_SCHEMA
@@ -82,7 +80,6 @@ from .m02_chain.params import BRACE_COLS, FOOT_BOLT_COL, PROP_POST, STAGES
 from .m03_scanner.assembly import build_m03
 from .m03_scanner.params import PLATFORM_ACRYLIC_SIZE, TURRET_ARM_R
 from .m05_diverter.assembly import DECK_BOLT_D, DECK_BOLT_HOLE_D, build_m05
-
 
 # m05 at world identity — its local frame IS the world frame.
 _M05_POSE = Location()

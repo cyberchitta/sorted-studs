@@ -17,7 +17,6 @@ and `turret/params.py`. Manual copy today; possible future direct import.
 import math
 from dataclasses import dataclass
 
-
 # ============================================================================
 # INPUTS — the only knobs that should normally change
 # ============================================================================
@@ -120,9 +119,9 @@ def _verify_rev5_reproduced():
         (-201.4, 25.4, -140.1),
         (201.4, 25.4, -140.1),
     ]
-    for (_name, unit_pos), exp in zip(TETRA_VERTICES_UNIT, expected):
+    for (_name, unit_pos), exp in zip(TETRA_VERTICES_UNIT, expected, strict=True):
         scaled = tuple(c * rev5_r for c in unit_pos)
-        for s, e in zip(scaled, exp):
+        for s, e in zip(scaled, exp, strict=True):
             assert abs(s - e) < 4.0, f"defaults far from rev-5: {scaled} vs {exp}"
 
 
@@ -349,7 +348,7 @@ _REV5_BASELINE_R = 250  # rev-5 historical r, for comparison only
 
 
 def print_config(g: Geometry):
-    print(f"INPUTS")
+    print("INPUTS")
     print(f"  Lens                   : {g.lens_focal_mm:.1f} mm M12")
     print(f"  Brick max dim          : {g.brick_max_mm:.0f} mm")
     print(f"  Landing scatter        : ±{g.scatter_half_mm:.0f} mm")
@@ -357,28 +356,28 @@ def print_config(g: Geometry):
         f"  Tetrahedral tilt       : {g.tilt_deg:.0f}° from platform normal (apex at {90 - g.tilt_deg:.0f}° elevation)"
     )
     print()
-    print(f"OPTICAL")
+    print("OPTICAL")
     print(f"  HFOV / VFOV            : {g.hfov_deg:.1f}° / {g.vfov_deg:.1f}°")
     print(f"  Resolution on brick    : {g.px_per_mm:.1f} px/mm (target ≥ {PX_PER_MM_TARGET})")
     far = "∞" if g.dof_far_mm == float("inf") else f"+{g.dof_far_mm:.0f}"
     print(f"  DoF (f/{LENS_F_NUMBER:.1f}, c=5μm)   : -{g.dof_near_mm:.0f} / {far} mm")
     if g.dof_near_mm < BRICK_HEIGHT_MAX_MM / 2:
-        print(f"  ⚠  near-DoF < brick half-height — re-check at this lens/r")
+        print("  ⚠  near-DoF < brick half-height — re-check at this lens/r")
     print()
-    print(f"SPATIAL")
+    print("SPATIAL")
     print(f"  Imaged region          : {g.p_imaged_mm:.0f} × {g.p_imaged_mm:.0f} mm")
     print(f"  Platform (PMMA)        : {g.p_platform_mm:.0f} × {g.p_platform_mm:.0f} mm")
     print(f"  Tetrahedral radius r   : {g.tetra_r_mm:.0f} mm  (rev-5 baseline ≈ {_REV5_BASELINE_R})")
     for name, pos in g.vertices.items():
         print(f"    {name:<14}       ({pos[0]:>+7.1f}, {pos[1]:>+7.1f}, {pos[2]:>+7.1f})")
     print()
-    print(f"TURRET")
+    print("TURRET")
     print(f"  Arm radius             : {g.turret_arm_r_mm:.0f} mm  (rev-4 = 185)")
     print(f"  IMAGE → LOAD station   : ({g.turret_arm_r_mm:.0f}, 0, {-g.turret_arm_r_mm:.0f})")
     print(f"  IMAGE → DUMP station   : ({-g.turret_arm_r_mm:.0f}, 0, {-g.turret_arm_r_mm:.0f})")
     print(f"  IMAGE → RETURN station : (0, 0, {-2 * g.turret_arm_r_mm:.0f})")
     print()
-    print(f"RIG ENVELOPE (rough; conservative mount footprint)")
+    print("RIG ENVELOPE (rough; conservative mount footprint)")
     print(f"  Rail A (X-bar)         : z = {g.rail_a_z_mm:.0f}, |x| ≤ {g.rail_a_x_half_mm:.0f}")
     print(f"  Rail C (Z-column)      : y = {g.rail_c_y_mm:.0f}")
     print(f"  Rail D (Y-cantilever)  : z = {g.rail_d_z_mm:.0f}, y ≥ {g.rail_d_y_front_mm:.0f}")
@@ -422,7 +421,7 @@ def lens_sweep_table():
 
 
 def platform_sensitivity_table():
-    print(f"How min r and turret arm R vary with brick_max + scatter (P_imaged):")
+    print("How min r and turret arm R vary with brick_max + scatter (P_imaged):")
     print()
     header = f"{'P_imaged':>9} {'arm_R':>6}"
     for _, label, _ in _LENS_CANDIDATES:

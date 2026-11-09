@@ -41,7 +41,6 @@ from .assembly import build_chain
 from .joints import brace_foot_wedge_edges
 from .params import BRACE_COLS, BRACE_FOOT_STOP_H, S1, S3, STAGES, brace_run
 
-
 # Every joint body is built in its print orientation: the seats
 # socket-down (the socket's ceiling over the column's protruding
 # corners is roofed at 40° from vertical), the brace collar on its

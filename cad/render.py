@@ -37,7 +37,6 @@ import importlib
 import importlib.util
 
 from build123d import Pos
-
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.render.framing import HERO_3Q
 from cad_khana.render.render import render
@@ -47,7 +46,6 @@ from .assembly import m03_pose
 from .m02_c_channel_singulator.assembly import build_m02
 from .m03_scanner.assembly import build_m03
 from .m05_diverter.assembly import build_m05
-
 
 # --- Placement --------------------------------------------------------
 #

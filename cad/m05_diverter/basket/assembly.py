@@ -64,11 +64,9 @@ Coordinate frame:
 """
 
 import math
-from typing import Callable
-
+from collections.abc import Callable
 
 from build123d import Box, Cylinder, Part, Plane, Polygon, Pos, Rot, extrude
-
 from cad_khana.mechanism.assembly import Assembly
 
 from ..params import (
@@ -83,7 +81,6 @@ from ..params import (
     R_VERT_OUTER,
     basket_name,
 )
-
 
 # --- Parameters ---------------------------------------------------------
 
@@ -537,7 +534,7 @@ def build_basket_ring_standalone() -> Assembly:
 
         # Every adjacent pair around the ring, including wrap: two
         # neighbours must meet at their shared boundary, not cross it.
-        for left, right in zip(names, names[1:] + names[:1]):
+        for left, right in zip(names, names[1:] + names[:1], strict=True):
             a = a.assert_no_interference(left, right)
     return a
 

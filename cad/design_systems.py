@@ -47,7 +47,6 @@ from dataclasses import dataclass, replace
 from enum import Enum
 
 from build123d import Color
-
 from cad_khana.mechanism.assembly import Assembly, PlacedPart
 
 

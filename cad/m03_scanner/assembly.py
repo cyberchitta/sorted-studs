@@ -55,11 +55,20 @@ distinct modules under their package paths and never collide.
 from functools import cache
 
 from build123d import Axis, Plane, Pos
-
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 from cad_khana.mechanism.assertions import JointWindow
 
-
+from ..design_systems import DEFAULT_SCHEMA, paint
+from .arch import assembly as _arch
+from .arm import assembly as _arm
+from .camera_mount_esp32cam import assembly as _camera_mount
+from .design_systems import design_system
+from .drive import assembly as _drive
+from .dump_servo import assembly as _dump_servo
+from .frame import assembly as _frame
+from .homing import assembly as _homing
+from .hub import assembly as _hub
+from .materials import material_of
 from .params import (
     RAIL_PAD_CLAMP_BACK_UPPER_CLAMP_ROT,
     RAIL_PAD_CLAMP_BACK_UPPER_POS,
@@ -87,20 +96,7 @@ from .params import (
     plate_back_centre_world,
     rotation_for_normal,
 )
-from .arch import assembly as _arch
-from .arm import assembly as _arm
-from .camera_mount_esp32cam import assembly as _camera_mount
-from .drive import assembly as _drive
-from .dump_servo import assembly as _dump_servo
-from .frame import assembly as _frame
-from .homing import assembly as _homing
-from .hub import assembly as _hub
 from .turret_platform import assembly as _turret_platform
-
-from ..design_systems import DEFAULT_SCHEMA, paint
-from .design_systems import design_system
-from .materials import material_of
-
 
 # --- Per-vertex camera specs ------------------------------------------
 #

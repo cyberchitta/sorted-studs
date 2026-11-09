@@ -14,7 +14,6 @@ from cad_khana.printability.waiver import Waiver
 
 from .assembly import WALL_MIN, rotor, rotor_cavity
 
-
 # 50° threshold passes the 45° conical flank (outer face base-down,
 # cavity inner face matching inward lean). The cavity ceiling still
 # flags as a 90° overhang — see waiver below. The pre-flange rim

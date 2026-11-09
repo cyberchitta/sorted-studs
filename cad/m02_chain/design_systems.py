@@ -24,10 +24,6 @@ singulator is structurally bolted to the m05 frame.
 
 from __future__ import annotations
 
-
-from build123d import Color
-
-
 from ..design_systems import (
     DEFAULT_SCHEMA,
     DesignSystem,
@@ -36,7 +32,6 @@ from ..design_systems import (
     bind_all,
     lookup,
 )
-
 
 # --- Chain part role tags ---------------------------------------------
 #
@@ -58,8 +53,8 @@ _BRACKETS = (
 _PRINTED_JOINTS = ("s1_post_seat", "s3_post_seat", "brace_head", "brace_foot_3", "brace_foot_5")
 
 ROLE_OF: dict[str, Role | None] = {
-    **{name: Role.PRIMARY_STRUCTURE for name in _GANTRY + _BRACKETS},
-    **{name: Role.SECONDARY_STRUCTURE for name in _PRINTED_JOINTS},
+    **dict.fromkeys(_GANTRY + _BRACKETS, Role.PRIMARY_STRUCTURE),
+    **dict.fromkeys(_PRINTED_JOINTS, Role.SECONDARY_STRUCTURE),
     "load_ramp":    Role.SECONDARY_STRUCTURE,
     # V_3's foot bolt and washer — bought hardware, outside the palette.
     "foot_bolt_3": None,
@@ -80,7 +75,7 @@ MODULE_OF: dict[str, Module | None] = {
     # onto the diverter's columns and deck. Tag DIVERTER for the
     # bauhaus palette's wayfinding to read correctly (blue extrusions
     # rise out of the diverter blue base).
-    **{name: Module.DIVERTER for name in _GANTRY + _BRACKETS + _PRINTED_JOINTS},
+    **dict.fromkeys(_GANTRY + _BRACKETS + _PRINTED_JOINTS, Module.DIVERTER),
     # The ramp is singulator-side hardware.
     "load_ramp":    Module.SINGULATOR,
     "foot_bolt_3": None,

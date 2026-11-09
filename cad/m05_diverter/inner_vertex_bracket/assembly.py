@@ -70,9 +70,7 @@ T-slot on the bottom face of its extrusion.
 """
 
 from build123d import Box, Cylinder, Part, Pos, Rot
-
 from cad_khana.mechanism.assembly import Assembly
-
 
 # --- Parameters ---------------------------------------------------------
 

@@ -58,10 +58,9 @@ Print orientation:
 import math
 
 from build123d import Box, Cylinder, Pos, Rot
-
 from cad_khana.mechanism.assembly import Assembly
 
-
+from ..materials import material_of
 from ..params import (
     TURRET_DUMP_SERVO_LIFTER_TOP_Z,
     TURRET_DUMP_SERVO_LIFTER_TURRET_X,
@@ -73,8 +72,6 @@ from ..params import (
     TURRET_FRAME_FLOOR_Z,
     WALL_MIN,
 )
-from ..materials import material_of
-
 
 # --- Cross-rail interface (private mirror of slice a) ------------------
 

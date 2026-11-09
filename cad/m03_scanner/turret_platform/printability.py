@@ -34,7 +34,6 @@ tops, so they count toward both `seat` and `brackets`.
 """
 
 from build123d import Compound
-
 from cad_khana.printability.feature import Feature
 from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
@@ -48,7 +47,6 @@ from .assembly import (
     pin_bore_cutters,
     seat_cutter,
 )
-
 
 inspect(
     frame(),

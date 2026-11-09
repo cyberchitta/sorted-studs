@@ -26,7 +26,6 @@ catch, held against the frame and the catch on every tower check), with
 """
 
 from build123d import Box, Pos, Rot
-
 from cad_khana.mechanism.assembly import Assembly
 
 from .base_floor import assembly as _base

@@ -55,33 +55,31 @@ import math
 from functools import cache
 
 from build123d import Axis
-
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 
 from ..design_systems import DEFAULT_SCHEMA, paint
-from .design_systems import color_for, design_system
 from . import arc_fastening as _fastening
+from .design_systems import color_for, design_system
 from .drive import assembly as _drive
+from .materials import material_of
 from .params import (
-    BOWL_SEAM_PHASE_DEG,
-    LINER_SEAM_PHASE_DEG,
     ADDENDUM,
-    MOTOR_AZIMUTH_DEG,
-    R_STATOR_OUTER_KINK,
-    BEARING_H,
-    MESH_BACKLASH,
-    PINION_TOP_CLEAR,
     ARC_SCREW_IN_HOLE_MIN,
     ARC_SCREW_SEAT_CLEAR,
+    BEARING_H,
+    BOWL_SEAM_PHASE_DEG,
     EXIT_FLOOR_SIDE_CLEAR,
+    LINER_SEAM_PHASE_DEG,
+    MESH_BACKLASH,
+    MOTOR_AZIMUTH_DEG,
+    PINION_TOP_CLEAR,
+    R_STATOR_OUTER_KINK,
     ROTOR_STATOR_GAP,
     STATOR_WALL_H,
 )
-from .materials import material_of
 from .rotor import assembly as _rotor
-from .seams import SEAM_COUNT, SEAM_EAR_T, angular_gap_deg, angular_gap_to_span_deg, sector_index, seam_azimuths
+from .seams import SEAM_COUNT, SEAM_EAR_T, angular_gap_deg, angular_gap_to_span_deg, seam_azimuths, sector_index
 from .stator import assembly as _stator
-
 
 GAP_CLEARANCE_TOLERANCE = 0.5  # mm — catches a shrunk V-gap early
 
@@ -130,7 +128,7 @@ def build_m02(
     """
     bowl_seams = seam_azimuths(bowl_seam_phase_deg)
     liner_seams = seam_azimuths(LINER_SEAM_PHASE_DEG)
-    stagger = min(angular_gap_deg(b, l) for b in bowl_seams for l in liner_seams)
+    stagger = min(angular_gap_deg(b, s) for b in bowl_seams for s in liner_seams)
     # Where the exit opening cuts the liner through, its two arcs are
     # fastened at their free ends into the skirt (`arc_fastening.py`).
     split = _stator.exit_splits_wall(wall_h)

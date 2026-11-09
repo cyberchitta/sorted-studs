@@ -37,7 +37,6 @@ from ..design_systems import (
 )
 from .params import all_basket_names
 
-
 # --- Basket name expansion --------------------------------------------
 
 def _basket_basenames() -> list[str]:
@@ -82,7 +81,7 @@ ROLE_OF: dict[str, Role | None] = {
     # ``single_floor.py`` stand-in for the floor below's servo.
     "lower_trap_servo": None,
     # Baskets — textbook CONSUMABLE ("holds bricks; swapped often").
-    **{name: Role.CONSUMABLE for name in _basket_basenames()},
+    **dict.fromkeys(_basket_basenames(), Role.CONSUMABLE),
     # Base-floor drive train
     "motor": None,                            # NEMA cast body — outside palette
     "pinion": None,                           # bought metal pinion — outside palette

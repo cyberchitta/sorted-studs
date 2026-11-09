@@ -29,7 +29,6 @@ the probe stands where its exit is.
 """
 
 from build123d import Box, Pos, Rot
-
 from cad_khana.mechanism.assembly import Assembly
 
 from .aim import LANDING_MARGIN, aim_offset_deg, ramp_exit_w_for

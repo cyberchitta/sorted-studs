@@ -32,7 +32,6 @@ from cad_khana.mechanism.check import check
 
 from .animated_assembly import build_m03_at
 
-
 # Per-frame static check at sampled t — regression insurance for
 # mid-motion interferences. Samples cover REST, both halves of the
 # lift, the dwell peak (local_t = dwell_frac/2 = 0.35 ⇒ t = 0.0875

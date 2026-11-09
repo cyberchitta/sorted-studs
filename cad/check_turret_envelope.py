@@ -36,7 +36,6 @@ from __future__ import annotations
 import math
 
 from build123d import Box, Cylinder, Part, Pos, Rot
-
 from cad_khana.mechanism.assembly import Assembly
 
 from .assembly import M03_ROT_DEG, build_top

@@ -13,7 +13,6 @@ from cad_khana.printability.methods import FDM
 from ..params import WALL_MIN
 from .assembly import bracket, flag
 
-
 # Print orientation: bottom face on the build plate, +Z up
 # (build123d default). Flag is a thin disc with a centered bore +
 # offset detect hole — all vertical bores, clean print at default

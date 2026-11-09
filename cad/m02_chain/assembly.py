@@ -75,16 +75,15 @@ import math
 from functools import cache
 
 from build123d import Box, Circle, Cylinder, Keep, Location, Part, Plane, Polygon, Pos, Rot, extrude
-
 from cad_khana.mechanism.assembly import Assembly
 
 from ..design_systems import DEFAULT_SCHEMA, paint
 from ..m02_c_channel_singulator.arc_fastening import FREE_END_SIGNS, free_end_name
 from ..m02_c_channel_singulator.assembly import build_m02
 from ..m02_c_channel_singulator.drive.assembly import BOWL_PARTS, bowl_part_at
+from ..m02_c_channel_singulator.params import LINER_SEAM_PHASE_DEG, PLATE_R_IN, R_STATOR_OUTER_KINK, ROTOR_BASE_DIAMETER
 from ..m02_c_channel_singulator.seams import angular_gap_to_span_deg, seam_azimuths, sector_index
 from ..m02_c_channel_singulator.stator.assembly import STATOR_PARTS
-from ..m02_c_channel_singulator.params import ROTOR_BASE_DIAMETER
 from .design_systems import design_system
 from .joints import brace_foot, brace_head, corner_bracket, foot_bolt, foot_washer, post_seat
 from .materials import material_of
@@ -95,14 +94,34 @@ from .params import (
     ARM_STEM_REACH,
     ARM_TEE_LEN,
     ARM_TOP_Z_LOCAL,
-    BAR_DEPTH,
     BEAM_CORE_D,
     BEAM_H,
     BEAM_HOLE_D,
     BEAM_S,
     BEAM_TAB_LEN,
     BEAM_TAB_LIP,
-    GUARD_END_H,
+    BOWL_SEAM_BAR_CLEAR_MIN_DEG,
+    BRACE_COLS,
+    BRACE_FOOT_START_H,
+    BRACE_FOOT_STOP_H,
+    BRACE_H_ABOVE_DECK,
+    BRACE_HEAD_STOP_H,
+    CHUTE_LAND_R,
+    CROSS_HALF_LEN,
+    DECK_TOP_Z_LOCAL,
+    EXT_SIZE,
+    FOOT_BOLT_BRACE_CLEAR,
+    FOOT_BOLT_COL,
+    FOOT_BOLT_D,
+    FOOT_BOLT_ENGAGE_MIN,
+    FOOT_BOLT_HEAD_D,
+    FOOT_BOLT_HEAD_H,
+    FOOT_BOLT_HOLE_D,
+    FOOT_BOLT_L,
+    FOOT_BOLT_SEAT_CLEAR,
+    FOOT_BOLT_WASHER_ID,
+    FOOT_BOLT_WASHER_OD,
+    FOOT_BOLT_WASHER_T,
     GUARD_H,
     GUARD_HOLE_ROOF_DEG,
     GUARD_INSERT_HOLE_D,
@@ -118,28 +137,6 @@ from .params import (
     GUARD_SCREW_L,
     GUARD_SCREW_S,
     GUARD_TOP_Z_LOCAL,
-    BOWL_SEAM_BAR_CLEAR_MIN_DEG,
-    BRACE_COLS,
-    BRACE_FOOT_START_H,
-    BRACE_FOOT_STOP_H,
-    BRACE_HEAD_STOP_H,
-    BRACE_H_ABOVE_DECK,
-    FOOT_BOLT_BRACE_CLEAR,
-    FOOT_BOLT_COL,
-    FOOT_BOLT_D,
-    FOOT_BOLT_ENGAGE_MIN,
-    FOOT_BOLT_HEAD_D,
-    FOOT_BOLT_HEAD_H,
-    FOOT_BOLT_HOLE_D,
-    FOOT_BOLT_L,
-    FOOT_BOLT_SEAT_CLEAR,
-    FOOT_BOLT_WASHER_ID,
-    FOOT_BOLT_WASHER_OD,
-    FOOT_BOLT_WASHER_T,
-    CHUTE_LAND_R,
-    CROSS_HALF_LEN,
-    DECK_TOP_Z_LOCAL,
-    EXT_SIZE,
     M03_TURRET_ARM_R,
     M05_AXIS_LOCAL_XY,
     M05_TOP_DECK_APERTURE_D,
@@ -172,8 +169,6 @@ from .params import (
     m05_outer_vertex_local_xy,
     prop_bar_azimuth_deg,
 )
-from ..m02_c_channel_singulator.params import LINER_SEAM_PHASE_DEG, PLATE_R_IN, R_STATOR_OUTER_KINK
-
 
 # --- Part builders -----------------------------------------------------
 

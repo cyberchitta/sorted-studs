@@ -130,7 +130,7 @@ def _key(part) -> tuple[float, float]:
 
 
 def _same(a, b) -> bool:
-    return all(abs(x - y) <= MATCH_REL * max(abs(x), abs(y), 1.0) for x, y in zip(a, b))
+    return all(abs(x - y) <= MATCH_REL * max(abs(x), abs(y), 1.0) for x, y in zip(a, b, strict=True))
 
 
 def main() -> int:

@@ -60,21 +60,19 @@ bought.
 import math
 
 from build123d import Axis, Box, Circle, Compound, Cylinder, Location, Part, Plane, Polygon, Pos, Rot, extrude
-
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 
 from .. import arc_fastening as _fastening
 from ..materials import material_of
-from ..seams import SEAM_COUNT, SEAM_EAR_T, angular_gap_deg, sector_index, seam_azimuths, split_ring, with_seam_bolts
 from ..params import (
     ADDENDUM,
     BEARING_BOTTOM_Z,
-    BOWL_SEAM_PHASE_DEG,
-    EXIT_ARC_DEG,
     BEARING_H,
     BEARING_ID,
     BEARING_OD,
+    BOWL_SEAM_PHASE_DEG,
     CENTER_DIST,
+    EXIT_ARC_DEG,
     GEAR_RATIO,
     MOTOR_AZIMUTH_DEG,
     MOTOR_BOTTOM_Z,
@@ -106,9 +104,8 @@ from ..params import (
     SKIRT_CUT_BOTTOM_Z,
     SKIRT_R_IN,
     SKIRT_TOP_Z,
-    STATOR_WALL_T,
 )
-
+from ..seams import SEAM_COUNT, SEAM_EAR_T, angular_gap_deg, seam_azimuths, sector_index, split_ring, with_seam_bolts
 
 WALL_MIN = 1.5
 

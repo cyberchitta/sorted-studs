@@ -74,13 +74,11 @@ Cross-boundary rotor↔stator clearance runs in ../assembly.py.
 
 import math
 
-from build123d import Axis, Box, Cylinder, Part, Plane, Polygon, Pos, Rot, extrude, revolve
-
+from build123d import Axis, Cylinder, Part, Plane, Polygon, Pos, Rot, extrude, revolve
 from cad_khana.mechanism.assembly import Assembly
 
 from .. import arc_fastening as _fastening
 from ..materials import material_of
-from ..seams import SEAM_COUNT, SEAM_EAR_T, angular_gap_deg, seam_azimuths, sector_index, split_ring, with_seam_bolts
 from ..params import (
     ADDENDUM,
     EXIT_ARC_DEG,
@@ -101,7 +99,7 @@ from ..params import (
     STATOR_WALL_T,
     V_HALF_ANGLE_DEG,
 )
-
+from ..seams import SEAM_COUNT, SEAM_EAR_T, angular_gap_deg, seam_azimuths, sector_index, split_ring, with_seam_bolts
 
 # --- Derived geometry --------------------------------------------------
 

@@ -78,11 +78,6 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
-from .animated_assembly import build_m03_at  # noqa: E402
-from .detail_variations import apply_default_detail  # noqa: E402
-from .hdri_framing import lookup as hdri_override_lookup  # noqa: E402
-from .material_variations import DEFAULT_OVERRIDES  # noqa: E402
-
 from cad_khana.render import lighting  # noqa: E402
 from cad_khana.render.animation import (  # noqa: E402
     render_animation,
@@ -91,6 +86,10 @@ from cad_khana.render.animation import (  # noqa: E402
 from cad_khana.render.framing import FixedPose  # noqa: E402
 from cad_khana.render.scene import Scene  # noqa: E402
 
+from .animated_assembly import build_m03_at  # noqa: E402
+from .detail_variations import apply_default_detail  # noqa: E402
+from .hdri_framing import lookup as hdri_override_lookup  # noqa: E402
+from .material_variations import DEFAULT_OVERRIDES  # noqa: E402
 
 DEFAULT_GLB = HERE.parent.parent / "subsite" / "assets" / "exhibits" / "scanner-260523-light.glb"
 GLB = Path(os.environ.get("CINE_GLB", str(DEFAULT_GLB)))

@@ -9,10 +9,6 @@ builders import nothing from here — they emit no colour at all.
 
 from __future__ import annotations
 
-
-from build123d import Color
-
-
 from ..design_systems import (
     DEFAULT_SCHEMA,
     DesignSystem,
@@ -21,7 +17,6 @@ from ..design_systems import (
     bind_all,
     lookup,
 )
-
 
 # --- m03 role tags ----------------------------------------------------
 

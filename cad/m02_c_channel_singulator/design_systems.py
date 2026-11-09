@@ -24,10 +24,7 @@ seams), which keep their material intrinsics.
 
 from __future__ import annotations
 
-
 from build123d import Color
-
-from .seams import SEAM_BOLT_NAMES
 
 from ..design_systems import (
     DEFAULT_SCHEMA,
@@ -37,7 +34,7 @@ from ..design_systems import (
     bind_all,
     lookup,
 )
-
+from .seams import SEAM_BOLT_NAMES
 
 # --- m02 role tags ----------------------------------------------------
 
@@ -60,7 +57,7 @@ ROLE_OF: dict[str, Role | None] = {
     "motor":      None,                      # NEMA-17 cast body — outside palette
     "arc_screw_pos": None,                   # bought M3 countersunk screw — outside palette
     "arc_screw_neg": None,
-    **{name: None for name in SEAM_BOLT_NAMES},  # bought M3 bolt + nut + washers — outside palette
+    **dict.fromkeys(SEAM_BOLT_NAMES),  # bought M3 bolt + nut + washers — outside palette
 }
 
 

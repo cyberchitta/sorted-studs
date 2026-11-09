@@ -25,7 +25,6 @@ from .assembly import (
     shaft_bore_cutter,
 )
 
-
 # servo_bracket has no downward face above the bed (overhang null,
 # 2026-09-22), so it takes the default threshold.
 inspect(

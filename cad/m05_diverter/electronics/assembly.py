@@ -35,14 +35,12 @@ through its hex face's midpoint — and turned to its face azimuth.
 
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 from build123d import Box, Part, Pos, Rot
-
 from cad_khana.mechanism.assembly import Assembly
 
 from ..params import R_HEX_INNER, R_HEX_OUTER, RAIL_SIZE
-
 
 # --- Parameters --------------------------------------------------------
 

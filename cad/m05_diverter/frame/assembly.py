@@ -64,11 +64,9 @@ the inner vertex outward (along local -X) toward the outer hex.
 """
 
 import math
-from typing import Callable
-
+from collections.abc import Callable
 
 from build123d import Box, Cylinder, Part, Pos, Rot
-
 from cad_khana.mechanism.assembly import Assembly
 
 from ..inner_vertex_bracket.assembly import bracket as inner_bracket
@@ -76,23 +74,26 @@ from ..outer_vertex_bracket.assembly import (
     BRACKET_Z_TOP,
     EXT_SIZE,
     HOR_INNER_OFFSET,
+)
+from ..outer_vertex_bracket.assembly import (
     PLATE_T as OUTER_BRACKET_PLATE_T,
+)
+from ..outer_vertex_bracket.assembly import (
     bracket as outer_bracket,
 )
 from ..params import (
     BRACKET_HOR_OFFSET,
     FLOOR_H,
+    R_HEX_INNER,
+    R_HEX_OUTER,
+    R_VERT_INNER,
+    R_VERT_OUTER,
     RAIL_INNER_OUTER_END_R,
     RAIL_INNER_R,
     RAIL_OUTER_INNER_END_R,
     RAIL_OUTER_R,
     RAIL_SIZE,
-    R_HEX_INNER,
-    R_HEX_OUTER,
-    R_VERT_INNER,
-    R_VERT_OUTER,
 )
-
 
 # --- Derived geometry --------------------------------------------------
 

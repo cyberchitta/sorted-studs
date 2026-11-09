@@ -28,7 +28,6 @@ skirt's top edge by a flange at the same height — see SKIRT_TOP_Z.
 
 import math
 
-
 # --- Rotor + stator V geometry -----------------------------------------
 
 # Rotor outer diameter at its base (the widest section, closest to the

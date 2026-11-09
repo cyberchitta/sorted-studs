@@ -46,20 +46,17 @@ sightlines pass through the transparent platform by design.
 """
 
 from build123d import Circle, Pos, Rectangle, loft
-
 from cad_khana.mechanism.assembly import Assembly
 
+from ..design_systems import DEFAULT_SCHEMA
+from .assembly import build_m03
+from .camera_mount_esp32cam import assembly as _camera_mount
 from .params import (
     VERTEX_BELOW_LEFT_POS,
     VERTEX_BELOW_RIGHT_POS,
     lens_axis_unit,
 )
 from .sizing import BRICK_MAX_MM, SCATTER_HALF_MM
-from .camera_mount_esp32cam import assembly as _camera_mount
-
-from ..design_systems import DEFAULT_SCHEMA
-from .assembly import build_m03
-
 
 SIGHTLINE_CONE_SPECS = {
     "sightline_below_left": VERTEX_BELOW_LEFT_POS,

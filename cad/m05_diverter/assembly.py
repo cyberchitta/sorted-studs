@@ -89,38 +89,45 @@ helper with a reduced plan + basket layout + no drive train / top
 deck. The production assembly is `build_tower(FLOOR_PLAN)`.
 """
 
+import math
 from functools import cache
 
-import math
-from pathlib import Path
-
-
 from build123d import Axis, Box, Color, Cylinder, Part, Pos, Rot
-
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 
+from ..design_systems import DEFAULT_SCHEMA, paint
+from .aim import ramp_exit_w_for
 from .base_floor import assembly as _base
 from .basket import assembly as _bkt
-from .electronics import assembly as _elec
-from ..design_systems import DEFAULT_SCHEMA, paint
 from .design_systems import (
-    basename_of,
     color_for,
     design_system,
 )
-from .materials import material_of
+from .electronics import assembly as _elec
 from .frame import assembly as _frame
+from .materials import material_of
 from .outer_vertex_bracket.assembly import (
     BOLT_FROM_EXT_END as OUTER_BRACKET_BOLT_FROM_END,
+)
+from .outer_vertex_bracket.assembly import (
     BOLT_HOLE_D as OUTER_BRACKET_BOLT_HOLE_D,
+)
+from .outer_vertex_bracket.assembly import (
     BOLT_SPACING as OUTER_BRACKET_BOLT_SPACING,
+)
+from .outer_vertex_bracket.assembly import (
     BRACKET_Z_TOP,
     EXT_SIZE,
+)
+from .outer_vertex_bracket.assembly import (
     HOR_INNER_OFFSET as OUTER_BRACKET_ARM_INNER,
+)
+from .outer_vertex_bracket.assembly import (
     PLATE_T as OUTER_BRACKET_PLATE_T,
+)
+from .outer_vertex_bracket.assembly import (
     bracket as outer_bracket,
 )
-from .aim import ramp_exit_w_for
 from .params import (
     CABLE_DROP_D,
     CABLE_DROP_R,
@@ -137,7 +144,6 @@ from .params import (
     basket_name,
 )
 from .ramp_mechanism import assembly as _ramp
-
 
 # Ramp sweep clearance over the basket rim plane is declared once in
 # `ramp_mechanism.build_column_side_rotating` (`ramp_sweep_over_basket_rim`,
@@ -1389,7 +1395,6 @@ def _add_catch_checks(a: Assembly, base: int) -> Assembly:
     held against the fall path — its hole is the column's
     (`check_base_fall_path.py`). The drive train is held by its own
     claim in `build_drive_train`."""
-    tray = "catch.catch_tray"
     cradle = "catch.catch_cradle"
     frame = [f"f{base}", "columns"]
     a = (

@@ -43,12 +43,10 @@ from functools import cache, reduce
 
 from bd_warehouse.fastener import HexNut, PlainWasher, SocketHeadCapScrew
 from build123d import Box, Cylinder, Location, Part, Pos, Rot
-
 from cad_khana.mechanism.assembly import Assembly
 
 from .params import HOLE_ROOF_DEG, HOPPER_WALL_H, SKIRT_TOP_Z
 from .teardrop import teardrop_cutter
-
 
 SEAM_COUNT = 3
 # fmt: off

@@ -94,10 +94,9 @@ inspect call.
 import math
 
 from build123d import Box, Cylinder, Pos
-
 from cad_khana.mechanism.assembly import Assembly
 
-
+from ..materials import material_of  # noqa: E402
 from ..params import (  # noqa: E402
     TURRET_FRAME_CROSS_Y,
     TURRET_FRAME_FLOOR_Z,
@@ -107,9 +106,6 @@ from ..params import (  # noqa: E402
     TURRET_SHAFT_TOP_Z,
     WALL_MIN,
 )
-
-from ..materials import material_of  # noqa: E402
-
 
 # --- Cross-rail interface (private mirror of slice a) ------------------
 

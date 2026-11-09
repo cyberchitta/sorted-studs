@@ -72,10 +72,9 @@ as platform_hinge_bearing).
 import math
 
 from build123d import Box, Cylinder, Pos, Rot
-
 from cad_khana.mechanism.assembly import Assembly
 
-
+from ..materials import material_of
 from ..params import (
     TURRET_HINGE_PIN_D,
     TURRET_HINGE_PIN_RADIAL,
@@ -86,8 +85,6 @@ from ..params import (
     TURRET_SHAFT_TOP_Z,
     WALL_MIN,
 )
-from ..materials import material_of
-
 
 # --- Spider Z geometry (private to this sub-assembly) -------------------
 

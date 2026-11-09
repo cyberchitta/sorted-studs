@@ -33,7 +33,6 @@ What is deliberately not asserted:
 """
 
 from build123d import Rot
-
 from cad_khana.mechanism.assembly import Assembly
 from cad_khana.mechanism.keepout import swept
 
