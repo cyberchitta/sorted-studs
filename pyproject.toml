@@ -41,4 +41,6 @@ ignore = ["SIM300"]
 
 [tool.basedpyright]
 include = ["cad"]
+# Gitignored scratch scripts live under each unit's outputs/.
+exclude = ["**/outputs"]
 typeCheckingMode = "strict"
