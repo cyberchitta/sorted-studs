@@ -10,3 +10,6 @@
 
 # style: format shell scripts with shfmt
 3c6d0455c7f996fd94baa09ebeeee3e2e5d09c48
+
+# style: format Python with ruff, fencing the constant tables so their columns stay
+2731e35a1a31e4407a8f4b04bfe27e43fbea60c5
