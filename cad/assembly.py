@@ -75,7 +75,7 @@ from .design_systems import DEFAULT_SCHEMA
 from .m02_c_channel_singulator.arc_fastening import FREE_END_SIGNS, arc_screw_azimuth_deg, free_end_name
 from .m02_c_channel_singulator.drive.assembly import bowl_part_at
 from .m02_c_channel_singulator.params import LINER_SEAM_PHASE_DEG
-from .m02_c_channel_singulator.seams import sector_index
+from .m02_c_channel_singulator.seams import SEAM_TOOL_MARGIN, sector_index
 from .m02_c_channel_singulator.stator.assembly import STATOR_PARTS, exit_splits_wall
 from .m02_chain.assembly import build_chain
 from .m02_chain.params import BRACE_COLS, FOOT_BOLT_COL, PROP_POST, STAGES
@@ -193,6 +193,34 @@ def _with_arc_screw_access(a: Assembly) -> Assembly:
                 excluding=[f"{unit}.arc_screw_{end}", f"{unit}.drive.{own_bowl}", f"{unit}.stator.{own_liner}"],
                 min_mm=ARC_SCREW_ACCESS_MARGIN,
             )
+    return a
+
+
+# Tool access to the m02 seam bolts (fastening pass, 2026-11-09): each
+# bolt at a liner or bowl thirds seam is reached by a hex key along its
+# axis from the head and a nut driver from the nut. The corridors are
+# the ring's named keep-outs (`seams.seam_tools`), held against the
+# ring's own parts in its builder (`with_seam_bolts`) and here against
+# every other body in the machine.
+def _with_seam_bolt_access(a: Assembly) -> Assembly:
+    """Hold every body outside each ring SEAM_TOOL_MARGIN clear of that
+    ring's seam-bolt tool corridors. The ring's own parts (its sectors,
+    its other bolts and, for the bowl, the drive inside it) are left
+    out: the builder holds those, so a claim here reads the nearest
+    body that is not the ring."""
+    paths = tuple(p.name for p in a.placed_parts)
+    for stage in STAGES:
+        for ring in ("stator", "drive"):
+            prefix = f"m02_chain.{stage.name}.{ring}."
+            own = [p for p in paths if p.startswith(prefix)]
+            bolts = [p for p in own if p[len(prefix):].startswith("seam_bolt_")]
+            assert bolts, f"{prefix}: no seam bolts — the claims would be vacuous"
+            for bolt in bolts:
+                a = a.assert_clear_of(
+                    ["m05", "m03", "m02_chain"], f"{bolt}_tools",
+                    name=f"{stage.name}_{ring}_{bolt[len(prefix):]}_tools",
+                    excluding=own, min_mm=SEAM_TOOL_MARGIN,
+                )
     return a
 
 
@@ -525,7 +553,7 @@ def build_top(schema: str = DEFAULT_SCHEMA) -> Assembly:
     )
     a = _with_foot_bolt(a)
     return _with_load_delivery(
-        _with_on_deck(_with_service_access(_with_arc_screw_access(a)))
+        _with_on_deck(_with_service_access(_with_seam_bolt_access(_with_arc_screw_access(a))))
     )
 
 

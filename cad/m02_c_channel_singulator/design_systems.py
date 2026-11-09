@@ -17,14 +17,17 @@ motor and stator liner sit on, SECONDARY_STRUCTURE),
 design system — ``bearing`` (aluminium turntable) and ``motor``
 (NEMA-17) — and, on a stage whose liner the exit opening cuts
 through, ``arc_screw_pos`` / ``arc_screw_neg`` (the bought screws
-fastening the two arcs' free ends), which keep their material
-intrinsics.
+fastening the two arcs' free ends), and every ring's
+``seam_bolt_{k}_{i}`` (bought bolt, nut and washers at the thirds
+seams), which keep their material intrinsics.
 """
 
 from __future__ import annotations
 
 
 from build123d import Color
+
+from .seams import SEAM_BOLT_NAMES
 
 from ..design_systems import (
     DEFAULT_SCHEMA,
@@ -57,6 +60,7 @@ ROLE_OF: dict[str, Role | None] = {
     "motor":      None,                      # NEMA-17 cast body — outside palette
     "arc_screw_pos": None,                   # bought M3 countersunk screw — outside palette
     "arc_screw_neg": None,
+    **{name: None for name in SEAM_BOLT_NAMES},  # bought M3 bolt + nut + washers — outside palette
 }
 
 

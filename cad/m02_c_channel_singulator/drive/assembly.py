@@ -65,7 +65,7 @@ from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 
 from .. import arc_fastening as _fastening
 from ..materials import material_of
-from ..seams import SEAM_COUNT, SEAM_EAR_T, angular_gap_deg, sector_index, seam_azimuths, split_ring
+from ..seams import SEAM_COUNT, SEAM_EAR_T, angular_gap_deg, sector_index, seam_azimuths, split_ring, with_seam_bolts
 from ..params import (
     ADDENDUM,
     BEARING_BOTTOM_Z,
@@ -248,6 +248,10 @@ def bowl(
     return body
 
 
+# The bowl's ears run the full height of floor and skirt.
+BOWL_EAR_Z = (PLATE_BOTTOM_Z, SKIRT_TOP_Z)
+
+
 def bowl_sectors(
     *,
     phase_deg: float = BOWL_SEAM_PHASE_DEG,
@@ -265,7 +269,8 @@ def bowl_sectors(
         arc_screw_holes=arc_screw_holes,
     )
     return split_ring(
-        whole, phase_deg=phase_deg, r_out=PLATE_R_OUT, ear_z=(PLATE_BOTTOM_Z, SKIRT_TOP_Z),
+        whole, phase_deg=phase_deg, r_out=PLATE_R_OUT, ear_z=BOWL_EAR_Z,
+        hole_apex_up=True,                              # printed floor down
     )
 
 
@@ -444,7 +449,7 @@ def build_drive(
     )
     # The motor touches no sector but its own. A seam run into the
     # motor puts a neighbour's ear against its body; 1 mm is a real gap,
-    # not a fit — the ears' bolts are detail-layer.
+    # not a fit (the seam bolts' own corridors are held below).
     for part in BOWL_PARTS:
         if part != motor_sector:
             a = a.assert_distance(
@@ -465,7 +470,9 @@ def build_drive(
             # seam plane.
             .assert_tangent_contact(part, BOWL_PARTS[(k + 1) % SEAM_COUNT])
         )
-    return a
+    return with_seam_bolts(
+        a, BOWL_PARTS, material_of, phase_deg=seam_phase_deg, r_out=PLATE_R_OUT, ear_z=BOWL_EAR_Z,
+    )
 
 
 # Degenerate memoized master, so ``khana check <file>`` resolves.

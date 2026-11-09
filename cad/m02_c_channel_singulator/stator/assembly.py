@@ -80,7 +80,7 @@ from cad_khana.mechanism.assembly import Assembly
 
 from .. import arc_fastening as _fastening
 from ..materials import material_of
-from ..seams import SEAM_COUNT, SEAM_EAR_T, angular_gap_deg, seam_azimuths, sector_index, split_ring
+from ..seams import SEAM_COUNT, SEAM_EAR_T, angular_gap_deg, seam_azimuths, sector_index, split_ring, with_seam_bolts
 from ..params import (
     ADDENDUM,
     EXIT_ARC_DEG,
@@ -419,8 +419,13 @@ def stator_sectors(*, phase_deg: float = LINER_SEAM_PHASE_DEG, height: float = S
             ring = ring - _fastening.boss_hole(sign)
     return split_ring(
         ring, phase_deg=phase_deg, r_out=R_STATOR_OUTER_KINK,
-        ear_z=(SKIRT_TOP_Z, height),
+        ear_z=_ear_z(height), hole_apex_up=False,       # printed inverted
     )
+
+
+def _ear_z(height: float) -> tuple[float, float]:
+    """The liner's ears run the cylinder zone above the skirt."""
+    return (SKIRT_TOP_Z, height)
 
 
 def stator_part(k: int) -> str:
@@ -466,6 +471,10 @@ def build_stator(height: float = STATOR_WALL_H) -> Assembly:
     for k, sector in enumerate(stator_sectors(height=height)):
         a = a.with_part(stator_part(k), sector, material=material_of(stator_part(k)))
     a = a.with_part("exit_floor", exit_floor(), material=material_of("exit_floor"))
+    a = with_seam_bolts(
+        a, STATOR_PARTS, material_of,
+        phase_deg=LINER_SEAM_PHASE_DEG, r_out=R_STATOR_OUTER_KINK, ear_z=_ear_z(height),
+    )
     for k, part in enumerate(STATOR_PARTS):
         a = (
             a

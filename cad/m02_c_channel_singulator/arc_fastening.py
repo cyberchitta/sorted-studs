@@ -20,7 +20,7 @@ the skirt. Form (parameters in ``params.py`` §Free-end fastening):
     stands outside the ring: out there, on S1's downstream side, is the
     LOAD ramp's chute.
 
-Both horizontal holes are teardrops, roofed ARC_HOLE_ROOF_DEG from
+Both horizontal holes are teardrops, roofed HOLE_ROOF_DEG from
 vertical toward each part's print-up: +Z for the bowl (printed floor
 down), −Z for the liner (printed inverted).
 
@@ -36,14 +36,13 @@ from __future__ import annotations
 
 import math
 
-from build123d import Axis, Box, Circle, Cone, Cylinder, Location, Part, Plane, Polygon, Pos, Rot, extrude, loft, mirror, revolve
+from build123d import Axis, Box, Cone, Cylinder, Face, Location, Part, Plane, Polygon, Pos, Rot, extrude, loft, mirror, revolve
 
 from .params import (
     ARC_BOSS_EXIT_CLEAR,
     ARC_BOSS_W,
     ARC_BOSS_Z_LO,
     ARC_CSINK_CLEAR,
-    ARC_HOLE_ROOF_DEG,
     ARC_HOLE_TIP_CLEAR,
     ARC_INSERT_HOLE_D,
     ARC_INSERT_L,
@@ -57,6 +56,7 @@ from .params import (
     ARC_SCREW_Z,
     EXIT_ARC_DEG,
     EXIT_FLOOR_T,
+    HOLE_ROOF_DEG,
     R_STATOR_OUTER_BASE,
     R_STATOR_OUTER_KINK,
     SKIRT_R_IN,
@@ -65,6 +65,7 @@ from .params import (
     V_HALF_ANGLE_DEG,
 )
 from .seams import SEAM_EAR_OVERLAP
+from .teardrop import teardrop_cutter, teardrop_face
 
 
 FREE_END_SIGNS = (+1, -1)
@@ -101,37 +102,23 @@ def _to_end(shape: Part, sign: int) -> Part:
     return Rot(0, 0, sign * EXIT_ARC_DEG / 2.0) * shape
 
 
-def _teardrop_face(d: float, x: float, apex_up: bool):
-    """A teardrop section across the screw axis at ``x``: a circle of
-    diameter ``d`` roofed to a point on the ``apex_up`` side (+Z if
-    true, −Z if not), its two roof lines ARC_HOLE_ROOF_DEG from
-    vertical — the overhang they print at."""
-    r = d / 2.0
-    t = math.radians(90.0 - ARC_HOLE_ROOF_DEG)          # tangent points' angle from the top
-    s = 1.0 if apex_up else -1.0
-    # Wound counter-clockwise either way up: a clockwise Polygon
-    # added to the circle silently contributes nothing.
-    roof = Polygon(
-        (-s * r * math.sin(t), s * r * math.cos(t)),
-        (s * r * math.sin(t), s * r * math.cos(t)),
-        (0.0, s * r / math.cos(t)),
-        align=None,
-    )
-    plane = Plane(origin=(x, _AXIS_Y, ARC_SCREW_Z), x_dir=(0, 1, 0), z_dir=(1, 0, 0))
-    return (plane * (Circle(r) + roof)).faces()[0]
+def _teardrop_face(d: float, x: float, apex_up: bool) -> Face:
+    """A teardrop section across the screw axis at ``x``, in the side
+    frame (`teardrop.py`)."""
+    return teardrop_face(d, (x, _AXIS_Y, ARC_SCREW_Z), (1, 0, 0), apex_up=apex_up, roof_deg=HOLE_ROOF_DEG)
 
 
 def _teardrop_cutter(d: float, x0: float, x1: float, apex_up: bool) -> Part:
-    """A horizontal teardrop hole (``_teardrop_face``) along +X on the
-    screw axis from ``x0`` to ``x1``."""
-    return extrude(_teardrop_face(d, x0, apex_up), amount=x1 - x0, dir=(1, 0, 0))
+    """A horizontal teardrop hole along +X on the screw axis from
+    ``x0`` to ``x1``."""
+    return teardrop_cutter(d, (x0, _AXIS_Y, ARC_SCREW_Z), (1, 0, 0), x1 - x0, apex_up=apex_up, roof_deg=HOLE_ROOF_DEG)
 
 
 def arc_boss(sign: int = +1) -> Part:
     """The boss at the free end ``sign``, in m02-local coordinates, as
     unioned onto the liner — before its insert hole is cut. It overlaps
     the cone SEAM_EAR_OVERLAP radially so the two fuse."""
-    apex = ARC_INSERT_HOLE_D / 2.0 / math.cos(math.radians(90.0 - ARC_HOLE_ROOF_DEG))
+    apex = ARC_INSERT_HOLE_D / 2.0 / math.cos(math.radians(90.0 - HOLE_ROOF_DEG))
     assert 0.0 < ARC_BOSS_Z_LO < ARC_SCREW_Z - apex and ARC_SCREW_Z + ARC_INSERT_HOLE_D / 2.0 < SKIRT_TOP_Z, (
         "the insert hole must sit inside the boss's height"
     )
@@ -171,7 +158,7 @@ def skirt_hole(sign: int = +1) -> Part:
     hole = _teardrop_cutter(ARC_SCREW_HOLE_D, _X_SKIRT_IN - 1.0, _X_SKIRT_OUT + 1.0, apex_up=True)
     # The countersink is a teardrop too — a ruled loft from the hole's
     # section at the countersink's foot to ARC_CSINK_D at the face, so
-    # its roof never faces down past ARC_HOLE_ROOF_DEG either (a plain
+    # its roof never faces down past HOLE_ROOF_DEG either (a plain
     # 90° cone's crown reads 45° plus tessellation); carried 2 mm
     # outside the face so the cut is clean.
     x_foot = _X_SKIRT_OUT - csink_h

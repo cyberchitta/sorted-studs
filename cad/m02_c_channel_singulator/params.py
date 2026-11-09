@@ -289,7 +289,7 @@ ARC_BOSS_EXIT_CLEAR = 2.0      # boss's near face from the exit cut plane, on th
 ARC_BOSS_W = 12.0              # boss width, perpendicular to the cut plane
 ARC_BOSS_Z_LO = 4.0            # boss bottom above the V-bottom (it runs up to SKIRT_TOP_Z)
 ARC_SCREW_Z = 12.0             # screw axis height above the V-bottom
-ARC_HOLE_ROOF_DEG = 40.0       # teardrop roof of each horizontal hole, degrees from vertical — under both parts' overhang thresholds
+HOLE_ROOF_DEG = 40.0           # teardrop roof of every horizontal hole in the liner and bowl (free-end and seam fastenings), degrees from vertical — under both parts' overhang thresholds
 
 # NEMA 17 compact short body (shortest commodity variant).
 NEMA17_SIDE = 42.3
