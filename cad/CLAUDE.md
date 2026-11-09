@@ -39,7 +39,13 @@ Guidance for organizing Build123d / cad-khana assemblies in this repo.
 4. **One directory per FDM part family or mechanical sub-system.**
    Non-FDM hardware (aluminum extrusions, bearings, fasteners) appears
    as a stub inside the sub-assembly that constrains it, not as its
-   own directory.
+   own directory. "Stub" is where the part lives, not how it is made: a
+   standard part's dimensions come from `bd_warehouse` (or its body
+   is the `bd_warehouse` body), never typed in from a datasheet or
+   memory. Hand-typed M3 values were up to 0.34 mm small against the
+   ISO tables (`seams.py`, 2026-11-09). A fused simple-mode screw needs
+   a thread-diameter shank to stay one solid: its own shank is drawn
+   thinner, and the nut floats free of it.
 
 5. **Parameters live at their owning scope; interfaces are anchors.**
    A `params.py` at any level holds only that frame's anchors.
