@@ -92,13 +92,7 @@ from cad_khana.render.framing import FixedPose  # noqa: E402
 from cad_khana.render.scene import Scene  # noqa: E402
 
 
-DEFAULT_GLB = (
-    HERE.parent.parent
-    / "subsite"
-    / "assets"
-    / "exhibits"
-    / "scanner-260523-light.glb"
-)
+DEFAULT_GLB = HERE.parent.parent / "subsite" / "assets" / "exhibits" / "scanner-260523-light.glb"
 GLB = Path(os.environ.get("CINE_GLB", str(DEFAULT_GLB)))
 OUT_DIR = HERE / "outputs" / "cinematic"
 
@@ -113,7 +107,7 @@ WORLD_UP = (0.0, 0.0, 1.0)
 HDRI_RAW = os.environ.get("CINE_HDRI", "assets/studio_small_08_1k.exr")
 HDRI_ROT_RAW = os.environ.get("CINE_HDRI_ROT", "auto")
 
-TARGET = (0.0, 0.0, 30.0)         # rig center — for any non-dump camera
+TARGET = (0.0, 0.0, 30.0)  # rig center — for any non-dump camera
 # DUMP platform sits at world (0, -200, +50) at rest, (0, -252, -34) at
 # peak tilt (queried from build_m03_at(0.0875).placed_parts). Aiming at
 # the mean of the tilt arc keeps the action centred across all 4 dumps.
@@ -145,9 +139,7 @@ def _resolve_hdri() -> str | Path:
             candidate = HERE / candidate
         return candidate
     raise SystemExit(
-        f"unknown CINE_HDRI: {HDRI_RAW!r} "
-        f"(have {sorted(lighting.BUNDLED_HDRI_NAMES)} + 'none' "
-        f"+ any .exr/.hdr path)"
+        f"unknown CINE_HDRI: {HDRI_RAW!r} (have {sorted(lighting.BUNDLED_HDRI_NAMES)} + 'none' + any .exr/.hdr path)"
     )
 
 
@@ -175,12 +167,8 @@ def _build_rig_and_framing() -> tuple[lighting.StudioRig, float, float]:
         path = lighting.resolve_hdri_path(hdri)
         scan = lighting.scan_hdri(path)
         auto_yaw = scan.yaw_to_align(backdrop_at=DUMP_LOOK_THROUGH_AZ_DEG)
-        auto_vfov, auto_drift = scan.recommend_framing(
-            VFOV_DEG_PREF, DRIFT_DEG_PREF
-        )
-        override = hdri_override_lookup(path.name) or hdri_override_lookup(
-            str(hdri)
-        )
+        auto_vfov, auto_drift = scan.recommend_framing(VFOV_DEG_PREF, DRIFT_DEG_PREF)
+        override = hdri_override_lookup(path.name) or hdri_override_lookup(str(hdri))
         yaw = float(override.get("yaw_deg", auto_yaw))
         vfov = float(override.get("vfov_deg", auto_vfov))
         drift = float(override.get("drift_deg", auto_drift))
@@ -269,8 +257,10 @@ def camera_dump_static(t: float) -> FixedPose:
     when the auto-framing narrows VFOV."""
     az = 240.0 + DRIFT_DEG * math.sin(2 * math.pi * t)
     return _pose(
-        distance_mm=350.0 * DISTANCE_SCALE, elevation_deg=0.0,
-        azimuth_deg=az, target=DUMP_TARGET,
+        distance_mm=350.0 * DISTANCE_SCALE,
+        elevation_deg=0.0,
+        azimuth_deg=az,
+        target=DUMP_TARGET,
     )
 
 
@@ -284,7 +274,9 @@ def camera_dump_approach(t: float) -> FixedPose:
     distance = (500.0 + (250.0 - 500.0) * s) * DISTANCE_SCALE
     az = 240.0 + 0.8 * DRIFT_DEG * math.sin(2 * math.pi * t)
     return _pose(
-        distance_mm=distance, elevation_deg=0.0, azimuth_deg=az,
+        distance_mm=distance,
+        elevation_deg=0.0,
+        azimuth_deg=az,
         target=DUMP_TARGET,
     )
 
@@ -311,10 +303,7 @@ def camera_dump_intro(t: float) -> FixedPose:
     end_elevation = 0.0
     end_azimuth = 240.0
 
-    target = tuple(
-        start_target[i] + (end_target[i] - start_target[i]) * s
-        for i in range(3)
-    )
+    target = tuple(start_target[i] + (end_target[i] - start_target[i]) * s for i in range(3))
     distance = start_distance + (end_distance - start_distance) * s
     elevation = start_elevation + (end_elevation - start_elevation) * s
     azimuth = start_azimuth + (end_azimuth - start_azimuth) * s
@@ -354,9 +343,11 @@ def _render_one(cam_name: str) -> None:
     n_frames = int(DURATION_S * FPS)
 
     if MODE in ("both", "photoreal"):
-        print(f"\n--- {cam_name} photo-real ({n_frames} frames @ {FPS}fps, "
-              f"{RESOLUTION[0]}×{RESOLUTION[1]}, Cycles {SAMPLES} samples, "
-              f"hdri={getattr(RIG.world_hdri, 'name', RIG.world_hdri) or 'none'}) ---")
+        print(
+            f"\n--- {cam_name} photo-real ({n_frames} frames @ {FPS}fps, "
+            f"{RESOLUTION[0]}×{RESOLUTION[1]}, Cycles {SAMPLES} samples, "
+            f"hdri={getattr(RIG.world_hdri, 'name', RIG.world_hdri) or 'none'}) ---"
+        )
         mp4 = render_animation(
             scene_factory,
             ts=_ts(n_frames),
@@ -372,9 +363,11 @@ def _render_one(cam_name: str) -> None:
         print(f"wrote {mp4}")
 
     if MODE in ("both", "fromglb"):
-        print(f"\n--- {cam_name} from-GLB ({n_frames} frames @ {FPS}fps, "
-              f"{RESOLUTION[0]}×{RESOLUTION[1]}, Cycles {SAMPLES} samples, "
-              f"hdri={getattr(RIG.world_hdri, 'name', RIG.world_hdri) or 'none'}) ---")
+        print(
+            f"\n--- {cam_name} from-GLB ({n_frames} frames @ {FPS}fps, "
+            f"{RESOLUTION[0]}×{RESOLUTION[1]}, Cycles {SAMPLES} samples, "
+            f"hdri={getattr(RIG.world_hdri, 'name', RIG.world_hdri) or 'none'}) ---"
+        )
         mp4 = render_animation_from_glb(
             GLB,
             camera=camera,

@@ -54,18 +54,30 @@ inspect(
     out="outputs",
     name="servo_arm",
     features={
-        "hub_disc": Feature(hub_disc(), waive={"overhang_max": Waiver(
-            reason="the Ø16 hub disc's outboard arc (x −86…−77, the part "
-            "the beam does not meet), 74.30 mm² to 88.8° (read "
-            "2026-10-15, up turret −Z). Print plan: tree support from the "
-            "bed under the hub arc only (a cosmetic face).",
-            max_area_mm2=74.6, max_regions=1,
-        )}),
-        "shaft_bore": Feature(shaft_bore_cutter(), waive={"overhang_max": Waiver(
-            reason="the Ø4.5 servo-shaft bore's ceiling, 28.25 mm² to "
-            "89.3° (read 2026-10-15, up turret −Z). Print plan: the bore "
-            "bridges, then a Ø4.5 drill through it.",
-            max_area_mm2=28.4, max_regions=1,
-        )}),
+        "hub_disc": Feature(
+            hub_disc(),
+            waive={
+                "overhang_max": Waiver(
+                    reason="the Ø16 hub disc's outboard arc (x −86…−77, the part "
+                    "the beam does not meet), 74.30 mm² to 88.8° (read "
+                    "2026-10-15, up turret −Z). Print plan: tree support from the "
+                    "bed under the hub arc only (a cosmetic face).",
+                    max_area_mm2=74.6,
+                    max_regions=1,
+                )
+            },
+        ),
+        "shaft_bore": Feature(
+            shaft_bore_cutter(),
+            waive={
+                "overhang_max": Waiver(
+                    reason="the Ø4.5 servo-shaft bore's ceiling, 28.25 mm² to "
+                    "89.3° (read 2026-10-15, up turret −Z). Print plan: the bore "
+                    "bridges, then a Ø4.5 drill through it.",
+                    max_area_mm2=28.4,
+                    max_regions=1,
+                )
+            },
+        ),
     },
 )

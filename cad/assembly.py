@@ -159,7 +159,7 @@ def m03_pose(m05: Assembly, m03: Assembly) -> Location:
 # with the machine assembled. The corridors are the stage's named
 # keep-outs (`arc_fastening.driver_corridor`); held here, where every
 # body they must clear exists.
-ARC_SCREW_ACCESS_MARGIN = 0.5    # as the m03 clamp bolts' CLAMP_BOLT_ACCESS_MARGIN
+ARC_SCREW_ACCESS_MARGIN = 0.5  # as the m03 clamp bolts' CLAMP_BOLT_ACCESS_MARGIN
 
 
 def _with_arc_screw_access(a: Assembly) -> Assembly:
@@ -188,7 +188,8 @@ def _with_arc_screw_access(a: Assembly) -> Assembly:
             end = free_end_name(sign)
             own_bowl = bowl_part_at(arc_screw_azimuth_deg(sign), stage.bowl_seam_phase_deg)
             a = a.assert_clear_of(
-                ["m05", "m03", "m02_chain"], f"{unit}.arc_screw_{end}_driver",
+                ["m05", "m03", "m02_chain"],
+                f"{unit}.arc_screw_{end}_driver",
                 name=f"{stage.name}_arc_screw_{end}_driver",
                 excluding=[f"{unit}.arc_screw_{end}", f"{unit}.drive.{own_bowl}", f"{unit}.stator.{own_liner}"],
                 min_mm=ARC_SCREW_ACCESS_MARGIN,
@@ -213,13 +214,15 @@ def _with_seam_bolt_access(a: Assembly) -> Assembly:
         for ring in ("stator", "drive"):
             prefix = f"m02_chain.{stage.name}.{ring}."
             own = [p for p in paths if p.startswith(prefix)]
-            bolts = [p for p in own if p[len(prefix):].startswith("seam_bolt_")]
+            bolts = [p for p in own if p[len(prefix) :].startswith("seam_bolt_")]
             assert bolts, f"{prefix}: no seam bolts — the claims would be vacuous"
             for bolt in bolts:
                 a = a.assert_clear_of(
-                    ["m05", "m03", "m02_chain"], f"{bolt}_tools",
-                    name=f"{stage.name}_{ring}_{bolt[len(prefix):]}_tools",
-                    excluding=own, min_mm=SEAM_TOOL_MARGIN,
+                    ["m05", "m03", "m02_chain"],
+                    f"{bolt}_tools",
+                    name=f"{stage.name}_{ring}_{bolt[len(prefix) :]}_tools",
+                    excluding=own,
+                    min_mm=SEAM_TOOL_MARGIN,
                 )
     return a
 
@@ -232,9 +235,9 @@ def _with_seam_bolt_access(a: Assembly) -> Assembly:
 # runs from the IMAGE platform's side edge out to the deck edge on each
 # side, just behind the LOAD / IDLE platforms and above the IMAGE
 # platform top. The probe is a box, not a hand.
-REACH_W = 100.0    # across the knuckles ~90, plus a little
+REACH_W = 100.0  # across the knuckles ~90, plus a little
 REACH_H = 130.0
-REACH_GAP = 5.0    # off the LOAD / IDLE platforms' +Y edge and the IMAGE top
+REACH_GAP = 5.0  # off the LOAD / IDLE platforms' +Y edge and the IMAGE top
 
 
 def _with_service_access(a: Assembly) -> Assembly:
@@ -260,19 +263,18 @@ def _with_service_access(a: Assembly) -> Assembly:
     )
     deck = a.part("m05.top_acrylic")
     deck_r = (deck.location * deck.part).bounding_box().max.X
-    x_in = PLATFORM_ACRYLIC_SIZE / 2.0          # IMAGE platform side edge
+    x_in = PLATFORM_ACRYLIC_SIZE / 2.0  # IMAGE platform side edge
     length = deck_r - x_in
     z0 = image_top_z + REACH_GAP
     # Along +X from x = 0, y 0…REACH_W, z 0…REACH_H.
     corridor = Pos(length / 2.0, REACH_W / 2.0, REACH_H / 2.0) * Box(length, REACH_W, REACH_H)
-    a = (
-        a
-        .assert_scalar("service_reach_y0", y0, detail="corridor's -Y face, world")
-        .assert_scalar("service_reach_z0", z0, detail="corridor floor: IMAGE platform top + REACH_GAP")
+    a = a.assert_scalar("service_reach_y0", y0, detail="corridor's -Y face, world").assert_scalar(
+        "service_reach_z0", z0, detail="corridor floor: IMAGE platform top + REACH_GAP"
     )
     for side, x in (("pos_x", hub.X + x_in), ("neg_x", hub.X - x_in - length)):
         a = a.assert_clear_of(
-            ["m05", "m03", "m02_chain"], Pos(x, y0, z0) * corridor,
+            ["m05", "m03", "m02_chain"],
+            Pos(x, y0, z0) * corridor,
             name=f"service_reach_{side}",
         )
     return a
@@ -319,7 +321,10 @@ def _with_on_deck(a: Assembly) -> Assembly:
     assert standers, "nothing stands on the deck — the claims would be vacuous"
     for path in standers:
         a = a.assert_clear_of(
-            path, "m05.off_deck", name=f"on_deck_{path}", min_mm=DECK_EDGE_MARGIN,
+            path,
+            "m05.off_deck",
+            name=f"on_deck_{path}",
+            min_mm=DECK_EDGE_MARGIN,
         )
     # m05's deck fasteners stand on the same face: every head and washer
     # (the `deck_fasteners` keep-out) held clear of all of m03 and the
@@ -328,8 +333,10 @@ def _with_on_deck(a: Assembly) -> Assembly:
     # DECK_EDGE_MARGIN's, for the same reason: the m03 frame is set on
     # the deck by hand with no locating feature.
     return a.assert_clear_of(
-        ["m03", "m02_chain"], "m05.deck_fasteners",
-        name="deck_fasteners_clear_of_deck_equipment", min_mm=DECK_EDGE_MARGIN,
+        ["m03", "m02_chain"],
+        "m05.deck_fasteners",
+        name="deck_fasteners_clear_of_deck_equipment",
+        min_mm=DECK_EDGE_MARGIN,
     )
 
 
@@ -389,17 +396,19 @@ def _with_load_delivery(a: Assembly) -> Assembly:
     across = (out * Pos(0, 1, 0)).position - origin
     pp = a.part(catch)
     sides = (out.inverse() * (pp.location * pp.part)).bounding_box()
-    a = (
-        a
-        .assert_distance(
-            lip, catch, along=tuple(-up_run), max_mm=LOAD_LIP_REACH_MAX,
-            name="load_ramp_lip_reach",
-        )
-        .assert_distance(
-            lip, catch, along="-Z",
-            min_mm=LOAD_LIP_OVER_MIN, max_mm=LOAD_LIP_OVER_MAX,
-            name="load_ramp_lip_over_load",
-        )
+    a = a.assert_distance(
+        lip,
+        catch,
+        along=tuple(-up_run),
+        max_mm=LOAD_LIP_REACH_MAX,
+        name="load_ramp_lip_reach",
+    ).assert_distance(
+        lip,
+        catch,
+        along="-Z",
+        min_mm=LOAD_LIP_OVER_MIN,
+        max_mm=LOAD_LIP_OVER_MAX,
+        name="load_ramp_lip_over_load",
     )
     for side, y, sign, most in (
         ("pos", sides.max.Y, 1.0, LOAD_LIP_WALL_SIDE_MAX),
@@ -407,8 +416,11 @@ def _with_load_delivery(a: Assembly) -> Assembly:
     ):
         edge = Plane(origin=(out * Pos(0, y, 0)).position, z_dir=tuple(across * sign))
         a = a.assert_distance(
-            lip, edge, along=tuple(across * sign),
-            min_mm=LOAD_LIP_SIDE_MIN, max_mm=most,
+            lip,
+            edge,
+            along=tuple(across * sign),
+            min_mm=LOAD_LIP_SIDE_MIN,
+            max_mm=most,
             name=f"load_ramp_lip_inside_load_{side}",
         )
     return a
@@ -491,22 +503,18 @@ def build_top(schema: str = DEFAULT_SCHEMA) -> Assembly:
     # it, and the prop bar across the column's end must actually rest
     # on it (a gap passes no-interference just as well).
     for stage, k in PROP_POST.items():
-        a = (
-            a
-            .assert_anchors_coincident(
-                f"m02_chain.post_top_{k}", f"m05.outer_vert_{k}_top"
-            )
-            .assert_tangent_contact(
-                f"m02_chain.gantry.{stage}_prop_bar", f"m05.columns.outer_vert_{k}",
-                name=f"{stage}_prop_bar_on_outer_vert_{k}",
-            )
+        a = a.assert_anchors_coincident(f"m02_chain.post_top_{k}", f"m05.outer_vert_{k}_top").assert_tangent_contact(
+            f"m02_chain.gantry.{stage}_prop_bar",
+            f"m05.columns.outer_vert_{k}",
+            name=f"{stage}_prop_bar_on_outer_vert_{k}",
         )
     # The chain's printed post seats socket over the columns' ends
     # (the chain mirrors each column's yaw — a drift shows here as a
     # seat cutting its column).
     for stage, k in PROP_POST.items():
         a = a.assert_tangent_contact(
-            f"m02_chain.gantry.{stage}_post_seat", f"m05.columns.outer_vert_{k}",
+            f"m02_chain.gantry.{stage}_post_seat",
+            f"m05.columns.outer_vert_{k}",
             name=f"{stage}_post_seat_on_outer_vert_{k}",
         )
     # S2's stem butts V_4's face and its three brackets sit on it; the
@@ -515,46 +523,43 @@ def build_top(schema: str = DEFAULT_SCHEMA) -> Assembly:
     # the deck — the gaps their sockets bridge, measured — and their
     # feet stand on the deck, V_5's clear of the post and of the
     # through-deck vertex bracket's arm rising beside it.
-    a = (
-        a
-        .assert_tangent_contact(
-            "m02_chain.gantry.s2_stem", "m05.columns.outer_vert_4",
-            name="s2_stem_on_outer_vert_4",
-        )
-        .assert_tangent_contact(
-            "m02_chain.gantry.brace_head", "m05.columns.outer_vert_4",
-            name="brace_head_on_outer_vert_4",
-        )
+    a = a.assert_tangent_contact(
+        "m02_chain.gantry.s2_stem",
+        "m05.columns.outer_vert_4",
+        name="s2_stem_on_outer_vert_4",
+    ).assert_tangent_contact(
+        "m02_chain.gantry.brace_head",
+        "m05.columns.outer_vert_4",
+        name="brace_head_on_outer_vert_4",
     )
     for name in ("top", "left", "right"):
         a = a.assert_tangent_contact(
-            f"m02_chain.gantry.s2_stem_bracket_{name}", "m05.columns.outer_vert_4",
+            f"m02_chain.gantry.s2_stem_bracket_{name}",
+            "m05.columns.outer_vert_4",
             name=f"s2_stem_bracket_{name}_on_outer_vert_4",
         )
     for col in BRACE_COLS:
         brace = f"m02_chain.gantry.brace_{col}"
         a = (
-            a
-            .assert_distance(brace, "m05.columns.outer_vert_4", min_mm=1.0,
-                             name=f"brace_{col}_clears_post")
-            .assert_distance(brace, f"m05.columns.outer_vert_{col}", min_mm=1.0,
-                             name=f"brace_{col}_clears_outer_vert_{col}")
-            .assert_distance(brace, "m05.top_acrylic", min_mm=1.0,
-                             name=f"brace_{col}_over_deck")
-            .assert_tangent_contact(f"m02_chain.gantry.brace_foot_{col}", "m05.top_acrylic",
-                                    name=f"brace_foot_{col}_on_deck")
+            a.assert_distance(brace, "m05.columns.outer_vert_4", min_mm=1.0, name=f"brace_{col}_clears_post")
+            .assert_distance(
+                brace, f"m05.columns.outer_vert_{col}", min_mm=1.0, name=f"brace_{col}_clears_outer_vert_{col}"
+            )
+            .assert_distance(brace, "m05.top_acrylic", min_mm=1.0, name=f"brace_{col}_over_deck")
+            .assert_tangent_contact(
+                f"m02_chain.gantry.brace_foot_{col}", "m05.top_acrylic", name=f"brace_foot_{col}_on_deck"
+            )
         )
-    a = (
-        a
-        .assert_distance("m02_chain.gantry.brace_foot_5", "m05.columns.outer_vert_5", min_mm=1.0,
-                         name="brace_foot_5_clears_outer_vert_5")
-        .assert_distance("m02_chain.gantry.brace_foot_5", "m05.top_cap.outer_vertex_bracket_5", min_mm=1.0,
-                         name="brace_foot_5_clears_vertex_bracket_5")
+    a = a.assert_distance(
+        "m02_chain.gantry.brace_foot_5", "m05.columns.outer_vert_5", min_mm=1.0, name="brace_foot_5_clears_outer_vert_5"
+    ).assert_distance(
+        "m02_chain.gantry.brace_foot_5",
+        "m05.top_cap.outer_vertex_bracket_5",
+        min_mm=1.0,
+        name="brace_foot_5_clears_vertex_bracket_5",
     )
     a = _with_foot_bolt(a)
-    return _with_load_delivery(
-        _with_on_deck(_with_service_access(_with_seam_bolt_access(_with_arc_screw_access(a))))
-    )
+    return _with_load_delivery(_with_on_deck(_with_service_access(_with_seam_bolt_access(_with_arc_screw_access(a)))))
 
 
 def _with_foot_bolt(a: Assembly) -> Assembly:
@@ -567,26 +572,27 @@ def _with_foot_bolt(a: Assembly) -> Assembly:
     clear of m03 only (`_with_on_deck` holds m05's own heads)."""
     bolt = f"m02_chain.gantry.foot_bolt_{FOOT_BOLT_COL}"
     gap = (DECK_BOLT_HOLE_D - DECK_BOLT_D) / 2.0
-    a = (
-        a
-        .assert_tangent_contact(
-            bolt, f"m05.columns.outer_vert_{FOOT_BOLT_COL}",
-            name=f"foot_bolt_{FOOT_BOLT_COL}_in_column_bore",
-        )
-        .assert_distance(
-            bolt, "m05.top_acrylic", min_mm=gap, max_mm=gap,
-            name=f"foot_bolt_{FOOT_BOLT_COL}_through_deck",
-        )
+    a = a.assert_tangent_contact(
+        bolt,
+        f"m05.columns.outer_vert_{FOOT_BOLT_COL}",
+        name=f"foot_bolt_{FOOT_BOLT_COL}_in_column_bore",
+    ).assert_distance(
+        bolt,
+        "m05.top_acrylic",
+        min_mm=gap,
+        max_mm=gap,
+        name=f"foot_bolt_{FOOT_BOLT_COL}_through_deck",
     )
     tops = []
     for name in (bolt, f"m02_chain.gantry.foot_washer_{FOOT_BOLT_COL}"):
         pp = a.part(name)
         tops.append(pp.location * pp.part)
-    head = (tops[0] + tops[1]) & (
-        Pos(0, 0, a.anchor("m05.deck_top").position.Z + 50.0) * Box(2000, 2000, 100)
-    )
+    head = (tops[0] + tops[1]) & (Pos(0, 0, a.anchor("m05.deck_top").position.Z + 50.0) * Box(2000, 2000, 100))
     return a.assert_clear_of(
-        ["m03"], head, name=f"foot_bolt_{FOOT_BOLT_COL}_head_clear_of_m03", min_mm=DECK_EDGE_MARGIN,
+        ["m03"],
+        head,
+        name=f"foot_bolt_{FOOT_BOLT_COL}_head_clear_of_m03",
+        min_mm=DECK_EDGE_MARGIN,
     )
 
 

@@ -65,6 +65,7 @@ from cad_khana.mechanism.assembly import Assembly
 
 # Extrusion — 2020 (committed choice for the tower frame).
 EXT_SIZE = 20.0
+# fmt: off
 EXT_STUB_LEN = 60.0                # stand-in stub length for interference checks
 
 # M5 hardware (standard for 2020 T-slots).
@@ -76,6 +77,7 @@ BOLT_SPACING = 20.0                # pitch between the two bolts on each arm
 PLATE_T = 6.0                      # plate thickness (hub and arms)
 HUB_HALF = 14.0                    # hub is 2*HUB_HALF square in plan
 ARM_W = EXT_SIZE                   # arm width matches extrusion face width
+# fmt: on
 ARM_BOLT_SPAN = BOLT_FROM_EXT_END + BOLT_SPACING + BOLT_FROM_EXT_END  # 40
 
 # Distance from the hex vertex (bracket origin) to the inner end of each
@@ -96,9 +98,11 @@ BRACKET_Z_TOP = -EXT_SIZE
 # VERT_ARM_TOP_Z (kept at the same Z as the earlier top-mount variant
 # so the column bolts land at z=10 and z=30). The plate therefore
 # spans z ∈ [BRACKET_Z_TOP - PLATE_T, VERT_ARM_TOP_Z] = [-26, 40].
+# fmt: off
 VERT_ARM_TOP_Z = ARM_BOLT_SPAN     # 40 — top of vertical plate in world Z
 VERT_BOLT_Z_1 = BOLT_FROM_EXT_END                        # 10
 VERT_BOLT_Z_2 = BOLT_FROM_EXT_END + BOLT_SPACING          # 30
+# fmt: on
 
 # Horizontal arm angle from +X (hex interior angle = 2 * this).
 HALF_HEX_ANGLE_DEG = 60.0
@@ -108,6 +112,7 @@ WALL_MIN = 1.5
 
 
 # --- Part functions -----------------------------------------------------
+
 
 def _through_hole_z(hole_d: float, plate_t: float) -> Part:
     """Cylindrical hole along +Z, long enough to cut cleanly through a
@@ -153,7 +158,7 @@ def bracket() -> Part:
         f"bolt-hole-to-bolt-hole wall {BOLT_SPACING - BOLT_HOLE_D:.2f}mm < {2 * WALL_MIN}mm"
     )
 
-    plate_cz = BRACKET_Z_TOP - PLATE_T / 2   # hub/horizontal-arm center z (= -23)
+    plate_cz = BRACKET_Z_TOP - PLATE_T / 2  # hub/horizontal-arm center z (= -23)
 
     # Hub: flat square plate below the floor datum.
     hub = Pos(0, 0, plate_cz) * Box(2 * HUB_HALF, 2 * HUB_HALF, PLATE_T)
@@ -176,7 +181,7 @@ def bracket() -> Part:
     # spanning from the hub's bottom up to VERT_ARM_TOP_Z. Plate
     # thickness PLATE_T along X; width ARM_W along Y.
     va_x_center = -EXT_SIZE / 2 - PLATE_T / 2
-    va_z_bot = BRACKET_Z_TOP - PLATE_T                      # flush with hub bottom
+    va_z_bot = BRACKET_Z_TOP - PLATE_T  # flush with hub bottom
     va_z_top = VERT_ARM_TOP_Z
     va_h_total = va_z_top - va_z_bot
     va_z_center = (va_z_bot + va_z_top) / 2
@@ -188,9 +193,7 @@ def bracket() -> Part:
     # footprint out of the hub plate (the vertical arm at x ∈
     # [-16, -10] stays entirely outside the column's -X face at x=-10,
     # so the cutout doesn't touch it).
-    vert_cutout = Pos(0, 0, plate_cz) * Box(
-        EXT_SIZE, EXT_SIZE, PLATE_T * 3
-    )
+    vert_cutout = Pos(0, 0, plate_cz) * Box(EXT_SIZE, EXT_SIZE, PLATE_T * 3)
     return (hub + arm_h1 + arm_h2 + arm_rad + vert_arm) - vert_cutout
 
 
@@ -198,15 +201,17 @@ def vert_ext_stub(size: float = EXT_SIZE) -> Part:
     """Through-column vertical extrusion stand-in. Spans from below
     the hub up past the vertical arm's top so the bracket can be
     checked against the column at every point along its body."""
+    # fmt: off
     z_bot = BRACKET_Z_TOP - PLATE_T - 10.0   # 10 mm below hub bottom
     z_top = VERT_ARM_TOP_Z + 10.0             # 10 mm above arm top
+    # fmt: on
     length = z_top - z_bot
     return Pos(0, 0, (z_bot + z_top) / 2) * Box(size, size, length)
 
 
-def horiz_ext_stub_local(length: float = EXT_STUB_LEN,
-                         size: float = EXT_SIZE,
-                         inner_offset: float = HOR_INNER_OFFSET) -> Part:
+def horiz_ext_stub_local(
+    length: float = EXT_STUB_LEN, size: float = EXT_SIZE, inner_offset: float = HOR_INNER_OFFSET
+) -> Part:
     """Horizontal extrusion stand-in along its local +X axis. Top face at
     z=0, axis at z=-size/2. Inner end at x=inner_offset; outer end at
     x=inner_offset+length."""
@@ -222,11 +227,13 @@ assembly = (
     .with_part("horiz_ext_1", horiz_ext_stub_local(), location=Rot(0, 0, HALF_HEX_ANGLE_DEG))
     .with_part("horiz_ext_2", horiz_ext_stub_local(), location=Rot(0, 0, -HALF_HEX_ANGLE_DEG))
     .with_part("radial_ext", horiz_ext_stub_local())
-    .assert_no_interference_within([
-        "bracket",
-        "vert_ext",
-        "horiz_ext_1",
-        "horiz_ext_2",
-        "radial_ext",
-    ])
+    .assert_no_interference_within(
+        [
+            "bracket",
+            "vert_ext",
+            "horiz_ext_1",
+            "horiz_ext_2",
+            "radial_ext",
+        ]
+    )
 )

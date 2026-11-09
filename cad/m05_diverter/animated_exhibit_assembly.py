@@ -58,6 +58,7 @@ _PHASE_B = {idx: layout[1][0] for idx, layout in EXHIBIT_BASKETS_BY_FLOOR.items(
 # Phase A (top → bottom): basket A on F2, F1, F0.
 # Phase B (top → bottom): basket B on F2, F1, F0.
 # POSES[6] implicitly == POSES[0], closing the loop.
+# fmt: off
 POSES: list[float] = [
     _PHASE_A[2],   # F2 basket A
     _PHASE_A[1],   # F1 basket A
@@ -66,6 +67,7 @@ POSES: list[float] = [
     _PHASE_B[1],   # F1 basket B
     _PHASE_B[0],   # F0 basket B
 ]
+# fmt: on
 N_STEPS = len(POSES)
 # The floor whose basket each step selects — the floor whose trap catches.
 CATCH_FLOOR: list[int] = [2, 1, 0, 2, 1, 0]
@@ -79,7 +81,7 @@ DWELL_FRAC = 0.55
 # catch pose, hold, swing back down to hanging before the column moves.
 TRAP_UP = (0.05, 0.15)
 TRAP_DOWN = (0.40, 0.50)
-assert TRAP_DOWN[1] <= DWELL_FRAC   # the trap is down before the turn
+assert TRAP_DOWN[1] <= DWELL_FRAC  # the trap is down before the turn
 
 
 def _lerp_angle(a: float, b: float, s: float) -> float:
@@ -145,7 +147,8 @@ def build_exhibit_at(t: float, schema: str = DEFAULT_SCHEMA) -> Assembly:
     a = a.with_joint_angle("rotating_stack", pose_at(t))
     for floor in EXHIBIT_BASKETS_BY_FLOOR:
         a = a.with_joint_angle(
-            f"rotating_stack.f{floor}.trap", trap_angle_at(t, floor),
+            f"rotating_stack.f{floor}.trap",
+            trap_angle_at(t, floor),
         )
     return replace(a, assertions=())
 

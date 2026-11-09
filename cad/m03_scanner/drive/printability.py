@@ -49,23 +49,41 @@ inspect(
     out="outputs",
     name="drive_bracket",
     features={
-        "boss_pilot": Feature(boss_pilot_cutter(), waive={"overhang_max": Waiver(
-            reason="the Ø22 motor centering pilot's ceiling in the plate, "
-            "138.10 mm² (read 2026-10-15, up turret +Y). Bridged; ream "
-            "the pilot to fit the motor boss.",
-            max_area_mm2=138.3, max_regions=1,
-        )}),
-        "foot_bolt_holes": Feature(Compound(list(foot_bolt_cutters())), waive={"overhang_max": Waiver(
-            reason="the two Ø5.5 M5 foot-bolt hole ceilings at x 106.1 "
-            "and 124.1, 34.52 mm² each, 69.05 mm² (read 2026-10-15, up "
-            "turret +Y). Bridged; drill Ø5.5 if they bind.",
-            max_area_mm2=69.2, max_regions=2,
-        )}),
-        "motor_bolt_holes": Feature(Compound(list(motor_bolt_cutters())), waive={"overhang_max": Waiver(
-            reason="the four Ø3.5 M3 motor hole ceilings at (x 43.1 / "
-            "74.1, y ±15.5), 21.97 mm² each, 87.88 mm² (read 2026-10-15, "
-            "up turret +Y). Bridged; drill if they bind.",
-            max_area_mm2=88.1, max_regions=4,
-        )}),
+        "boss_pilot": Feature(
+            boss_pilot_cutter(),
+            waive={
+                "overhang_max": Waiver(
+                    reason="the Ø22 motor centering pilot's ceiling in the plate, "
+                    "138.10 mm² (read 2026-10-15, up turret +Y). Bridged; ream "
+                    "the pilot to fit the motor boss.",
+                    max_area_mm2=138.3,
+                    max_regions=1,
+                )
+            },
+        ),
+        "foot_bolt_holes": Feature(
+            Compound(list(foot_bolt_cutters())),
+            waive={
+                "overhang_max": Waiver(
+                    reason="the two Ø5.5 M5 foot-bolt hole ceilings at x 106.1 "
+                    "and 124.1, 34.52 mm² each, 69.05 mm² (read 2026-10-15, up "
+                    "turret +Y). Bridged; drill Ø5.5 if they bind.",
+                    max_area_mm2=69.2,
+                    max_regions=2,
+                )
+            },
+        ),
+        "motor_bolt_holes": Feature(
+            Compound(list(motor_bolt_cutters())),
+            waive={
+                "overhang_max": Waiver(
+                    reason="the four Ø3.5 M3 motor hole ceilings at (x 43.1 / "
+                    "74.1, y ±15.5), 21.97 mm² each, 87.88 mm² (read 2026-10-15, "
+                    "up turret +Y). Bridged; drill if they bind.",
+                    max_area_mm2=88.1,
+                    max_regions=4,
+                )
+            },
+        ),
     },
 )

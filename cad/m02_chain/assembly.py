@@ -177,6 +177,7 @@ from ..m02_c_channel_singulator.params import LINER_SEAM_PHASE_DEG, PLATE_R_IN, 
 
 # --- Part builders -----------------------------------------------------
 
+
 def _bar(length: float) -> Part:
     """2020 extrusion, centered at origin, long axis +X."""
     return Box(length, EXT_SIZE, EXT_SIZE)
@@ -216,10 +217,7 @@ def _load_ramp(s: Stage) -> Part:
     slope = load_beam_frame() * _chute(RAMP_SLOPE_LEN)
     inlet = (*s.chute_exit_xy, s.chute_exit_z)
     landing = Pos(*inlet) * yaw * _chute(RAMP_LANDING_LEN)
-    return (
-        (slope + landing) - _stator_cut(s) + _beam_tab(s) - _beam_hole(s)
-        - _guard_screw_holes(s) - _outlet_trim()
-    )
+    return (slope + landing) - _stator_cut(s) + _beam_tab(s) - _beam_hole(s) - _guard_screw_holes(s) - _outlet_trim()
 
 
 def _outlet_trim() -> Part:
@@ -233,7 +231,8 @@ def _stator_cut(s: Stage) -> Part:
     """Everything within RAMP_STATOR_CLEAR of S1's stator (its kink
     radius about the axis), as a vertical cylinder in the chain frame."""
     return Pos(s.axis_xy[0], s.axis_xy[1], s.vbot_z) * Cylinder(
-        R_STATOR_OUTER_KINK + RAMP_STATOR_CLEAR, 4.0 * RAMP_WALL_H + 2.0 * RAMP_FLOOR_T + 200.0,
+        R_STATOR_OUTER_KINK + RAMP_STATOR_CLEAR,
+        4.0 * RAMP_WALL_H + 2.0 * RAMP_FLOOR_T + 200.0,
     )
 
 
@@ -243,6 +242,7 @@ def _stator_cut(s: Stage) -> Part:
 # beam is the line (BEAM_S, y, BEAM_H): square to the run, parallel to
 # the floor. Sizes and the sensor's placeholder envelope: `params.py`
 # §LOAD beam-break.
+
 
 def load_beam_frame() -> Location:
     """The slope's chute frame, chain-local: origin on the exit edge at
@@ -273,7 +273,9 @@ def _beam_tab(s: Stage) -> Part:
     foot, outer = _guard_y(s)
     inner = foot + RAMP_WIDTH / 4.0
     slab = Pos(BEAM_TAB_LEN / 2.0, (outer + inner) / 2.0, -RAMP_FLOOR_T / 2.0) * Box(
-        BEAM_TAB_LEN, inner - outer, RAMP_FLOOR_T,
+        BEAM_TAB_LEN,
+        inner - outer,
+        RAMP_FLOOR_T,
     )
     return (load_beam_frame() * slab) & _stator_cut(s)
 
@@ -318,6 +320,7 @@ def _beam_receiver(s: Stage) -> Part:
 
 # --- The receiver guard ----------------------------------------------------
 
+
 def _guard_y(s: Stage) -> tuple[float, float]:
     """Chute-frame y of the guard's chute face (the receiver's front, on
     the floor's −Y edge at the exit edge) and of its back."""
@@ -337,7 +340,7 @@ def _teardrop_along_normal(d: float, s_at: float, y_at: float, z0: float, z1: fl
     chain-local."""
     r = d / 2.0
     apex = r / math.sin(math.radians(roof_deg))
-    phi = math.radians(90.0 - roof_deg)           # tangent points, from the apex direction (−y)
+    phi = math.radians(90.0 - roof_deg)  # tangent points, from the apex direction (−y)
     pts = [(0.0, -apex), (r * math.sin(phi), -r * math.cos(phi)), (0.0, 0.0), (-r * math.sin(phi), -r * math.cos(phi))]
     face = Circle(r) + Polygon(*pts, align=None)
     return load_beam_frame() * Pos(s_at, y_at, z0) * extrude(face, z1 - z0)
@@ -372,15 +375,23 @@ def _beam_guard(s: Stage) -> Part:
     assert GUARD_INSERT_HOLE_DEPTH > GUARD_SCREW_L - RAMP_FLOOR_T, "the screw would bottom in its hole"
     front, back = _guard_y(s)
     length = GUARD_S_END - GUARD_S0
-    block = load_beam_frame() * Pos(GUARD_S0 + length / 2.0, (front + back) / 2.0, GUARD_H / 2.0) * Box(
-        length, front - back, GUARD_H,
+    block = (
+        load_beam_frame()
+        * Pos(GUARD_S0 + length / 2.0, (front + back) / 2.0, GUARD_H / 2.0)
+        * Box(
+            length,
+            front - back,
+            GUARD_H,
+        )
     )
     # The pocket: round over the beam axis, square-sided below it to the
     # underside — a round bore alone would graze the underside and leave
     # two knife edges along it (min wall 0.05).
     pocket_d = SENSOR_ENV_D + 2.0 * GUARD_POCKET_CLEAR
     pocket = _beam_on_axis(back - 1.0, front + 1.0, pocket_d) + load_beam_frame() * Pos(
-        BEAM_S, (front + back) / 2.0, (BEAM_H - 1.0) / 2.0,
+        BEAM_S,
+        (front + back) / 2.0,
+        (BEAM_H - 1.0) / 2.0,
     ) * Box(pocket_d, front - back + 2.0, BEAM_H + 1.0)
     y = _guard_screw_y(s)
     inserts = [
@@ -425,6 +436,7 @@ def _ramp_exit_lip_region() -> Part:
 
 # --- Placement helpers -------------------------------------------------
 
+
 def _stage_pose(s: Stage) -> Location:
     """m02-local origin (rotor axis at the V-bottom) at the stage's
     axis and V-bottom, m02-local +X (the chute) turned to the heading."""
@@ -432,14 +444,18 @@ def _stage_pose(s: Stage) -> Location:
 
 
 def _horizontal_bar_pose(
-    a: tuple[float, float], b: tuple[float, float], top_z: float,
+    a: tuple[float, float],
+    b: tuple[float, float],
+    top_z: float,
 ) -> tuple[Location, float]:
     """Pose + length for a flat 2020 whose centreline runs a → b in
     plan with its top face at `top_z`."""
     dx, dy = b[0] - a[0], b[1] - a[1]
     length = math.hypot(dx, dy)
     loc = Pos((a[0] + b[0]) / 2.0, (a[1] + b[1]) / 2.0, top_z - EXT_SIZE / 2.0) * Rot(
-        0, 0, math.degrees(math.atan2(dy, dx)),
+        0,
+        0,
+        math.degrees(math.atan2(dy, dx)),
     )
     return loc, length
 
@@ -509,8 +525,11 @@ def _brace(col: int) -> Part:
     # +X to (cos el, 0, -sin el)); the bar's Y stays horizontal. Over-
     # long by a bar each end, then cut to the two stops.
     prism = (
-        Pos(*top) * Rot(0, 0, az) * Rot(0, el, 0)
-        * Pos(full / 2.0, 0.0, 0.0) * Box(full + 2.0 * EXT_SIZE, EXT_SIZE, EXT_SIZE)
+        Pos(*top)
+        * Rot(0, 0, az)
+        * Rot(0, el, 0)
+        * Pos(full / 2.0, 0.0, 0.0)
+        * Box(full + 2.0 * EXT_SIZE, EXT_SIZE, EXT_SIZE)
     )
     head_stop = Plane(
         origin=(top[0] + BRACE_HEAD_STOP_H * c, top[1] + BRACE_HEAD_STOP_H * s, 0.0),
@@ -524,6 +543,7 @@ def _brace(col: int) -> Part:
 
 
 # --- Joint placements ----------------------------------------------------
+
 
 def _seat_pose(s: Stage) -> Location:
     """The seat's origin is the column's end face on its axis."""
@@ -559,26 +579,37 @@ def _bracket_poses(s2: Stage, s3: Stage) -> dict[str, Location]:
     brace collar's), two in the stem's T, four at S3's cross."""
     post = m05_outer_vertex_local_xy(ARM_POST)
     f = math.radians(ARM_STEM_FACE_DEG)
+    # fmt: off
     n = (math.cos(f), math.sin(f))          # V_4's face normal = the stem
     t = (-n[1], n[0])                        # along the face
+    # fmt: on
     face = (post[0] + (EXT_SIZE / 2.0) * n[0], post[1] + (EXT_SIZE / 2.0) * n[1])
-    tee_near = (post[0] + (EXT_SIZE / 2.0 + ARM_STEM_LEN) * n[0],
-                post[1] + (EXT_SIZE / 2.0 + ARM_STEM_LEN) * n[1])
+    tee_near = (post[0] + (EXT_SIZE / 2.0 + ARM_STEM_LEN) * n[0], post[1] + (EXT_SIZE / 2.0 + ARM_STEM_LEN) * n[1])
     poses = {
         "s2_stem_bracket_top": _bracket_pose(
-            (face[0], face[1], ARM_TOP_Z_LOCAL), (n[0], n[1], 0.0), (0.0, 0.0, 1.0),
+            (face[0], face[1], ARM_TOP_Z_LOCAL),
+            (n[0], n[1], 0.0),
+            (0.0, 0.0, 1.0),
         ),
     }
     for side, name in ((+1.0, "left"), (-1.0, "right")):
         poses[f"s2_stem_bracket_{name}"] = _bracket_pose(
-            (face[0] + side * (EXT_SIZE / 2.0) * t[0], face[1] + side * (EXT_SIZE / 2.0) * t[1],
-             ARM_TOP_Z_LOCAL - EXT_SIZE / 2.0),
-            (side * t[0], side * t[1], 0.0), (n[0], n[1], 0.0),
+            (
+                face[0] + side * (EXT_SIZE / 2.0) * t[0],
+                face[1] + side * (EXT_SIZE / 2.0) * t[1],
+                ARM_TOP_Z_LOCAL - EXT_SIZE / 2.0,
+            ),
+            (side * t[0], side * t[1], 0.0),
+            (n[0], n[1], 0.0),
         )
         poses[f"s2_tee_bracket_{name}"] = _bracket_pose(
-            (tee_near[0] + side * (EXT_SIZE / 2.0) * t[0], tee_near[1] + side * (EXT_SIZE / 2.0) * t[1],
-             ARM_TOP_Z_LOCAL - EXT_SIZE / 2.0),
-            (side * t[0], side * t[1], 0.0), (-n[0], -n[1], 0.0),
+            (
+                tee_near[0] + side * (EXT_SIZE / 2.0) * t[0],
+                tee_near[1] + side * (EXT_SIZE / 2.0) * t[1],
+                ARM_TOP_Z_LOCAL - EXT_SIZE / 2.0,
+            ),
+            (side * t[0], side * t[1], 0.0),
+            (-n[0], -n[1], 0.0),
         )
     # S3's cross: each half butts the prop bar's face EXT_SIZE/2 off
     # the axis line; brackets in both inside corners of each junction.
@@ -590,10 +621,13 @@ def _bracket_poses(s2: Stage, s3: Stage) -> dict[str, Location]:
         nrm = (-u[1] * side, u[0] * side)
         for along, tag in ((+1.0, "1"), (-1.0, "2")):
             poses[f"s3_cross_bracket_{half}{tag}"] = _bracket_pose(
-                (ax[0] + (EXT_SIZE / 2.0) * (nrm[0] + along * u[0]),
-                 ax[1] + (EXT_SIZE / 2.0) * (nrm[1] + along * u[1]),
-                 s3.plate_bottom_z - EXT_SIZE / 2.0),
-                (along * u[0], along * u[1], 0.0), (nrm[0], nrm[1], 0.0),
+                (
+                    ax[0] + (EXT_SIZE / 2.0) * (nrm[0] + along * u[0]),
+                    ax[1] + (EXT_SIZE / 2.0) * (nrm[1] + along * u[1]),
+                    s3.plate_bottom_z - EXT_SIZE / 2.0,
+                ),
+                (along * u[0], along * u[1], 0.0),
+                (nrm[0], nrm[1], 0.0),
             )
     return poses
 
@@ -602,8 +636,11 @@ def _bracket_poses(s2: Stage, s3: Stage) -> dict[str, Location]:
 
 # The bars that rest under a stage's floor.
 _RESTS = (
-    ("s1_prop_bar", "s1"), ("s3_prop_bar", "s3"),
-    ("s3_cross_a", "s3"), ("s3_cross_b", "s3"), ("s2_tee", "s2"),
+    ("s1_prop_bar", "s1"),
+    ("s3_prop_bar", "s3"),
+    ("s3_cross_a", "s3"),
+    ("s3_cross_b", "s3"),
+    ("s2_tee", "s2"),
 )
 
 
@@ -631,7 +668,7 @@ def _bar_floor_spans(bar: str, s: Stage) -> list[tuple[float, float]]:
     yaw = math.radians(loc.orientation.Z)
     u = (math.cos(yaw), math.sin(yaw))
     cx, cy = p.X - s.axis_xy[0], p.Y - s.axis_xy[1]
-    along, off = cx * u[0] + cy * u[1], -cx * u[1] + cy * u[0]      # the axis is at t = -along on the centreline
+    along, off = cx * u[0] + cy * u[1], -cx * u[1] + cy * u[0]  # the axis is at t = -along on the centreline
     half_chord = math.sqrt(max(PLATE_R_IN**2 - off**2, 0.0))
 
     def at(t: float) -> tuple[float, float]:
@@ -643,7 +680,7 @@ def _bar_floor_spans(bar: str, s: Stage) -> list[tuple[float, float]]:
         end = at(t_end)
         if math.hypot(end[0] - s.axis_xy[0], end[1] - s.axis_xy[1]) <= PLATE_R_IN:
             continue
-        t_hole = -along + sign * half_chord                         # the hole's edge on this end's side
+        t_hole = -along + sign * half_chord  # the hole's edge on this end's side
         t_in = t_hole if sign * (t_end - t_hole) > 0.0 and abs(off) < PLATE_R_IN else -t_end
         t_in = max(min(t_in, length / 2.0), -length / 2.0)
         out.append((_stage_local_az(s, end), _stage_local_az(s, at(t_in))))
@@ -653,12 +690,18 @@ def _bar_floor_spans(bar: str, s: Stage) -> list[tuple[float, float]]:
 def _s1_exit_liner() -> str:
     """The liner sector the LOAD ramp wraps: the one spanning S1's exit."""
     return STATOR_PARTS[sector_index(0.0, LINER_SEAM_PHASE_DEG)]
+
+
 _STAGE_NAMES = tuple(s.name for s in STAGES)
 # The ramp, the two bought halves of its beam-break, and the receiver's
 # guard with its screws.
 _RAMP_PARTS = (
-    "load_ramp", "load_beam_emitter", "load_beam_receiver",
-    "load_beam_guard", "load_beam_guard_screw_a", "load_beam_guard_screw_b",
+    "load_ramp",
+    "load_beam_emitter",
+    "load_beam_receiver",
+    "load_beam_guard",
+    "load_beam_guard_screw_a",
+    "load_beam_guard_screw_b",
 )
 
 
@@ -674,6 +717,7 @@ def _with_foot_bolt(a: Assembly) -> Assembly:
     That it centres in m05's deck hole and fills V_3's tapped bore is
     the top level's (`cad/assembly.py`)."""
     from .joints import WALL
+
     col = FOOT_BOLT_COL
     engage = FOOT_BOLT_L - FOOT_BOLT_WASHER_T - WALL - M05_TOP_DECK_T
     assert engage >= FOOT_BOLT_ENGAGE_MIN, (
@@ -684,13 +728,16 @@ def _with_foot_bolt(a: Assembly) -> Assembly:
     gap = (FOOT_BOLT_HOLE_D - FOOT_BOLT_D) / 2.0
     return (
         a.with_part(
-            wsh, foot_washer(FOOT_BOLT_WASHER_OD, FOOT_BOLT_WASHER_ID, FOOT_BOLT_WASHER_T),
-            location=seat, material=material_of(wsh),
+            wsh,
+            foot_washer(FOOT_BOLT_WASHER_OD, FOOT_BOLT_WASHER_ID, FOOT_BOLT_WASHER_T),
+            location=seat,
+            material=material_of(wsh),
         )
         .with_part(
             bolt,
             foot_bolt(FOOT_BOLT_D, FOOT_BOLT_HEAD_D, FOOT_BOLT_HEAD_H, FOOT_BOLT_L, FOOT_BOLT_WASHER_T),
-            location=seat, material=material_of(bolt),
+            location=seat,
+            material=material_of(bolt),
         )
         .assert_tangent_contact(wsh, foot, name=f"{foot}_washer_on_seat")
         .assert_tangent_contact(bolt, wsh, name=f"{bolt}_head_on_washer")
@@ -719,6 +766,7 @@ def build_gantry() -> Assembly:
     the top level's (m05's columns and deck). Unpainted: the chain
     paints the whole tree, and its tag dict carries these leaves.
     """
+
     def mat(name: str) -> dict:
         return {"material": material_of(name)}
 
@@ -742,25 +790,33 @@ def build_gantry() -> Assembly:
         a = a.with_part(
             f"{s.name}_post_seat",
             post_seat(prop_bar_azimuth_deg(s), m05_column_rot_deg(PROP_POST[s.name])),
-            location=_seat_pose(s), **mat(f"{s.name}_post_seat"),
+            location=_seat_pose(s),
+            **mat(f"{s.name}_post_seat"),
         )
     a = a.with_part(
         "brace_head",
         brace_head(
             tuple(brace_run(col)[:2] for col in BRACE_COLS),
-            BRACE_HEAD_STOP_H, m05_column_rot_deg(ARM_POST),
+            BRACE_HEAD_STOP_H,
+            m05_column_rot_deg(ARM_POST),
         ),
-        location=_head_pose(), **mat("brace_head"),
+        location=_head_pose(),
+        **mat("brace_head"),
     )
     for col in BRACE_COLS:
         az, el, _ = brace_run(col)
         a = a.with_part(
             f"brace_foot_{col}",
             brace_foot(
-                az + 180.0, el, BRACE_FOOT_STOP_H, BRACE_FOOT_START_H[col], flange=(col == 3),
+                az + 180.0,
+                el,
+                BRACE_FOOT_STOP_H,
+                BRACE_FOOT_START_H[col],
+                flange=(col == 3),
                 bolt=_FOOT_BOLT_CUT if col == FOOT_BOLT_COL else None,
             ),
-            location=_foot_pose(col), **mat(f"brace_foot_{col}"),
+            location=_foot_pose(col),
+            **mat(f"brace_foot_{col}"),
         )
     a = _with_foot_bolt(a)
     for name, loc in _bracket_poses(s2, s3).items():
@@ -769,8 +825,7 @@ def build_gantry() -> Assembly:
     # The stem butts the T bar's near face; the cross halves butt the
     # prop bar's faces.
     a = (
-        a
-        .assert_tangent_contact("s2_stem", "s2_tee")
+        a.assert_tangent_contact("s2_stem", "s2_tee")
         .assert_tangent_contact("s3_cross_a", "s3_prop_bar")
         .assert_tangent_contact("s3_cross_b", "s3_prop_bar")
     )
@@ -782,26 +837,20 @@ def build_gantry() -> Assembly:
     for s in (s1, s3):
         a = a.assert_tangent_contact(f"{s.name}_post_seat", f"{s.name}_prop_bar")
     for col in BRACE_COLS:
-        a = (
-            a
-            .assert_tangent_contact("brace_head", f"brace_{col}")
-            .assert_tangent_contact(f"brace_foot_{col}", f"brace_{col}")
+        a = a.assert_tangent_contact("brace_head", f"brace_{col}").assert_tangent_contact(
+            f"brace_foot_{col}", f"brace_{col}"
         )
     a = a.assert_distance("brace_head", "s2_stem", min_mm=5.0, name="brace_head_under_stem")
     for name in ("top", "left", "right"):
         a = a.assert_tangent_contact(f"s2_stem_bracket_{name}", "s2_stem")
         if name != "top":
-            a = (
-                a
-                .assert_tangent_contact(f"s2_tee_bracket_{name}", "s2_stem")
-                .assert_tangent_contact(f"s2_tee_bracket_{name}", "s2_tee")
+            a = a.assert_tangent_contact(f"s2_tee_bracket_{name}", "s2_stem").assert_tangent_contact(
+                f"s2_tee_bracket_{name}", "s2_tee"
             )
     for half in ("a", "b"):
         for tag in ("1", "2"):
-            a = (
-                a
-                .assert_tangent_contact(f"s3_cross_bracket_{half}{tag}", "s3_prop_bar")
-                .assert_tangent_contact(f"s3_cross_bracket_{half}{tag}", f"s3_cross_{half}")
+            a = a.assert_tangent_contact(f"s3_cross_bracket_{half}{tag}", "s3_prop_bar").assert_tangent_contact(
+                f"s3_cross_bracket_{half}{tag}", f"s3_cross_{half}"
             )
     # Nothing in the gantry touches itself except at the T, cross and
     # socket joints (tangent pairs carry no overlap, so the group form
@@ -827,19 +876,20 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
     the hub-axis point on the m05 deck top face; ``post_top_k`` is
     where the chain needs m05's outer column k to end.
     """
+
     def mat(name: str) -> dict:
         return {"material": material_of(name)}
 
     a = Assembly()
     for s in STAGES:
         a = a.with_subassembly(
-            s.name, build_m02(schema, s.motor_azimuth_deg, s.bowl_seam_phase_deg, s.wall_h),
+            s.name,
+            build_m02(schema, s.motor_azimuth_deg, s.bowl_seam_phase_deg, s.wall_h),
             location=_stage_pose(s),
         )
     s1, s2, s3 = STAGES
     a = (
-        a
-        .with_part("load_ramp", _load_ramp(s1), **mat("load_ramp"))
+        a.with_part("load_ramp", _load_ramp(s1), **mat("load_ramp"))
         # The outlet end, named so a composing parent can hold it
         # against the platform it delivers to (`cad/assembly.py`
         # `load_ramp_lip_*`) — the chain has no LOAD platform of its own.
@@ -859,8 +909,7 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
     )
 
     a = (
-        a
-        .with_anchor("load_top", Pos(0, 0, 0))
+        a.with_anchor("load_top", Pos(0, 0, 0))
         .with_anchor("deck_top", Pos(-M03_TURRET_ARM_R, -M03_TURRET_ARM_R, DECK_TOP_Z_LOCAL))
         # Which way the ramp runs: read by the top level for the axes
         # of its delivery claims, never for where the lip is.
@@ -876,14 +925,18 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
     for up, dn in ((s2, s1), (s3, s2)):
         for part in BOWL_PARTS:
             a = a.assert_distance(
-                f"{up.name}.drive.{part}", f"{dn.name}.rotor.rotor",
+                f"{up.name}.drive.{part}",
+                f"{dn.name}.rotor.rotor",
                 min_mm=STAGE_CLEAR,
                 name=f"{up.name}_{part}_over_{dn.name}_rotor",
             )
         a = a.assert_no_interference_between(up.name, dn.name)
     a = a.assert_no_interference_between(s3.name, s1.name)
     a = a.assert_scalar(
-        "chute_land_r", CHUTE_LAND_R, ge=0.0, le=ROTOR_BASE_DIAMETER / 2.0,
+        "chute_land_r",
+        CHUTE_LAND_R,
+        ge=0.0,
+        le=ROTOR_BASE_DIAMETER / 2.0,
         detail="upper chute exit's distance from the lower axis: on the lower rotor",
     )
 
@@ -893,21 +946,27 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
     # that gap is ramp → S1 bowl skirt; re-scope it in the fastening pass
     # (`_notes/handoff/completion-pass.md`).
     a = (
-        a
-        .assert_scalar(
-            "ramp_pitch_deg", RAMP_PITCH_DEG, ge=RAMP_PITCH_MIN_DEG, le=RAMP_PITCH_MAX_DEG,
+        a.assert_scalar(
+            "ramp_pitch_deg",
+            RAMP_PITCH_DEG,
+            ge=RAMP_PITCH_MIN_DEG,
+            le=RAMP_PITCH_MAX_DEG,
             detail="LOAD ramp pitch; 20/55 are placeholders, not measured friction",
         )
         .assert_distance(
-            "load_ramp", f"s1.stator.{_s1_exit_liner()}", min_mm=RAMP_STATOR_CLEAR,
+            "load_ramp",
+            f"s1.stator.{_s1_exit_liner()}",
+            min_mm=RAMP_STATOR_CLEAR,
             name="ramp_wraps_s1_stator",
         )
         # The seam: the ramp's landing starts RAMP_STATOR_CLEAR outside
         # the stator's exit floor, flush with its top (CHUTE_EXIT_ABOVE_VBOT
         # = 0) — a hairline in plan, never a step up.
         .assert_distance(
-            "load_ramp", "s1.stator.exit_floor",
-            min_mm=RAMP_STATOR_CLEAR, max_mm=RAMP_STATOR_CLEAR + 0.5,
+            "load_ramp",
+            "s1.stator.exit_floor",
+            min_mm=RAMP_STATOR_CLEAR,
+            max_mm=RAMP_STATOR_CLEAR + 0.5,
             name="ramp_meets_exit_floor",
         )
     )
@@ -917,7 +976,9 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
     # clearance from them as from the wall.
     for sign in FREE_END_SIGNS:
         a = a.assert_distance(
-            "load_ramp", f"s1.arc_screw_{free_end_name(sign)}", min_mm=RAMP_STATOR_CLEAR,
+            "load_ramp",
+            f"s1.arc_screw_{free_end_name(sign)}",
+            min_mm=RAMP_STATOR_CLEAR,
         )
 
     # LOAD beam-break. The beam's core crosses the chute and leaves
@@ -930,15 +991,17 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
     # receiver lie wholly where the stator cut removed the ramp, and
     # keep the ramp's stator clearance from every S1 part near them.
     a = (
-        a
-        .assert_clear_of(
-            ["load_ramp"], "load_beam", min_mm=(BEAM_HOLE_D - BEAM_CORE_D) / 2.0,
+        a.assert_clear_of(
+            ["load_ramp"],
+            "load_beam",
+            min_mm=(BEAM_HOLE_D - BEAM_CORE_D) / 2.0,
             name="load_beam_clear_of_ramp",
         )
         .assert_tangent_contact("load_beam_emitter", "load_ramp")
         .assert_tangent_contact("load_beam_receiver", "load_ramp")
         .assert_clear_of(
-            ["load_ramp@beam_tab", "load_beam_receiver", "load_beam_guard"], _outside_stator_cut(s1),
+            ["load_ramp@beam_tab", "load_beam_receiver", "load_beam_guard"],
+            _outside_stator_cut(s1),
             name="load_beam_tab_inside_stator_cut",
         )
     )
@@ -949,31 +1012,34 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
     # on the tab's underside and its shank clear of the guard's insert
     # hole — radially and at the tip. The insert itself is not modelled.
     a = (
-        a
-        .assert_tangent_contact("load_beam_guard", "load_ramp")
+        a.assert_tangent_contact("load_beam_guard", "load_ramp")
         .assert_clear_of(
-            ["load_beam_guard"], "load_beam",
+            ["load_beam_guard"],
+            "load_beam",
             min_mm=(SENSOR_ENV_D + 2.0 * GUARD_POCKET_CLEAR - BEAM_CORE_D) / 2.0,
             name="load_beam_clear_of_guard",
         )
         .assert_distance(
-            "load_beam_receiver", "load_beam_guard", min_mm=GUARD_POCKET_CLEAR, max_mm=GUARD_POCKET_CLEAR,
+            "load_beam_receiver",
+            "load_beam_guard",
+            min_mm=GUARD_POCKET_CLEAR,
+            max_mm=GUARD_POCKET_CLEAR,
             name="load_beam_receiver_in_guard_pocket",
         )
         .assert_no_interference("load_beam_guard", "load_beam_emitter")
     )
     for k in ("a", "b"):
         screw = f"load_beam_guard_screw_{k}"
-        a = (
-            a
-            .assert_tangent_contact(screw, "load_ramp")
-            .assert_distance(
-                screw, "load_beam_guard", min_mm=(GUARD_INSERT_HOLE_D - GUARD_SCREW_D) / 2.0,
-                name=f"{screw}_clear_in_insert_hole",
-            )
+        a = a.assert_tangent_contact(screw, "load_ramp").assert_distance(
+            screw,
+            "load_beam_guard",
+            min_mm=(GUARD_INSERT_HOLE_D - GUARD_SCREW_D) / 2.0,
+            name=f"{screw}_clear_in_insert_hole",
         )
     a = a.assert_scalar(
-        "load_beam_guard_screw_engagement_mm", GUARD_SCREW_L - RAMP_FLOOR_T, ge=1.5 * GUARD_SCREW_D,
+        "load_beam_guard_screw_engagement_mm",
+        GUARD_SCREW_L - RAMP_FLOOR_T,
+        ge=1.5 * GUARD_SCREW_D,
         detail="screw length past the tab's top, into the guard's insert (≥ 1.5 D)",
     )
     beside = (
@@ -993,11 +1059,15 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
     ):
         for leaf in beside:
             a = a.assert_distance(
-                op, f"s1.{leaf}", min_mm=RAMP_STATOR_CLEAR,
+                op,
+                f"s1.{leaf}",
+                min_mm=RAMP_STATOR_CLEAR,
                 name=f"load_beam_{label}_to_s1_{leaf.split('.')[-1]}",
             )
         a = a.assert_distance(
-            op, "gantry.s1_prop_bar", min_mm=RAMP_STATOR_CLEAR,
+            op,
+            "gantry.s1_prop_bar",
+            min_mm=RAMP_STATOR_CLEAR,
             name=f"load_beam_{label}_to_s1_prop_bar",
         )
 
@@ -1014,7 +1084,8 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
         for az, az_in in _bar_floor_spans(bar, stage):
             spans_by_stage[stage.name].append((az, az_in))
             a = a.assert_tangent_contact(
-                f"gantry.{bar}", f"{stage.name}.drive.{bowl_part_at(az, stage.bowl_seam_phase_deg)}",
+                f"gantry.{bar}",
+                f"{stage.name}.drive.{bowl_part_at(az, stage.bowl_seam_phase_deg)}",
             )
     # A model, not a solid measurement: the angular gap from each seam
     # to a bar centreline's run under the floor, less half a bar width
@@ -1026,13 +1097,14 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
             for lo, hi in spans_by_stage[s.name]
         )
         a = a.assert_scalar(
-            f"{s.name}_bowl_seams_clear_of_bar_ends_deg", clear, ge=BOWL_SEAM_BAR_CLEAR_MIN_DEG,
+            f"{s.name}_bowl_seams_clear_of_bar_ends_deg",
+            clear,
+            ge=BOWL_SEAM_BAR_CLEAR_MIN_DEG,
             detail="closest bowl seam to the side of a gantry bar's run under the floor, degrees at the rim",
         )
     # The swung motors are what keeps these pairs apart — measure them.
     a = (
-        a
-        .assert_distance("gantry.s2_stem", "s2.drive.motor", min_mm=5.0)
+        a.assert_distance("gantry.s2_stem", "s2.drive.motor", min_mm=5.0)
         .assert_distance("gantry.s3_cross_a", "s3.drive.motor", min_mm=5.0)
         .assert_distance("gantry.s3_cross_b", "s3.drive.motor", min_mm=5.0)
         .assert_distance("gantry.s1_prop_bar", "s1.drive.motor", min_mm=5.0)
@@ -1044,30 +1116,23 @@ def build_chain(schema: str = DEFAULT_SCHEMA) -> Assembly:
     # seat-in-gantry joints are `build_gantry`'s.
     for s in (s1, s3):
         seat = f"gantry.{s.name}_post_seat"
-        a = (
-            a
-            .assert_tangent_contact(
-                seat,
-                f"{s.name}.drive.{bowl_part_at(_stage_local_az(s, m05_outer_vertex_local_xy(PROP_POST[s.name])), s.bowl_seam_phase_deg)}",
-            )
-            .assert_distance(seat, f"{s.name}.drive.motor", min_mm=5.0)
-        )
+        a = a.assert_tangent_contact(
+            seat,
+            f"{s.name}.drive.{bowl_part_at(_stage_local_az(s, m05_outer_vertex_local_xy(PROP_POST[s.name])), s.bowl_seam_phase_deg)}",
+        ).assert_distance(seat, f"{s.name}.drive.motor", min_mm=5.0)
 
     # Nothing of the ramp or the gantry touches a stage except at the
     # declared rests (tangent pairs carry no overlap, so the group
     # forms hold), and the ramp touches nothing of the gantry.
     for s in STAGES:
-        a = (
-            a
-            .assert_no_interference_between("gantry", s.name)
-            .assert_no_interference_between(_RAMP_PARTS, s.name)
-        )
+        a = a.assert_no_interference_between("gantry", s.name).assert_no_interference_between(_RAMP_PARTS, s.name)
     a = a.assert_no_interference_between(_RAMP_PARTS, "gantry")
 
     return paint(a, design_system(schema), skip=_STAGE_NAMES)
 
 
 # --- Standalone fixture --------------------------------------------------
+
 
 def _post_stub(k: int) -> Part:
     """m05's column k above the deck, as the chain believes it: a 2020
@@ -1112,32 +1177,31 @@ def build_chain_standalone(schema: str = DEFAULT_SCHEMA) -> Assembly:
     for k in sorted(POST_TOP_Z_LOCAL):
         x, y = m05_outer_vertex_local_xy(k)
         a = a.with_part(
-            f"post_{k}", _post_stub(k),
+            f"post_{k}",
+            _post_stub(k),
             location=Pos(x, y, DECK_TOP_Z_LOCAL) * Rot(0, 0, m05_column_rot_deg(k)),
         )
     a = a.with_part(
-        "deck", _deck_stub(),
+        "deck",
+        _deck_stub(),
         location=Pos(M05_AXIS_LOCAL_XY[0], M05_AXIS_LOCAL_XY[1], DECK_TOP_Z_LOCAL),
     )
     for stage, k in PROP_POST.items():
-        a = (
-            a
-            .assert_tangent_contact(f"gantry.{stage}_prop_bar", f"post_{k}", name=f"{stage}_prop_bar_on_post_{k}")
-            .assert_tangent_contact(f"gantry.{stage}_post_seat", f"post_{k}", name=f"{stage}_post_seat_on_post_{k}")
-        )
-    a = (
-        a
-        .assert_tangent_contact("gantry.s2_stem", f"post_{ARM_POST}", name=f"s2_stem_on_post_{ARM_POST}")
-        .assert_tangent_contact("gantry.brace_head", f"post_{ARM_POST}", name=f"brace_head_on_post_{ARM_POST}")
-    )
+        a = a.assert_tangent_contact(
+            f"gantry.{stage}_prop_bar", f"post_{k}", name=f"{stage}_prop_bar_on_post_{k}"
+        ).assert_tangent_contact(f"gantry.{stage}_post_seat", f"post_{k}", name=f"{stage}_post_seat_on_post_{k}")
+    a = a.assert_tangent_contact(
+        "gantry.s2_stem", f"post_{ARM_POST}", name=f"s2_stem_on_post_{ARM_POST}"
+    ).assert_tangent_contact("gantry.brace_head", f"post_{ARM_POST}", name=f"brace_head_on_post_{ARM_POST}")
     for name in ("top", "left", "right"):
         a = a.assert_tangent_contact(
-            f"gantry.s2_stem_bracket_{name}", f"post_{ARM_POST}", name=f"s2_stem_bracket_{name}_on_post_{ARM_POST}",
+            f"gantry.s2_stem_bracket_{name}",
+            f"post_{ARM_POST}",
+            name=f"s2_stem_bracket_{name}_on_post_{ARM_POST}",
         )
     for col in BRACE_COLS:
         a = (
-            a
-            .assert_distance(f"gantry.brace_{col}", f"post_{ARM_POST}", min_mm=1.0, name=f"brace_{col}_clears_post")
+            a.assert_distance(f"gantry.brace_{col}", f"post_{ARM_POST}", min_mm=1.0, name=f"brace_{col}_clears_post")
             .assert_distance(f"gantry.brace_{col}", "deck", min_mm=1.0, name=f"brace_{col}_clears_deck")
             .assert_tangent_contact(f"gantry.brace_foot_{col}", "deck", name=f"brace_foot_{col}_on_deck")
         )
@@ -1146,14 +1210,13 @@ def build_chain_standalone(schema: str = DEFAULT_SCHEMA) -> Assembly:
     # the chain's belief; the top level holds it against m05's deck.
     gap = (FOOT_BOLT_HOLE_D - FOOT_BOLT_D) / 2.0
     a = a.assert_distance(
-        f"gantry.foot_bolt_{FOOT_BOLT_COL}", "deck", min_mm=gap, max_mm=gap,
+        f"gantry.foot_bolt_{FOOT_BOLT_COL}",
+        "deck",
+        min_mm=gap,
+        max_mm=gap,
         name=f"foot_bolt_{FOOT_BOLT_COL}_through_deck_stub",
     )
-    a = (
-        a
-        .assert_no_interference_between(_STUBS, _RAMP_PARTS)
-        .assert_no_interference_between(_STUBS, "gantry")
-    )
+    a = a.assert_no_interference_between(_STUBS, _RAMP_PARTS).assert_no_interference_between(_STUBS, "gantry")
     for s in STAGES:
         a = a.assert_no_interference_between(_STUBS, s.name)
     return a

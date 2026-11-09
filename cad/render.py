@@ -66,15 +66,14 @@ SINGULATOR_DROP_OVER_LOAD = 100.0
 
 # --- Override layers --------------------------------------------------
 
+
 def _optional_import(dotted: str):
     if importlib.util.find_spec(dotted) is None:
         return None
     return importlib.import_module(dotted)
 
 
-def _with_overrides(
-    unit_dirname: str, assembly: Assembly
-) -> tuple[Assembly, dict[str, str]]:
+def _with_overrides(unit_dirname: str, assembly: Assembly) -> tuple[Assembly, dict[str, str]]:
     """Apply a unit's detail variations and collect its material
     overrides.
 
@@ -108,15 +107,11 @@ def _build_top_level(schema: str) -> tuple[Assembly, dict[str, str]]:
     """
     assy_m05, mat_m05 = _with_overrides("m05_diverter", build_m05(schema))
     assy_m03, mat_m03 = _with_overrides("m03_scanner", build_m03(schema))
-    assy_m02, mat_m02 = _with_overrides(
-        "m02_c_channel_singulator", build_m02(schema)
-    )
+    assy_m02, mat_m02 = _with_overrides("m02_c_channel_singulator", build_m02(schema))
 
     m03_at = m03_pose(assy_m05, assy_m03)
     load = (m03_at * assy_m03.anchor("load_top")).position
-    m02_pose = Pos(
-        load.X - M02_EXIT_RADIUS, load.Y, load.Z + SINGULATOR_DROP_OVER_LOAD
-    )
+    m02_pose = Pos(load.X - M02_EXIT_RADIUS, load.Y, load.Z + SINGULATOR_DROP_OVER_LOAD)
 
     top = (
         Assembly()

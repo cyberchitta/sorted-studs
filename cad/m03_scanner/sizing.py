@@ -22,6 +22,7 @@ from dataclasses import dataclass
 # INPUTS — the only knobs that should normally change
 # ============================================================================
 
+# fmt: off
 LENS_FOCAL_MM       = 3.6     # M12; lens_sweep_table() compares alternatives
 LENS_F_NUMBER       = 2.0     # for DoF
 LENS_MIN_FOCUS_MM   = 120     # conservative; manual-focus M12s often beat
@@ -34,6 +35,7 @@ TILT_DEG            = 65.0    # apex (front_low) angle from platform normal
                               # 65° = rev-5 default (apex 25° elevation, -Y)
 
 PX_PER_MM_TARGET    = 4.0     # 1 mm feature → 4 px on sensor
+# fmt: on
 
 
 # ============================================================================
@@ -41,29 +43,32 @@ PX_PER_MM_TARGET    = 4.0     # 1 mm feature → 4 px on sensor
 # ============================================================================
 
 # OV2640 1/4" CMOS (AI-Thinker ESP32-CAM)
-SENSOR_W_MM   = 3.6
-SENSOR_H_MM   = 2.7
-SENSOR_PX_W   = 1600
-SENSOR_PX_H   = 1200
-COC_MM        = 0.005
+SENSOR_W_MM = 3.6
+SENSOR_H_MM = 2.7
+SENSOR_PX_W = 1600
+SENSOR_PX_H = 1200
+COC_MM = 0.005
 
 # ESP32-CAM mount plate (camera_rig/camera_mount_esp32cam)
 MOUNT_PLATE_SIDE_MM = 50.0
-MOUNT_PLATE_T_MM    = 5.0
+MOUNT_PLATE_T_MM = 5.0
 
 # 2020 T-slot extrusion
 RAIL_MEMBER_MM = 20.0
-CORNER_GAP_MM  = 0.3
+CORNER_GAP_MM = 0.3
 
 # Platform / turret clearances
+# fmt: off
 PLATFORM_EDGE_GRIP_MM  = 5.0   # PMMA margin past imaged region for brackets
 TURRET_PLATFORM_GAP_MM = 5.0   # gap between adjacent turret platforms
-RAIL_D_FRONT_OVERHANG_MM = 5.0 # rail D extends past front-low cam by this much
+# fmt: on
+RAIL_D_FRONT_OVERHANG_MM = 5.0  # rail D extends past front-low cam by this much
 
 
 # ============================================================================
 # TETRAHEDRAL VERTICES (generated from tilt + phase)
 # ============================================================================
+
 
 def tetra_vertices_unit(tilt_deg=TILT_DEG, phase_deg=0.0):
     """4 vertices of a regular tetrahedron, unit distance from origin.
@@ -91,9 +96,9 @@ def tetra_vertices_unit(tilt_deg=TILT_DEG, phase_deg=0.0):
         a = math.radians(az_offset + phase_deg)
         base.append(_tilt((math.cos(a) * s89, math.sin(a) * s89, -1 / 3)))
     return [
-        ("front_low",   apex),
-        ("back_upper",  base[0]),
-        ("below_left",  base[1]),
+        ("front_low", apex),
+        ("back_upper", base[0]),
+        ("below_left", base[1]),
         ("below_right", base[2]),
     ]
 
@@ -120,6 +125,7 @@ def _verify_rev5_reproduced():
         for s, e in zip(scaled, exp):
             assert abs(s - e) < 4.0, f"defaults far from rev-5: {scaled} vs {exp}"
 
+
 _verify_rev5_reproduced()
 
 
@@ -127,14 +133,18 @@ _verify_rev5_reproduced()
 # COMPUTATION HELPERS
 # ============================================================================
 
+
 def _cross(a, b):
-    return (a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0])
+    return (a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0])
+
 
 def _dot(a, b):
-    return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+
 
 def _mag(a):
     return math.sqrt(_dot(a, a))
+
 
 def _unit(a):
     m = _mag(a)
@@ -179,7 +189,7 @@ def _fits_with_roll(projected, hfov_deg, vfov_deg):
     for theta_deg in range(0, 91, 2):
         t = math.radians(theta_deg)
         ct, st = math.cos(t), math.sin(t)
-        rotated = [(u*ct - v*st, u*st + v*ct) for u, v in projected]
+        rotated = [(u * ct - v * st, u * st + v * ct) for u, v in projected]
         umax = max(abs(p[0]) for p in rotated)
         vmax = max(abs(p[1]) for p in rotated)
         if (umax <= h_lim and vmax <= v_lim) or (umax <= v_lim and vmax <= h_lim):
@@ -222,13 +232,14 @@ def dof_half_mm(r, focal_mm, n=LENS_F_NUMBER, coc=COC_MM):
     if r >= H:
         return (r, float("inf"))
     near = H * r / (H + r)
-    far  = H * r / (H - r)
+    far = H * r / (H - r)
     return (r - near, far - r)
 
 
 # ============================================================================
 # DERIVED GEOMETRY
 # ============================================================================
+
 
 @dataclass
 class Geometry:
@@ -285,10 +296,7 @@ def compute_geometry(
     ppm = px_per_mm_on_brick(r, lens_focal_mm)
     near, far = dof_half_mm(r, lens_focal_mm)
 
-    vertices = {
-        name: tuple(c * r for c in unit_pos)
-        for name, unit_pos in vertices_unit
-    }
+    vertices = {name: tuple(c * r for c in unit_pos) for name, unit_pos in vertices_unit}
 
     # Two adjacent square platforms (90° apart, edges aligned to local
     # radial frame) overlap iff turret arm radius R ≤ platform side.
@@ -315,11 +323,15 @@ def compute_geometry(
         brick_max_mm=brick_max_mm,
         scatter_half_mm=scatter_half_mm,
         tilt_deg=tilt_deg,
-        hfov_deg=h, vfov_deg=v,
+        hfov_deg=h,
+        vfov_deg=v,
         px_per_mm=ppm,
-        dof_near_mm=near, dof_far_mm=far,
-        p_imaged_mm=p_imaged, p_platform_mm=p_platform,
-        tetra_r_mm=r, vertices=vertices,
+        dof_near_mm=near,
+        dof_far_mm=far,
+        p_imaged_mm=p_imaged,
+        p_platform_mm=p_platform,
+        tetra_r_mm=r,
+        vertices=vertices,
         turret_arm_r_mm=arm_r,
         rail_a_z_mm=rail_a_z,
         rail_a_x_half_mm=rail_a_x_half,
@@ -341,13 +353,13 @@ def print_config(g: Geometry):
     print(f"  Lens                   : {g.lens_focal_mm:.1f} mm M12")
     print(f"  Brick max dim          : {g.brick_max_mm:.0f} mm")
     print(f"  Landing scatter        : ±{g.scatter_half_mm:.0f} mm")
-    print(f"  Tetrahedral tilt       : {g.tilt_deg:.0f}° from platform normal "
-          f"(apex at {90 - g.tilt_deg:.0f}° elevation)")
+    print(
+        f"  Tetrahedral tilt       : {g.tilt_deg:.0f}° from platform normal (apex at {90 - g.tilt_deg:.0f}° elevation)"
+    )
     print()
     print(f"OPTICAL")
     print(f"  HFOV / VFOV            : {g.hfov_deg:.1f}° / {g.vfov_deg:.1f}°")
-    print(f"  Resolution on brick    : {g.px_per_mm:.1f} px/mm "
-          f"(target ≥ {PX_PER_MM_TARGET})")
+    print(f"  Resolution on brick    : {g.px_per_mm:.1f} px/mm (target ≥ {PX_PER_MM_TARGET})")
     far = "∞" if g.dof_far_mm == float("inf") else f"+{g.dof_far_mm:.0f}"
     print(f"  DoF (f/{LENS_F_NUMBER:.1f}, c=5μm)   : -{g.dof_near_mm:.0f} / {far} mm")
     if g.dof_near_mm < BRICK_HEIGHT_MAX_MM / 2:
@@ -356,47 +368,41 @@ def print_config(g: Geometry):
     print(f"SPATIAL")
     print(f"  Imaged region          : {g.p_imaged_mm:.0f} × {g.p_imaged_mm:.0f} mm")
     print(f"  Platform (PMMA)        : {g.p_platform_mm:.0f} × {g.p_platform_mm:.0f} mm")
-    print(f"  Tetrahedral radius r   : {g.tetra_r_mm:.0f} mm  "
-          f"(rev-5 baseline ≈ {_REV5_BASELINE_R})")
+    print(f"  Tetrahedral radius r   : {g.tetra_r_mm:.0f} mm  (rev-5 baseline ≈ {_REV5_BASELINE_R})")
     for name, pos in g.vertices.items():
-        print(f"    {name:<14}       ({pos[0]:>+7.1f}, {pos[1]:>+7.1f}, "
-              f"{pos[2]:>+7.1f})")
+        print(f"    {name:<14}       ({pos[0]:>+7.1f}, {pos[1]:>+7.1f}, {pos[2]:>+7.1f})")
     print()
     print(f"TURRET")
-    print(f"  Arm radius             : {g.turret_arm_r_mm:.0f} mm  "
-          f"(rev-4 = 185)")
-    print(f"  IMAGE → LOAD station   : ({g.turret_arm_r_mm:.0f}, 0, "
-          f"{-g.turret_arm_r_mm:.0f})")
-    print(f"  IMAGE → DUMP station   : ({-g.turret_arm_r_mm:.0f}, 0, "
-          f"{-g.turret_arm_r_mm:.0f})")
-    print(f"  IMAGE → RETURN station : (0, 0, {-2*g.turret_arm_r_mm:.0f})")
+    print(f"  Arm radius             : {g.turret_arm_r_mm:.0f} mm  (rev-4 = 185)")
+    print(f"  IMAGE → LOAD station   : ({g.turret_arm_r_mm:.0f}, 0, {-g.turret_arm_r_mm:.0f})")
+    print(f"  IMAGE → DUMP station   : ({-g.turret_arm_r_mm:.0f}, 0, {-g.turret_arm_r_mm:.0f})")
+    print(f"  IMAGE → RETURN station : (0, 0, {-2 * g.turret_arm_r_mm:.0f})")
     print()
     print(f"RIG ENVELOPE (rough; conservative mount footprint)")
-    print(f"  Rail A (X-bar)         : z = {g.rail_a_z_mm:.0f}, "
-          f"|x| ≤ {g.rail_a_x_half_mm:.0f}")
+    print(f"  Rail A (X-bar)         : z = {g.rail_a_z_mm:.0f}, |x| ≤ {g.rail_a_x_half_mm:.0f}")
     print(f"  Rail C (Z-column)      : y = {g.rail_c_y_mm:.0f}")
-    print(f"  Rail D (Y-cantilever)  : z = {g.rail_d_z_mm:.0f}, "
-          f"y ≥ {g.rail_d_y_front_mm:.0f}")
+    print(f"  Rail D (Y-cantilever)  : z = {g.rail_d_z_mm:.0f}, y ≥ {g.rail_d_y_front_mm:.0f}")
     bb_x = 2 * g.rail_a_x_half_mm
     bb_y = g.rail_c_y_mm - g.rail_d_y_front_mm
     bb_z = g.rail_d_z_mm - g.rail_a_z_mm
-    print(f"  Rig bounding box       : {bb_x:.0f} × {bb_y:.0f} × {bb_z:.0f}"
-          f" mm (X×Y×Z)")
+    print(f"  Rig bounding box       : {bb_x:.0f} × {bb_y:.0f} × {bb_z:.0f} mm (X×Y×Z)")
 
 
 _LENS_CANDIDATES = [
     (2.1, "2.1mm wide", 100),
-    (2.8, "2.8mm",      100),
-    (3.6, "3.6mm",      120),
-    (6.0, "6mm",        150),
-    (8.0, "8mm",        200),
+    (2.8, "2.8mm", 100),
+    (3.6, "3.6mm", 120),
+    (6.0, "6mm", 150),
+    (8.0, "8mm", 200),
 ]
 
 
 def lens_sweep_table():
-    print(f"{'lens':<12} {'f':>4} {'HFOV':>6} {'VFOV':>6} "
-          f"{'r':>4} {'P_pmma':>7} {'arm_R':>6} {'px/mm':>6} "
-          f"{'rig BB X×Y×Z':>15}")
+    print(
+        f"{'lens':<12} {'f':>4} {'HFOV':>6} {'VFOV':>6} "
+        f"{'r':>4} {'P_pmma':>7} {'arm_R':>6} {'px/mm':>6} "
+        f"{'rig BB X×Y×Z':>15}"
+    )
     print("-" * 78)
     for focal, label, min_focus in _LENS_CANDIDATES:
         try:
@@ -407,15 +413,16 @@ def lens_sweep_table():
         bb_x = 2 * g.rail_a_x_half_mm
         bb_y = g.rail_c_y_mm - g.rail_d_y_front_mm
         bb_z = g.rail_d_z_mm - g.rail_a_z_mm
-        print(f"{label:<12} {focal:>4.1f} {g.hfov_deg:>5.1f}° {g.vfov_deg:>5.1f}° "
-              f"{g.tetra_r_mm:>4.0f} {g.p_platform_mm:>7.0f} "
-              f"{g.turret_arm_r_mm:>6.0f} {g.px_per_mm:>6.1f} "
-              f"{bb_x:>4.0f}×{bb_y:>3.0f}×{bb_z:>3.0f}")
+        print(
+            f"{label:<12} {focal:>4.1f} {g.hfov_deg:>5.1f}° {g.vfov_deg:>5.1f}° "
+            f"{g.tetra_r_mm:>4.0f} {g.p_platform_mm:>7.0f} "
+            f"{g.turret_arm_r_mm:>6.0f} {g.px_per_mm:>6.1f} "
+            f"{bb_x:>4.0f}×{bb_y:>3.0f}×{bb_z:>3.0f}"
+        )
 
 
 def platform_sensitivity_table():
-    print(f"How min r and turret arm R vary with brick_max + scatter "
-          f"(P_imaged):")
+    print(f"How min r and turret arm R vary with brick_max + scatter (P_imaged):")
     print()
     header = f"{'P_imaged':>9} {'arm_R':>6}"
     for _, label, _ in _LENS_CANDIDATES:
@@ -437,8 +444,10 @@ def platform_sensitivity_table():
 
 
 def tilt_sensitivity_table():
-    print(f"How tilt affects r and rig BB at lens = {LENS_FOCAL_MM} mm, "
-          f"P_imaged = {BRICK_MAX_MM + 2*SCATTER_HALF_MM:.0f} mm:")
+    print(
+        f"How tilt affects r and rig BB at lens = {LENS_FOCAL_MM} mm, "
+        f"P_imaged = {BRICK_MAX_MM + 2 * SCATTER_HALF_MM:.0f} mm:"
+    )
     print()
     print(f"{'tilt':>5} {'apex_el':>8} {'r':>5} {'rig BB X×Y×Z':>16}")
     print("-" * 38)
@@ -452,14 +461,12 @@ def tilt_sensitivity_table():
         bb_y = g.rail_c_y_mm - g.rail_d_y_front_mm
         bb_z = g.rail_d_z_mm - g.rail_a_z_mm
         elev = 90 - tilt
-        print(f"{tilt:>4}° {elev:>6}° {g.tetra_r_mm:>5.0f} "
-              f"{bb_x:>4.0f}×{bb_y:>3.0f}×{bb_z:>3.0f}")
+        print(f"{tilt:>4}° {elev:>6}° {g.tetra_r_mm:>5.0f} {bb_x:>4.0f}×{bb_y:>3.0f}×{bb_z:>3.0f}")
 
 
 def report():
     print("=" * 78)
-    print(f"M03 SCANNER SIZING — proposed config (lens = {LENS_FOCAL_MM} mm, "
-          f"tilt = {TILT_DEG:.0f}°)")
+    print(f"M03 SCANNER SIZING — proposed config (lens = {LENS_FOCAL_MM} mm, tilt = {TILT_DEG:.0f}°)")
     print("=" * 78)
     print()
     print_config(compute_geometry())

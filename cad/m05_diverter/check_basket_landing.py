@@ -37,8 +37,10 @@ from .basket import assembly as _bkt
 from .params import BASKET_RIM_Z, FLOOR_H, FLOOR_LAYOUTS, basket_name
 from .ramp_mechanism.assembly import RAMP_TIP_X
 
+# fmt: off
 LANDING_DEPTH = 20.0                 # radial reach of the probe past the tip
 LANDING_BAND = 20.0                  # vertical: the probe's depth below the rim
+# fmt: on
 
 
 def build_basket_landing() -> Assembly:
@@ -47,7 +49,8 @@ def build_basket_landing() -> Assembly:
     a = Assembly()
     for floor, layout in sorted(FLOOR_LAYOUTS.items()):
         a = a.with_subassembly(
-            f"f{floor}", _bkt.build_basket_ring(layout),
+            f"f{floor}",
+            _bkt.build_basket_ring(layout),
             location=Pos(0, 0, floor * FLOOR_H),
         )
     for floor, layout in sorted(FLOOR_LAYOUTS.items()):
@@ -58,16 +61,15 @@ def build_basket_landing() -> Assembly:
             aim_deg = center_deg + aim_offset_deg(n_size, notches, exit_w)
             leaf = basket_name(center_deg, n_size)
             name = f"landing_f{floor}_{leaf}"
-            a = (
-                a
-                .with_part(
-                    name, probe,
-                    location=Rot(0, 0, aim_deg)
-                    * Pos(RAMP_TIP_X + LANDING_DEPTH / 2, 0, z),
-                )
-                .assert_distance(
-                    name, f"f{floor}.{leaf}", min_mm=LANDING_MARGIN, name=name,
-                )
+            a = a.with_part(
+                name,
+                probe,
+                location=Rot(0, 0, aim_deg) * Pos(RAMP_TIP_X + LANDING_DEPTH / 2, 0, z),
+            ).assert_distance(
+                name,
+                f"f{floor}.{leaf}",
+                min_mm=LANDING_MARGIN,
+                name=name,
             )
     return a
 

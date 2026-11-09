@@ -17,11 +17,9 @@ from .assembly import WALL_MIN, basket
 # Every distinct printed body across all four floor layouts: a basket
 # is fixed by its size N and which boundaries carry a column channel.
 # Until 2026-09-22 only the N=6 with both channels was inspected.
-bodies = sorted({
-    (n, "left" in notches, "right" in notches)
-    for layout in FLOOR_LAYOUTS.values()
-    for _, n, notches in layout
-})
+bodies = sorted(
+    {(n, "left" in notches, "right" in notches) for layout in FLOOR_LAYOUTS.values() for _, n, notches in layout}
+)
 for n, left, right in bodies:
     inspect(
         basket(half_angle_deg=180.0 / n, notch_left=left, notch_right=right),

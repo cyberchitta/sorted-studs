@@ -46,7 +46,6 @@ bores, no ledges — prints cleanly at the default 45° FDM overhang
 threshold.
 """
 
-
 from build123d import Box, Cylinder, Pos
 
 from cad_khana.mechanism.assembly import Assembly
@@ -83,6 +82,7 @@ TURRET_HUB_HOUSING_HEIGHT = 60.0
 
 # Housing top face Z in world. Cross-rail top face at z = -120
 # (= floor + MEMBER/2 after c7) plus housing height = -60.
+# fmt: off
 TURRET_HUB_HOUSING_TOP_Z = (
     TURRET_FRAME_FLOOR_Z + 20.0 / 2 + TURRET_HUB_HOUSING_HEIGHT
 )                                                                # = -60
@@ -92,6 +92,7 @@ TURRET_HUB_HOUSING_TOP_Z = (
 
 MEMBER = 20.0                              # 2020 cross-rail cross-section
 RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2   # = -120 after c7
+# fmt: on
 
 
 # --- Housing dimensions ------------------------------------------------
@@ -101,7 +102,7 @@ RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2   # = -120 after c7
 # the central Ø22 bore and around each Ø5.5 bolt clearance hole.
 HOUSING_X = 60.0
 HOUSING_Y = 50.0
-HOUSING_Z = TURRET_HUB_HOUSING_HEIGHT       # = 60 (vertical, after c4)
+HOUSING_Z = TURRET_HUB_HOUSING_HEIGHT  # = 60 (vertical, after c4)
 
 # Central bore diameter — bearing OD press fit. Modeled tangent
 # (zero radial gap); real assembly relies on FDM tolerance + light
@@ -126,7 +127,7 @@ _BOLT_HALF_X = BOLT_SPACING_X / 2
 # --- Shaft + bearing dimensions ----------------------------------------
 
 SHAFT_D = TURRET_SHAFT_D
-_SHAFT_LEN = TURRET_SHAFT_TOP_Z - RAIL_TOP_Z      # = 110 after c7
+_SHAFT_LEN = TURRET_SHAFT_TOP_Z - RAIL_TOP_Z  # = 110 after c7
 
 BEARING_OD = TURRET_BEARING_OD
 BEARING_ID = SHAFT_D
@@ -134,6 +135,7 @@ BEARING_T = TURRET_BEARING_T
 
 
 # --- Part functions ----------------------------------------------------
+
 
 def housing(
     housing_x: float = HOUSING_X,
@@ -164,29 +166,21 @@ def housing(
     # Bore wall to the housing X / Y edges. X is the narrower direction.
     _bore_wall_x = housing_x / 2 - bore_d / 2
     assert _bore_wall_x >= WALL_MIN, (
-        f"bore-to-X-edge wall {_bore_wall_x:.2f} mm < WALL_MIN ({WALL_MIN}); "
-        f"raise HOUSING_X"
+        f"bore-to-X-edge wall {_bore_wall_x:.2f} mm < WALL_MIN ({WALL_MIN}); raise HOUSING_X"
     )
     _bore_wall_y = housing_y / 2 - bore_d / 2
     assert _bore_wall_y >= WALL_MIN, (
-        f"bore-to-Y-edge wall {_bore_wall_y:.2f} mm < WALL_MIN ({WALL_MIN}); "
-        f"raise HOUSING_Y"
+        f"bore-to-Y-edge wall {_bore_wall_y:.2f} mm < WALL_MIN ({WALL_MIN}); raise HOUSING_Y"
     )
 
     body = Pos(0, 0, housing_z / 2) * Box(housing_x, housing_y, housing_z)
 
     # Central vertical through-bore (axis along ±Z = build123d default).
-    body -= (
-        Pos(0, 0, housing_z / 2)
-        * Cylinder(bore_d / 2, housing_z * 3)
-    )
+    body -= Pos(0, 0, housing_z / 2) * Cylinder(bore_d / 2, housing_z * 3)
 
     # Two vertical M5 clearance holes (axis along ±Z).
     for sx in (-1, 1):
-        body -= (
-            Pos(sx * bolt_half_x, 0, housing_z / 2)
-            * Cylinder(bolt_hole_d / 2, housing_z * 3)
-        )
+        body -= Pos(sx * bolt_half_x, 0, housing_z / 2) * Cylinder(bolt_hole_d / 2, housing_z * 3)
 
     return body
 
@@ -266,7 +260,9 @@ def build_turret_hub_static() -> Assembly:
     a = Assembly()
     hub_pose = Pos(TURRET_HUB_X, TURRET_HUB_Y, RAIL_TOP_Z)
     a = a.with_part(
-        "hub_housing", housing(), location=hub_pose,
+        "hub_housing",
+        housing(),
+        location=hub_pose,
         material=material_of("hub_housing"),
     )
     a = a.with_part(
@@ -293,7 +289,8 @@ def build_turret_hub_rotor() -> Assembly:
     a = Assembly()
     hub_pose = Pos(TURRET_HUB_X, TURRET_HUB_Y, RAIL_TOP_Z)
     a = a.with_part(
-        "hub_shaft", shaft(),
+        "hub_shaft",
+        shaft(),
         location=hub_pose * Pos(0, 0, _SHAFT_LEN / 2),
         material=material_of("hub_shaft"),
     )
@@ -301,6 +298,7 @@ def build_turret_hub_rotor() -> Assembly:
 
 
 # --- Standalone assembly -----------------------------------------------
+
 
 def build_turret_hub_standalone() -> Assembly:
     """All four turret-hub parts (housing + shaft + 2 bearings). All
@@ -313,8 +311,7 @@ def build_turret_hub_standalone() -> Assembly:
         .with_subassembly("static", build_turret_hub_static())
         .with_subassembly("rotor", build_turret_hub_rotor())
         .assert_no_interference_within(
-            tuple(f"static.{n}" for n in HUB_STATIC_PART_NAMES)
-            + tuple(f"rotor.{n}" for n in HUB_ROTOR_PART_NAMES)
+            tuple(f"static.{n}" for n in HUB_STATIC_PART_NAMES) + tuple(f"rotor.{n}" for n in HUB_ROTOR_PART_NAMES)
         )
     )
 

@@ -119,7 +119,7 @@ from ..params import (
 # at *both* radii on each flagged boundary azimuth. The inner channel
 # reaches the inner arc; the outer channel reaches the outer arc.
 BASKET_HEX_OVERHANG = 60.0
-R_BASKET_OUTER = R_HEX_OUTER + BASKET_HEX_OVERHANG   # 330
+R_BASKET_OUTER = R_HEX_OUTER + BASKET_HEX_OVERHANG  # 330
 BASKET_WALL_T = 3.0
 
 # Each basket takes its full 360°/N sector. An earlier design shrunk
@@ -140,8 +140,10 @@ BASKET_WALL_T = 3.0
 # same reason the bracket sub-assemblies duplicate it — params.py
 # doesn't host this constant today.
 COLUMN_SIDE = 20.0
+# fmt: off
 COLUMN_CLEARANCE = 1.0   # gap between notch wall and column face
 CLAMP_ARM_T = 6.0        # vertex-bracket clamp plate thickness
+# fmt: on
 ACCESS_CHANNEL_W = COLUMN_SIDE + 2 * (CLAMP_ARM_T + COLUMN_CLEARANCE)
 # The clamp plates stop at the vertex brackets' VERT_ARM_TOP_Z (40,
 # mirrored — sibling units can't be imported). Above it the inner
@@ -180,11 +182,7 @@ _ARC_HALF_W = ACCESS_CHANNEL_W / 2.0
 def _arc_overshoot(radius: float) -> float:
     """Radial depth a chord of half-width `_ARC_HALF_W` must be pushed
     past a `radius` arc for the whole chord to clear it."""
-    return (
-        radius
-        - math.sqrt(radius**2 - _ARC_HALF_W**2)
-        + ARC_OVERSHOOT_MARGIN
-    )
+    return radius - math.sqrt(radius**2 - _ARC_HALF_W**2) + ARC_OVERSHOOT_MARGIN
 
 
 INNER_ARC_OVERSHOOT = _arc_overshoot(R_BASKET_INNER)
@@ -208,13 +206,11 @@ WITHDRAW_MARGIN = 2.0
 def withdrawal_travel(half_angle_deg: float, grow: float = 0.0) -> float:
     """Draw-out distance along the basket axis at which the swept
     channel (padded by `grow`) has fully crossed the basket edge."""
-    return (
-        (ACCESS_CHANNEL_W / 2.0 + grow) / math.sin(math.radians(half_angle_deg))
-        + WITHDRAW_MARGIN
-    )
+    return (ACCESS_CHANNEL_W / 2.0 + grow) / math.sin(math.radians(half_angle_deg)) + WITHDRAW_MARGIN
 
 
 # --- Helpers ------------------------------------------------------------
+
 
 def _radial_access_channel_at(
     azimuth_deg: float,
@@ -246,15 +242,12 @@ def _radial_access_channel_at(
     r1 = radius_end + grow
     c = math.cos(math.radians(azimuth_deg))
     s = math.sin(math.radians(azimuth_deg))
-    corners = [
-        (r * c - w * s, r * s + w * c)
-        for r in (r0, r1)
-        for w in (-half_w, +half_w)
-    ]
+    corners = [(r * c - w * s, r * s + w * c) for r in (r0, r1) for w in (-half_w, +half_w)]
     swept = corners + [(x - sweep_x, y) for x, y in corners]
     footprint = Polygon(*_convex_hull(swept), align=None)
     return Pos(0, 0, z_bot) * extrude(
-        footprint, amount=BASKET_DEPTH_Z + 2 * z_margin,
+        footprint,
+        amount=BASKET_DEPTH_Z + 2 * z_margin,
     )
 
 
@@ -281,8 +274,14 @@ def _stepped_inner_channel_at(
     z_up = z_step + (w_lo - w_up)
     # Cross-section in the plane square to the slot: (tangential, z).
     section = Polygon(
-        (-w_lo, z_bot), (w_lo, z_bot), (w_lo, z_step), (w_up, z_up),
-        (w_up, z_top), (-w_up, z_top), (-w_up, z_up), (-w_lo, z_step),
+        (-w_lo, z_bot),
+        (w_lo, z_bot),
+        (w_lo, z_step),
+        (w_up, z_up),
+        (w_up, z_top),
+        (-w_up, z_top),
+        (-w_up, z_up),
+        (-w_lo, z_step),
         align=None,
     )
     r0 = radius_start - grow
@@ -371,6 +370,7 @@ def _arc_prism(
 
 # --- Part functions -----------------------------------------------------
 
+
 def basket(
     *,
     half_angle_deg: float,
@@ -394,11 +394,18 @@ def basket(
     z_bot = BASKET_FLOOR_Z
     z_top = BASKET_RIM_Z
     outer = _arc_prism(
-        R_BASKET_INNER, R_BASKET_OUTER, half_angle_deg, z_bot, z_top,
+        R_BASKET_INNER,
+        R_BASKET_OUTER,
+        half_angle_deg,
+        z_bot,
+        z_top,
     )
     cavity = _arc_prism(
-        R_BASKET_INNER, R_BASKET_OUTER, half_angle_deg,
-        z_bot + BASKET_WALL_T, z_top + 1.0,
+        R_BASKET_INNER,
+        R_BASKET_OUTER,
+        half_angle_deg,
+        z_bot + BASKET_WALL_T,
+        z_top + 1.0,
         inset=BASKET_WALL_T,
     )
     # Two columns per flagged azimuth: open the inner one to the inner
@@ -426,24 +433,31 @@ def basket(
     ):
         if not flagged:
             continue
-        channels.append((
-            az,
-            R_VERT_OUTER - radial_clearance,
-            R_BASKET_OUTER + OUTER_ARC_OVERSHOOT,
-            True,
-        ))
-        channels.append((
-            az,
-            R_BASKET_INNER - INNER_ARC_OVERSHOOT,
-            R_VERT_INNER + radial_clearance,
-            False,
-        ))
+        channels.append(
+            (
+                az,
+                R_VERT_OUTER - radial_clearance,
+                R_BASKET_OUTER + OUTER_ARC_OVERSHOOT,
+                True,
+            )
+        )
+        channels.append(
+            (
+                az,
+                R_BASKET_INNER - INNER_ARC_OVERSHOOT,
+                R_VERT_INNER + radial_clearance,
+                False,
+            )
+        )
 
     def cutter(az, r0, r1, swept, grow=0.0):
         if not swept:
             return _stepped_inner_channel_at(az, r0, r1, grow=grow)
         return _radial_access_channel_at(
-            az, r0, r1, grow=grow,
+            az,
+            r0,
+            r1,
+            grow=grow,
             sweep_x=withdrawal_travel(half_angle_deg, grow),
         )
 
@@ -466,11 +480,14 @@ def col_stub() -> Part:
     z_top = BASKET_RIM_Z
     z_center = (z_bot + z_top) / 2
     return Pos(0, 0, z_center) * Box(
-        COL_OUTER_SIDE, COL_OUTER_SIDE, z_top - z_bot,
+        COL_OUTER_SIDE,
+        COL_OUTER_SIDE,
+        z_top - z_bot,
     )
 
 
 # --- Assembly builders ---------------------------------------------------
+
 
 def build_basket_ring(
     layout,
@@ -505,6 +522,7 @@ def build_basket_ring(
 
 # --- Standalone assembly -------------------------------------------------
 
+
 def build_basket_ring_standalone() -> Assembly:
     """One ring per `FLOOR_LAYOUTS` floor (subtree `f{idx}`, all at the
     same datum — they are never compared with each other) plus a
@@ -513,10 +531,7 @@ def build_basket_ring_standalone() -> Assembly:
     a = Assembly().with_part("col_stub", col_stub())
     for idx, layout in FLOOR_LAYOUTS.items():
         a = a.with_subassembly(f"f{idx}", build_basket_ring(layout))
-        names = [
-            f"f{idx}.{basket_name(center_deg, n_size)}"
-            for center_deg, n_size, _notches in layout
-        ]
+        names = [f"f{idx}.{basket_name(center_deg, n_size)}" for center_deg, n_size, _notches in layout]
         for name in names:
             a = a.assert_no_interference(name, "col_stub")
 

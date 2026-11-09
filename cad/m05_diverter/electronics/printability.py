@@ -17,6 +17,9 @@ WALL_MIN = 1.5
 
 # Prints flat, +Z up: a plain slab, nothing faces down above the bed.
 inspect(
-    board_plate(), method=FDM(wall_min_mm=WALL_MIN), out="outputs",
-    name="board_plate", solid_count=1,
+    board_plate(),
+    method=FDM(wall_min_mm=WALL_MIN),
+    out="outputs",
+    name="board_plate",
+    solid_count=1,
 )

@@ -20,14 +20,19 @@ def _plane(origin: tuple[float, float, float], axis: tuple[float, float, float])
 
 
 def teardrop_face(
-    d: float, origin: tuple[float, float, float], axis: tuple[float, float, float], *, apex_up: bool, roof_deg: float,
+    d: float,
+    origin: tuple[float, float, float],
+    axis: tuple[float, float, float],
+    *,
+    apex_up: bool,
+    roof_deg: float,
 ) -> Face:
     """A teardrop section across ``axis`` at ``origin``: a circle of
     diameter ``d`` roofed to a point on the ``apex_up`` side (+Z if
     true, −Z if not), its two roof lines ``roof_deg`` from vertical —
     the overhang they print at."""
     r = d / 2.0
-    t = math.radians(90.0 - roof_deg)          # tangent points' angle from the top
+    t = math.radians(90.0 - roof_deg)  # tangent points' angle from the top
     s = 1.0 if apex_up else -1.0
     # Wound counter-clockwise either way up: a clockwise Polygon
     # added to the circle silently contributes nothing.

@@ -128,12 +128,14 @@ from ..materials import material_of
 # In cartridge-local, the IMAGE pin axis runs along ±X. Z matches
 # turret-local Z (vertical). Y is "radial outward from hub" at IMAGE
 # pose, so the hub-side of the platform sits at -Y.
+# fmt: off
 PIN_AXIS_Z_LOCAL = TURRET_HINGE_PIN_Z                          # = -22.5
 # Cartridge centroid at the brick centroid (origin); the pin sits at
 # the hub-side edge of the frame, RADIAL short of the hub.
 # Cartridge-local hub Y = -ARM_R when placed at IMAGE (centroid at
 # turret +R), so cartridge-local pin Y = -ARM_R + RADIAL.
 PIN_AXIS_Y_LOCAL = TURRET_HINGE_PIN_RADIAL - TURRET_ARM_R      # = -60
+# fmt: on
 
 
 # --- Imaged region (rev-5 sizing.py) -----------------------------------
@@ -150,20 +152,23 @@ IMAGED_REGION_SIDE_MM = 110.0
 # see fully. Same 4 mm thickness so existing PMMA stock applies; user
 # cuts the 110 square from larger sheet.
 ACRYLIC_INSERT_SIZE = IMAGED_REGION_SIDE_MM
+# fmt: off
 ACRYLIC_INSERT_T = PLATFORM_ACRYLIC_T                          # = 4
 
 
 # --- Frame outer geometry ----------------------------------------------
 
 FRAME_OUTER_SIZE = PLATFORM_ACRYLIC_SIZE                        # = 120
+# fmt: on
 # Brick-containment lip above the acrylic — on the hub side and the two
 # pin-axis sides only; the outer edge is cut flush (see "Exit edge").
 FRAME_TOP_RING_HEIGHT = 5.0
-FRAME_WALL_T = (FRAME_OUTER_SIZE - ACRYLIC_INSERT_SIZE) / 2     # = 5
+FRAME_WALL_T = (FRAME_OUTER_SIZE - ACRYLIC_INSERT_SIZE) / 2  # = 5
 
 # Frame Z anchors. Acrylic top at z = 0 (matches the cartridge centroid
 # Z plane and the prior bonded-pieces design).
 ACRYLIC_TOP_Z = 0.0
+# fmt: off
 ACRYLIC_BOTTOM_Z = -ACRYLIC_INSERT_T                            # = -4
 TOP_RING_TOP_Z = ACRYLIC_TOP_Z + FRAME_TOP_RING_HEIGHT          # = +5
 
@@ -180,6 +185,7 @@ EXIT_EDGE_TOP_Z = ACRYLIC_TOP_Z                                 # = 0
 # section out to the outer face — the cut ends on their inner faces
 # and leaves no stub of outer rim to catch a brick's corner.
 EXIT_EDGE_HALF_X = ACRYLIC_INSERT_SIZE / 2                      # = 55
+# fmt: on
 
 # --- Corner lips (acrylic support at 4 pocket corners) -----------------
 
@@ -192,8 +198,10 @@ EXIT_EDGE_HALF_X = ACRYLIC_INSERT_SIZE / 2                      # = 55
 # (visibility.py), not asserted here.
 CORNER_LIP_SIZE = 10.0
 CORNER_LIP_T = 3.0
+# fmt: off
 CORNER_LIP_TOP_Z = ACRYLIC_BOTTOM_Z                             # = -4
 CORNER_LIP_BOTTOM_Z = CORNER_LIP_TOP_Z - CORNER_LIP_T           # = -7
+# fmt: on
 # How far each lip reaches up into the pocket wall. Its only job is
 # to give lip and wall shared material instead of a shared edge; the
 # tab it forms is trimmed back to the pocket, so it adds nothing
@@ -205,26 +213,31 @@ LIP_FUSE_Z = 1.0
 
 # Bracket-local axes match cartridge-local. Mirrors the prior bonded-
 # bracket footprint so slice (c) bushing-block placement stays valid.
+# fmt: off
 BRACKET_BLOCK_X = 5.0            # spans one pin-tip protrusion zone
 BRACKET_BLOCK_Y = 16.0           # spans across the pin axis
 BRACKET_BOTTOM_Z_LOCAL = -27.3   # matches prior design; sets lifter clearance
 BRACKET_TOP_Z_LOCAL = ACRYLIC_BOTTOM_Z                          # = -4
+# fmt: on
 BRACKET_BLOCK_Z = BRACKET_TOP_Z_LOCAL - BRACKET_BOTTOM_Z_LOCAL  # = 23.3
 
 # Pin bore — Ø5.4 = 0.4 mm diametric clearance over the M5 stock pin.
-PIN_BORE_D = TURRET_HINGE_PIN_D + 0.4                           # = 5.4
+PIN_BORE_D = TURRET_HINGE_PIN_D + 0.4  # = 5.4
 _PIN_Z_BRACKET_LOCAL = PIN_AXIS_Z_LOCAL - BRACKET_BOTTOM_Z_LOCAL  # = 4.8
 
 # Slice (c) bushing block half-width along the pin axis (mirrors slice
 # (c)'s BUSHING_BLOCK_W = 20).
 _BUSHING_HALF_X = 10.0
+# fmt: off
 _PIN_AIR_GAP = 0.5               # bracket-to-bushing-block clearance
 
 BRACKET_X_CENTER_OFFSET = (
     _BUSHING_HALF_X + _PIN_AIR_GAP + BRACKET_BLOCK_X / 2          # = 13
 )
+# fmt: on
 BRACKET_POS_X_LOCAL = +BRACKET_X_CENTER_OFFSET
 BRACKET_NEG_X_LOCAL = -BRACKET_X_CENTER_OFFSET
+# fmt: off
 BRACKET_Y_LOCAL = PIN_AXIS_Y_LOCAL                                # = -60
 
 
@@ -254,6 +267,7 @@ _BUSHING_NOTCH_X_LEN = 2 * _BUSHING_NOTCH_HALF_X                   # = 21
 # brackets at cart X=±13 still attach to the skirt outboard portion
 # (X ≤ -10.5 and X ≥ +10.5).
 _BUSHING_NOTCH_Z_TOP = HUB_SKIRT_Z_TOP                              # = -4
+# fmt: on
 
 
 # --- Kicker extension (cantilevered from skirt past hinge) -------------
@@ -266,13 +280,15 @@ _BUSHING_NOTCH_Z_TOP = HUB_SKIRT_Z_TOP                              # = -4
 # (visibility.py), not asserted here.
 EXTENSION_X_CENTER = +30.0
 EXTENSION_X_LEN = 18.0
+# fmt: off
 EXTENSION_X_INNER = EXTENSION_X_CENTER - EXTENSION_X_LEN / 2       # = +21
 EXTENSION_X_OUTER = EXTENSION_X_CENTER + EXTENSION_X_LEN / 2       # = +39
 
 # Y span: from skirt inner face (-55) to the tip past the lift point.
 EXTENSION_Y_OUTBOARD = HUB_SKIRT_Y_INNER                           # = -55
+# fmt: on
 EXTENSION_Y_TIP = -111.0
-LIFT_POINT_Y_LOCAL = -100.0     # = cart Y where lifter pad center contacts
+LIFT_POINT_Y_LOCAL = -100.0  # = cart Y where lifter pad center contacts
 
 # L-shape: stem at the acrylic-bottom band (thin), drop block at the
 # tip hangs down to the lifter contact face.
@@ -281,9 +297,10 @@ EXTENSION_BOTTOM_Z = (
     TURRET_DUMP_SERVO_LIFTER_TOP_Z + EXTENSION_LIFTER_CLEARANCE_Z  # = -43
 )
 EXTENSION_STEM_BOTTOM_Z = -15.0
-EXTENSION_STEM_TOP_Z = ACRYLIC_BOTTOM_Z                            # = -4
+EXTENSION_STEM_TOP_Z = ACRYLIC_BOTTOM_Z  # = -4
 # Drop block Y span centered on lift point with margin for pad coverage.
 EXTENSION_DROP_Y_OUTBOARD = -89.0
+# fmt: off
 EXTENSION_DROP_Y_TIP = EXTENSION_Y_TIP                             # = -111
 
 # Stem gusset — the stem's print support, filling the stem's full
@@ -299,9 +316,11 @@ EXTENSION_DROP_Y_TIP = EXTENSION_Y_TIP                             # = -111
 # from it) and inside the turret's rest-pose hardware height.
 EXTENSION_GUSSET_TOP_Z = TOP_RING_TOP_Z                            # = +5
 EXTENSION_GUSSET_Y_ROOT = -FRAME_OUTER_SIZE / 2                    # = -60
+# fmt: on
 
 
 # --- Part functions ----------------------------------------------------
+
 
 def acrylic_insert(
     size: float = ACRYLIC_INSERT_SIZE,
@@ -340,10 +359,7 @@ def seat_cutter():
     `frame()` cuts with it; `printability.py` declares it as the `seat`
     feature (a face traces to the feature that made it)."""
     h = (TOP_RING_TOP_Z - CORNER_LIP_TOP_Z) * 3
-    return (
-        Pos(0, 0, CORNER_LIP_TOP_Z + h / 2)
-        * Box(ACRYLIC_INSERT_SIZE, ACRYLIC_INSERT_SIZE, h)
-    )
+    return Pos(0, 0, CORNER_LIP_TOP_Z + h / 2) * Box(ACRYLIC_INSERT_SIZE, ACRYLIC_INSERT_SIZE, h)
 
 
 def exit_edge_cutter():
@@ -354,9 +370,8 @@ def exit_edge_cutter():
     `frame()` cuts with it; `printability.py` declares it as the
     `exit_edge` feature."""
     h = FRAME_TOP_RING_HEIGHT * 3
-    return (
-        Pos(0, (FRAME_OUTER_SIZE - FRAME_WALL_T) / 2, EXIT_EDGE_TOP_Z + h / 2)
-        * Box(2 * EXIT_EDGE_HALF_X, FRAME_WALL_T, h)
+    return Pos(0, (FRAME_OUTER_SIZE - FRAME_WALL_T) / 2, EXIT_EDGE_TOP_Z + h / 2) * Box(
+        2 * EXIT_EDGE_HALF_X, FRAME_WALL_T, h
     )
 
 
@@ -365,10 +380,7 @@ def exit_edge_region():
     region `frame@exit_edge` whose top `build_platform_cartridge` holds
     no higher than the acrylic's. Frame-local, as `frame()` draws."""
     h = 4 * (TOP_RING_TOP_Z - BRACKET_BOTTOM_Z_LOCAL)
-    return (
-        Pos(0, (FRAME_OUTER_SIZE - FRAME_WALL_T) / 2, 0)
-        * Box(2 * EXIT_EDGE_HALF_X, FRAME_WALL_T, h)
-    )
+    return Pos(0, (FRAME_OUTER_SIZE - FRAME_WALL_T) / 2, 0) * Box(2 * EXIT_EDGE_HALF_X, FRAME_WALL_T, h)
 
 
 def bracket_blocks():
@@ -378,8 +390,7 @@ def bracket_blocks():
     `brackets` feature."""
     z_center = (BRACKET_BOTTOM_Z_LOCAL + BRACKET_TOP_Z_LOCAL) / 2
     return tuple(
-        Pos(x, BRACKET_Y_LOCAL, z_center)
-        * Box(BRACKET_BLOCK_X, BRACKET_BLOCK_Y, BRACKET_BLOCK_Z)
+        Pos(x, BRACKET_Y_LOCAL, z_center) * Box(BRACKET_BLOCK_X, BRACKET_BLOCK_Y, BRACKET_BLOCK_Z)
         for x in (BRACKET_POS_X_LOCAL, BRACKET_NEG_X_LOCAL)
     )
 
@@ -392,9 +403,7 @@ def pin_bore_cutters():
     the bore Z between them. `frame()` cuts with them;
     `printability.py` declares them as the `pin_bores` feature."""
     return tuple(
-        Pos(x, PIN_AXIS_Y_LOCAL, PIN_AXIS_Z_LOCAL)
-        * Rot(0, 90, 0)
-        * Cylinder(PIN_BORE_D / 2, BRACKET_BLOCK_X)
+        Pos(x, PIN_AXIS_Y_LOCAL, PIN_AXIS_Z_LOCAL) * Rot(0, 90, 0) * Cylinder(PIN_BORE_D / 2, BRACKET_BLOCK_X)
         for x in (BRACKET_POS_X_LOCAL, BRACKET_NEG_X_LOCAL)
     )
 
@@ -428,8 +437,7 @@ def frame():
     # bracket Y centerline so both walls equal.
     _pin_y_wall = BRACKET_BLOCK_Y / 2 - PIN_BORE_D / 2
     assert _pin_y_wall >= WALL_MIN, (
-        f"pin-bore to bracket Y wall {_pin_y_wall:.2f} mm < WALL_MIN "
-        f"({WALL_MIN}); raise BRACKET_BLOCK_Y"
+        f"pin-bore to bracket Y wall {_pin_y_wall:.2f} mm < WALL_MIN ({WALL_MIN}); raise BRACKET_BLOCK_Y"
     )
 
     # Bracket inboard X face (toward bushing block) clears the bushing block.
@@ -441,10 +449,9 @@ def frame():
     )
 
     # Bracket outboard face inside frame X footprint.
-    assert (
-        abs(BRACKET_POS_X_LOCAL) + BRACKET_BLOCK_X / 2
-        <= FRAME_OUTER_SIZE / 2
-    ), "bracket outboard X face overhangs frame edge"
+    assert abs(BRACKET_POS_X_LOCAL) + BRACKET_BLOCK_X / 2 <= FRAME_OUTER_SIZE / 2, (
+        "bracket outboard X face overhangs frame edge"
+    )
 
     # Frame perimeter wall thickness ≥ WALL_MIN.
     assert FRAME_WALL_T >= WALL_MIN, (
@@ -461,12 +468,8 @@ def frame():
     )
 
     # Corner lip width ≥ WALL_MIN.
-    assert CORNER_LIP_SIZE >= WALL_MIN, (
-        f"corner lip size {CORNER_LIP_SIZE} < WALL_MIN ({WALL_MIN})"
-    )
-    assert CORNER_LIP_T >= WALL_MIN, (
-        f"corner lip thickness {CORNER_LIP_T} < WALL_MIN ({WALL_MIN})"
-    )
+    assert CORNER_LIP_SIZE >= WALL_MIN, f"corner lip size {CORNER_LIP_SIZE} < WALL_MIN ({WALL_MIN})"
+    assert CORNER_LIP_T >= WALL_MIN, f"corner lip thickness {CORNER_LIP_T} < WALL_MIN ({WALL_MIN})"
 
     # Bushing-block notch clears the slice (c) block X face with AIR_GAP.
     assert _BUSHING_NOTCH_HALF_X >= _BUSHING_HALF_X + _PIN_AIR_GAP - 1e-9, (
@@ -477,31 +480,26 @@ def frame():
 
     # Bushing-block notch leaves wall material between notch outer face and
     # bracket inner face.
-    _notch_to_bracket_x = (
-        abs(BRACKET_POS_X_LOCAL) - BRACKET_BLOCK_X / 2 - _BUSHING_NOTCH_HALF_X
-    )
+    _notch_to_bracket_x = abs(BRACKET_POS_X_LOCAL) - BRACKET_BLOCK_X / 2 - _BUSHING_NOTCH_HALF_X
     assert _notch_to_bracket_x >= -1e-9, (
         f"bushing notch ({_BUSHING_NOTCH_HALF_X}) overlaps bracket inner "
-        f"face ({abs(BRACKET_POS_X_LOCAL) - BRACKET_BLOCK_X/2}); brackets "
+        f"face ({abs(BRACKET_POS_X_LOCAL) - BRACKET_BLOCK_X / 2}); brackets "
         f"would lose their hub-side skirt connection"
     )
 
     # Extension X within frame footprint.
     assert EXTENSION_X_OUTER <= FRAME_OUTER_SIZE / 2, (
-        f"extension outer X face {EXTENSION_X_OUTER} overhangs frame edge "
-        f"{FRAME_OUTER_SIZE / 2}"
+        f"extension outer X face {EXTENSION_X_OUTER} overhangs frame edge {FRAME_OUTER_SIZE / 2}"
     )
 
     # Extension Y reaches the lift point.
     assert EXTENSION_Y_TIP <= LIFT_POINT_Y_LOCAL, (
-        f"extension Y tip {EXTENSION_Y_TIP} doesn't reach lift point Y "
-        f"{LIFT_POINT_Y_LOCAL}"
+        f"extension Y tip {EXTENSION_Y_TIP} doesn't reach lift point Y {LIFT_POINT_Y_LOCAL}"
     )
 
     # Extension joins the skirt at the hub-side wall.
     assert EXTENSION_Y_OUTBOARD == HUB_SKIRT_Y_INNER, (
-        f"extension outboard end {EXTENSION_Y_OUTBOARD} doesn't meet skirt "
-        f"inner face {HUB_SKIRT_Y_INNER}"
+        f"extension outboard end {EXTENSION_Y_OUTBOARD} doesn't meet skirt inner face {HUB_SKIRT_Y_INNER}"
     )
 
     # Extension clear of the +X bracket in cart X.
@@ -514,7 +512,7 @@ def frame():
     )
 
     # Lever arm to lift point ≥ minimum for reliable dump.
-    _LEVER_ARM = abs(LIFT_POINT_Y_LOCAL - PIN_AXIS_Y_LOCAL)            # = 40
+    _LEVER_ARM = abs(LIFT_POINT_Y_LOCAL - PIN_AXIS_Y_LOCAL)  # = 40
     assert _LEVER_ARM >= 30.0, (
         f"lever arm hinge→lift {_LEVER_ARM:.2f} mm < 30 mm; dump may "
         f"be unreliable — push EXTENSION_Y_TIP further hub-ward"
@@ -531,28 +529,22 @@ def frame():
     # from turret-local back to cart-frame is:
     #   cart_x = -turret_x
     #   cart_y = -(turret_y + ARM_R) = -turret_y - ARM_R
-    _LIFTER_CART_X = -TURRET_DUMP_SERVO_LIFTER_TURRET_X                # = +30
+    _LIFTER_CART_X = -TURRET_DUMP_SERVO_LIFTER_TURRET_X  # = +30
     _LIFTER_CART_Y = -TURRET_DUMP_SERVO_LIFTER_TURRET_Y - TURRET_ARM_R  # = -100
     assert _LIFTER_CART_X == EXTENSION_X_CENTER, (
-        f"lifter cart X {_LIFTER_CART_X} ≠ extension X center "
-        f"{EXTENSION_X_CENTER}"
+        f"lifter cart X {_LIFTER_CART_X} ≠ extension X center {EXTENSION_X_CENTER}"
     )
     assert _LIFTER_CART_Y == LIFT_POINT_Y_LOCAL, (
-        f"lifter cart Y {_LIFTER_CART_Y} ≠ extension lift point Y "
-        f"{LIFT_POINT_Y_LOCAL}"
+        f"lifter cart Y {_LIFTER_CART_Y} ≠ extension lift point Y {LIFT_POINT_Y_LOCAL}"
     )
 
     # Top ring + pocket walls — one perimeter tube spanning z ∈ [-4, +5].
+    # fmt: off
     perim_z_center = (TOP_RING_TOP_Z + ACRYLIC_BOTTOM_Z) / 2       # = +0.5
     perim_z_len = TOP_RING_TOP_Z - ACRYLIC_BOTTOM_Z                # = 9
-    body = (
-        Pos(0, 0, perim_z_center)
-        * Box(FRAME_OUTER_SIZE, FRAME_OUTER_SIZE, perim_z_len)
-    )
-    body -= (
-        Pos(0, 0, perim_z_center)
-        * Box(ACRYLIC_INSERT_SIZE, ACRYLIC_INSERT_SIZE, perim_z_len * 3)
-    )
+    # fmt: on
+    body = Pos(0, 0, perim_z_center) * Box(FRAME_OUTER_SIZE, FRAME_OUTER_SIZE, perim_z_len)
+    body -= Pos(0, 0, perim_z_center) * Box(ACRYLIC_INSERT_SIZE, ACRYLIC_INSERT_SIZE, perim_z_len * 3)
     # The exit edge: no rim on the outer wall over the acrylic's width.
     body -= exit_edge_cutter()
 
@@ -575,34 +567,28 @@ def frame():
     lip_z_len = lip_z_top - CORNER_LIP_BOTTOM_Z
     for sx in (-1, +1):
         for sy in (-1, +1):
-            body += (
-                Pos(sx * lip_center, sy * lip_center,
-                    (CORNER_LIP_BOTTOM_Z + lip_z_top) / 2)
-                * Box(lip_span, lip_span, lip_z_len)
+            body += Pos(sx * lip_center, sy * lip_center, (CORNER_LIP_BOTTOM_Z + lip_z_top) / 2) * Box(
+                lip_span, lip_span, lip_z_len
             )
     # Re-clear the acrylic pocket above the seat, so each lip's fusing
     # tab survives only where the wall already stands.
     body -= seat_cutter()
 
     # Hub-side skirt — full X span at cart Y ∈ [-90, -86].
+    # fmt: off
     skirt_y_center = (HUB_SKIRT_Y_OUTER + HUB_SKIRT_Y_INNER) / 2   # = -88
     skirt_z_center = (HUB_SKIRT_Z_BOTTOM + HUB_SKIRT_Z_TOP) / 2    # = -15.65
     skirt_z_len = HUB_SKIRT_Z_TOP - HUB_SKIRT_Z_BOTTOM             # = 23.3
-    body += (
-        Pos(0, skirt_y_center, skirt_z_center)
-        * Box(FRAME_OUTER_SIZE, FRAME_WALL_T, skirt_z_len)
-    )
+    # fmt: on
+    body += Pos(0, skirt_y_center, skirt_z_center) * Box(FRAME_OUTER_SIZE, FRAME_WALL_T, skirt_z_len)
 
     # Notch the skirt for the slice (c) bushing block to pass through.
     # Z extends to the skirt top so the inner edge of the upper band
     # (cart Y=-55, Z=-10) doesn't swing into the bushing block top
     # face during DUMP tilt.
     notch_z_center = (HUB_SKIRT_Z_BOTTOM + _BUSHING_NOTCH_Z_TOP) / 2
-    notch_z_len = _BUSHING_NOTCH_Z_TOP - HUB_SKIRT_Z_BOTTOM         # = 23.3
-    body -= (
-        Pos(0, skirt_y_center, notch_z_center)
-        * Box(_BUSHING_NOTCH_X_LEN, FRAME_WALL_T * 3, notch_z_len)
-    )
+    notch_z_len = _BUSHING_NOTCH_Z_TOP - HUB_SKIRT_Z_BOTTOM  # = 23.3
+    body -= Pos(0, skirt_y_center, notch_z_center) * Box(_BUSHING_NOTCH_X_LEN, FRAME_WALL_T * 3, notch_z_len)
 
     # Hinge brackets — at cart X = ±13, hanging from the skirt.
     for block in bracket_blocks():
@@ -615,35 +601,28 @@ def frame():
     # Kicker extension — L-shape: stem at acrylic-bottom band, drop
     # block hanging down to the lifter contact face at the tip.
     stem_y_center = (EXTENSION_Y_OUTBOARD + EXTENSION_Y_TIP) / 2
-    stem_y_len = EXTENSION_Y_OUTBOARD - EXTENSION_Y_TIP            # = 55
+    stem_y_len = EXTENSION_Y_OUTBOARD - EXTENSION_Y_TIP  # = 55
     stem_z_center = (EXTENSION_STEM_TOP_Z + EXTENSION_STEM_BOTTOM_Z) / 2
-    stem_z_len = EXTENSION_STEM_TOP_Z - EXTENSION_STEM_BOTTOM_Z    # = 11
-    body += (
-        Pos(EXTENSION_X_CENTER, stem_y_center, stem_z_center)
-        * Box(EXTENSION_X_LEN, stem_y_len, stem_z_len)
-    )
+    stem_z_len = EXTENSION_STEM_TOP_Z - EXTENSION_STEM_BOTTOM_Z  # = 11
+    body += Pos(EXTENSION_X_CENTER, stem_y_center, stem_z_center) * Box(EXTENSION_X_LEN, stem_y_len, stem_z_len)
 
     drop_y_center = (EXTENSION_DROP_Y_OUTBOARD + EXTENSION_DROP_Y_TIP) / 2
     drop_y_len = EXTENSION_DROP_Y_OUTBOARD - EXTENSION_DROP_Y_TIP  # = 22
     drop_z_center = (EXTENSION_STEM_BOTTOM_Z + EXTENSION_BOTTOM_Z) / 2
-    drop_z_len = EXTENSION_STEM_BOTTOM_Z - EXTENSION_BOTTOM_Z      # = 28
-    body += (
-        Pos(EXTENSION_X_CENTER, drop_y_center, drop_z_center)
-        * Box(EXTENSION_X_LEN, drop_y_len, drop_z_len)
-    )
+    drop_z_len = EXTENSION_STEM_BOTTOM_Z - EXTENSION_BOTTOM_Z  # = 28
+    body += Pos(EXTENSION_X_CENTER, drop_y_center, drop_z_center) * Box(EXTENSION_X_LEN, drop_y_len, drop_z_len)
 
     # Stem gusset — stem width, root at the frame's hub-side edge (the
     # ring wall stands above the stem inboard of it), tip with the stem.
+    # fmt: off
     gusset_y_len = EXTENSION_GUSSET_Y_ROOT - EXTENSION_Y_TIP        # = 51
     gusset_z_len = EXTENSION_GUSSET_TOP_Z - EXTENSION_STEM_TOP_Z    # = 9
-    body += (
-        Pos(
-            EXTENSION_X_CENTER,
-            (EXTENSION_GUSSET_Y_ROOT + EXTENSION_Y_TIP) / 2,
-            (EXTENSION_GUSSET_TOP_Z + EXTENSION_STEM_TOP_Z) / 2,
-        )
-        * Box(EXTENSION_X_LEN, gusset_y_len, gusset_z_len)
-    )
+    # fmt: on
+    body += Pos(
+        EXTENSION_X_CENTER,
+        (EXTENSION_GUSSET_Y_ROOT + EXTENSION_Y_TIP) / 2,
+        (EXTENSION_GUSSET_TOP_Z + EXTENSION_STEM_TOP_Z) / 2,
+    ) * Box(EXTENSION_X_LEN, gusset_y_len, gusset_z_len)
 
     return body
 
@@ -665,9 +644,9 @@ def frame():
 #   DUMP   : Rz(180°)  cartridge +X → turret -X, +Y → -Y   heading 270°
 STATION_ANGLES = {
     "image": 0,
-    "load":  -90,
-    "idle":  90,
-    "dump":  180,
+    "load": -90,
+    "idle": 90,
+    "dump": 180,
 }
 
 # Acrylic insert shape-truth color — faint blue-white at α=0.25 to
@@ -678,17 +657,16 @@ ACRYLIC_INSERT_COLOR = Color(0.95, 0.97, 0.98, 0.25)
 
 _STATION_CENTROIDS = {
     "image": Pos(0, +TURRET_ARM_R, 0),
-    "load":  Pos(+TURRET_ARM_R, 0, 0),
-    "idle":  Pos(-TURRET_ARM_R, 0, 0),
-    "dump":  Pos(0, -TURRET_ARM_R, 0),
+    "load": Pos(+TURRET_ARM_R, 0, 0),
+    "idle": Pos(-TURRET_ARM_R, 0, 0),
+    "dump": Pos(0, -TURRET_ARM_R, 0),
 }
 
 # Turret-local placement per station: centroid translate × heading
 # rotation. The parent composes one cartridge sub-assembly per station
 # at these locations (`turret.rotor.platform_<station>`).
 STATION_LOCATIONS = {
-    station: _STATION_CENTROIDS[station] * Rot(0, 0, STATION_ANGLES[station])
-    for station in STATION_ANGLES
+    station: _STATION_CENTROIDS[station] * Rot(0, 0, STATION_ANGLES[station]) for station in STATION_ANGLES
 }
 
 
@@ -740,8 +718,11 @@ def build_platform_cartridge() -> Assembly:
     acrylic = a.part("acrylic")
     acrylic_top_z = (acrylic.location * acrylic.part).bounding_box().max.Z
     return a.assert_distance(
-        "frame@exit_edge", Plane.XY.offset(acrylic_top_z), along="Z",
-        min_mm=0.0, name="exit_edge_flush",
+        "frame@exit_edge",
+        Plane.XY.offset(acrylic_top_z),
+        along="Z",
+        min_mm=0.0,
+        name="exit_edge_flush",
     )
 
 
@@ -750,6 +731,4 @@ def build_platform_cartridge() -> Assembly:
 # The cartridge in isolation. Pairwise no-interference checks are
 # invariant under rigid motion; this verifies the cartridge geometry
 # alone.
-assembly = build_platform_cartridge().assert_no_interference(
-    "acrylic", "frame"
-)
+assembly = build_platform_cartridge().assert_no_interference("acrylic", "frame")

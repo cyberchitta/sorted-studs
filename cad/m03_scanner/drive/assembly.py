@@ -113,8 +113,10 @@ from ..materials import material_of  # noqa: E402
 
 # --- Cross-rail interface (private mirror of slice a) ------------------
 
+# fmt: off
 MEMBER = 20.0                                              # 2020 extrusion
 RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2             # = -120 after c7
+# fmt: on
 
 # The pulley's Z corridor between the slice (b) housing top and the
 # slice (c) spider bottom is asserted at the m03 root
@@ -129,6 +131,7 @@ RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2             # = -120 after c7
 GT2_PITCH = 2.0
 DRIVEN_TEETH = 60
 DRIVER_TEETH = 20
+# fmt: off
 DRIVE_RATIO = DRIVEN_TEETH / DRIVER_TEETH                  # = 3.0
 
 DRIVEN_PITCH_D = DRIVEN_TEETH * GT2_PITCH / math.pi        # ≈ 38.197
@@ -141,6 +144,7 @@ DRIVER_PITCH_D = DRIVER_TEETH * GT2_PITCH / math.pi        # ≈ 12.732
 # that here, so pulley X gaps read ~1 mm optimistic.
 DRIVEN_PULLEY_OD = DRIVEN_PITCH_D                          # ≈ 38.20
 DRIVER_PULLEY_OD = DRIVER_PITCH_D                          # ≈ 12.73
+# fmt: on
 
 # Pulley height (Z direction = vertical). GT2-6 belt is 6 mm tall;
 # with 1 mm of flange margin per side, 8 mm pulleys are common stock.
@@ -153,7 +157,7 @@ PULLEY_HEIGHT = 8.0
 # (2026-05-05) raised it another 20 mm (-75 → -55) in lockstep with
 # the housing rise; both gaps stay at 1 mm.
 PULLEY_Z_CENTER = -55.0
-_PULLEY_BOTTOM_Z = PULLEY_Z_CENTER - PULLEY_HEIGHT / 2     # = -59
+_PULLEY_BOTTOM_Z = PULLEY_Z_CENTER - PULLEY_HEIGHT / 2  # = -59
 
 
 # --- Center-to-center distance (200 mm GT2 closed-loop belt) -----------
@@ -169,16 +173,10 @@ DRIVE_BELT_LENGTH = 200.0
 
 def _belt_length(R: float, r: float, C: float) -> float:
     alpha = math.asin((R - r) / C)
-    return (
-        2 * C * math.cos(alpha)
-        + R * (math.pi + 2 * alpha)
-        + r * (math.pi - 2 * alpha)
-    )
+    return 2 * C * math.cos(alpha) + R * (math.pi + 2 * alpha) + r * (math.pi - 2 * alpha)
 
 
-_BELT_L_DERIVED = _belt_length(
-    DRIVEN_PULLEY_OD / 2, DRIVER_PULLEY_OD / 2, DRIVE_CENTER_DIST
-)
+_BELT_L_DERIVED = _belt_length(DRIVEN_PULLEY_OD / 2, DRIVER_PULLEY_OD / 2, DRIVE_CENTER_DIST)
 
 
 # --- Pulley bores ------------------------------------------------------
@@ -190,14 +188,16 @@ _BELT_L_DERIVED = _belt_length(
 # the true interference and declared with `assert_allowed_contact`; the
 # previous Ø8.4 "clearance" bore existed only to keep
 # assert_no_interference quiet, which left the model lying about the fit.
+# fmt: off
 PULLEY_SHAFT_PRESS_FIT = 0.02                              # diametral
 PULLEY_SHAFT_BORE_D = TURRET_SHAFT_D - PULLEY_SHAFT_PRESS_FIT   # = 7.98
+# fmt: on
 
 # Driver pulley: Ø5 NEMA17 shaft + 0.4 mm clearance — a slip fit by
 # design (the pulley comes off the stepper shaft routinely; the set
 # screw on the shaft flat carries the torque).
 MOTOR_SHAFT_D = 5.0
-PULLEY_MOTOR_BORE_D = MOTOR_SHAFT_D + 0.4                  # = 5.4
+PULLEY_MOTOR_BORE_D = MOTOR_SHAFT_D + 0.4  # = 5.4
 
 
 # --- NEMA17 stub -------------------------------------------------------
@@ -212,6 +212,7 @@ MOTOR_BODY_Y = 42.3
 MOTOR_BODY_Z = 40.0
 MOTOR_SHAFT_LENGTH = 22.0
 MOTOR_BOLT_PATTERN = 31.0
+# fmt: off
 MOTOR_BOLT_HOLE_D = 3.5                                    # M3 clearance
 MOTOR_BOSS_D = 22.0                                        # centering boss
 
@@ -219,6 +220,7 @@ MOTOR_BOSS_D = 22.0                                        # centering boss
 # on the +X side of the hub (opposite the kicker at x = -110 on -X).
 MOTOR_X = DRIVE_CENTER_DIST                                # = +58.6
 MOTOR_Y = 0.0                                              # on cross-rail (depth)
+# fmt: on
 
 
 # --- Bracket geometry --------------------------------------------------
@@ -228,41 +230,44 @@ MOTOR_Y = 0.0                                              # on cross-rail (dept
 # wrench can swing in.
 BRACKET_PLATE_T = 8.0
 BRACKET_PLATE_AIRGAP_BELOW_PULLEY = 1.0
-_BRACKET_PLATE_TOP_Z = (
-    _PULLEY_BOTTOM_Z - BRACKET_PLATE_AIRGAP_BELOW_PULLEY
-)                                                          # = -60
+_BRACKET_PLATE_TOP_Z = _PULLEY_BOTTOM_Z - BRACKET_PLATE_AIRGAP_BELOW_PULLEY  # = -60
 _BRACKET_PLATE_BOTTOM_Z = _BRACKET_PLATE_TOP_Z - BRACKET_PLATE_T  # = -68
 _BRACKET_PLATE_CENTER_Z = (_BRACKET_PLATE_TOP_Z + _BRACKET_PLATE_BOTTOM_Z) / 2
 
 # Motor flange Z = bracket plate bottom face (motor bolted up against
 # plate). Body extends MOTOR_BODY_Z further in -Z.
+# fmt: off
 _MOTOR_FLANGE_Z = _BRACKET_PLATE_BOTTOM_Z                  # = -68
 _MOTOR_BODY_BOTTOM_Z = _MOTOR_FLANGE_Z - MOTOR_BODY_Z      # = -108
+# fmt: on
 _MOTOR_BODY_CENTER_Z = (_MOTOR_FLANGE_Z + _MOTOR_BODY_BOTTOM_Z) / 2  # = -88
 
 # Wall (vertical, outboard of the motor body in +X). Inner face clears
 # the motor body by BRACKET_WALL_AIRGAP_X.
 BRACKET_WALL_AIRGAP_X = 5.0
+# fmt: off
 _MOTOR_BODY_OUTBOARD_X = MOTOR_X + MOTOR_BODY_X / 2        # ≈ +79.65
 BRACKET_WALL_T = 15.0                                      # X thickness
+# fmt: on
 BRACKET_WALL_X_MIN = _MOTOR_BODY_OUTBOARD_X + BRACKET_WALL_AIRGAP_X
 BRACKET_WALL_X_MAX = BRACKET_WALL_X_MIN + BRACKET_WALL_T
 _BRACKET_WALL_CENTER_X = (BRACKET_WALL_X_MIN + BRACKET_WALL_X_MAX) / 2
+# fmt: off
 BRACKET_WALL_Y = 50.0                                      # depth
 _BRACKET_WALL_BOTTOM_Z = RAIL_TOP_Z + 8.0                  # foot top, = -112
 _BRACKET_WALL_TOP_Z = _BRACKET_PLATE_BOTTOM_Z              # = -68
+# fmt: on
 _BRACKET_WALL_HEIGHT = _BRACKET_WALL_TOP_Z - _BRACKET_WALL_BOTTOM_Z  # = 44
 _BRACKET_WALL_CENTER_Z = (_BRACKET_WALL_BOTTOM_Z + _BRACKET_WALL_TOP_Z) / 2
 
 # Plate spans from inboard edge (clears M3 holes at MOTOR_X - 15.5)
 # outboard to wall outboard face.
-_PLATE_X_MIN_TIGHT = (
-    MOTOR_X - MOTOR_BOLT_PATTERN / 2 - MOTOR_BOLT_HOLE_D / 2 - WALL_MIN
-)
-BRACKET_PLATE_X_MIN = round(_PLATE_X_MIN_TIGHT - 5.0, 1)   # ≈ +35
+_PLATE_X_MIN_TIGHT = MOTOR_X - MOTOR_BOLT_PATTERN / 2 - MOTOR_BOLT_HOLE_D / 2 - WALL_MIN
+BRACKET_PLATE_X_MIN = round(_PLATE_X_MIN_TIGHT - 5.0, 1)  # ≈ +35
 BRACKET_PLATE_X_MAX = BRACKET_WALL_X_MAX
 _BRACKET_PLATE_CENTER_X = (BRACKET_PLATE_X_MIN + BRACKET_PLATE_X_MAX) / 2
 BRACKET_PLATE_X_LEN = BRACKET_PLATE_X_MAX - BRACKET_PLATE_X_MIN
+# fmt: off
 BRACKET_PLATE_Y = BRACKET_WALL_Y                           # depth
 
 # Foot. A short toe inboard of the wall, then the foot runs outboard
@@ -284,28 +289,32 @@ BRACKET_FOOT_TOE_X = 10.0                                  # inboard of the wall
 BRACKET_FOOT_Y = BRACKET_WALL_Y                            # depth = 50
 BRACKET_FOOT_Z = 8.0                                       # vertical
 _BRACKET_FOOT_BOTTOM_Z = RAIL_TOP_Z                        # = -120
+# fmt: on
 _BRACKET_FOOT_TOP_Z = _BRACKET_FOOT_BOTTOM_Z + BRACKET_FOOT_Z  # = -112
 _BRACKET_FOOT_CENTER_Z = (_BRACKET_FOOT_BOTTOM_Z + _BRACKET_FOOT_TOP_Z) / 2
 
+# fmt: off
 BRACKET_BOLT_HOLE_D = 5.5                                  # M5 clearance
 BRACKET_BOLT_HEAD_D = 8.7                                  # ISO 4762 M5 head (bd_warehouse)
 BRACKET_BOLT_KEY_CLEARANCE_X = 2.0                         # head edge to wall face
+# fmt: on
 BRACKET_BOLT_SPACING_X = 18.0
-BRACKET_BOLT_INNER_X = (
-    BRACKET_WALL_X_MAX + BRACKET_BOLT_HEAD_D / 2 + BRACKET_BOLT_KEY_CLEARANCE_X
-)                                                          # ≈ +106.1
+BRACKET_BOLT_INNER_X = BRACKET_WALL_X_MAX + BRACKET_BOLT_HEAD_D / 2 + BRACKET_BOLT_KEY_CLEARANCE_X  # ≈ +106.1
 BRACKET_BOLT_OUTER_X = BRACKET_BOLT_INNER_X + BRACKET_BOLT_SPACING_X  # ≈ +124.1
 BRACKET_BOLT_XS = (BRACKET_BOLT_INNER_X, BRACKET_BOLT_OUTER_X)  # inner, outer
+# fmt: off
 BRACKET_FOOT_END_MARGIN_X = 5.0                            # hole edge to foot end
 _BRACKET_FOOT_X_MIN = BRACKET_WALL_X_MIN - BRACKET_FOOT_TOE_X          # ≈ +74.75
 _BRACKET_FOOT_X_MAX = (
     BRACKET_BOLT_OUTER_X + BRACKET_BOLT_HOLE_D / 2 + BRACKET_FOOT_END_MARGIN_X
 )                                                          # ≈ +131.85
+# fmt: on
 BRACKET_FOOT_X = _BRACKET_FOOT_X_MAX - _BRACKET_FOOT_X_MIN
 _BRACKET_FOOT_CENTER_X = (_BRACKET_FOOT_X_MIN + _BRACKET_FOOT_X_MAX) / 2
 
 
 # --- Part functions ----------------------------------------------------
+
 
 def driven_pulley(
     od: float = DRIVEN_PULLEY_OD,
@@ -342,10 +351,7 @@ def motor():
     the body's +Z face (= flange face). Caller positions the body
     center at (MOTOR_X, MOTOR_Y, _MOTOR_BODY_CENTER_Z)."""
     body = Box(MOTOR_BODY_X, MOTOR_BODY_Y, MOTOR_BODY_Z)
-    shaft = (
-        Pos(0, 0, MOTOR_BODY_Z / 2 + MOTOR_SHAFT_LENGTH / 2)
-        * Cylinder(MOTOR_SHAFT_D / 2, MOTOR_SHAFT_LENGTH)
-    )
+    shaft = Pos(0, 0, MOTOR_BODY_Z / 2 + MOTOR_SHAFT_LENGTH / 2) * Cylinder(MOTOR_SHAFT_D / 2, MOTOR_SHAFT_LENGTH)
     return body + shaft
 
 
@@ -355,8 +361,7 @@ def foot_bolt_cutters():
     them; `printability.py` declares them as the `foot_bolt_holes`
     feature."""
     return tuple(
-        Pos(bolt_x, 0, _BRACKET_FOOT_CENTER_Z)
-        * Cylinder(BRACKET_BOLT_HOLE_D / 2, BRACKET_FOOT_Z * 3)
+        Pos(bolt_x, 0, _BRACKET_FOOT_CENTER_Z) * Cylinder(BRACKET_BOLT_HOLE_D / 2, BRACKET_FOOT_Z * 3)
         for bolt_x in BRACKET_BOLT_XS
     )
 
@@ -365,10 +370,7 @@ def boss_pilot_cutter():
     """The Ø22 centering-boss pass-through in the cantilever plate
     (axis ±Z = build123d default). `bracket()` cuts with it;
     `printability.py` declares it as the `boss_pilot` feature."""
-    return (
-        Pos(MOTOR_X, 0, _BRACKET_PLATE_CENTER_Z)
-        * Cylinder(MOTOR_BOSS_D / 2, BRACKET_PLATE_T * 3)
-    )
+    return Pos(MOTOR_X, 0, _BRACKET_PLATE_CENTER_Z) * Cylinder(MOTOR_BOSS_D / 2, BRACKET_PLATE_T * 3)
 
 
 def motor_bolt_cutters():
@@ -401,22 +403,17 @@ def bracket():
     _m3_hole_radius = math.sqrt(2) * MOTOR_BOLT_PATTERN / 2
     _driver_to_m3 = _m3_hole_radius - MOTOR_BOLT_HOLE_D / 2 - DRIVER_PULLEY_OD / 2
     assert _driver_to_m3 >= WALL_MIN, (
-        f"driver pulley OD edge {DRIVER_PULLEY_OD/2:.2f} too close to M3 "
-        f"hole edge at radius {_m3_hole_radius - MOTOR_BOLT_HOLE_D/2:.2f}; "
+        f"driver pulley OD edge {DRIVER_PULLEY_OD / 2:.2f} too close to M3 "
+        f"hole edge at radius {_m3_hole_radius - MOTOR_BOLT_HOLE_D / 2:.2f}; "
         f"gap {_driver_to_m3:.2f} mm < WALL_MIN ({WALL_MIN})"
     )
-    _plate_inboard_to_hole_edge = (
-        (MOTOR_X - MOTOR_BOLT_PATTERN / 2 - MOTOR_BOLT_HOLE_D / 2)
-        - BRACKET_PLATE_X_MIN
-    )
+    _plate_inboard_to_hole_edge = (MOTOR_X - MOTOR_BOLT_PATTERN / 2 - MOTOR_BOLT_HOLE_D / 2) - BRACKET_PLATE_X_MIN
     assert _plate_inboard_to_hole_edge >= WALL_MIN, (
         f"bracket plate inboard edge to inboard M3 hole edge wall "
         f"{_plate_inboard_to_hole_edge:.2f} mm < WALL_MIN ({WALL_MIN})"
     )
     # Bracket plate Y edge has wall to M3 holes (M3 at y = ±15.5).
-    _plate_y_to_hole_edge = (
-        BRACKET_PLATE_Y / 2 - MOTOR_BOLT_PATTERN / 2 - MOTOR_BOLT_HOLE_D / 2
-    )
+    _plate_y_to_hole_edge = BRACKET_PLATE_Y / 2 - MOTOR_BOLT_PATTERN / 2 - MOTOR_BOLT_HOLE_D / 2
     assert _plate_y_to_hole_edge >= WALL_MIN, (
         f"bracket plate Y edge to M3 hole edge wall "
         f"{_plate_y_to_hole_edge:.2f} mm < WALL_MIN ({WALL_MIN}); raise "
@@ -426,8 +423,7 @@ def bracket():
     # wall = 25 - 11 = 14 mm.
     _boss_to_y_edge = BRACKET_PLATE_Y / 2 - MOTOR_BOSS_D / 2
     assert _boss_to_y_edge >= WALL_MIN, (
-        f"boss hole to plate Y edge wall {_boss_to_y_edge:.2f} mm < "
-        f"WALL_MIN ({WALL_MIN})"
+        f"boss hole to plate Y edge wall {_boss_to_y_edge:.2f} mm < WALL_MIN ({WALL_MIN})"
     )
     # Bracket wall inboard face clears motor body in X by ≥ WALL_MIN.
     _wall_to_motor = BRACKET_WALL_X_MIN - _MOTOR_BODY_OUTBOARD_X
@@ -446,27 +442,21 @@ def bracket():
     )
     # Two heads don't touch each other along the slot.
     assert BRACKET_BOLT_SPACING_X >= BRACKET_BOLT_HEAD_D + WALL_MIN, (
-        f"bolt spacing {BRACKET_BOLT_SPACING_X} leaves no gap between "
-        f"Ø{BRACKET_BOLT_HEAD_D} heads"
+        f"bolt spacing {BRACKET_BOLT_SPACING_X} leaves no gap between Ø{BRACKET_BOLT_HEAD_D} heads"
     )
     # The foot's inner edge is the tipping fulcrum; keep a real toe.
     assert BRACKET_FOOT_TOE_X >= WALL_MIN
 
-    foot = (
-        Pos(_BRACKET_FOOT_CENTER_X, 0, _BRACKET_FOOT_CENTER_Z)
-        * Box(BRACKET_FOOT_X, BRACKET_FOOT_Y, BRACKET_FOOT_Z)
-    )
+    foot = Pos(_BRACKET_FOOT_CENTER_X, 0, _BRACKET_FOOT_CENTER_Z) * Box(BRACKET_FOOT_X, BRACKET_FOOT_Y, BRACKET_FOOT_Z)
     for bolt_hole in foot_bolt_cutters():
         foot -= bolt_hole
 
-    wall = (
-        Pos(_BRACKET_WALL_CENTER_X, 0, _BRACKET_WALL_CENTER_Z)
-        * Box(BRACKET_WALL_T, BRACKET_WALL_Y, _BRACKET_WALL_HEIGHT)
+    wall = Pos(_BRACKET_WALL_CENTER_X, 0, _BRACKET_WALL_CENTER_Z) * Box(
+        BRACKET_WALL_T, BRACKET_WALL_Y, _BRACKET_WALL_HEIGHT
     )
 
-    plate = (
-        Pos(_BRACKET_PLATE_CENTER_X, 0, _BRACKET_PLATE_CENTER_Z)
-        * Box(BRACKET_PLATE_X_LEN, BRACKET_PLATE_Y, BRACKET_PLATE_T)
+    plate = Pos(_BRACKET_PLATE_CENTER_X, 0, _BRACKET_PLATE_CENTER_Z) * Box(
+        BRACKET_PLATE_X_LEN, BRACKET_PLATE_Y, BRACKET_PLATE_T
     )
     plate -= boss_pilot_cutter()
     for bolt_hole in motor_bolt_cutters():
@@ -476,6 +466,7 @@ def bracket():
 
 
 # --- Stubs for the standalone (duplicated, not imported) ---------------
+
 
 def _shaft_stub(length: float):
     """Slice (b) Ø8 turret shaft mirror. Caller positions the base at
@@ -488,14 +479,11 @@ def _cross_rail_stub(length: float = BRACKET_FOOT_X + 40.0):
     """Slice (a) cross-rail stub centered under the bracket foot.
     Length spans the foot footprint with a 20 mm margin each side so
     the bolt-line + foot-tangent contact is exercised."""
-    return (
-        Pos(
-            _BRACKET_FOOT_CENTER_X,
-            TURRET_FRAME_CROSS_Y,
-            TURRET_FRAME_FLOOR_Z,
-        )
-        * Box(length, MEMBER, MEMBER)
-    )
+    return Pos(
+        _BRACKET_FOOT_CENTER_X,
+        TURRET_FRAME_CROSS_Y,
+        TURRET_FRAME_FLOOR_Z,
+    ) * Box(length, MEMBER, MEMBER)
 
 
 # --- Assembly builder --------------------------------------------------
@@ -598,8 +586,7 @@ def build_turret_drive_rotor() -> Assembly:
 
 # --- Standalone assembly -----------------------------------------------
 
-_SHAFT_LEN = TURRET_SHAFT_TOP_Z - RAIL_TOP_Z               # = 110
-
+_SHAFT_LEN = TURRET_SHAFT_TOP_Z - RAIL_TOP_Z  # = 110
 
 
 def build_turret_drive_standalone() -> Assembly:
@@ -628,8 +615,10 @@ def build_turret_drive_standalone() -> Assembly:
         # and the set screw is carrying the turret alone; above the
         # ceiling it's a hydraulic-press job on a stock pulley.
         .assert_allowed_contact(
-            "rotor.drive_pulley_shaft", "hub_shaft_stub",
-            min_overlap_mm3=1.5, max_overlap_mm3=2.6,
+            "rotor.drive_pulley_shaft",
+            "hub_shaft_stub",
+            min_overlap_mm3=1.5,
+            max_overlap_mm3=2.6,
             reason=f"press fit, {PULLEY_SHAFT_PRESS_FIT} mm diametral on Ø8",
         )
     )

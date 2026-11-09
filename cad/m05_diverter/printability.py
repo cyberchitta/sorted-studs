@@ -23,5 +23,7 @@ from .ramp_mechanism.assembly import WALL_MIN
 inspect(
     build_m05(DEFAULT_SCHEMA).part("ceiling_sleeve").part,
     method=FDM(up_axis=CEILING_SLEEVE_UP_AXIS, wall_min_mm=WALL_MIN),
-    out="outputs", name="ceiling_sleeve", solid_count=1,
+    out="outputs",
+    name="ceiling_sleeve",
+    solid_count=1,
 )

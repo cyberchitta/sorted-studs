@@ -64,8 +64,17 @@ gate before printing four for installation. M2 holes are oversized to
 import math
 
 from build123d import (
-    Box, Cylinder, Location, Part, Plane, Polyline, Pos, Rot, Vector,
-    extrude, make_face,
+    Box,
+    Cylinder,
+    Location,
+    Part,
+    Plane,
+    Polyline,
+    Pos,
+    Rot,
+    Vector,
+    extrude,
+    make_face,
 )
 
 from cad_khana.mechanism.assembly import Assembly
@@ -91,6 +100,7 @@ from ..params import (
 
 # PCB outline (rectangular). Source: _notes/decisions/m03-cameras.md, pending
 # caliper measurement on a real board.
+# fmt: off
 PCB_W = 40.5                      # along the long edge
 PCB_H = 27.0                      # along the short edge
 PCB_T = 4.5                       # PCB body thickness incl. underside components
@@ -112,6 +122,7 @@ SD_POCKET_DEPTH = 3.0             # into the plate from the front face
 ANTENNA_POCKET_W = 25.0           # along PCB +Y (across short edge)
 ANTENNA_POCKET_H = 10.0           # PCB-stub overhang past the edge
 ANTENNA_POCKET_DEPTH = 5.0        # into the plate from the front face
+# fmt: on
 
 # M12 lens column stand-in. Lumps the M12 holder + lens stack into a
 # single conservative cylinder forward of the PCB. Real M12 stacks vary
@@ -135,12 +146,14 @@ PLATE_SIZE = 50.0
 # rail-side half — the clamp interface is the mount-architecture-
 # invariant part of the design.
 
+# fmt: off
 BASE_L = 60.0                     # along rail (local +X)
 BASE_W = SKELETON_RAIL_MEMBER     # across rail (local +Z) = rail width (20 mm)
 BASE_H = 15.0                     # clamp base height above rail face
+# fmt: on
 
 CLAMP_BOLT_SPACING = 40.0
-CLAMP_BOLT_HOLE_D = 4.5           # M4 clearance hole
+CLAMP_BOLT_HOLE_D = 4.5  # M4 clearance hole
 
 _CLAMP_BOLT_HALF = CLAMP_BOLT_SPACING / 2
 
@@ -169,6 +182,7 @@ BEAM_T = 20.0
 
 # --- Mount pose in clamp-local (per-instance helper) --------------------
 
+
 def mount_in_clamp_for(
     clamp_pos: tuple[float, float, float],
     clamp_rot: Rot,
@@ -183,9 +197,7 @@ def mount_in_clamp_for(
     from the same vertex coordinate now."""
     axis = lens_axis_unit(vertex_pos)
     clamp_world = Pos(*clamp_pos) * clamp_rot
-    mount_world = Pos(*vertex_pos) * rotation_for_normal(
-        axis, roll_deg=horizontal_x_roll_deg(axis)
-    )
+    mount_world = Pos(*vertex_pos) * rotation_for_normal(axis, roll_deg=horizontal_x_roll_deg(axis))
     return clamp_world.inverse() * mount_world
 
 
@@ -225,9 +237,7 @@ PRINT_UP = (0.0, 1.0, 0.0)
 PRINT_OVERHANG_MAX_DEG = 44.5
 
 
-def _print_up_in_mount(
-    mount_in_clamp: Location, print_up: tuple[float, float, float]
-) -> Vector:
+def _print_up_in_mount(mount_in_clamp: Location, print_up: tuple[float, float, float]) -> Vector:
     """`print_up` (clamp-local) as a mount-local unit vector."""
     inv = mount_in_clamp.inverse()
     v = (inv * Pos(*print_up)).position - inv.position
@@ -235,7 +245,10 @@ def _print_up_in_mount(
 
 
 def _mount_plate(
-    up_m: Vector, plate_size: float, plate_t: float, overhang_max_deg: float,
+    up_m: Vector,
+    plate_size: float,
+    plate_t: float,
+    overhang_max_deg: float,
 ) -> Part:
     """The mount plate in mount-local (z ∈ [-plate_t, 0], front face at
     z = 0), shaped so no face overhangs past `overhang_max_deg` when
@@ -263,16 +276,9 @@ def _mount_plate(
         alpha = math.asin(min(1.0, up_m.Z))
         psi = alpha - math.radians(overhang_max_deg)
         n = Vector(0, 0, -1) * math.cos(psi) + g * math.sin(psi)
-        c = max(
-            n.dot(Vector(sx * half, sy * half, -plate_t))
-            for sx in (-1, 1) for sy in (-1, 1)
-        )
+        c = max(n.dot(Vector(sx * half, sy * half, -plate_t)) for sx in (-1, 1) for sy in (-1, 1))
         slab = Pos(0, 0, -plate_t - half / 2) * Box(plate_size, plate_size, half)
-        beyond = (
-            Plane(origin=tuple(n * c), z_dir=tuple(n)).location
-            * Pos(0, 0, 500)
-            * Box(1000, 1000, 1000)
-        )
+        beyond = Plane(origin=tuple(n * c), z_dir=tuple(n)).location * Pos(0, 0, 500) * Box(1000, 1000, 1000)
         plate = plate + (slab - beyond)
 
     # Edge chamfers, each off its front corner.
@@ -296,8 +302,7 @@ def _mount_plate(
         # PCB outline on the seat face.
         pcb_half = PCB_W / 2 if abs(e.X) > 0.5 else PCB_H / 2
         assert half - width > pcb_half + WALL_MIN, (
-            f"edge chamfer {width:.2f} mm reaches within "
-            f"{half - width - pcb_half:.2f} mm of the PCB outline"
+            f"edge chamfer {width:.2f} mm reaches within {half - width - pcb_half:.2f} mm of the PCB outline"
         )
         # Triangle (edge back corner, edge front corner, point `width`
         # in along the front face), overshot past the edge and the
@@ -311,14 +316,17 @@ def _mount_plate(
         ]
         prism = extrude(
             make_face(Polyline(*[tuple(p) for p in pts], close=True)),
-            amount=plate_size + 2, dir=tuple(along),
+            amount=plate_size + 2,
+            dir=tuple(along),
         )
         plate = plate - Pos(*(along * -(half + 1))) * prism
     return plate
 
 
 def _plate_edge_notch(
-    intrusion: Part, mount_in_clamp: Location, plate_size: float,
+    intrusion: Part,
+    mount_in_clamp: Location,
+    plate_size: float,
 ) -> Part | None:
     """A mount-local slot through the plate that removes `intrusion`
     (plate material inside a corridor, clamp-local), opened to the
@@ -331,8 +339,10 @@ def _plate_edge_notch(
     bb = (mount_in_clamp.inverse() * intrusion).bounding_box()
     lo, hi = bb.min, bb.max
     reach = {
-        "+y": half - hi.Y, "-y": lo.Y + half,
-        "+x": half - hi.X, "-x": lo.X + half,
+        "+y": half - hi.Y,
+        "-y": lo.Y + half,
+        "+x": half - hi.X,
+        "-x": lo.X + half,
     }
     side = min(reach, key=reach.get)
     x0, x1, y0, y1 = lo.X, hi.X, lo.Y, hi.Y
@@ -352,10 +362,8 @@ def _plate_edge_notch(
         f"clamp-bolt corridor notch ({side} edge) comes within "
         f"{clear:.2f} mm of the PCB footprint; must be ≥ {WALL_MIN}"
     )
-    z0, z1 = -half, 1.0          # through the plate and any back wedge
-    return Pos((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2) * Box(
-        x1 - x0, y1 - y0, z1 - z0
-    )
+    z0, z1 = -half, 1.0  # through the plate and any back wedge
+    return Pos((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2) * Box(x1 - x0, y1 - y0, z1 - z0)
 
 
 def _teardrop_bore(r: float, length: float, up_m: Vector) -> Part:
@@ -370,15 +378,12 @@ def _teardrop_bore(r: float, length: float, up_m: Vector) -> Part:
         return bore
     d = d.normalized()
     ang = math.degrees(math.atan2(d.Y, d.X))
-    roof = (
-        Pos(*(d * (r / math.sqrt(2))))
-        * Rot(0, 0, ang + 45)
-        * Box(r, r, length)
-    )
+    roof = Pos(*(d * (r / math.sqrt(2)))) * Rot(0, 0, ang + 45) * Box(r, r, length)
     return bore + roof
 
 
 # --- Part functions -----------------------------------------------------
+
 
 def clamp_mount(
     base_l: float = BASE_L,
@@ -420,15 +425,10 @@ def clamp_mount(
     # which is all four cameras (the m03 root passes each its own
     # pose) rather than the two the loop happened to name.
     assert _mb_y > base_h, (
-        f"mount-back in clamp-local +Y must clear the clamp base "
-        f"(base_h = {base_h}); got Y={_mb_y:.1f}"
+        f"mount-back in clamp-local +Y must clear the clamp base (base_h = {base_h}); got Y={_mb_y:.1f}"
     )
-    assert abs(_mb_x) < 2.0, (
-        f"mount-back in clamp-local +X should sit near 0; got X={_mb_x:.2f}"
-    )
-    assert abs(_mb_z) < 2.0, (
-        f"mount-back in clamp-local +Z should sit near 0; got Z={_mb_z:.2f}"
-    )
+    assert abs(_mb_x) < 2.0, f"mount-back in clamp-local +X should sit near 0; got X={_mb_x:.2f}"
+    assert abs(_mb_z) < 2.0, f"mount-back in clamp-local +Z should sit near 0; got Z={_mb_z:.2f}"
     # Bolt-hole and flange wall sanity for this body — all WALL_MIN
     # arithmetic over subtracted negative space, so none is a part-pair
     # claim. Over the arguments, so overrides are guarded too.
@@ -438,43 +438,32 @@ def clamp_mount(
         f"must be ≥ {WALL_MIN} mm"
     )
     _edge_x = base_l / 2 - bolt_half - clamp_hole_d / 2
-    assert _edge_x >= WALL_MIN, (
-        f"clamp bolt-to-base-edge wall {_edge_x:.2f} mm < {WALL_MIN} mm"
-    )
+    assert _edge_x >= WALL_MIN, f"clamp bolt-to-base-edge wall {_edge_x:.2f} mm < {WALL_MIN} mm"
     # Plate must be at least as big as the PCB, with a flange margin
     # around both the PCB outline and the M2 corner holes.
-    assert plate_size >= PCB_W and plate_size >= PCB_H, (
-        f"plate {plate_size} smaller than PCB ({PCB_W} × {PCB_H})"
-    )
+    assert plate_size >= PCB_W and plate_size >= PCB_H, f"plate {plate_size} smaller than PCB ({PCB_W} × {PCB_H})"
     assert (plate_size - PCB_W) / 2 >= WALL_MIN, (
-        f"plate-PCB long-edge flange {(plate_size - PCB_W) / 2:.2f} mm "
-        f"< {WALL_MIN} mm"
+        f"plate-PCB long-edge flange {(plate_size - PCB_W) / 2:.2f} mm < {WALL_MIN} mm"
     )
     _m2_to_edge_x = plate_size / 2 - pcb_hole_pitch_x / 2 - pcb_hole_d / 2
     _m2_to_edge_y = plate_size / 2 - pcb_hole_pitch_y / 2 - pcb_hole_d / 2
-    assert _m2_to_edge_x >= WALL_MIN, (
-        f"M2-to-plate-edge wall (long axis) {_m2_to_edge_x:.2f} mm < {WALL_MIN} mm"
-    )
-    assert _m2_to_edge_y >= WALL_MIN, (
-        f"M2-to-plate-edge wall (short axis) {_m2_to_edge_y:.2f} mm < {WALL_MIN} mm"
-    )
+    assert _m2_to_edge_x >= WALL_MIN, f"M2-to-plate-edge wall (long axis) {_m2_to_edge_x:.2f} mm < {WALL_MIN} mm"
+    assert _m2_to_edge_y >= WALL_MIN, f"M2-to-plate-edge wall (short axis) {_m2_to_edge_y:.2f} mm < {WALL_MIN} mm"
 
     beam_tilt_deg = math.degrees(math.atan2(_mb_z, _mb_y))
+    # fmt: off
     beam_axial_len = (
         math.hypot(_mb_y, _mb_z)   # length to mount plate back face
         + plate_t                  # punch through the plate
         + 10.0                     # overshoot margin
     )
+    # fmt: on
 
     # --- 1. Clamp base ---
     body = Pos(0, base_h / 2, 0) * Box(base_l, base_h, base_w)
 
     # --- 2. Beam ---
-    beam = (
-        Rot(beam_tilt_deg, 0, 0)
-        * Pos(0, beam_axial_len / 2, 0)
-        * Box(beam_w, beam_axial_len, beam_t)
-    )
+    beam = Rot(beam_tilt_deg, 0, 0) * Pos(0, beam_axial_len / 2, 0) * Box(beam_w, beam_axial_len, beam_t)
     body = body + beam
 
     # Trim base of beam at y < 0 so the clamp sits cleanly on the rail.
@@ -489,7 +478,10 @@ def clamp_mount(
     # faces where it passes the plate's edge.
     up_m = _print_up_in_mount(mount_in_clamp, print_up)
     plate = mount_in_clamp * _mount_plate(
-        up_m, plate_size, plate_t, overhang_max_deg,
+        up_m,
+        plate_size,
+        plate_t,
+        overhang_max_deg,
     )
     body = body + plate
 
@@ -502,19 +494,12 @@ def clamp_mount(
     # end, the M4 head left no seat and a 0.70 mm wall at its bore;
     # back-upper: 515 mm³ off its -x end).
     _CUT_BOX_SIZE = 1000.0
-    front_cutter = mount_in_clamp * (
-        Pos(0, 0, _CUT_BOX_SIZE / 2)
-        * Box(_CUT_BOX_SIZE, _CUT_BOX_SIZE, _CUT_BOX_SIZE)
-    )
+    front_cutter = mount_in_clamp * (Pos(0, 0, _CUT_BOX_SIZE / 2) * Box(_CUT_BOX_SIZE, _CUT_BOX_SIZE, _CUT_BOX_SIZE))
     body = body - (front_cutter - clamp_base_block(base_l, base_w, base_h))
 
     # --- 4. Rail clamp bolts (vertical through base, axis along clamp -Y) ---
     for sx in (-1, 1):
-        body -= (
-            Pos(sx * bolt_half, base_h / 2, 0)
-            * Rot(90, 0, 0)
-            * Cylinder(clamp_hole_d / 2, base_h * 3)
-        )
+        body -= Pos(sx * bolt_half, base_h / 2, 0) * Rot(90, 0, 0) * Cylinder(clamp_hole_d / 2, base_h * 3)
 
     # --- 5. Clamp-bolt drop-in corridors ---
     # Where the plate reaches into an M4's drop-in corridor (Ø8 head
@@ -538,9 +523,7 @@ def clamp_mount(
         )
         notch = _plate_edge_notch(corridor & plate, mount_in_clamp, plate_size)
         if notch is not None:
-            body -= mount_in_clamp * notch - beam - clamp_base_block(
-                base_l, base_w, base_h
-            )
+            body -= mount_in_clamp * notch - beam - clamp_base_block(base_l, base_w, base_h)
 
     # --- 6. PCB-mount M2 holes (along mount-local +Z, lens axis) ---
     # Corner pattern on a 35 × 22 mm rectangle. Holes drilled through
@@ -553,16 +536,15 @@ def clamp_mount(
     cy = pcb_hole_pitch_y / 2
     for sx in (-1, 1):
         for sy in (-1, 1):
-            body -= mount_in_clamp * (
-                Pos(sx * cx, sy * cy, 0)
-                * _teardrop_bore(pcb_hole_d / 2, _hole_len, up_m)
-            )
+            body -= mount_in_clamp * (Pos(sx * cx, sy * cy, 0) * _teardrop_bore(pcb_hole_d / 2, _hole_len, up_m))
 
     return body
 
 
 def clamp_base_block(
-    base_l: float = BASE_L, base_w: float = BASE_W, base_h: float = BASE_H,
+    base_l: float = BASE_L,
+    base_w: float = BASE_W,
+    base_h: float = BASE_H,
 ) -> Part:
     """The clamp base as designed — the rail interface block, before
     bores. Clamp-local, on the rail face at y = 0."""
@@ -570,7 +552,9 @@ def clamp_base_block(
 
 
 def clamp_bolt_keepout(
-    sx: int, bolt_half: float = _CLAMP_BOLT_HALF, base_h: float = BASE_H,
+    sx: int,
+    bolt_half: float = _CLAMP_BOLT_HALF,
+    base_h: float = BASE_H,
 ) -> Part:
     """The Ø`CLAMP_BOLT_ACCESS_D` drop-in corridor above the `sx` clamp
     bolt's seat (the base top), `CLAMP_BOLT_ACCESS_H` tall. Clamp-local;
@@ -598,9 +582,7 @@ def clamp_base_shortfall_mm3(body: Part) -> float:
     until 2026-09-27) shows up here."""
     block = clamp_base_block()
     bores = [
-        Pos(sx * _CLAMP_BOLT_HALF, BASE_H / 2, 0)
-        * Rot(90, 0, 0)
-        * Cylinder(CLAMP_BOLT_HOLE_D / 2, BASE_H)
+        Pos(sx * _CLAMP_BOLT_HALF, BASE_H / 2, 0) * Rot(90, 0, 0) * Cylinder(CLAMP_BOLT_HOLE_D / 2, BASE_H)
         for sx in (-1, 1)
     ]
     drilled = block - bores[0] - bores[1]
@@ -609,9 +591,8 @@ def clamp_base_shortfall_mm3(body: Part) -> float:
 
 # --- Part functions (continued) -----------------------------------------
 
-def camera_pcb_stub(
-    w: float = PCB_W, h: float = PCB_H, t: float = PCB_T
-) -> Part:
+
+def camera_pcb_stub(w: float = PCB_W, h: float = PCB_H, t: float = PCB_T) -> Part:
     """ESP32-CAM PCB stand-in. Rear face at mount-local z=0 (against
     plate front face); body at z ∈ [0, t]. Bought, not printed."""
     return Pos(0, 0, t / 2) * Box(w, h, t)
@@ -634,8 +615,7 @@ def m12_lens_stub(
     _m2_radial = math.hypot(PCB_HOLE_PITCH_X / 2, PCB_HOLE_PITCH_Y / 2)
     _lens_to_m2 = _m2_radial - od / 2
     assert _lens_to_m2 >= 2.0, (
-        f"lens body radial gap to M2 hole centre {_lens_to_m2:.2f} mm "
-        f"leaves no room for an M2 screw head"
+        f"lens body radial gap to M2 hole centre {_lens_to_m2:.2f} mm leaves no room for an M2 screw head"
     )
 
     z_bot = pcb_t

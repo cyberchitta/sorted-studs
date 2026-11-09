@@ -86,6 +86,7 @@ WALL_MIN = 1.5
 
 # --- Part functions ----------------------------------------------------
 
+
 def rotor_cavity(
     *,
     base_diameter: float = ROTOR_BASE_DIAMETER,
@@ -198,7 +199,7 @@ def rotor(
     top_pts: list[tuple[float, float]] = []
     for i in range(2 * n_facets):
         theta = i * step
-        is_peak = (i % 2 == 0)
+        is_peak = i % 2 == 0
         r_s = r_peak if is_peak else r_valley
         r_t = top_r if is_peak else top_apothem
         star_pts.append((r_s * math.cos(theta), r_s * math.sin(theta)))
@@ -214,15 +215,21 @@ def rotor(
     )
 
     cavity = rotor_cavity(
-        base_diameter=base_diameter, height=height, n_facets=n_facets,
-        flank_angle_deg=flank_angle_deg, kink_z_frac=kink_z_frac,
-        peak_bulge=peak_bulge, valley_dent=valley_dent,
-        shell_wall_t=shell_wall_t, top_cap_t=top_cap_t,
+        base_diameter=base_diameter,
+        height=height,
+        n_facets=n_facets,
+        flank_angle_deg=flank_angle_deg,
+        kink_z_frac=kink_z_frac,
+        peak_bulge=peak_bulge,
+        valley_dent=valley_dent,
+        shell_wall_t=shell_wall_t,
+        top_cap_t=top_cap_t,
     )
 
     # Flange: ring-gear pitch annulus under the rim, top face at z=0.
     flange = Pos(0, 0, -flange_t) * extrude(
-        Circle(flange_r_out) - Circle(flange_r_in), amount=flange_t,
+        Circle(flange_r_out) - Circle(flange_r_in),
+        amount=flange_t,
     )
 
     return (outer - cavity) + flange
@@ -230,12 +237,15 @@ def rotor(
 
 # --- Assembly ----------------------------------------------------------
 
+
 def build_rotor() -> Assembly:
     """Rotor sub-assembly in rotor-local frame (= m02-local: origin on
     the rotation axis at the base plane). Single part; the parent
     composes it as the ``rotor`` subtree and owns the spin DOF."""
     return Assembly().with_part(
-        "rotor", rotor(), material=material_of("rotor"),
+        "rotor",
+        rotor(),
+        material=material_of("rotor"),
     )
 
 

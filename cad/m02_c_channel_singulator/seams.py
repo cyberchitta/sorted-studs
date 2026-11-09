@@ -51,6 +51,7 @@ from .teardrop import teardrop_cutter
 
 
 SEAM_COUNT = 3
+# fmt: off
 SEAM_EAR_T = 5.0         # tangential thickness of each tab (a pair is 10)
 SEAM_EAR_OUT = 12.0      # radial reach past the ring's outer face
 SEAM_EAR_OVERLAP = 0.5   # tab starts this far inside the outer face, so it fuses
@@ -62,8 +63,10 @@ SEAM_BOLT_D = 3.0              # its thread major Ø → the hole
 SEAM_BOLT_L = 16.0             # its length under the head
 SEAM_NUT_TYPE = "iso4032"      # hex nut, same size
 SEAM_WASHER_SIZE = "M3"        # ISO 7089 plain washer, under the head and under the nut (PLA ears)
+# fmt: on
 SEAM_WASHER_TYPE = "iso7089"
 # Designed:
+# fmt: off
 SEAM_BOLT_HOLE_CLEAR = 0.4     # diametral clearance through both ears
 SEAM_BOLT_R = SEAM_EAR_OUT / 2.0   # axis outside the ring's outer face: mid-tab radially
 SEAM_BOLT_EDGE = 6.5           # axis in from the ear's top and bottom edges
@@ -72,6 +75,7 @@ SEAM_DRIVER_D = 8.0            # the hex key's corridor, out along the axis from
 SEAM_NUT_TOOL_D = 10.0         # a 5.5 nut driver's corridor, out along the axis from the nut
 SEAM_TOOL_L = 60.0             # each corridor's reach (as ARC_SCREW_ACCESS_L)
 SEAM_TOOL_MARGIN = 0.5         # least clearance any body keeps from a corridor (as ARC_SCREW_ACCESS_MARGIN)
+# fmt: on
 
 SEAM_BOLT_HOLE_D = SEAM_BOLT_D + SEAM_BOLT_HOLE_CLEAR
 
@@ -134,8 +138,15 @@ def split_ring(
     sectors = []
     for k in range(n):
         a0 = phase_deg + k * span
-        wedge = Rot(0, 0, a0) * Pos(0, 0, z_lo) * Cylinder(
-            big_r, z_hi - z_lo, arc_size=span, align=None,
+        wedge = (
+            Rot(0, 0, a0)
+            * Pos(0, 0, z_lo)
+            * Cylinder(
+                big_r,
+                z_hi - z_lo,
+                arc_size=span,
+                align=None,
+            )
         )
         body = ring & wedge
         ear = Box(r1 - r0, ear_t, ear_z[1] - ear_z[0], align=None)
@@ -173,8 +184,12 @@ def _seam_holes(r_out: float, ear_z: tuple[float, float], apex_up: bool, ear_t: 
     x = r_out + SEAM_BOLT_R
     cutters = [
         teardrop_cutter(
-            SEAM_BOLT_HOLE_D, (x, -ear_t - 1.0, z), (0, 1, 0), 2.0 * ear_t + 2.0,
-            apex_up=apex_up, roof_deg=HOLE_ROOF_DEG,
+            SEAM_BOLT_HOLE_D,
+            (x, -ear_t - 1.0, z),
+            (0, 1, 0),
+            2.0 * ear_t + 2.0,
+            apex_up=apex_up,
+            roof_deg=HOLE_ROOF_DEG,
         )
         for z in seam_bolt_zs(*ear_z)
     ]
@@ -240,11 +255,16 @@ def seam_tools(ear_t: float = SEAM_EAR_T) -> Part:
     each SEAM_TOOL_L out along the axis, in ``seam_bolt``'s frame. A
     keep-out, never placed."""
     head_top, nut_face = _stack_heights(ear_t)
-    return _rod(SEAM_DRIVER_D, head_top, head_top + SEAM_TOOL_L) + _rod(SEAM_NUT_TOOL_D, nut_face - SEAM_TOOL_L, nut_face)
+    return _rod(SEAM_DRIVER_D, head_top, head_top + SEAM_TOOL_L) + _rod(
+        SEAM_NUT_TOOL_D, nut_face - SEAM_TOOL_L, nut_face
+    )
 
 
 def seam_bolt_locations(
-    phase_deg: float, r_out: float, ear_z: tuple[float, float], n: int = SEAM_COUNT,
+    phase_deg: float,
+    r_out: float,
+    ear_z: tuple[float, float],
+    n: int = SEAM_COUNT,
 ) -> tuple[tuple[int, int, Location], ...]:
     """(seam k, bolt i, location) for every seam bolt of a ring split by
     ``split_ring`` with the same arguments, m02-local."""
@@ -279,13 +299,14 @@ def with_seam_bolts(
     for k, i, loc in placed:
         name = seam_bolt_name(k, i)
         a = (
-            a
-            .assert_tangent_contact(name, sectors[k])
+            a.assert_tangent_contact(name, sectors[k])
             .assert_tangent_contact(name, sectors[(k - 1) % n])
             .with_keepout(f"{name}_tools", loc * seam_tools())
             .assert_clear_of(
-                [p for p in everything if p != name], f"{name}_tools",
-                name=f"{name}_tools_own", min_mm=SEAM_TOOL_MARGIN,
+                [p for p in everything if p != name],
+                f"{name}_tools",
+                name=f"{name}_tools_own",
+                min_mm=SEAM_TOOL_MARGIN,
             )
         )
     return a

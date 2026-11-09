@@ -57,13 +57,18 @@ _AXIS_TOL = 0.5
 _STRAIGHT_EXTRUSION_TARGETS = frozenset(
     {
         # Phase-2 integrated rig (`arch/`)
-        "arch_post_pos_x", "arch_post_neg_x",
-        "arch_stub_pos_x", "arch_stub_neg_x",
+        "arch_post_pos_x",
+        "arch_post_neg_x",
+        "arch_stub_pos_x",
+        "arch_stub_neg_x",
         "rail_d",
         # Turret floor frame (`frame/`)
-        "floor_back_x", "floor_left_y", "floor_right_y",
+        "floor_back_x",
+        "floor_left_y",
+        "floor_right_y",
         "floor_cross_x",
-        "floor_outrig_pos_x", "floor_outrig_neg_x",
+        "floor_outrig_pos_x",
+        "floor_outrig_neg_x",
     }
 )
 
@@ -81,22 +86,16 @@ def _vslot_for_axis_aligned_box(part: Part) -> Part:
     short_y = abs(sy - _MEMBER) < _AXIS_TOL
     short_z = abs(sz - _MEMBER) < _AXIS_TOL
     if short_y and short_z and not short_x:
-        length, axis_rot = sx, Rot(0, 90, 0)        # native +Z → +X
+        length, axis_rot = sx, Rot(0, 90, 0)  # native +Z → +X
     elif short_x and short_z and not short_y:
-        length, axis_rot = sy, Rot(-90, 0, 0)       # native +Z → +Y
+        length, axis_rot = sy, Rot(-90, 0, 0)  # native +Z → +Y
     elif short_x and short_y and not short_z:
-        length, axis_rot = sz, Rot(0, 0, 0)         # native +Z (no swap)
+        length, axis_rot = sz, Rot(0, 0, 0)  # native +Z (no swap)
     else:
         raise ValueError(
-            f"detail_variations: bbox ({sx:.1f}, {sy:.1f}, {sz:.1f}) is "
-            "not a 20×20×L axis-aligned extrusion"
+            f"detail_variations: bbox ({sx:.1f}, {sy:.1f}, {sz:.1f}) is not a 20×20×L axis-aligned extrusion"
         )
-    return (
-        Pos(cx, cy, cz)
-        * axis_rot
-        * Pos(0, 0, -length / 2)
-        * VSlotLinearRail("20x20", length=length)
-    )
+    return Pos(cx, cy, cz) * axis_rot * Pos(0, 0, -length / 2) * VSlotLinearRail("20x20", length=length)
 
 
 def default_detail(assembly: Assembly) -> dict[str, Part]:
@@ -123,8 +122,10 @@ def default_detail(assembly: Assembly) -> dict[str, Part]:
 # captures it. Bolt origin (head/shank interface in bd_warehouse's
 # canonical pose) lands on z = -162. Default Cylinder/SHCS axis is +Z,
 # matches the bolt's "head up" orientation here without rotation.
+# fmt: off
 _FOOT_BOLT_HEAD_Z = TURRET_FRAME_FLOOR_Z + _MEMBER / 2 + BRACKET_FOOT_Z   # = -162
 _FOOT_BOLT_Y = TURRET_FRAME_CROSS_Y                                        # bolts on the cross-rail centerline
+# fmt: on
 # Bolt X positions come from the bracket's own hole pattern
 # (`BRACKET_BOLT_XS`, inner then outer) — one source, no mirror.
 
@@ -186,11 +187,7 @@ def apply_default_detail(assembly: Assembly) -> Assembly:
     # use the same helper without a missing-key crash). The bracket's
     # dotted prefix *is* the drive unit's path from this root.
     bracket_path = next(
-        (
-            p.name
-            for p in assembly.placed_parts
-            if p.name.rsplit(".", 1)[-1] == "drive_bracket"
-        ),
+        (p.name for p in assembly.placed_parts if p.name.rsplit(".", 1)[-1] == "drive_bracket"),
         None,
     )
     if bracket_path is not None:

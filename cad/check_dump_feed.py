@@ -116,8 +116,10 @@ _EDGE_Y = PLATFORM_ACRYLIC_SIZE / 2.0
 _SLIDE_MIN = _EDGE_Y - DUMP_CG_SCATTER
 _SLIDE_MAX = _EDGE_Y + DUMP_CG_SCATTER
 
+# fmt: off
 _PATH_STEP_S = 0.0005       # sampling of a path, seconds
 _RIBBON_T = 0.5             # probe sheet thickness
+# fmt: on
 
 _TOP_IDX = next(idx for idx, role in FLOOR_PLAN if role == "top")
 _TOP_ROT = f"m05.rotating_stack.f{_TOP_IDX}"
@@ -163,8 +165,14 @@ def exit_frame(a: Assembly, tilt_deg: float) -> tuple[Vector, Vector, Vector, Ve
 
 
 def path(
-    origin: Vector, along: Vector, speed: float, column, z_floor: float,
-    *, across: Vector | None = None, half_w: float = 0.0,
+    origin: Vector,
+    along: Vector,
+    speed: float,
+    column,
+    z_floor: float,
+    *,
+    across: Vector | None = None,
+    half_w: float = 0.0,
 ) -> list[Vector]:
     """Point-mass path from `origin`, leaving at `speed` along the unit
     vector `along`, sampled until it enters the placed column's material
@@ -192,7 +200,7 @@ def ribbon(pts: list[Vector], across: Vector, half_w: float):
     `across`. The sheet's outer face is the path; its thickness lies
     inside it, toward the axis and down."""
     start = pts[0]
-    out = Vector(0, 0, 1).cross(across)             # horizontal, the way the brick goes
+    out = Vector(0, 0, 1).cross(across)  # horizontal, the way the brick goes
     plane = Plane(origin=start, x_dir=out, z_dir=out.cross(Vector(0, 0, 1)))
     line = [((p - start).dot(out), p.Z - start.Z) for p in pts]
     back = [(s - _RIBBON_T, z - _RIBBON_T) for s, z in reversed(line)]
@@ -227,35 +235,37 @@ def build_dump_feed_check(schema: str = DEFAULT_SCHEMA) -> Assembly:
 
     # Two claims, split by what moves: the parts the tilt drives are
     # re-measured at every sample, everything else once.
-    tilting = sorted(
-        pp.name for pp in top.placed_parts
-        if pp.name.startswith((f"{_DUMP_PLATFORM}.", f"{_SERVO_ARM}."))
-    )
+    tilting = sorted(pp.name for pp in top.placed_parts if pp.name.startswith((f"{_DUMP_PLATFORM}.", f"{_SERVO_ARM}.")))
     standing = sorted(
-        pp.name for pp in top.placed_parts
-        if pp.name.startswith(("m03.", "m02_chain.")) and pp.name not in tilting
+        pp.name for pp in top.placed_parts if pp.name.startswith(("m03.", "m02_chain.")) and pp.name not in tilting
     )
     assert tilting, "no part under the dump platform or the servo arm — the tilt claim would be vacuous"
     a = (
-        top
-        .assert_clear_of(
-            tilting, f"{_TOP_ROT}.flare_sweep",
-            name="flare_sweep_clear_of_dump_tilt", min_mm=FLARE_M03_CLEARANCE,
+        top.assert_clear_of(
+            tilting,
+            f"{_TOP_ROT}.flare_sweep",
+            name="flare_sweep_clear_of_dump_tilt",
+            min_mm=FLARE_M03_CLEARANCE,
         )
         .assert_clear_of(
-            standing, f"{_TOP_ROT}.flare_sweep",
-            name="flare_sweep_clear_of_standing", min_mm=FLARE_M03_CLEARANCE,
+            standing,
+            f"{_TOP_ROT}.flare_sweep",
+            name="flare_sweep_clear_of_standing",
+            min_mm=FLARE_M03_CLEARANCE,
         )
         .assert_scalar(
-            "dump_tilt_lead", tilt_lead(), ge=DUMP_TILT_LEAD_MIN,
+            "dump_tilt_lead",
+            tilt_lead(),
+            ge=DUMP_TILT_LEAD_MIN,
             detail=f"time to the edge over time to full tilt: µ_k ≥ {DUMP_MU_K_MIN}, "
-                   f"tilt ≥ {DUMP_TILT_RATE_MIN_DEG_S:.0f}°/s, start within "
-                   f"±{DUMP_CG_SCATTER:.0f} mm — all unmeasured",
+            f"tilt ≥ {DUMP_TILT_RATE_MIN_DEG_S:.0f}°/s, start within "
+            f"±{DUMP_CG_SCATTER:.0f} mm — all unmeasured",
         )
         .assert_scalar(
-            "dump_exit_speed_max", exit_speed_max(),
+            "dump_exit_speed_max",
+            exit_speed_max(),
             detail=f"mm/s off the edge at {MAX_TILT_DEG:.0f}° after {_SLIDE_MAX:.0f} mm "
-                   f"at µ_k {DUMP_MU_K_MIN} — unmeasured",
+            f"at µ_k {DUMP_MU_K_MIN} — unmeasured",
         )
     )
 
@@ -274,9 +284,11 @@ def build_dump_feed_check(schema: str = DEFAULT_SCHEMA) -> Assembly:
         for p in (edge + across * DUMP_CG_SCATTER, edge - across * DUMP_CG_SCATTER)
     )
     a = a.assert_scalar(
-        "dump_exit_inside_mouth", exit_r, le=FLARE_MOUTH_R - DUMP_LANDING_MARGIN,
+        "dump_exit_inside_mouth",
+        exit_r,
+        le=FLARE_MOUTH_R - DUMP_LANDING_MARGIN,
         detail=f"radius of the exit edge's ends at ±{DUMP_CG_SCATTER:.0f} mm, against "
-               f"the mouth radius less the landing margin",
+        f"the mouth radius less the landing margin",
     )
 
     for name, cg_h in (("flat", 0.0), ("tall", DUMP_CG_H_MAX)):
@@ -286,33 +298,34 @@ def build_dump_feed_check(schema: str = DEFAULT_SCHEMA) -> Assembly:
         # The probe: the fastest path across the scatter, up to the last
         # sample at which none of it has entered the column.
         abreast = path(
-            origin, along, speed, column, z_floor,
-            across=across, half_w=DUMP_CG_SCATTER,
+            origin,
+            along,
+            speed,
+            column,
+            z_floor,
+            across=across,
+            half_w=DUMP_CG_SCATTER,
         )
         probe = f"landing_{name}"
-        a = (
-            a
-            .with_part(probe, ribbon(abreast[:-1], across, DUMP_CG_SCATTER))
-            .assert_clear_of(
-                probe, f"{_TOP_ROT}.flare_miss",
-                name=probe, min_mm=DUMP_LANDING_MARGIN,
-            )
+        a = a.with_part(probe, ribbon(abreast[:-1], across, DUMP_CG_SCATTER)).assert_clear_of(
+            probe,
+            f"{_TOP_ROT}.flare_miss",
+            name=probe,
+            min_mm=DUMP_LANDING_MARGIN,
         )
         for pace, pts in (("fast", fastest), ("slow", slowest)):
             a = a.assert_scalar(
-                f"landing_{pace}_{name}_meets_flare_r", meets_column_r(pts, column),
+                f"landing_{pace}_{name}_meets_flare_r",
+                meets_column_r(pts, column),
                 detail="radius from the m05 axis where the path (lateral 0) first "
-                       "enters the column's material; 0 = straight down the throat",
+                "enters the column's material; 0 = straight down the throat",
             )
 
     return a.with_motion(
         Motion(
             "dump_tilt",
             lambda t: {_DUMP_PLATFORM: t, _SERVO_ARM: t * SERVO_ARM_TILT_SCALE},
-            ts=tuple(
-                i * DUMP_TILT_STEP_DEG
-                for i in range(int(round(MAX_TILT_DEG / DUMP_TILT_STEP_DEG)) + 1)
-            ),
+            ts=tuple(i * DUMP_TILT_STEP_DEG for i in range(int(round(MAX_TILT_DEG / DUMP_TILT_STEP_DEG)) + 1)),
         )
     )
 

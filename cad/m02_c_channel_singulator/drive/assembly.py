@@ -119,10 +119,12 @@ PINION_AXIS_XY = (CENTER_DIST * math.cos(_AZ), CENTER_DIST * math.sin(_AZ))
 
 # --- Part functions ----------------------------------------------------
 
+
 def _skirt(*, r_out: float, skirt_r_in: float, skirt_top_z: float) -> Part:
     """The bowl's skirt ring, from the floor top to ``skirt_top_z``."""
     return Pos(0, 0, PLATE_TOP_Z) * extrude(
-        Circle(r_out) - Circle(skirt_r_in), amount=skirt_top_z - PLATE_TOP_Z,
+        Circle(r_out) - Circle(skirt_r_in),
+        amount=skirt_top_z - PLATE_TOP_Z,
     )
 
 
@@ -149,7 +151,8 @@ def _motor_holes(
         # Counterbore from the floor's top face down, so the head sits
         # flush; the cutter extends 1 mm above the top face.
         cbore = Pos(sx * half, sy * half, t / 2.0 - bolt_cbore_depth / 2.0 + 0.5) * Cylinder(
-            bolt_cbore_d / 2.0, bolt_cbore_depth + 1.0,
+            bolt_cbore_d / 2.0,
+            bolt_cbore_depth + 1.0,
         )
         holes += cbore
         cbores.append(cbore)
@@ -209,12 +212,11 @@ def bowl(
     assert _corner_r + bolt_hole_d / 2.0 <= skirt_r_in, (
         f"motor bolt hole (edge r {_corner_r + bolt_hole_d / 2.0:.2f}) runs under the skirt (r {skirt_r_in})"
     )
-    assert _corner_r + bolt_cbore_d / 2.0 + WALL_MIN <= r_out, (
-        "motor bolt counterbore breaks out of the floor's rim"
-    )
+    assert _corner_r + bolt_cbore_d / 2.0 + WALL_MIN <= r_out, "motor bolt counterbore breaks out of the floor's rim"
     assert 0.0 < bolt_cbore_depth <= t - WALL_MIN, "counterbore leaves no floor under the head"
     plate = Pos(0, 0, PLATE_BOTTOM_Z) * extrude(
-        Circle(r_out) - Circle(r_in), amount=t,
+        Circle(r_out) - Circle(r_in),
+        amount=t,
     )
     skirt = _skirt(r_out=r_out, skirt_r_in=skirt_r_in, skirt_top_z=skirt_top_z)
     # Exit-arc slot through the skirt — the same isoceles cutter the
@@ -229,12 +231,18 @@ def bowl(
         align=None,
     )
     wedge = Pos(0, 0, skirt_cut_bottom_z) * extrude(
-        wedge_sketch, amount=skirt_top_z - skirt_cut_bottom_z + 1.0,
+        wedge_sketch,
+        amount=skirt_top_z - skirt_cut_bottom_z + 1.0,
     )
     holes, _ = _motor_holes(
-        t=t, motor_xy=motor_xy, motor_rot_deg=motor_rot_deg, pilot_hole_d=pilot_hole_d,
-        bolt_pattern=bolt_pattern, bolt_hole_d=bolt_hole_d,
-        bolt_cbore_d=bolt_cbore_d, bolt_cbore_depth=bolt_cbore_depth,
+        t=t,
+        motor_xy=motor_xy,
+        motor_rot_deg=motor_rot_deg,
+        pilot_hole_d=pilot_hole_d,
+        bolt_pattern=bolt_pattern,
+        bolt_hole_d=bolt_hole_d,
+        bolt_cbore_d=bolt_cbore_d,
+        bolt_cbore_depth=bolt_cbore_depth,
     )
     # Holes before the skirt: the two outboard counterbores reach
     # ~0.3 mm under the skirt's foot, and the foot's first layer
@@ -269,8 +277,11 @@ def bowl_sectors(
         arc_screw_holes=arc_screw_holes,
     )
     return split_ring(
-        whole, phase_deg=phase_deg, r_out=PLATE_R_OUT, ear_z=BOWL_EAR_Z,
-        hole_apex_up=True,                              # printed floor down
+        whole,
+        phase_deg=phase_deg,
+        r_out=PLATE_R_OUT,
+        ear_z=BOWL_EAR_Z,
+        hole_apex_up=True,  # printed floor down
     )
 
 
@@ -284,10 +295,14 @@ def motor_cbore_skirt_foot(*, motor_azimuth_deg: float = MOTOR_AZIMUTH_DEG) -> P
     Empty of material where a counterbore stays inside the skirt."""
     az = math.radians(motor_azimuth_deg)
     _, cbores = _motor_holes(
-        t=PLATE_T, motor_xy=(CENTER_DIST * math.cos(az), CENTER_DIST * math.sin(az)),
-        motor_rot_deg=motor_azimuth_deg, pilot_hole_d=PLATE_MOTOR_HOLE_D,
-        bolt_pattern=NEMA17_BOLT_PATTERN, bolt_hole_d=NEMA17_BOLT_HOLE_D,
-        bolt_cbore_d=NEMA17_BOLT_CBORE_D, bolt_cbore_depth=NEMA17_BOLT_CBORE_DEPTH,
+        t=PLATE_T,
+        motor_xy=(CENTER_DIST * math.cos(az), CENTER_DIST * math.sin(az)),
+        motor_rot_deg=motor_azimuth_deg,
+        pilot_hole_d=PLATE_MOTOR_HOLE_D,
+        bolt_pattern=NEMA17_BOLT_PATTERN,
+        bolt_hole_d=NEMA17_BOLT_HOLE_D,
+        bolt_cbore_d=NEMA17_BOLT_CBORE_D,
+        bolt_cbore_depth=NEMA17_BOLT_CBORE_DEPTH,
     )
     return _skirt(r_out=PLATE_R_OUT, skirt_r_in=SKIRT_R_IN, skirt_top_z=SKIRT_TOP_Z) & cbores
 
@@ -306,13 +321,17 @@ def bowl_part_at(az_deg: float, phase_deg: float = BOWL_SEAM_PHASE_DEG) -> str:
 
 
 def bearing(
-    *, od: float = BEARING_OD, id_: float = BEARING_ID, h: float = BEARING_H,
+    *,
+    od: float = BEARING_OD,
+    id_: float = BEARING_ID,
+    h: float = BEARING_H,
 ) -> Part:
     """Turntable bearing stub: one annulus, bottom face at
     z=BEARING_BOTTOM_Z. Bought — not inspected."""
     assert 0.0 < id_ < od
     return Pos(0, 0, BEARING_BOTTOM_Z) * extrude(
-        Circle(od / 2.0) - Circle(id_ / 2.0), amount=h,
+        Circle(od / 2.0) - Circle(id_ / 2.0),
+        amount=h,
     )
 
 
@@ -334,7 +353,8 @@ def pinion(
     hub = Pos(0, 0, PINION_HUB_BOTTOM_Z) * extrude(Circle(hub_od / 2.0), amount=hub_h)
     total_h = PINION_TOP_Z - PINION_HUB_BOTTOM_Z
     bore = Pos(0, 0, PINION_HUB_BOTTOM_Z - 1.0) * extrude(
-        Circle(bore_d / 2.0), amount=total_h + 2.0,
+        Circle(bore_d / 2.0),
+        amount=total_h + 2.0,
     )
     return (gear + hub) - bore
 
@@ -343,18 +363,23 @@ def motor() -> Part:
     """NEMA 17 stub on its own axis: square body hanging below
     MOTOR_FACE_Z, pilot boss and shaft rising from the face."""
     body = Pos(0, 0, MOTOR_BOTTOM_Z + NEMA17_BODY_LEN / 2.0) * Box(
-        NEMA17_SIDE, NEMA17_SIDE, NEMA17_BODY_LEN,
+        NEMA17_SIDE,
+        NEMA17_SIDE,
+        NEMA17_BODY_LEN,
     )
     pilot = Pos(0, 0, MOTOR_FACE_Z + NEMA17_PILOT_H / 2.0) * Cylinder(
-        NEMA17_PILOT_D / 2.0, NEMA17_PILOT_H,
+        NEMA17_PILOT_D / 2.0,
+        NEMA17_PILOT_H,
     )
     shaft = Pos(0, 0, MOTOR_FACE_Z + NEMA17_SHAFT_LEN / 2.0) * Cylinder(
-        NEMA17_SHAFT_D / 2.0, NEMA17_SHAFT_LEN,
+        NEMA17_SHAFT_D / 2.0,
+        NEMA17_SHAFT_LEN,
     )
     return body + pilot + shaft
 
 
 # --- Assembly ----------------------------------------------------------
+
 
 def build_pinion() -> Assembly:
     """The pinion in its own frame (origin on its axis at z=0). The
@@ -401,19 +426,24 @@ def build_drive(
         )
     axis_xy = pinion_axis_xy(motor_azimuth_deg)
     on_axis = Location((axis_xy[0], axis_xy[1], 0.0)) * Rot(
-        0, 0, motor_azimuth_deg,
+        0,
+        0,
+        motor_azimuth_deg,
     )
     radial = (math.cos(math.radians(motor_azimuth_deg)), math.sin(math.radians(motor_azimuth_deg)), 0.0)
     skirt_face = Plane(origin=(SKIRT_R_IN * radial[0], SKIRT_R_IN * radial[1], 0.0), z_dir=radial)
     a = Assembly()
-    for k, sector in enumerate(bowl_sectors(
-        phase_deg=seam_phase_deg, motor_azimuth_deg=motor_azimuth_deg, arc_screw_holes=arc_screw_holes,
-    )):
+    for k, sector in enumerate(
+        bowl_sectors(
+            phase_deg=seam_phase_deg,
+            motor_azimuth_deg=motor_azimuth_deg,
+            arc_screw_holes=arc_screw_holes,
+        )
+    ):
         a = a.with_part(bowl_part(k), sector, material=material_of(bowl_part(k)))
     motor_sector = bowl_part_at(motor_azimuth_deg, seam_phase_deg)
     a = (
-        a
-        .with_part("bearing", bearing(), material=material_of("bearing"))
+        a.with_part("bearing", bearing(), material=material_of("bearing"))
         .with_part("motor", motor(), location=on_axis, material=material_of("motor"))
         .with_subassembly(
             "pinion",
@@ -430,7 +460,9 @@ def build_drive(
         .assert_tangent_contact("motor", motor_sector)
         .assert_no_interference("pinion.pinion", "motor")
         .assert_distance(
-            "pinion.pinion", "motor", min_mm=MOTOR_SHAFT_BORE_CLEARANCE,
+            "pinion.pinion",
+            "motor",
+            min_mm=MOTOR_SHAFT_BORE_CLEARANCE,
         )
         # Pinion and motor stay well clear of the bearing.
         .assert_distance("pinion.pinion", "bearing", min_mm=15.0)
@@ -441,8 +473,11 @@ def build_drive(
         # the bowl is the 0.5 mm hub-to-floor gap asserted below). The
         # part is the pitch cylinder, so grow it to the tip circle.
         .assert_distance(
-            "pinion.pinion", skirt_face, along=radial,
-            min_mm=1.0, grow_a_mm=ADDENDUM,
+            "pinion.pinion",
+            skirt_face,
+            along=radial,
+            min_mm=1.0,
+            grow_a_mm=ADDENDUM,
             name="pinion_tip_inside_skirt",
         )
         .assert_scalar("gear_ratio", GEAR_RATIO, detail="ring / pinion teeth")
@@ -453,7 +488,9 @@ def build_drive(
     for part in BOWL_PARTS:
         if part != motor_sector:
             a = a.assert_distance(
-                "motor", part, min_mm=1.0,
+                "motor",
+                part,
+                min_mm=1.0,
                 name=f"motor_clear_of_{part}",
             )
     for k, part in enumerate(BOWL_PARTS):
@@ -464,14 +501,21 @@ def build_drive(
             .assert_tangent_contact("bearing", part)
             # Pinion hub floats just above the floor.
             .assert_distance(
-                "pinion.pinion", part, min_mm=PINION_HUB_PLATE_CLEAR,
+                "pinion.pinion",
+                part,
+                min_mm=PINION_HUB_PLATE_CLEAR,
             )
             # Each seam: the two sectors' faces and ears meet on the
             # seam plane.
             .assert_tangent_contact(part, BOWL_PARTS[(k + 1) % SEAM_COUNT])
         )
     return with_seam_bolts(
-        a, BOWL_PARTS, material_of, phase_deg=seam_phase_deg, r_out=PLATE_R_OUT, ear_z=BOWL_EAR_Z,
+        a,
+        BOWL_PARTS,
+        material_of,
+        phase_deg=seam_phase_deg,
+        r_out=PLATE_R_OUT,
+        ear_z=BOWL_EAR_Z,
     )
 
 

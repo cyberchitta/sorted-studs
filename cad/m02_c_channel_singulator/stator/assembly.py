@@ -132,8 +132,10 @@ _TAN_V = math.tan(math.radians(V_HALF_ANGLE_DEG))
 # ROTOR_STATOR_GAP − GAP_CLEARANCE_TOLERANCE. Outer edge stops at the
 # cylindrical wall (no tab sticking out).
 EXIT_WALL_T = STATOR_WALL_T
+# fmt: off
 EXIT_WALL_ROTOR_GAP = 3.0           # radial gap rotor-cone → paddle inner edge
 EXIT_WALL_SIDE_SIGN = +1            # +1: CCW rotor, -1: CW rotor
+# fmt: on
 
 WALL_MIN = 1.5
 
@@ -157,18 +159,23 @@ WALL_MIN = 1.5
 # tongue's edges. EXIT_FLOOR_T and EXIT_FLOOR_SIDE_CLEAR live in
 # ..params: the skirt's wedge slot is cut from them.
 EXIT_FLOOR_GEAR_CLEAR = 2.0
+# fmt: off
 EXIT_FLOOR_R_IN = RING_PITCH_D / 2.0 + ADDENDUM + EXIT_FLOOR_GEAR_CLEAR   # 123.5
 EXIT_FLOOR_R_OUT = R_STATOR_OUTER_KINK                                    # 155
 _UPSTREAM_EDGE_DEG = EXIT_ARC_DEG / 2.0 - math.degrees(math.asin(EXIT_FLOOR_SIDE_CLEAR / EXIT_FLOOR_R_IN))          # ≈ 17.3
 _DOWNSTREAM_EDGE_DEG = EXIT_ARC_DEG / 2.0 - math.degrees(math.asin((EXIT_WALL_T + EXIT_FLOOR_SIDE_CLEAR) / EXIT_FLOOR_R_IN))   # ≈ 15.9
+# fmt: on
 # (from, to) in degrees about +X, the paddle side per EXIT_WALL_SIDE_SIGN.
 EXIT_FLOOR_SPAN_DEG = (
-    (-_UPSTREAM_EDGE_DEG, _DOWNSTREAM_EDGE_DEG) if EXIT_WALL_SIDE_SIGN > 0
+    (-_UPSTREAM_EDGE_DEG, _DOWNSTREAM_EDGE_DEG)
+    if EXIT_WALL_SIDE_SIGN > 0
     else (-_DOWNSTREAM_EDGE_DEG, _UPSTREAM_EDGE_DEG)
 )
 EXIT_FLOOR_RIB_SKIRT_CLEAR = 1.0
+# fmt: off
 EXIT_FLOOR_RIB_R_OUT = SKIRT_R_IN - EXIT_FLOOR_RIB_SKIRT_CLEAR             # 151
 EXIT_FLOOR_RIB_R_IN = EXIT_FLOOR_RIB_R_OUT - 8.0                          # 143
+# fmt: on
 EXIT_FLOOR_RIB_INSET_DEG = 2.0
 
 # The flange the wall rests on: its inner corner is where the outer
@@ -178,6 +185,7 @@ _FLANGE_Z = SKIRT_TOP_Z
 
 
 # --- Part functions ----------------------------------------------------
+
 
 def stator(
     *,
@@ -215,9 +223,7 @@ def stator(
     """
     # Guards the argument, not just the module default: the profile
     # below degenerates if the kink sits at or above the wall top.
-    assert 0.0 < v_h <= height, (
-        f"v_h ({v_h}) must be positive and not exceed height ({height})"
-    )
+    assert 0.0 < v_h <= height, f"v_h ({v_h}) must be positive and not exceed height ({height})"
     # The paddle's inner edge tracks the rotor cone up to exit_h, so the
     # opening can't rise past the rotor top (the edge's radius would go
     # negative) — the hopper wall is why exit_h and height are separate.
@@ -227,8 +233,7 @@ def stator(
     # The flange sits below the kink and inside the outer kink radius:
     # the outer cone reaches r_out_base + SKIRT_TOP_Z·tan V there.
     assert 0.0 < _FLANGE_Z < v_h and _FLANGE_R_IN < r_out_kink, (
-        f"flange at z {_FLANGE_Z} / r {_FLANGE_R_IN} must lie under the "
-        f"kink (z {v_h}, r {r_out_kink})"
+        f"flange at z {_FLANGE_Z} / r {_FLANGE_R_IN} must lie under the kink (z {v_h}, r {r_out_kink})"
     )
 
     profile_pts: list[tuple[float, float]] = [
@@ -270,7 +275,8 @@ def stator(
     # Through the wall top when the opening is full height; stopping at
     # exit_h exactly otherwise, so the wall above is a lintel.
     wedge = Pos(0, 0, -z_pad) * extrude(
-        wedge_sketch, amount=exit_h + z_pad + (z_pad if exit_h >= height else 0.0),
+        wedge_sketch,
+        amount=exit_h + z_pad + (z_pad if exit_h >= height else 0.0),
     )
 
     # Downstream paddle — profile in the XZ plane traces the stator's
@@ -300,7 +306,7 @@ def stator(
     # A flat plate's far corner sits at √(r² + t²): pull the outer edge
     # in so it stays inside the wall's curved outer face instead of
     # poking 0.03 mm past it (a 90° sliver ledge under a lintel).
-    r_paddle_out = math.sqrt(r_out_kink ** 2 - exit_wall_t ** 2)
+    r_paddle_out = math.sqrt(r_out_kink**2 - exit_wall_t**2)
     paddle_pts: list[tuple[float, float]] = [
         (r_wall_inner_bot, 0.0),
         (r_out_base, 0.0),
@@ -341,8 +347,11 @@ def knife_edge_ring(
     wall traces to no feature and fails."""
     t = math.tan(math.radians(V_HALF_ANGLE_DEG))
     return revolve(
-        Plane.XZ * Polygon(
-            (r_in_base, 0.0), (r_in_base + reach, 0.0), (r_in_base + reach, reach / t),
+        Plane.XZ
+        * Polygon(
+            (r_in_base, 0.0),
+            (r_in_base + reach, 0.0),
+            (r_in_base + reach, reach / t),
             align=None,
         ),
         axis=Axis.Z,
@@ -418,8 +427,11 @@ def stator_sectors(*, phase_deg: float = LINER_SEAM_PHASE_DEG, height: float = S
         for sign in _fastening.FREE_END_SIGNS:
             ring = ring - _fastening.boss_hole(sign)
     return split_ring(
-        ring, phase_deg=phase_deg, r_out=R_STATOR_OUTER_KINK,
-        ear_z=_ear_z(height), hole_apex_up=False,       # printed inverted
+        ring,
+        phase_deg=phase_deg,
+        r_out=R_STATOR_OUTER_KINK,
+        ear_z=_ear_z(height),
+        hole_apex_up=False,  # printed inverted
     )
 
 
@@ -455,6 +467,7 @@ def sector_solid_count(k: int, height: float = STATOR_WALL_H) -> int:
 
 # --- Assembly ----------------------------------------------------------
 
+
 def build_stator(height: float = STATOR_WALL_H) -> Assembly:
     """Stator sub-assembly in stator-local frame (= m02-local: origin
     on the rotor axis at the V-bottom): the wall, ``height`` tall
@@ -472,14 +485,16 @@ def build_stator(height: float = STATOR_WALL_H) -> Assembly:
         a = a.with_part(stator_part(k), sector, material=material_of(stator_part(k)))
     a = a.with_part("exit_floor", exit_floor(), material=material_of("exit_floor"))
     a = with_seam_bolts(
-        a, STATOR_PARTS, material_of,
-        phase_deg=LINER_SEAM_PHASE_DEG, r_out=R_STATOR_OUTER_KINK, ear_z=_ear_z(height),
+        a,
+        STATOR_PARTS,
+        material_of,
+        phase_deg=LINER_SEAM_PHASE_DEG,
+        r_out=R_STATOR_OUTER_KINK,
+        ear_z=_ear_z(height),
     )
     for k, part in enumerate(STATOR_PARTS):
-        a = (
-            a
-            .assert_no_interference("exit_floor", part)
-            .assert_tangent_contact(part, STATOR_PARTS[(k + 1) % SEAM_COUNT])
+        a = a.assert_no_interference("exit_floor", part).assert_tangent_contact(
+            part, STATOR_PARTS[(k + 1) % SEAM_COUNT]
         )
     # The tongue's side clearance is to the sector spanning the exit.
     exit_k = sector_index(0.0, LINER_SEAM_PHASE_DEG)
@@ -488,15 +503,18 @@ def build_stator(height: float = STATOR_WALL_H) -> Assembly:
     # `sector_solid_count`, which `printability.py` claims from too.
     for k, part in enumerate(STATOR_PARTS):
         a = a.assert_solid_count(
-            part, eq=sector_solid_count(k, height),
+            part,
+            eq=sector_solid_count(k, height),
             detail="count derived by `sector_solid_count`: 2 on the "
-                   "sector the exit opening cuts at wall height, 1 "
-                   "elsewhere and on the hopper stage. A mismatch "
-                   "means the wall height or the seam phase moved "
-                   "the opening relative to the seams",
+            "sector the exit opening cuts at wall height, 1 "
+            "elsewhere and on the hopper stage. A mismatch "
+            "means the wall height or the seam phase moved "
+            "the opening relative to the seams",
         )
     a = a.assert_distance(
-        "exit_floor", exit_sector, min_mm=EXIT_FLOOR_SIDE_CLEAR,
+        "exit_floor",
+        exit_sector,
+        min_mm=EXIT_FLOOR_SIDE_CLEAR,
     )
     # Each free end's boss keeps out of the exit opening's own volume
     # carried outward — the brick's way out — by the margin the tongue
@@ -509,8 +527,10 @@ def build_stator(height: float = STATOR_WALL_H) -> Assembly:
             end = _fastening.free_end_name(sign)
             a = a.with_region(exit_sector, f"boss_{end}", _fastening.arc_boss(sign))
             a = a.assert_clear_of(
-                f"{exit_sector}@boss_{end}", corridor,
-                name=f"arc_boss_{end}_exit_clearance", min_mm=EXIT_FLOOR_SIDE_CLEAR,
+                f"{exit_sector}@boss_{end}",
+                corridor,
+                name=f"arc_boss_{end}_exit_clearance",
+                min_mm=EXIT_FLOOR_SIDE_CLEAR,
             )
     return a
 

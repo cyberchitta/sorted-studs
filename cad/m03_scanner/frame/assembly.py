@@ -82,7 +82,6 @@ checks read a clean zero volume at every joint. Printed corner
 brackets at the rail joints land in a later slice.
 """
 
-
 from build123d import Box, Part, Pos
 
 from cad_khana.mechanism.assembly import Assembly
@@ -100,8 +99,10 @@ from ..materials import material_of
 
 # --- Member cross-section ----------------------------------------------
 
+# fmt: off
 MEMBER = 20.0                   # 2020 extrusion
 CORNER_GAP = 0.3                # butt-joint gap
+# fmt: on
 
 
 # --- Phase-2 outrigger reach -------------------------------------------
@@ -171,6 +172,7 @@ _CROSS_X_LEN = _CROSS_X_RIGHT - _CROSS_X_LEFT
 
 # --- Member helpers ----------------------------------------------------
 
+
 def rail_x(x_centre: float, x_len: float, y: float, z: float) -> Part:
     """X-direction rail (long axis along world +X)."""
     return Pos(x_centre, y, z) * Box(x_len, MEMBER, MEMBER)
@@ -184,24 +186,20 @@ def rail_y(x: float, y_centre: float, y_len: float, z: float) -> Part:
 # --- Members -----------------------------------------------------------
 
 _MEMBERS = {
-    "floor_back_x": rail_x(
-        0.0, _PERIMETER_X_LEN, TURRET_FRAME_BACK_Y, TURRET_FRAME_FLOOR_Z
-    ),
-    "floor_left_y": rail_y(
-        -TURRET_FRAME_SIDE_X, _SIDE_Y_CENTER, _SIDE_Y_LEN, TURRET_FRAME_FLOOR_Z
-    ),
-    "floor_right_y": rail_y(
-        +TURRET_FRAME_SIDE_X, _SIDE_Y_CENTER, _SIDE_Y_LEN, TURRET_FRAME_FLOOR_Z
-    ),
-    "floor_cross_x": rail_x(
-        0.0, _CROSS_X_LEN, TURRET_FRAME_CROSS_Y, TURRET_FRAME_FLOOR_Z
-    ),
+    "floor_back_x": rail_x(0.0, _PERIMETER_X_LEN, TURRET_FRAME_BACK_Y, TURRET_FRAME_FLOOR_Z),
+    "floor_left_y": rail_y(-TURRET_FRAME_SIDE_X, _SIDE_Y_CENTER, _SIDE_Y_LEN, TURRET_FRAME_FLOOR_Z),
+    "floor_right_y": rail_y(+TURRET_FRAME_SIDE_X, _SIDE_Y_CENTER, _SIDE_Y_LEN, TURRET_FRAME_FLOOR_Z),
+    "floor_cross_x": rail_x(0.0, _CROSS_X_LEN, TURRET_FRAME_CROSS_Y, TURRET_FRAME_FLOOR_Z),
     "floor_outrig_pos_x": rail_y(
-        +TURRET_FRAME_SIDE_X, _OUTRIG_Y_CENTER, _OUTRIG_Y_LEN,
+        +TURRET_FRAME_SIDE_X,
+        _OUTRIG_Y_CENTER,
+        _OUTRIG_Y_LEN,
         TURRET_FRAME_FLOOR_Z,
     ),
     "floor_outrig_neg_x": rail_y(
-        -TURRET_FRAME_SIDE_X, _OUTRIG_Y_CENTER, _OUTRIG_Y_LEN,
+        -TURRET_FRAME_SIDE_X,
+        _OUTRIG_Y_CENTER,
+        _OUTRIG_Y_LEN,
         TURRET_FRAME_FLOOR_Z,
     ),
 }
@@ -210,6 +208,7 @@ TURRET_FRAME_PART_NAMES = tuple(_MEMBERS.keys())
 
 
 # --- Assembly builder --------------------------------------------------
+
 
 def build_turret_frame() -> Assembly:
     """2020 turret-frame members sub-assembly, in turret-local
@@ -242,16 +241,15 @@ def build_turret_frame() -> Assembly:
     a = Assembly()
     for name, part in _MEMBERS.items():
         a = a.with_part(
-            name, part,
+            name,
+            part,
             material=material_of(name),
         )
     # Exported interface anchor: hub-axis point (frame-local origin =
     # turret hub axis) on the floor members' bottom-face plane — the
     # face that rests on the m05 deck top. Declared here because
     # MEMBER is private to this module; the m03 root re-exports it.
-    a = a.with_anchor(
-        "floor_bottom", Pos(0, 0, TURRET_FRAME_FLOOR_Z - MEMBER / 2)
-    )
+    a = a.with_anchor("floor_bottom", Pos(0, 0, TURRET_FRAME_FLOOR_Z - MEMBER / 2))
     return a
 
 
@@ -260,6 +258,4 @@ def build_turret_frame() -> Assembly:
 # Every pair of members must be non-overlapping. Butt-joints are
 # separated by CORNER_GAP (0.3 mm); printed corner brackets bridge the
 # gaps in reality and are not modelled in this slice.
-assembly = build_turret_frame().assert_no_interference_within(
-    TURRET_FRAME_PART_NAMES
-)
+assembly = build_turret_frame().assert_no_interference_within(TURRET_FRAME_PART_NAMES)

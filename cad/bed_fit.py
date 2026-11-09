@@ -51,6 +51,7 @@ def _scripts() -> list[str]:
             found.append(".".join(p.relative_to(CAD).with_suffix("").parts))
     return found
 
+
 PRINTED_MATERIALS = frozenset({"pla_matte"})
 BOUGHT_PLASTIC = frozenset({"servo_body", "servo_horn", "trap_servo", "lower_trap_servo"})
 
@@ -142,10 +143,14 @@ def main() -> int:
         key = _key(r["part"])
         m = _measure(r["part"], r["up"])
         twin = next(
-            (b for b in bodies.values()
-             if _same(key, b["key"]) and b["up_axis"] == list(r["up"])
-             and b["height_mm"] == m["height_mm"]
-             and b["footprint_mm"] == m["footprint_mm"]),
+            (
+                b
+                for b in bodies.values()
+                if _same(key, b["key"])
+                and b["up_axis"] == list(r["up"])
+                and b["height_mm"] == m["height_mm"]
+                and b["footprint_mm"] == m["footprint_mm"]
+            ),
             None,
         )
         if twin is not None:

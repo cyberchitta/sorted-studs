@@ -42,9 +42,7 @@ def main() -> None:
     # and the filename tag.
     schema = schema_from_env()
     top = build_top(schema)
-    detailed = m05_detail.apply_default_detail(
-        m03_detail.apply_default_detail(top)
-    )
+    detailed = m05_detail.apply_default_detail(m03_detail.apply_default_detail(top))
     filled = fill_palette_neutrals(detailed, neutral_of(design_system(schema)))
     tag = schema.removeprefix("cyberchitta-")
     path = export_glb(

@@ -48,6 +48,7 @@ from .animated_assembly import build_m03_at
 # the claim — a regression net that never enters the phase it guards
 # tests nothing. The three added frames enter it from both ends and
 # at a second station.
+# fmt: off
 SAMPLE_TS = (
     0.0,        # REST (rotor at station 0, no tilt)
     0.02917,    # tilt 7.5° — pad contact opens (0.4 mm³)
@@ -64,6 +65,7 @@ SAMPLE_TS = (
     0.5,        # arrives at station 2
     0.75,       # arrives at station 3
 )
+# fmt: on
 
 for t in SAMPLE_TS:
     check(build_m03_at(t), out=f"outputs/animated/t_{t:.4f}")

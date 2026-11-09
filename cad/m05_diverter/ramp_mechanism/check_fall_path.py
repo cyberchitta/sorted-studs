@@ -34,7 +34,7 @@ from cad_khana.mechanism.assembly import Assembly
 from ..params import COL_INTERIOR_SIDE, MAX_BRICK_DIM
 from .assembly import FALL_PATH_MARGIN, build_column_side_rotating, build_column_side_static
 
-PROBE_W = 8.0                      # a 1×N brick is 7.8 wide
+PROBE_W = 8.0  # a 1×N brick is 7.8 wide
 PROBE_YAWS_DEG = tuple(range(0, 180, 15))
 
 
@@ -45,10 +45,7 @@ def _placed_bbox(a: Assembly, path: str):
 
 def build_fall_path(role: str = "middle") -> Assembly:
     """The floor at rest, plus one falling-stick probe per yaw."""
-    floor = (
-        build_column_side_static(role)
-        .with_subassembly("rotating", build_column_side_rotating(role))
-    )
+    floor = build_column_side_static(role).with_subassembly("rotating", build_column_side_rotating(role))
     column = _placed_bbox(floor, "rotating.column")
     x_far = min(_placed_bbox(floor, "rotating.ramp").min.X, COL_INTERIOR_SIDE / 2)
     x_mid = (_placed_bbox(floor, "rotating.trap.trap").max.X + x_far) / 2
@@ -57,12 +54,11 @@ def build_fall_path(role: str = "middle") -> Assembly:
     a = floor
     for yaw in PROBE_YAWS_DEG:
         name = f"stick_{yaw:03d}"
-        a = (
-            a
-            .with_part(name, stick, location=Pos(x_mid, 0, (z_lo + z_hi) / 2) * Rot(0, 0, yaw))
-            .assert_no_interference_between(
-                [name], ["bearing_spider", "ring_bearing", "rotating"],
-            )
+        a = a.with_part(
+            name, stick, location=Pos(x_mid, 0, (z_lo + z_hi) / 2) * Rot(0, 0, yaw)
+        ).assert_no_interference_between(
+            [name],
+            ["bearing_spider", "ring_bearing", "rotating"],
         )
     # The binding yaw, measured: lying along X the stick has half the
     # margin to spare on each side.

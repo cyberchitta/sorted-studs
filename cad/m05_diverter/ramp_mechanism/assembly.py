@@ -146,17 +146,19 @@ COLLAR_T = 5.0
 # 8 leaves 2.3 mm of wall round the keyed bore (≥ the FDM 1.5 floor).
 KNUCKLE_OD = 8.0
 PIN_D = 3.0
+# fmt: off
 PIN_FLAT = 1.0                                # flat at this distance from the axis (0.5 deep)
 PIN_HOLE_D = 3.6                              # round bearing bore: bosses + walls
 PIN_D_BORE_D = 3.4                            # keyed bore: knuckle + coupler
 PIN_D_BORE_FLAT = 1.2                         # 0.2 clear of the pin's flat
+# fmt: on
 
 # Trap — stepped plate, knuckle at hinge axis, plate body in +X
 TRAP_T = 4.0
 # The knuckle's length, and the plate's width only out to TRAP_STEP_S
 # (below): the hinge bosses stand outside it, at |y| 40.5..43.5. Past the
 # bosses' swing radius the plate steps out to TRAP_WING_HALF_W.
-TRAP_W = 80.0                                 # ≤ MAX_BRICK_DIM; leaves ±Y for bosses
+TRAP_W = 80.0  # ≤ MAX_BRICK_DIM; leaves ±Y for bosses
 # Running clearance between the turning trap and a fixed column face.
 TRAP_WALL_CLEARANCE = 1.0
 # The knuckle's axial play between the two bosses, per side.
@@ -166,20 +168,20 @@ TRAP_AXIAL_FLOAT = 0.5
 # inset, and of knuckle radius, is a mm off the fall path
 # (FALL_PATH_MARGIN, below).
 TRAP_HINGE_X = -(COL_INTERIOR_SIDE / 2 - KNUCKLE_OD / 2 - TRAP_WALL_CLEARANCE)  # −40
-TRAP_REST_DEG = 90.0                          # hanging: pass-through
+TRAP_REST_DEG = 90.0  # hanging: pass-through
 # Catch tilt — the brick must slide off the trap the way it slides off
 # the ramp (tan > MU_STATIC_BUDGET, below); 30° (tan 0.577) clears it
 # with more room than the ramp's 25°, since the trap is where the
 # brick lands and first has to start moving.
 TRAP_CATCH_DEG = 30.0
-TRAP_SWING_STEP = 5.0                         # sampling of the catch->rest swing
+TRAP_SWING_STEP = 5.0  # sampling of the catch->rest swing
 _TRAP_CATCH_RAD = math.radians(TRAP_CATCH_DEG)
 # Hinge bosses — mounted on inside of −X wall, extend inward past hinge,
 # sit outside the trap knuckle's Y extent so they clear the swinging plate.
 BOSS_Y = 3.0
-BOSS_Y_OFFSET = TRAP_W / 2 + BOSS_Y / 2 + TRAP_AXIAL_FLOAT   # 42
+BOSS_Y_OFFSET = TRAP_W / 2 + BOSS_Y / 2 + TRAP_AXIAL_FLOAT  # 42
 BOSS_X = COL_INTERIOR_SIDE / 2 - (-TRAP_HINGE_X - KNUCKLE_OD / 2 - 1.0)  # 10
-BOSS_X_CENTER = -(COL_INTERIOR_SIDE / 2 - BOSS_X / 2)   # −40
+BOSS_X_CENTER = -(COL_INTERIOR_SIDE / 2 - BOSS_X / 2)  # −40
 BOSS_H_Z = 12.0
 
 # Ramp — fixed sloped plate, root just inside the +X wall, extends
@@ -187,8 +189,9 @@ BOSS_H_Z = 12.0
 # (TRAP_HINGE_Z below), not the other way round: the ramp is sized
 # against the basket rim and the exit opening — and its length against
 # the inner through-columns (RAMP_L, below).
-RAMP_DEG = 25.0                               # slope below horizontal
+RAMP_DEG = 25.0  # slope below horizontal
 RAMP_T = 4.0
+# fmt: off
 RAMP_W = 70.0                                 # channel width between the side walls
 # Side walls — outboard of the channel, standing on the plate. They keep
 # a brick that lands off-centre from leaving the plate sideways
@@ -198,6 +201,7 @@ RAMP_W = 70.0                                 # channel width between the side w
 RAMP_WALL_T = 2.0                             # ≥ FDM wall floor (1.5); takes brick impacts
 RAMP_WALL_H = 15.0                            # above the plate top — a brick height + margin
 RAMP_OUTER_W = RAMP_W + 2 * RAMP_WALL_T       # 74 — what the opening must pass
+# fmt: on
 # Pass-through fall path: a brick bound for a lower floor falls past the
 # hanging trap, and the longest one the sorter takes — a 1×10 / 2×10,
 # lying flat along X — must fit between the trap's hanging face and the
@@ -232,7 +236,7 @@ RAMP_ROOT_Z = RAMP_WALL_Z + (COL_OUTER_SIDE / 2 - RAMP_ROOT_X) * math.tan(math.r
 # min_wall reads at 0.4–0.9 mm. Measured over the stack turn by
 # single_floor's `ramp_inner_column_gap_k` claims.
 RAMP_COLUMN_CLEARANCE = 5.0
-RAMP_REACH_R = R_VERT_INNER - RAIL_SIZE / 2 - RAMP_COLUMN_CLEARANCE   # ≈ 146.66
+RAMP_REACH_R = R_VERT_INNER - RAIL_SIZE / 2 - RAMP_COLUMN_CLEARANCE  # ≈ 146.66
 
 
 def _square_cut_length(half_w: float, top: float) -> float:
@@ -244,7 +248,7 @@ def _square_cut_length(half_w: float, top: float) -> float:
     return (reach_x - RAMP_ROOT_X - top * math.sin(rad)) / math.cos(rad)
 
 
-RAMP_L = _square_cut_length(RAMP_W / 2, RAMP_T / 2)                          # ≈ 108.8
+RAMP_L = _square_cut_length(RAMP_W / 2, RAMP_T / 2)  # ≈ 108.8
 RAMP_WALL_L = _square_cut_length(RAMP_OUTER_W / 2, RAMP_T / 2 + RAMP_WALL_H)  # ≈ 101.2
 
 # Hinge height — the catching trap's free-end underside sits
@@ -257,10 +261,11 @@ TRAP_HANDOFF_STEP = 5.0
 # ramp root so the brick steps down onto the ramp rather than the trap
 # overlapping it. That fixes the hinge-to-tip reach, and so the plate
 # length.
-TRAP_TIP_X = RAMP_ROOT_X - 2.0                # ≈ 43.85
+TRAP_TIP_X = RAMP_ROOT_X - 2.0  # ≈ 43.85
 _TRAP_REACH = (TRAP_TIP_X - TRAP_HINGE_X) / math.cos(_TRAP_CATCH_RAD)  # ≈ 96.8
-TRAP_L = _TRAP_REACH - KNUCKLE_OD / 2         # ≈ 92.8
+TRAP_L = _TRAP_REACH - KNUCKLE_OD / 2  # ≈ 92.8
 _RAMP_ROOT_TOP_Z = RAMP_ROOT_Z + (RAMP_T / 2) / math.cos(math.radians(RAMP_DEG))
+# fmt: off
 TRAP_HINGE_Z = (
     _RAMP_ROOT_TOP_Z + TRAP_HANDOFF_STEP
     + _TRAP_REACH * math.sin(_TRAP_CATCH_RAD)
@@ -303,8 +308,9 @@ TRAP_WING_S = TRAP_STEP_S + (TRAP_WING_HALF_W - TRAP_W / 2)               # full
 # bench item 9's.
 TRAP_GUIDE_T = 2.0                            # ≥ FDM wall floor (1.5)
 TRAP_GUIDE_H = KNUCKLE_OD / 2 - TRAP_T / 2    # 2
+# fmt: on
 TRAP_GUIDE_RAMP_GAP = 1.0
-TRAP_GUIDE_EXIT_W = RAMP_W - 2 * (TRAP_GUIDE_T + TRAP_GUIDE_RAMP_GAP)    # 64
+TRAP_GUIDE_EXIT_W = RAMP_W - 2 * (TRAP_GUIDE_T + TRAP_GUIDE_RAMP_GAP)  # 64
 # How far down the ramp, from its root, the channel must stay the full
 # exit width clear of the side walls: a brick sliding off the trap tip
 # lands ~14 mm (µ 0.35) to ~19 mm (frictionless) past it — a hand
@@ -318,35 +324,43 @@ TRAP_LANDING_RUN = 30.0
 # output shaft coaxial with the hinge, long axis along +X, so its
 # height stays a body width (≈ 12) about the hinge: the floor above's
 # bearing spider occupies the band just below it outside the column.
+# fmt: off
 SERVO_BODY_L = 22.5                           # along X (long axis)
 SERVO_BODY_W = 12.2                           # along Z
 SERVO_BODY_H = 22.7                           # along Y (shaft axis), case only
 SERVO_TAB_L = 32.2                            # mounting-tab span along X
+# fmt: on
 SERVO_TAB_T = 2.5
+# fmt: off
 SERVO_TAB_FROM_TOP = 6.7                      # tab top face below the shaft face
 SERVO_SHAFT_FROM_END = SERVO_BODY_W / 2       # shaft axis from the body's −X end
+# fmt: on
 # Shaft face → column outer wall. Between them, from the wall out: a
 # 1 mm gap, the printed coupler (the pin's D-bore; the horn screws to
 # it), the bought round horn, and its hub over the spline.
 SERVO_STANDOFF = 10.0
-SERVO_STALL_NM = 0.22                         # MG90S, 2.2 kg·cm at 4.8 V (datasheet)
+SERVO_STALL_NM = 0.22  # MG90S, 2.2 kg·cm at 4.8 V (datasheet)
 # Drive: printed coupler (D-bore on the pin, horn screwed to its outer
 # face) + the servo's own round disc horn. Y ranges are the hinge-frame
 # coordinates; both sit between the +Y wall (48) and the case (58).
 COUPLER_R = 10.0
 COUPLER_T = 3.0
 COUPLER_WALL_GAP = 1.0
+# fmt: off
 COUPLER_Y_MIN = COL_OUTER_SIDE / 2 + COUPLER_WALL_GAP       # 49
 COUPLER_Y_MAX = COUPLER_Y_MIN + COUPLER_T                   # 52
 HORN_R = 10.0                                 # MG90S round disc horn, Ø20
+# fmt: on
 HORN_DISC_T = 1.5
 HORN_HUB_R = 3.5
+# fmt: off
 HORN_HUB_H = 4.0                              # over the spline, toward the case
 # Pin spans the −Y wall (2 mm proud, for a retaining clip — not
 # modeled) to 0.5 short of the coupler's outer face, so it never
 # touches the horn.
 PIN_Y_MIN = -(COL_OUTER_SIDE / 2 + 2.0)       # −50
 PIN_Y_MAX = COUPLER_Y_MAX - 0.5               # 51.5
+# fmt: on
 PIN_LEN = PIN_Y_MAX - PIN_Y_MIN
 
 # Servo cage — printed as part of the column, on its +Y face. A plate
@@ -360,12 +374,14 @@ CAGE_T = 3.0
 # pitch 27.5 over a 22.5 case), so hole and cut-out clearance share
 # that land: 0.2 per side + a Ø1.5 pilot leaves ≈ 1.55 of wall, just
 # over WALL_MIN (0.3 + Ø1.6 printed a 1.40 sliver — red, 2026-09-18).
-CAGE_CUT_CLEAR = 0.2                          # case to cut-out, per side
+CAGE_CUT_CLEAR = 0.2  # case to cut-out, per side
 CAGE_PLATE_Y_MAX = COL_OUTER_SIDE / 2 + SERVO_STANDOFF + SERVO_TAB_FROM_TOP  # tab face, 64.7
 CAGE_PLATE_Y_MIN = CAGE_PLATE_Y_MAX - CAGE_T
+# fmt: off
 CAGE_HORN_CLEAR = 1.4                         # horn rim to web underside
 CAGE_TAB_HOLE_D = 1.5                         # M2 self-tapping pilot
 CAGE_TAB_HOLE_PITCH = 27.5                    # MG90S tab hole spacing
+# fmt: on
 
 # Static hold budget: the plate's own weight (solid PLA — conservative)
 # plus a heavy brick at the free end, at the catch tilt. Impact is not
@@ -397,14 +413,14 @@ RAMP_TIP_Z = RAMP_ROOT_Z - RAMP_L * math.sin(_RAMP_DEG_RAD)
 # Exit opening in the +X column wall — must pass the ramp plus a brick
 # sliding on top of it. Ramp enters the wall at x = COL_OUTER_SIDE/2.
 _RAMP_WALL_Z = RAMP_WALL_Z
-OPENING_MARGIN = 5.0                          # vertical: below the plate, above the brick
+OPENING_MARGIN = 5.0  # vertical: below the plate, above the brick
 # Side margin is tighter than the vertical one: when the hinge bosses
 # sat on this wall they capped the opening at 83 mm, and the side walls
 # spent the difference. The bosses have since moved to the −X wall;
 # 3 mm each side of a fixed part through a printed cut is still
 # comfortable, so the margin stayed.
 OPENING_SIDE_MARGIN = 3.0
-OPENING_W = RAMP_OUTER_W + 2 * OPENING_SIDE_MARGIN   # 80
+OPENING_W = RAMP_OUTER_W + 2 * OPENING_SIDE_MARGIN  # 80
 # Vertical rise of the wall top above the plate centreline, measured at
 # the column wall: the walls are tilted with the plate, so their top edge
 # sits (RAMP_T/2 + RAMP_WALL_H) perpendicular to it. The opening top is
@@ -452,18 +468,20 @@ RAMP_FUNNEL_DEG = 20.0
 def ramp_funnel_l(exit_w: float) -> float:
     return (RAMP_W - exit_w) / 2 / math.tan(math.radians(RAMP_FUNNEL_DEG))
 
+
 # Column height — pinned by the column-to-column joint plane. Joints
 # stack at z_world = N·FLOOR_H + COL_Z_TOP, with each column extending
 # (COL_Z_TOP - FLOOR_H) above the floor's own bracket level to form the
 # overhang that the floor *above* grips. The joint zone clears the +X
 # opening top by construction (COL_Z_TOP below). The trap no longer
 # reaches up into it: its highest point at every pose is the knuckle.
-RAIL_TOP_Z = 0.0                                     # frame datum (rail top face)
+RAIL_TOP_Z = 0.0  # frame datum (rail top face)
 # Derived from the ramp's root height (RAMP_WALL_Z → OPENING_Z_TOP), so
 # raising the ramp carries the joint plane with it instead of hitting a
 # fixed ceiling. 5.5, not a round 5: it reproduces the 273 the plane was
 # pinned at when this was a constant (2026-09-28).
 JOINT_ZONE_CLEARANCE = 5.5
+# fmt: off
 COL_Z_TOP = OPENING_Z_TOP + JOINT_ZONE_CLEARANCE     # 273 — joint plane in this floor's frame
 
 # Joint flange thickness at the column top. Top 5 mm of the column
@@ -475,6 +493,7 @@ COL_Z_TOP = OPENING_Z_TOP + JOINT_ZONE_CLEARANCE     # 273 — joint plane in th
 JOINT_FLANGE_T = COLLAR_T                            # 5.0
 JOINT_FLANGE_Z_BOT = COL_Z_TOP - JOINT_FLANGE_T      # 268
 JOINT_FLANGE_Z_TOP = COL_Z_TOP                       # 273
+# fmt: on
 
 # Bas-relief interlock features at the column-to-column joint plane.
 # Four cylindrical bumps on the lower column's top-flange face fit
@@ -485,10 +504,10 @@ JOINT_FLANGE_Z_TOP = COL_Z_TOP                       # 273
 # diagonals) and is a refinement of the 2-fold lock that an
 # alternating-opening install would need.
 N_JOINT_BUMPS = 4
-JOINT_BUMP_CENTERLINE_R = 56.0    # midway between r=45 (column hole) and r=69 (OD)
+JOINT_BUMP_CENTERLINE_R = 56.0  # midway between r=45 (column hole) and r=69 (OD)
 JOINT_BUMP_D = 12.0
 JOINT_BUMP_H = 1.5
-JOINT_BUMP_CLEARANCE_R = 0.3      # depression is this much larger in radius (per side)
+JOINT_BUMP_CLEARANCE_R = 0.3  # depression is this much larger in radius (per side)
 # Depression is this much deeper than the bump is tall. 0.5, not 0.2
 # (owner, 2026-10-15): the depression's roof prints as a 12.6 mm bridge,
 # and the extra depth is sag allowance over the bump — unverified until
@@ -509,6 +528,7 @@ _BUMP_R_OUTER = JOINT_BUMP_CENTERLINE_R + JOINT_BUMP_D / 2
 # which falls inside `OPENING_Z_BOT.._TOP ≈ 174..268` — so the collar
 # is split by the +X opening into a ~270° partial ring. Mechanically
 # fine for low RPM / low load.
+# fmt: off
 ROT_COLLAR_T = COLLAR_T                              # 5.0
 ROT_COLLAR_Z_BOT = FLOOR_H                           # 220
 ROT_COLLAR_Z_TOP = ROT_COLLAR_Z_BOT + ROT_COLLAR_T   # 225
@@ -522,6 +542,7 @@ BEARING_Z_BOT = RAIL_TOP_Z                           # 0
 BEARING_Z_TOP = BEARING_Z_BOT + BEARING_T            # 5
 
 LOWER_COL_TOP_Z_MAX = COL_Z_TOP - FLOOR_H            # 53 — joint plane
+# fmt: on
 
 FLOOR_ROLES = ("base", "middle", "top")
 
@@ -540,6 +561,7 @@ def _col_z_bot(role: str) -> float:
     if role in ("middle", "top"):
         return LOWER_COL_TOP_Z_MAX
     raise ValueError(f"unknown floor role: {role!r} (expected one of {FLOOR_ROLES})")
+
 
 # --- Top-feed flare (top role only) ------------------------------------
 #
@@ -576,21 +598,26 @@ def _col_z_bot(role: str) -> float:
 # frame's corner lip over the 32° face reads 5.57, the hub housing 5.5,
 # the servo arm 6.0); `_with_flare_claims` holds this column's own
 # drive. The rim top, 53..313, also makes the column 260 tall.
+# fmt: off
 FLARE_DEG = 32.0                    # funnel face to the knee, from horizontal
 FLARE_KNEE_R = 83.0                 # where the face steepens
 FLARE_LIP_DEG = 50.0                # funnel face from the knee to the mouth
 FLARE_MOUTH_R = 92.0                # rim inner radius — the catch radius
 FLARE_RIM_T = 2.5                   # rim wall (≥ WALL_MIN)
 FLARE_RIM_Z = 313.0                 # rim top, floor-local
+# fmt: on
 # Underside, from horizontal. Not 45: cad-khana reads a true 45° cone as
 # up to 46.9° overhang (facet tilt on the tessellated cone), and 47° as
 # 45.1° beside the opening cut, so the FDM limit needs ~3° in hand.
 FLARE_UNDER_DEG = 48.0
+# fmt: off
 FLARE_WALL_T = 2.0                  # least funnel wall, normal to the underside
 FLARE_OUTER_R = FLARE_MOUTH_R + FLARE_RIM_T                                  # 94.5
+# fmt: on
 _FLARE_TAN = math.tan(math.radians(FLARE_DEG))
 _FLARE_LIP_TAN = math.tan(math.radians(FLARE_LIP_DEG))
 _FLARE_UNDER_TAN = math.tan(math.radians(FLARE_UNDER_DEG))
+# fmt: off
 FLARE_THROAT_R = COL_INTERIOR_SIDE / 2                                       # 45
 FLARE_THROAT_Z = COL_Z_TOP                                                   # 273
 FLARE_KNEE_Z = FLARE_THROAT_Z + (FLARE_KNEE_R - FLARE_THROAT_R) * _FLARE_TAN     # ≈ 296.75
@@ -602,6 +629,7 @@ FLARE_FOOT_Z = min(
     + (FLARE_OUTER_R - r) * _FLARE_UNDER_TAN
     for r, z in ((FLARE_KNEE_R, FLARE_KNEE_Z), (FLARE_MOUTH_R, FLARE_MOUTH_Z))
 )                                                                            # ≈ 306.53
+# fmt: on
 
 
 def _flare_face_z(r: float) -> float:
@@ -616,7 +644,7 @@ def _flare_under_z(r: float) -> float:
 
 # Lowest point of the flare body outside the column: the underside at
 # the middle of a column face.
-FLARE_ROOT_Z = _flare_under_z(COL_OUTER_SIDE / 2)                            # ≈ 254.88
+FLARE_ROOT_Z = _flare_under_z(COL_OUTER_SIDE / 2)  # ≈ 254.88
 # Floor on the gap to this column's own trap servo / horn / coupler. A
 # floor, not an access claim: nothing checks that a hand or a driver
 # reaches the servo under the flare.
@@ -640,11 +668,13 @@ SPIDER_HUB_OD = SPIDER_HUB_ID + 10.0
 # base_floor ring gear's standoff (pitch Ø ≈ COLLAR_OD) with
 # SEAT_CLEARANCE radial; the tower root measures that gap.
 SEAT_CLEARANCE = 3.0
+# fmt: off
 SEAT_ID = COLLAR_OD + 2 * SEAT_CLEARANCE                   # ≈ 144
 SEAT_OD = TURNTABLE_OD + 4.0                               # 204 — 2 mm land outside the ring
 SEAT_T = TURNTABLE_Z_BOT                                   # 8
 
 EXT_SIDE = RAIL_SIZE                          # 2020 aluminum extrusion (== frame)
+# fmt: on
 
 SADDLE_T_TOP = 3.0
 SADDLE_T_WALL = 3.0
@@ -655,7 +685,7 @@ SADDLE_T_WALL = 3.0
 # hub-to-channel corner left a 1.04 mm sliver on the z = 5 plane.)
 # COVER_H keeps the side walls' bottom at z = -7, where it has always
 # been — the base floor's gear mesh sits just below it (`MESH_Z_TOP`).
-SADDLE_CEIL_Z = RAIL_TOP_Z                           # 0
+SADDLE_CEIL_Z = RAIL_TOP_Z  # 0
 SADDLE_COVER_H = 7.0
 # Saddles sit at azimuth (i+0.5)·(360°/N_SPIDER_SADDLES) — along basket
 # boundaries = inner-hex vertex direction = radial-rail axis. Each
@@ -674,6 +704,7 @@ WALL_MIN = 1.5
 
 
 # --- Helpers ------------------------------------------------------------
+
 
 def _cyl_along_y(r: float, length: float) -> Part:
     return Rot(90, 0, 0) * Cylinder(r, length)
@@ -704,25 +735,24 @@ def servo_cage_parts() -> tuple[list[Part], Part, list[Part]]:
     z0 = hz - SERVO_BODY_W / 2
     web_z0 = hz + HORN_R + CAGE_HORN_CLEAR
     z1 = web_z0 + CAGE_T
-    y_wall = COL_OUTER_SIDE / 2 - 0.5             # fuse 0.5 into the wall
+    y_wall = COL_OUTER_SIDE / 2 - 0.5  # fuse 0.5 into the wall
 
     def box(xa, xb, ya, yb, za, zb):
-        return Pos((xa + xb) / 2, (ya + yb) / 2, (za + zb) / 2) * Box(
-            xb - xa, yb - ya, zb - za
-        )
+        return Pos((xa + xb) / 2, (ya + yb) / 2, (za + zb) / 2) * Box(xb - xa, yb - ya, zb - za)
 
     plate = box(x0, x1, CAGE_PLATE_Y_MIN, CAGE_PLATE_Y_MAX, z0, z1)
     web = box(x0, x1, y_wall, CAGE_PLATE_Y_MAX, web_z0, z1)
     cheek = box(cheek_x0, x1, y_wall, CAGE_PLATE_Y_MAX, z0, z1)
     cut = box(
-        body_x0 - CAGE_CUT_CLEAR, body_x1 + CAGE_CUT_CLEAR,
-        CAGE_PLATE_Y_MIN - 1.0, CAGE_PLATE_Y_MAX + 1.0,
-        z0 - 1.0, hz + SERVO_BODY_W / 2 + CAGE_CUT_CLEAR,
+        body_x0 - CAGE_CUT_CLEAR,
+        body_x1 + CAGE_CUT_CLEAR,
+        CAGE_PLATE_Y_MIN - 1.0,
+        CAGE_PLATE_Y_MAX + 1.0,
+        z0 - 1.0,
+        hz + SERVO_BODY_W / 2 + CAGE_CUT_CLEAR,
     )
     tab_holes = [
-        Pos(x_mid + dx, CAGE_PLATE_Y_MAX, hz) * _cyl_along_y(
-            CAGE_TAB_HOLE_D / 2, 4 * CAGE_T
-        )
+        Pos(x_mid + dx, CAGE_PLATE_Y_MAX, hz) * _cyl_along_y(CAGE_TAB_HOLE_D / 2, 4 * CAGE_T)
         for dx in (-CAGE_TAB_HOLE_PITCH / 2, CAGE_TAB_HOLE_PITCH / 2)
     ]
     return [plate, web, cheek], cut, tab_holes
@@ -742,6 +772,7 @@ def _servo_cage() -> Part:
 
 
 # --- Part functions -----------------------------------------------------
+
 
 def _saddle_rot(i: int) -> Rot:
     """Saddle i at (i+0.5)·step — basket boundaries / inner-hex vertex
@@ -779,10 +810,13 @@ def saddle_cutouts() -> list[Part]:
     cutout_z_top = ext_top_z
     cutout_z_bot = ext_top_z - SADDLE_COVER_H - 1.0
     return [
-        _saddle_rot(i) * Pos(
-            (cutout_x_in + cutout_x_out) / 2, 0,
+        _saddle_rot(i)
+        * Pos(
+            (cutout_x_in + cutout_x_out) / 2,
+            0,
             (cutout_z_bot + cutout_z_top) / 2,
-        ) * Box(cutout_x_out - cutout_x_in, EXT_SIDE, cutout_z_top - cutout_z_bot)
+        )
+        * Box(cutout_x_out - cutout_x_in, EXT_SIDE, cutout_z_top - cutout_z_bot)
         for i in range(N_SPIDER_SADDLES)
     ]
 
@@ -814,7 +848,7 @@ def bearing_spider(role: str = "middle") -> Part:
             f"(z={SADDLE_CEIL_Z + SADDLE_T_TOP}); the turntable would rock "
             f"on six pads. Raise TURNTABLE_Z_BOT."
         )
-    ext_top_z = SADDLE_CEIL_Z                          # top plate bears on the rail
+    ext_top_z = SADDLE_CEIL_Z  # top plate bears on the rail
     body = spider_hub(role)
 
     saddle_w = EXT_SIDE + 2 * SADDLE_T_WALL
@@ -830,12 +864,22 @@ def bearing_spider(role: str = "middle") -> Part:
 
     for i, cutout in enumerate(saddle_cutouts()):
         rot = _saddle_rot(i)
-        saddle_env = rot * Pos(
-            (saddle_x_in + saddle_x_out) / 2, 0,
-            (saddle_z_bot + saddle_z_top) / 2,
-        ) * Box(saddle_x_out - saddle_x_in, saddle_w, saddle_h)
-        bolt_hole = rot * Pos(bolt_x, 0, (bolt_z_bot + bolt_z_top) / 2) * Cylinder(
-            SADDLE_BOLT_D / 2, bolt_z_top - bolt_z_bot,
+        saddle_env = (
+            rot
+            * Pos(
+                (saddle_x_in + saddle_x_out) / 2,
+                0,
+                (saddle_z_bot + saddle_z_top) / 2,
+            )
+            * Box(saddle_x_out - saddle_x_in, saddle_w, saddle_h)
+        )
+        bolt_hole = (
+            rot
+            * Pos(bolt_x, 0, (bolt_z_bot + bolt_z_top) / 2)
+            * Cylinder(
+                SADDLE_BOLT_D / 2,
+                bolt_z_top - bolt_z_bot,
+            )
         )
         body = body + saddle_env - cutout - bolt_hole
     return body
@@ -883,9 +927,7 @@ def _circular_feature(z_bot: float, z_top: float, od: float = COLLAR_OD) -> Part
     h = z_top - z_bot
     z_center = (z_top + z_bot) / 2
     disc = Pos(0, 0, z_center) * Cylinder(od / 2, h)
-    hole = Pos(0, 0, z_center) * Box(
-        COL_INTERIOR_SIDE, COL_INTERIOR_SIDE, h * 2
-    )
+    hole = Pos(0, 0, z_center) * Box(COL_INTERIOR_SIDE, COL_INTERIOR_SIDE, h * 2)
     return disc - hole
 
 
@@ -900,9 +942,15 @@ def _joint_interlock(z_face: float, d: float, h: float) -> Part:
     features = None
     for i in range(N_JOINT_BUMPS):
         theta = i * 360.0 / N_JOINT_BUMPS
-        feature = Rot(0, 0, theta) * Pos(
-            JOINT_BUMP_CENTERLINE_R, 0, z_face + h / 2,
-        ) * Cylinder(d / 2, h)
+        feature = (
+            Rot(0, 0, theta)
+            * Pos(
+                JOINT_BUMP_CENTERLINE_R,
+                0,
+                z_face + h / 2,
+            )
+            * Cylinder(d / 2, h)
+        )
         features = feature if features is None else features + feature
     return features
 
@@ -918,8 +966,7 @@ def flare_body() -> Part:
         f"flare rim {FLARE_RIM_T} / wall {FLARE_WALL_T} under WALL_MIN {WALL_MIN}"
     )
     assert FLARE_RIM_Z > FLARE_MOUTH_Z, (
-        f"flare rim top {FLARE_RIM_Z} is not above the funnel's outer "
-        f"edge {FLARE_MOUTH_Z:.2f}: there is no rim"
+        f"flare rim top {FLARE_RIM_Z} is not above the funnel's outer edge {FLARE_MOUTH_Z:.2f}: there is no rim"
     )
     section = Polygon(
         (0.0, _flare_face_z(0.0)),
@@ -986,7 +1033,7 @@ def harness_channel(role: str = "middle") -> Part:
     printability waiver on the bore can be scoped to it."""
     z_lo, z_hi = _harness_z_span(role)
     if role == "base":
-        z_lo = BASE_COL_Z_BOT + COLLAR_T + 1.0   # never through the base flange
+        z_lo = BASE_COL_Z_BOT + COLLAR_T + 1.0  # never through the base flange
     h = z_hi - z_lo
     return Pos(HARNESS_X, HARNESS_Y, (z_lo + z_hi) / 2) * Cylinder(HARNESS_CHANNEL_D / 2, h)
 
@@ -1005,10 +1052,7 @@ def harness(role: str = "middle") -> Part:
     r0 = math.hypot(HARNESS_X, HARNESS_Y)
     r1 = CABLE_LOOP_R_IN + 2.0
     az = math.degrees(math.atan2(HARNESS_Y, HARNESS_X))
-    stub = (
-        Rot(0, 0, az) * Pos((r0 + r1) / 2, 0, z_lo) * Rot(0, 90, 0)
-        * Cylinder(HARNESS_D / 2, r1 - r0)
-    )
+    stub = Rot(0, 0, az) * Pos((r0 + r1) / 2, 0, z_lo) * Rot(0, 90, 0) * Cylinder(HARNESS_D / 2, r1 - r0)
     return trunk + stub
 
 
@@ -1017,7 +1061,9 @@ def joint_depressions(role: str = "middle") -> Part:
     bottom flange from its mating face, floor-local — the cutter
     `column` subtracts."""
     return _joint_interlock(
-        _col_z_bot(role), JOINT_DEPRESSION_D, JOINT_DEPRESSION_H,
+        _col_z_bot(role),
+        JOINT_DEPRESSION_D,
+        JOINT_DEPRESSION_H,
     )
 
 
@@ -1027,28 +1073,19 @@ def exit_opening_cutter() -> Part:
     opening's lintel."""
     cut_z_center = (OPENING_Z_TOP + OPENING_Z_BOT) / 2
     cut_h = OPENING_Z_TOP - OPENING_Z_BOT
-    return Pos(COL_OUTER_SIDE, 0, cut_z_center) * Box(
-        COL_OUTER_SIDE * 2, OPENING_W, cut_h
-    )
+    return Pos(COL_OUTER_SIDE, 0, cut_z_center) * Box(COL_OUTER_SIDE * 2, OPENING_W, cut_h)
 
 
 def hinge_bosses() -> list[Part]:
     """The two hinge bosses on the −X wall's inside, ±Y of the trap,
     floor-local."""
-    return [
-        Pos(BOSS_X_CENTER, sign * BOSS_Y_OFFSET, TRAP_HINGE_Z) * Box(
-            BOSS_X, BOSS_Y, BOSS_H_Z
-        )
-        for sign in (+1, -1)
-    ]
+    return [Pos(BOSS_X_CENTER, sign * BOSS_Y_OFFSET, TRAP_HINGE_Z) * Box(BOSS_X, BOSS_Y, BOSS_H_Z) for sign in (+1, -1)]
 
 
 def hinge_pin_bore() -> Part:
     """The pin bore through both bosses and both ±Y walls, floor-local —
     the cutter `column` subtracts last."""
-    return Pos(TRAP_HINGE_X, 0, TRAP_HINGE_Z) * _cyl_along_y(
-        PIN_HOLE_D / 2, COL_OUTER_SIDE + 4.0
-    )
+    return Pos(TRAP_HINGE_X, 0, TRAP_HINGE_Z) * _cyl_along_y(PIN_HOLE_D / 2, COL_OUTER_SIDE + 4.0)
 
 
 def column(role: str = "middle") -> Part:
@@ -1074,8 +1111,8 @@ def column(role: str = "middle") -> Part:
     # no part pair to measure, so they stay bare asserts and fire here,
     # when a column is actually cut, rather than at import.
     assert BOSS_Y_OFFSET + BOSS_Y / 2 <= COL_INTERIOR_SIDE / 2, (
-        f"Hinge bosses at |Y| = {BOSS_Y_OFFSET + BOSS_Y/2:.1f} mm exceed column "
-        f"interior half-width {COL_INTERIOR_SIDE/2:.1f} mm. Reduce TRAP_W."
+        f"Hinge bosses at |Y| = {BOSS_Y_OFFSET + BOSS_Y / 2:.1f} mm exceed column "
+        f"interior half-width {COL_INTERIOR_SIDE / 2:.1f} mm. Reduce TRAP_W."
     )
     assert _RAMP_WALL_TOP_RISE <= MAX_BRICK_DIM, (
         f"Ramp side-wall top rises {_RAMP_WALL_TOP_RISE:.1f} mm above the "
@@ -1084,12 +1121,12 @@ def column(role: str = "middle") -> Part:
     )
     assert _BUMP_R_INNER >= COL_INTERIOR_SIDE / 2 + 2.0, (
         f"Joint bump inner edge at r={_BUMP_R_INNER:.1f} crowds the column "
-        f"interior boundary at r={COL_INTERIOR_SIDE/2:.1f}; bump would not "
+        f"interior boundary at r={COL_INTERIOR_SIDE / 2:.1f}; bump would not "
         f"root in solid flange material on the cardinal axes."
     )
     assert _BUMP_R_OUTER + JOINT_BUMP_CLEARANCE_R <= COLLAR_OD / 2 - 2.0, (
         f"Joint bump+depression outer edge at r={_BUMP_R_OUTER + JOINT_BUMP_CLEARANCE_R:.1f} "
-        f"crowds the flange OD at r={COLLAR_OD/2:.1f}; leave ≥2 mm rim."
+        f"crowds the flange OD at r={COLLAR_OD / 2:.1f}; leave ≥2 mm rim."
     )
     assert OPENING_Z_BOT <= ROT_COLLAR_Z_BOT and ROT_COLLAR_Z_TOP <= OPENING_Z_TOP, (
         f"Rotating collar at z={ROT_COLLAR_Z_BOT}..{ROT_COLLAR_Z_TOP} not "
@@ -1105,9 +1142,7 @@ def column(role: str = "middle") -> Part:
     col_z_center = (tube_z_top + z_bot) / 2
 
     outer = Pos(0, 0, col_z_center) * Box(COL_OUTER_SIDE, COL_OUTER_SIDE, col_h)
-    inner = Pos(0, 0, col_z_center) * Box(
-        COL_INTERIOR_SIDE, COL_INTERIOR_SIDE, col_h * 2
-    )
+    inner = Pos(0, 0, col_z_center) * Box(COL_INTERIOR_SIDE, COL_INTERIOR_SIDE, col_h * 2)
     tube = outer - inner
 
     # Rotating collar — circular OD at z 220..225 that the bearing on
@@ -1131,7 +1166,9 @@ def column(role: str = "middle") -> Part:
         # joint without bolts or metal hardware.
         tube = tube + joint_flange()
         tube = tube + _joint_interlock(
-            JOINT_FLANGE_Z_TOP, JOINT_BUMP_D, JOINT_BUMP_H,
+            JOINT_FLANGE_Z_TOP,
+            JOINT_BUMP_D,
+            JOINT_BUMP_H,
         )
 
     # Role-specific bottom feature.
@@ -1141,7 +1178,9 @@ def column(role: str = "middle") -> Part:
         # underside. No bas-relief here — the base column has no lower
         # mate.
         tube = tube + _circular_feature(
-            BASE_COL_Z_BOT, BASE_COL_Z_BOT + COLLAR_T, od=BASE_FLANGE_OD,
+            BASE_COL_Z_BOT,
+            BASE_COL_Z_BOT + COLLAR_T,
+            od=BASE_FLANGE_OD,
         )
     else:
         # Middle/top: bottom face flange mating with the lower column's
@@ -1190,12 +1229,19 @@ def trap_plate() -> Part:
     tip_half = TRAP_GUIDE_EXIT_W / 2 + TRAP_GUIDE_T
     half = TRAP_W / 2
     outline = [
-        (0, -half), (TRAP_STEP_S, -half), (TRAP_WING_S, -TRAP_WING_HALF_W),
-        (plate_len, -tip_half), (plate_len, tip_half),
-        (TRAP_WING_S, TRAP_WING_HALF_W), (TRAP_STEP_S, half), (0, half),
+        (0, -half),
+        (TRAP_STEP_S, -half),
+        (TRAP_WING_S, -TRAP_WING_HALF_W),
+        (plate_len, -tip_half),
+        (plate_len, tip_half),
+        (TRAP_WING_S, TRAP_WING_HALF_W),
+        (TRAP_STEP_S, half),
+        (0, half),
     ]
     return Pos(0, 0, -TRAP_T / 2) * extrude(
-        Polygon(*outline, align=None), amount=TRAP_T, dir=(0, 0, 1),
+        Polygon(*outline, align=None),
+        amount=TRAP_T,
+        dir=(0, 0, 1),
     )
 
 
@@ -1237,7 +1283,7 @@ def trap() -> Part:
     # Parameter sanity over the outline — a step outward, a taper that
     # closes, no steeper than the ramp's own funnel faces. Stays bare.
     assert TRAP_W / 2 < TRAP_WING_HALF_W and TRAP_WING_S < plate_len, (
-        f"step {TRAP_W/2}→{TRAP_WING_HALF_W} over x {TRAP_STEP_S:.2f}..{TRAP_WING_S:.2f} "
+        f"step {TRAP_W / 2}→{TRAP_WING_HALF_W} over x {TRAP_STEP_S:.2f}..{TRAP_WING_S:.2f} "
         f"does not fit a {plate_len:.1f} plate"
     )
     taper_deg = math.degrees(math.atan2(TRAP_WING_HALF_W - tip_half, plate_len - TRAP_WING_S))
@@ -1254,14 +1300,13 @@ def trap() -> Part:
             (TRAP_WING_S, TRAP_WING_HALF_W),
             align=None,
         ),
-        amount=TRAP_GUIDE_H, dir=(0, 0, 1),
+        amount=TRAP_GUIDE_H,
+        dir=(0, 0, 1),
     )
     # 45° lead-in at the uphill end: removes everything above the line
     # rising from (TRAP_WING_S, plate top) at 45° toward the tip.
     big = 4 * TRAP_W
-    guide = guide - Pos(TRAP_WING_S, 0, TRAP_T / 2) * Rot(0, 45, 0) * Pos(-big / 2, 0, 0) * Box(
-        big, big, big
-    )
+    guide = guide - Pos(TRAP_WING_S, 0, TRAP_T / 2) * Rot(0, 45, 0) * Pos(-big / 2, 0, 0) * Box(big, big, big)
     body = plate + trap_knuckle() + guide + mirror(guide, about=Plane.XZ)
     return body - trap_pin_bore()
 
@@ -1270,9 +1315,7 @@ def trap_coupler() -> Part:
     """Printed disc joining the pin to the servo horn, canonical frame
     (axis +Z, centred, D-bore flat on +Y). The horn screws to its outer
     face (screws not modeled)."""
-    return Cylinder(COUPLER_R, COUPLER_T) - _d_cyl(
-        PIN_D_BORE_D / 2, PIN_D_BORE_FLAT, COUPLER_T * 2
-    )
+    return Cylinder(COUPLER_R, COUPLER_T) - _d_cyl(PIN_D_BORE_D / 2, PIN_D_BORE_FLAT, COUPLER_T * 2)
 
 
 def servo_horn() -> Part:
@@ -1280,9 +1323,7 @@ def servo_horn() -> Part:
     spline hub below it on −Z (``horn_loc`` turns −Z onto +Y, toward
     the case). Not printed, so not inspected."""
     hub_z = -(HORN_DISC_T / 2 + HORN_HUB_H / 2)
-    return Cylinder(HORN_R, HORN_DISC_T) + Pos(0, 0, hub_z) * Cylinder(
-        HORN_HUB_R, HORN_HUB_H
-    )
+    return Cylinder(HORN_R, HORN_DISC_T) + Pos(0, 0, hub_z) * Cylinder(HORN_HUB_R, HORN_HUB_H)
 
 
 def ramp(exit_w: float = RAMP_W) -> Part:
@@ -1315,8 +1356,10 @@ def ramp(exit_w: float = RAMP_W) -> Part:
     plate = Box(RAMP_L, RAMP_W, RAMP_T)
     wall_y = RAMP_W / 2 + RAMP_WALL_T / 2
     wall_h = RAMP_T + RAMP_WALL_H
+    # fmt: off
     wall_z = RAMP_WALL_H / 2                  # bottom flush with the plate underside
     wall_x = -(RAMP_L - RAMP_WALL_L) / 2      # root ends flush with the plate's
+    # fmt: on
     wall = Box(RAMP_WALL_L, RAMP_WALL_T, wall_h)
     body = plate + Pos(wall_x, +wall_y, wall_z) * wall + Pos(wall_x, -wall_y, wall_z) * wall
     if exit_w == RAMP_W:
@@ -1333,7 +1376,8 @@ def ramp(exit_w: float = RAMP_W) -> Part:
             (x_end - ramp_funnel_l(exit_w), RAMP_W / 2),
             align=None,
         ),
-        amount=wall_h, dir=(0, 0, 1),
+        amount=wall_h,
+        dir=(0, 0, 1),
     )
     return body + wedge + mirror(wedge, about=Plane.XZ)
 
@@ -1347,12 +1391,8 @@ def trap_servo() -> Part:
     ``servo_loc``. Not printed, so not inspected.
     """
     x_mid = SERVO_BODY_L / 2 - SERVO_SHAFT_FROM_END
-    body = Pos(x_mid, 0, -SERVO_BODY_H / 2) * Box(
-        SERVO_BODY_L, SERVO_BODY_W, SERVO_BODY_H
-    )
-    tabs = Pos(x_mid, 0, -SERVO_TAB_FROM_TOP - SERVO_TAB_T / 2) * Box(
-        SERVO_TAB_L, SERVO_BODY_W, SERVO_TAB_T
-    )
+    body = Pos(x_mid, 0, -SERVO_BODY_H / 2) * Box(SERVO_BODY_L, SERVO_BODY_W, SERVO_BODY_H)
+    tabs = Pos(x_mid, 0, -SERVO_TAB_FROM_TOP - SERVO_TAB_T / 2) * Box(SERVO_TAB_L, SERVO_BODY_W, SERVO_TAB_T)
     return body + tabs
 
 
@@ -1371,14 +1411,8 @@ horn_loc = Pos(0, COUPLER_Y_MAX + HORN_DISC_T / 2, 0) * Rot(90, 0, 0)
 # Shaft face SERVO_STANDOFF outside the +Y wall, shaft pointing −Y
 # into the hinge: Rot(90, 0, 0) turns local +Z onto −Y and local +Y
 # onto +Z, leaving the long axis on +X.
-servo_loc = Location(
-    (TRAP_HINGE_X, COL_OUTER_SIDE / 2 + SERVO_STANDOFF, TRAP_HINGE_Z)
-) * Rot(90, 0, 0)
-ramp_loc = (
-    Location((RAMP_ROOT_X, 0, RAMP_ROOT_Z))
-    * Rot(0, RAMP_DEG, 0)
-    * Pos(RAMP_L / 2, 0, 0)
-)
+servo_loc = Location((TRAP_HINGE_X, COL_OUTER_SIDE / 2 + SERVO_STANDOFF, TRAP_HINGE_Z)) * Rot(90, 0, 0)
+ramp_loc = Location((RAMP_ROOT_X, 0, RAMP_ROOT_Z)) * Rot(0, RAMP_DEG, 0) * Pos(RAMP_L / 2, 0, 0)
 # Lower-floor stand-ins (middle/top roles only; base has no floor below).
 # Both are mapped into this floor's frame via -FLOOR_H.
 # - lower_trap_servo: the floor below's servo, the only lower-floor
@@ -1398,10 +1432,10 @@ def _servo_hold_margin() -> float:
     solid PLA, lever at its centroid, plus BRICK_MASS_BUDGET_G at the
     free end. Read off ``trap()`` rather than a plate formula, so the
     margin follows the outline."""
-    g = 9.81e-3                                   # N per g
+    g = 9.81e-3  # N per g
     body = trap()
     trap_g = body.volume * PLA_DENSITY_G_PER_MM3
-    c = body.center(CenterOf.MASS)                # hinge frame, flat
+    c = body.center(CenterOf.MASS)  # hinge frame, flat
     # Rot(0, θ, 0) about the hinge: horizontal lever x cos θ + z sin θ.
     arm_mm = c.X * math.cos(_TRAP_CATCH_RAD) + c.Z * math.sin(_TRAP_CATCH_RAD)
     tip_mm = _TRAP_REACH * math.cos(_TRAP_CATCH_RAD)
@@ -1411,13 +1445,16 @@ def _servo_hold_margin() -> float:
 
 # --- Sub-assembly builders ----------------------------------------------
 
+
 def _trap_joint(angle_deg: float) -> RevoluteJoint:
     """The hinge: +Y through the hinge-frame origin. Positive angles
     follow the right-hand rule about +Y — the same sense as
     ``Rot(0, θ, 0)`` — so they tip the +X free end down: 90 hangs,
     TRAP_CATCH_DEG catches."""
     return RevoluteJoint(
-        axis=Axis((0, 0, 0), (0, 1, 0)), angle_deg=angle_deg, frame="local",
+        axis=Axis((0, 0, 0), (0, 1, 0)),
+        angle_deg=angle_deg,
+        frame="local",
     )
 
 
@@ -1428,6 +1465,7 @@ def build_trap_drive(
     plate, the pin keyed through its knuckle, the coupler keyed on the
     pin, and the servo horn screwed to the coupler. The parent places it
     at ``hinge_loc`` with ``_trap_joint``."""
+
     def _mt(name: str) -> str | None:
         return material_fn(name) if material_fn is not None else None
 
@@ -1467,6 +1505,7 @@ def build_column_side_static(
     attribute unset). Colour is not a parameter here — the unit root
     paints the finished tree (``cad/design_systems.py:paint``).
     """
+
     def _mt(name: str) -> str | None:
         return material_fn(name) if material_fn is not None else None
 
@@ -1478,7 +1517,8 @@ def build_column_side_static(
         # The base role's ring is the bought aluminium turntable, so its
         # material is looked up under its own key, not the printed ring's.
         .with_part(
-            n_rb, ring_bearing(role),
+            n_rb,
+            ring_bearing(role),
             material=_mt("turntable" if role == "base" else n_rb),
         )
     )
@@ -1516,6 +1556,7 @@ def build_column_side_rotating(
     ``exit_w`` picks the ramp variant — ``aim.ramp_exit_w_for`` the
     floor's basket layout; the default is the full channel.
     """
+
     def _mt(name: str) -> str | None:
         return material_fn(name) if material_fn is not None else None
 
@@ -1527,8 +1568,10 @@ def build_column_side_rotating(
     a = _add(a, "ramp", ramp(exit_w), location=ramp_loc)
     a = _add(a, "trap_servo", trap_servo(), location=servo_loc)
     a = a.with_subassembly(
-        "trap", build_trap_drive(material_fn),
-        location=hinge_loc, joint=_trap_joint(TRAP_REST_DEG),
+        "trap",
+        build_trap_drive(material_fn),
+        location=hinge_loc,
+        joint=_trap_joint(TRAP_REST_DEG),
     )
     # The servo-wire bundle on this floor's column, and the same solid
     # as a keep-out, so the tower root can hold it clear of every
@@ -1537,7 +1580,9 @@ def build_column_side_rotating(
     a = _add(a, "harness", harness(role))
     a = a.with_keepout("harness_path", harness(role))
     a = a.assert_distance(
-        "harness", "column", min_mm=(HARNESS_CHANNEL_D - HARNESS_D) / 2,
+        "harness",
+        "column",
+        min_mm=(HARNESS_CHANNEL_D - HARNESS_D) / 2,
         name="harness_in_channel",
     )
 
@@ -1551,8 +1596,11 @@ def build_column_side_rotating(
     # distance covers all azimuths with no sweep — and it measures the
     # real lowest point of the ramp body, not a hand-derived corner Z.
     a = a.assert_distance(
-        "ramp", Plane.XY.offset(BASKET_RIM_Z), along="-Z",
-        min_mm=RAMP_SWEEP_CLEARANCE, name="ramp_sweep_over_basket_rim",
+        "ramp",
+        Plane.XY.offset(BASKET_RIM_Z),
+        along="-Z",
+        min_mm=RAMP_SWEEP_CLEARANCE,
+        name="ramp_sweep_over_basket_rim",
     )
     # The trap's guides hand the brick down TRAP_GUIDE_EXIT_W wide. This
     # ramp — whichever variant — must take that width clear of its side
@@ -1560,29 +1608,42 @@ def build_column_side_rotating(
     # face (the seat) from the root, held off the walls by the guide and
     # its gap. A narrow variant whose funnel started inside the run would
     # fail here. Static: the ramp is fixed in this frame.
-    corridor = ramp_loc * Pos(
-        -RAMP_L / 2 + TRAP_LANDING_RUN / 2, 0, RAMP_T / 2 + RAMP_WALL_H / 2,
-    ) * Box(TRAP_LANDING_RUN, TRAP_GUIDE_EXIT_W, RAMP_WALL_H)
+    corridor = (
+        ramp_loc
+        * Pos(
+            -RAMP_L / 2 + TRAP_LANDING_RUN / 2,
+            0,
+            RAMP_T / 2 + RAMP_WALL_H / 2,
+        )
+        * Box(TRAP_LANDING_RUN, TRAP_GUIDE_EXIT_W, RAMP_WALL_H)
+    )
     a = a.assert_clear_of(
-        "ramp", corridor, name="trap_exit_lands_in_channel",
+        "ramp",
+        corridor,
+        name="trap_exit_lands_in_channel",
         seat=Plane(ramp_loc).offset(RAMP_T / 2),
         min_mm=TRAP_GUIDE_T + TRAP_GUIDE_RAMP_GAP,
     )
     # Slide conditions — recorded scalar claims (see MU_STATIC_BUDGET).
     a = a.assert_scalar(
-        "ramp_slide_margin", math.tan(_RAMP_DEG_RAD),
-        ge=MU_STATIC_BUDGET, detail="µ_s budget, ABS brick on PLA ramp",
+        "ramp_slide_margin",
+        math.tan(_RAMP_DEG_RAD),
+        ge=MU_STATIC_BUDGET,
+        detail="µ_s budget, ABS brick on PLA ramp",
     )
     a = a.assert_scalar(
-        "trap_slide_margin", math.tan(_TRAP_CATCH_RAD),
-        ge=MU_STATIC_BUDGET, detail="µ_s budget, ABS brick on PLA trap at catch tilt",
+        "trap_slide_margin",
+        math.tan(_TRAP_CATCH_RAD),
+        ge=MU_STATIC_BUDGET,
+        detail="µ_s budget, ABS brick on PLA trap at catch tilt",
     )
     # The servo is the only thing holding the catch pose.
     a = a.assert_scalar(
-        "servo_static_hold_margin", _servo_hold_margin(),
+        "servo_static_hold_margin",
+        _servo_hold_margin(),
         ge=SERVO_HOLD_MARGIN_MIN,
         detail=f"stall / static torque at catch: solid-PLA plate + "
-               f"{BRICK_MASS_BUDGET_G:.0f} g brick at the tip; impact not included",
+        f"{BRICK_MASS_BUDGET_G:.0f} g brick at the tip; impact not included",
     )
     if role == "top":
         a = _with_flare_claims(a)
@@ -1610,17 +1671,22 @@ def _with_flare_claims(a: Assembly) -> Assembly:
     miss_h, miss_r = FLARE_MISS_H, FLARE_OUTER_R + FLARE_MISS_W
     a = a.with_keepout(
         "flare_miss",
-        Pos(0, 0, FLARE_RIM_Z + miss_h / 2)
-        * (Cylinder(miss_r, miss_h) - Cylinder(FLARE_MOUTH_R, miss_h * 2)),
+        Pos(0, 0, FLARE_RIM_Z + miss_h / 2) * (Cylinder(miss_r, miss_h) - Cylinder(FLARE_MOUTH_R, miss_h * 2)),
     )
     # The miss zone's floor is where the built rim actually tops out.
     a = a.assert_distance(
-        "column", Plane.XY.offset(FLARE_RIM_Z), along="Z",
-        min_mm=0.0, max_mm=0.0, name="flare_rim_at_rim_plane",
+        "column",
+        Plane.XY.offset(FLARE_RIM_Z),
+        along="Z",
+        min_mm=0.0,
+        max_mm=0.0,
+        name="flare_rim_at_rim_plane",
     )
     a = a.assert_scalar(
-        "flare_slide_margin", _FLARE_TAN,
-        ge=MU_STATIC_BUDGET, detail="µ_s budget, ABS brick on the PLA funnel face",
+        "flare_slide_margin",
+        _FLARE_TAN,
+        ge=MU_STATIC_BUDGET,
+        detail="µ_s budget, ABS brick on the PLA funnel face",
     )
     # Clear of this column's own trap drive, which sits under the flare
     # on the +Y face. Rigid with the column but for the horn and coupler,
@@ -1631,18 +1697,22 @@ def _with_flare_claims(a: Assembly) -> Assembly:
         ("trap_coupler", "trap.trap_coupler"),
     ):
         a = a.assert_distance(
-            "column@flare", path,
-            min_mm=FLARE_DRIVE_CLEARANCE, name=f"flare_clear_of_{name}",
+            "column@flare",
+            path,
+            min_mm=FLARE_DRIVE_CLEARANCE,
+            name=f"flare_clear_of_{name}",
         )
     # The exit path stays open under the flare: the opening continued
     # outward, as far as the flare reaches. The column touches it all
     # round (it is the opening's own cut), so 0 is the reading; flare
     # material left standing in it overlaps and fails.
     exit_path = Pos(
-        (COL_OUTER_SIDE / 2 + FLARE_OUTER_R) / 2 + 1.0, 0,
+        (COL_OUTER_SIDE / 2 + FLARE_OUTER_R) / 2 + 1.0,
+        0,
         (OPENING_Z_BOT + OPENING_Z_TOP) / 2,
     ) * Box(
-        FLARE_OUTER_R - COL_OUTER_SIDE / 2 + 2.0, OPENING_W,
+        FLARE_OUTER_R - COL_OUTER_SIDE / 2 + 2.0,
+        OPENING_W,
         OPENING_Z_TOP - OPENING_Z_BOT,
     )
     return a.assert_clear_of("column", exit_path, name="flare_clear_of_exit_path")
@@ -1672,14 +1742,15 @@ def make_assembly(role: str = "middle") -> Assembly:
         # z_lower_local = 16.5..21.5 (the base flange), which maps to
         # z_local ≈ -203 — far below anything modeled in this frame. Using "middle" as the generic stand-in keeps this
         # assembly role-independent of which floor the lower one is.
-        a = (
-            a
-            .with_part("lower_column", column("middle"), location=lower_column_loc)
-            .with_part("lower_trap_servo", trap_servo(), location=lower_servo_loc)
+        a = a.with_part("lower_column", column("middle"), location=lower_column_loc).with_part(
+            "lower_trap_servo", trap_servo(), location=lower_servo_loc
         )
     fixed = (
-        "rotating.trap_servo", "rotating.ramp",
-        "bearing_spider", "ring_bearing", "rotating.column",
+        "rotating.trap_servo",
+        "rotating.ramp",
+        "bearing_spider",
+        "ring_bearing",
+        "rotating.column",
     )
     a = (
         a
@@ -1688,16 +1759,14 @@ def make_assembly(role: str = "middle") -> Assembly:
         # (no overlap anywhere else — the case clears the cut-out), so
         # the tangent claim holds that pair instead.
         .assert_no_interference_within(
-            fixed, suppressed=[("rotating.trap_servo", "rotating.column")],
+            fixed,
+            suppressed=[("rotating.trap_servo", "rotating.column")],
         )
-        .assert_tangent_contact("rotating.trap_servo", "rotating.column",
-                                name="servo_tabs_on_cage")
+        .assert_tangent_contact("rotating.trap_servo", "rotating.column", name="servo_tabs_on_cage")
         # The drive turns against the column: coupler off the +Y wall,
         # horn under the cage web, horn hub short of the case.
-        .assert_distance("rotating.trap.trap_coupler", "rotating.column",
-                         min_mm=0.5)
-        .assert_distance("rotating.trap.servo_horn", "rotating.column",
-                         min_mm=0.5)
+        .assert_distance("rotating.trap.trap_coupler", "rotating.column", min_mm=0.5)
+        .assert_distance("rotating.trap.servo_horn", "rotating.column", min_mm=0.5)
         .assert_no_interference("rotating.trap.servo_horn", "rotating.trap_servo")
         .assert_no_interference("rotating.trap.hinge_pin", "rotating.trap_servo")
         # The catching trap hands the brick down a short step onto the
@@ -1714,8 +1783,10 @@ def make_assembly(role: str = "middle") -> Assembly:
         # ramp root. TRAP_CATCH_DEG is the motion's low bound, so the
         # window is always entered.
         .assert_distance(
-            "rotating.trap.trap", "rotating.ramp",
-            min_mm=2.0, max_mm=TRAP_HANDOFF_STEP + 1.0,
+            "rotating.trap.trap",
+            "rotating.ramp",
+            min_mm=2.0,
+            max_mm=TRAP_HANDOFF_STEP + 1.0,
             name="trap_catch_to_ramp_step",
             during=JointWindow("rotating.trap", max_deg=TRAP_CATCH_DEG),
         )
@@ -1734,16 +1805,22 @@ def make_assembly(role: str = "middle") -> Assembly:
         .assert_distance(
             "rotating.trap.trap",
             Plane(origin=(0, COL_INTERIOR_SIDE / 2, 0), z_dir=(0, 1, 0)),
-            along="Y", min_mm=TRAP_SIDE_CLEARANCE, name="trap_side_clearance_+y",
+            along="Y",
+            min_mm=TRAP_SIDE_CLEARANCE,
+            name="trap_side_clearance_+y",
         )
         .assert_distance(
             "rotating.trap.trap",
             Plane(origin=(0, -COL_INTERIOR_SIDE / 2, 0), z_dir=(0, -1, 0)),
-            along="-Y", min_mm=TRAP_SIDE_CLEARANCE, name="trap_side_clearance_-y",
+            along="-Y",
+            min_mm=TRAP_SIDE_CLEARANCE,
+            name="trap_side_clearance_-y",
         )
         .assert_distance(
-            "rotating.trap.trap", "rotating.column",
-            min_mm=TRAP_AXIAL_FLOAT, name="trap_clear_of_column",
+            "rotating.trap.trap",
+            "rotating.column",
+            min_mm=TRAP_AXIAL_FLOAT,
+            name="trap_clear_of_column",
         )
     )
     if role == "base":
@@ -1752,7 +1829,9 @@ def make_assembly(role: str = "middle") -> Assembly:
         # declared in `build_column_side_static`). Composed runs
         # (tower) declare the same rest across their subtrees.
         a = a.assert_tangent_contact(
-            "ring_bearing", "rotating.column", name="column_on_turntable",
+            "ring_bearing",
+            "rotating.column",
+            name="column_on_turntable",
         )
     if role != "base":
         a = (
@@ -1797,8 +1876,11 @@ def make_assembly(role: str = "middle") -> Assembly:
     # would ride into `single_floor.py`, the tower and the whole machine.
     a = a.with_motion(
         Motion.over_joint(
-            "trap_swing", "rotating.trap",
-            TRAP_CATCH_DEG, TRAP_REST_DEG, step=TRAP_SWING_STEP,
+            "trap_swing",
+            "rotating.trap",
+            TRAP_CATCH_DEG,
+            TRAP_REST_DEG,
+            step=TRAP_SWING_STEP,
         )
     )
     return a

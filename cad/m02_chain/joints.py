@@ -63,7 +63,16 @@ from __future__ import annotations
 import math
 
 from build123d import (
-    Box, Cylinder, Keep, Part, Plane, Polygon, Pos, Rectangle, Rot, extrude,
+    Box,
+    Cylinder,
+    Keep,
+    Part,
+    Plane,
+    Polygon,
+    Pos,
+    Rectangle,
+    Rot,
+    extrude,
 )
 
 from .params import BAR_DEPTH, EXT_SIZE
@@ -71,25 +80,30 @@ from .params import BAR_DEPTH, EXT_SIZE
 
 # --- Printed-joint parameters (internal to the joint family) -----------
 
+# fmt: off
 WALL = 6.0                       # printed wall around a socket / channel
 SEAT_OD = 56.0                   # post seat: round cap over the column
 SEAT_SOCKET_H = 40.0             # column engagement below the end face
 SEAT_ROOF_TAPER_DEG = 40.0       # from vertical: the socket-ceiling roof
 SEAT_ROOF_H = 10.0               # < half-side / tan(taper), so it closes
+# fmt: on
 # The channel walls are chords of the round cap, so uncut they run out
 # to a knife point where they meet it (min_wall 1.245 at alignment
 # 0.39, 2026-09-22). Flats square to the bar, this far out along it,
 # end every wall WALL thick.
 SEAT_FLAT_HALF = math.sqrt((SEAT_OD / 2.0) ** 2 - (EXT_SIZE / 2.0 + WALL) ** 2)  # ≈ 22.98
-BRACKET_LEG = 20.0               # 2020 corner bracket, cheap L
+BRACKET_LEG = 20.0  # 2020 corner bracket, cheap L
 BRACKET_W = 17.0
 BRACKET_T = 4.0
+# fmt: off
 COLLAR_OD = EXT_SIZE + 2.0 * WALL                                  # 32
 CHANNEL_W = EXT_SIZE + 2.0 * WALL                                  # 32
 BRACE_ENGAGE = 30.0              # channel length past the stop, horizontal
+# fmt: on
 
 
 # --- Parts ---------------------------------------------------------------
+
 
 def post_seat(bar_az_deg: float, column_rot_deg: float) -> Part:
     """Cap over a column's end cradling a bar at `bar_az_deg`; the
@@ -100,11 +114,12 @@ def post_seat(bar_az_deg: float, column_rot_deg: float) -> Part:
         Pos(0.0, 0.0, BAR_DEPTH - h / 2.0) * Box(2.0 * SEAT_FLAT_HALF, SEAT_OD + 2.0, h + 2.0)
     )
     socket = Rot(0, 0, column_rot_deg) * (
-        Pos(0.0, 0.0, -SEAT_SOCKET_H / 2.0 - 1.0)
-        * Box(EXT_SIZE, EXT_SIZE, SEAT_SOCKET_H + 2.0)
+        Pos(0.0, 0.0, -SEAT_SOCKET_H / 2.0 - 1.0) * Box(EXT_SIZE, EXT_SIZE, SEAT_SOCKET_H + 2.0)
     )
     roof = Rot(0, 0, column_rot_deg) * extrude(
-        Rectangle(EXT_SIZE, EXT_SIZE), amount=SEAT_ROOF_H, taper=SEAT_ROOF_TAPER_DEG,
+        Rectangle(EXT_SIZE, EXT_SIZE),
+        amount=SEAT_ROOF_H,
+        taper=SEAT_ROOF_TAPER_DEG,
     )
     channel = Rot(0, 0, bar_az_deg) * (
         Pos(0.0, 0.0, BAR_DEPTH / 2.0 + 0.5) * Box(SEAT_OD + 2.0, EXT_SIZE, BAR_DEPTH + 1.0)
@@ -132,8 +147,7 @@ def _brace_prism_beyond(az_deg: float, el_deg: float, stop_h: float, sign: float
     pitched `sign · el_deg` (−1 descends), kept only past the vertical
     plane `stop_h` out along the azimuth — the socket's channel."""
     prism = (
-        Rot(0, 0, az_deg) * Rot(0, -sign * el_deg, 0)
-        * Pos(length / 2.0, 0.0, 0.0) * Box(length, EXT_SIZE, EXT_SIZE)
+        Rot(0, 0, az_deg) * Rot(0, -sign * el_deg, 0) * Pos(length / 2.0, 0.0, 0.0) * Box(length, EXT_SIZE, EXT_SIZE)
     )
     c, s = math.cos(math.radians(az_deg)), math.sin(math.radians(az_deg))
     stop = Plane(origin=(stop_h * c, stop_h * s, 0.0), z_dir=(c, s, 0.0))
@@ -166,9 +180,15 @@ def brace_head(
     part = collar
     for az, el in braces:
         t, hd = math.tan(math.radians(el)), _half_diag(el)
-        gusset = _vertical_strip(az, [
-            (0.0, hd), (s_out, -s_out * t + hd), (s_out, z_bottom), (0.0, z_bottom),
-        ])
+        gusset = _vertical_strip(
+            az,
+            [
+                (0.0, hd),
+                (s_out, -s_out * t + hd),
+                (s_out, z_bottom),
+                (0.0, z_bottom),
+            ],
+        )
         part = part + gusset
     for az, el in braces:
         part = part - _brace_prism_beyond(az, el, stop_h, -1.0, 4.0 * s_out)
@@ -177,7 +197,11 @@ def brace_head(
 
 
 def brace_foot(
-    az_deg: float, el_deg: float, stop_h: float, start_h: float, flange: bool,
+    az_deg: float,
+    el_deg: float,
+    stop_h: float,
+    start_h: float,
+    flange: bool,
     bolt: tuple[float, float] | None = None,
 ) -> Part:
     """Block on the deck from `start_h` out along the azimuth with a
@@ -193,20 +217,30 @@ def brace_foot(
     faces up and its walls are vertical."""
     s_out = stop_h + BRACE_ENGAGE
     t, hd = math.tan(math.radians(el_deg)), _half_diag(el_deg)
-    block = _vertical_strip(az_deg, [
-        (start_h, 0.0), (s_out, 0.0), (s_out, s_out * t + hd), (start_h, start_h * t + hd),
-    ])
+    block = _vertical_strip(
+        az_deg,
+        [
+            (start_h, 0.0),
+            (s_out, 0.0),
+            (s_out, s_out * t + hd),
+            (start_h, start_h * t + hd),
+        ],
+    )
     if flange:
-        block = block + _vertical_strip(az_deg, [
-            (-COLLAR_OD / 2.0, 0.0), (start_h + 1.0, 0.0), (start_h + 1.0, WALL), (-COLLAR_OD / 2.0, WALL),
-        ])
+        block = block + _vertical_strip(
+            az_deg,
+            [
+                (-COLLAR_OD / 2.0, 0.0),
+                (start_h + 1.0, 0.0),
+                (start_h + 1.0, WALL),
+                (-COLLAR_OD / 2.0, WALL),
+            ],
+        )
     foot = block - _brace_prism_beyond(az_deg, el_deg, stop_h, +1.0, 4.0 * s_out)
     if bolt is not None:
         hole_d, seat_d = bolt
         assert flange, "only the flanged foot sits over its column's axis"
-        assert seat_d / 2.0 + WALL <= stop_h, (
-            f"washer seat Ø{seat_d} runs into the brace stop {stop_h} out"
-        )
+        assert seat_d / 2.0 + WALL <= stop_h, f"washer seat Ø{seat_d} runs into the brace stop {stop_h} out"
         assert seat_d < CHANNEL_W, f"washer seat Ø{seat_d} wider than the {CHANNEL_W} foot"
         h = 4.0 * s_out
         foot = (
@@ -218,7 +252,11 @@ def brace_foot(
 
 
 def foot_bolt(
-    d: float, head_d: float, head_h: float, length: float, washer_t: float,
+    d: float,
+    head_d: float,
+    head_h: float,
+    length: float,
+    washer_t: float,
 ) -> Part:
     """Socket-head cap screw envelope (bought), z = 0 the face its
     washer stands on: head on the washer, shank `length` down from the
@@ -234,7 +272,10 @@ def foot_washer(od: float, id_: float, t: float) -> Part:
 
 
 def brace_foot_wedge_edges(
-    az_deg: float, el_deg: float, stop_h: float, wall_min_mm: float = 1.5,
+    az_deg: float,
+    el_deg: float,
+    stop_h: float,
+    wall_min_mm: float = 1.5,
 ) -> Part:
     """The foot's two 48.1°-class edges as a feature solid for
     `printability.py` — measuring geometry, never placed or unioned. A
@@ -258,7 +299,11 @@ def brace_foot_wedge_edges(
     dh, dz = reach * math.cos(math.radians(el_deg)), reach * math.sin(math.radians(el_deg))
     edges = []
     for h, z in ((stop_h, stop_h * t + hd), (s_out, s_out * t - hd)):
-        edges.append(_vertical_strip(
-            az_deg, [(h, z), (h, z - reach), (h - dh, z - dz)], width=EXT_SIZE + 2.0 * reach,
-        ))
+        edges.append(
+            _vertical_strip(
+                az_deg,
+                [(h, z), (h, z - reach), (h - dh, z - dz)],
+                width=EXT_SIZE + 2.0 * reach,
+            )
+        )
     return edges[0] + edges[1]

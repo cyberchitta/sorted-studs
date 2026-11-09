@@ -57,27 +57,63 @@ inspect(
     name="frame",
     solid_count=1,
     features={
-        "seat": Feature(seat_cutter(), waive={"overhang_max": Waiver(reason=(
-            "the acrylic seat, by owner decision 2026-09-27: 430.0 mm² — 4 "
-            "corner-lip tops, 100 each, and 2 in-pocket bracket tops at "
-            "(±13, −53.5, −4), 15 each. Bridged, no supports; sanded or "
-            "cleaned flat after printing (it takes the adhesive dabs)."
-        ), max_area_mm2=434.0, max_regions=6)}),
-        "brackets": Feature(Compound(list(bracket_blocks())), waive={"overhang_max": Waiver(reason=(
-            "bracket tops, 110.0 mm²: 2 outboard tops past the frame edge, "
-            "40 each, non-functional, and the 2 in-pocket seat ends, 15 "
-            "each (also `seat`'s). Bridged, no supports."
-        ), max_area_mm2=111.0, max_regions=4)}),
-        "pin_bores": Feature(Compound(list(pin_bore_cutters())), waive={"overhang_max": Waiver(reason=(
-            "2 Ø5.4 pin-bore crowns, 21.19 each, 42.37 mm² (read "
-            "2026-10-10; the exact quarter-arc crown of a Ø5.4 × 5 bore "
-            "is 21.21): bridged, then drilled Ø5.4 through."
-        ), max_area_mm2=42.8, max_regions=2)}),
-        "exit_edge": Feature(exit_edge_cutter(), waive={"overhang_max": Waiver(reason=(
-            "supported span on the exit edge, rim cut flush for DUMP "
-            "(owner, 2026-10-10): 550.0 mm², the outer wall's top, one "
-            "110 × 5 face at (0, 57.5, 0), 5 mm off the bed between the "
-            "side rims' ends."
-        ), max_area_mm2=551.0, max_regions=1)}),
+        "seat": Feature(
+            seat_cutter(),
+            waive={
+                "overhang_max": Waiver(
+                    reason=(
+                        "the acrylic seat, by owner decision 2026-09-27: 430.0 mm² — 4 "
+                        "corner-lip tops, 100 each, and 2 in-pocket bracket tops at "
+                        "(±13, −53.5, −4), 15 each. Bridged, no supports; sanded or "
+                        "cleaned flat after printing (it takes the adhesive dabs)."
+                    ),
+                    max_area_mm2=434.0,
+                    max_regions=6,
+                )
+            },
+        ),
+        "brackets": Feature(
+            Compound(list(bracket_blocks())),
+            waive={
+                "overhang_max": Waiver(
+                    reason=(
+                        "bracket tops, 110.0 mm²: 2 outboard tops past the frame edge, "
+                        "40 each, non-functional, and the 2 in-pocket seat ends, 15 "
+                        "each (also `seat`'s). Bridged, no supports."
+                    ),
+                    max_area_mm2=111.0,
+                    max_regions=4,
+                )
+            },
+        ),
+        "pin_bores": Feature(
+            Compound(list(pin_bore_cutters())),
+            waive={
+                "overhang_max": Waiver(
+                    reason=(
+                        "2 Ø5.4 pin-bore crowns, 21.19 each, 42.37 mm² (read "
+                        "2026-10-10; the exact quarter-arc crown of a Ø5.4 × 5 bore "
+                        "is 21.21): bridged, then drilled Ø5.4 through."
+                    ),
+                    max_area_mm2=42.8,
+                    max_regions=2,
+                )
+            },
+        ),
+        "exit_edge": Feature(
+            exit_edge_cutter(),
+            waive={
+                "overhang_max": Waiver(
+                    reason=(
+                        "supported span on the exit edge, rim cut flush for DUMP "
+                        "(owner, 2026-10-10): 550.0 mm², the outer wall's top, one "
+                        "110 × 5 face at (0, 57.5, 0), 5 mm off the bed between the "
+                        "side rims' ends."
+                    ),
+                    max_area_mm2=551.0,
+                    max_regions=1,
+                )
+            },
+        ),
     },
 )

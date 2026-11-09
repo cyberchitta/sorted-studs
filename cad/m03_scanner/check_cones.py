@@ -86,12 +86,8 @@ def sightline_cone(vertex_pos: tuple[float, float, float]):
     identity). Lens nose = vertex (PCB rear face) + (PCB_T + M12_L)
     along the lens axis, mirroring `m12_lens_stub`'s extent."""
     axis = lens_axis_unit(vertex_pos)
-    nose_dist = (
-        _camera_mount.PCB_T + _camera_mount.M12_L + _SIGHTLINE_APEX_SETBACK
-    )
-    apex = tuple(
-        vertex_pos[i] + nose_dist * axis[i] for i in range(3)
-    )
+    nose_dist = _camera_mount.PCB_T + _camera_mount.M12_L + _SIGHTLINE_APEX_SETBACK
+    apex = tuple(vertex_pos[i] + nose_dist * axis[i] for i in range(3))
     return loft(
         [
             Pos(*apex) * Circle(_SIGHTLINE_APEX_D / 2),
@@ -136,8 +132,7 @@ def add_sightline_cone_checks(a: Assembly) -> Assembly:
             (cone_name,),
             opaque,
             known_overlaps=tuple(
-                (cone_name, other, _SIGHTLINE_KNOWN_OVERLAP_REASON)
-                for other in _SIGHTLINE_KNOWN_OVERLAPS
+                (cone_name, other, _SIGHTLINE_KNOWN_OVERLAP_REASON) for other in _SIGHTLINE_KNOWN_OVERLAPS
             ),
         )
     return a

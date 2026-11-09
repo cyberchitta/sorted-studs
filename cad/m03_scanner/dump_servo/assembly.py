@@ -78,8 +78,10 @@ from ..materials import material_of
 
 # --- Cross-rail interface (private mirror of slice a) ------------------
 
+# fmt: off
 MEMBER = 20.0                                              # 2020 extrusion
 RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2             # = -120
+# fmt: on
 
 
 # --- SG90-class servo body stub ----------------------------------------
@@ -91,7 +93,7 @@ RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2             # = -120
 # walls and don't affect the integrate-level interference checks.
 
 SERVO_BODY_X = 12.0
-SERVO_BODY_Y = 24.0    # 22.5 nominal + 1.5 mm round-up so body bottom flushes with the 8-mm bracket plate
+SERVO_BODY_Y = 24.0  # 22.5 nominal + 1.5 mm round-up so body bottom flushes with the 8-mm bracket plate
 SERVO_BODY_Z = 23.0
 
 # Output-shaft protrusion above the body's +Y face (SG90 reference:
@@ -105,9 +107,7 @@ SERVO_SHAFT_PROTRUSION_Y = 5.0
 # the pivot Z so the output shaft axis lies on the body's geometric
 # centre line (matches SG90's centred output spindle).
 _SERVO_BODY_X_CENTER = TURRET_DUMP_SERVO_PIVOT_X
-_SERVO_BODY_Y_CENTER = (
-    TURRET_DUMP_SERVO_PIVOT_Y - SERVO_SHAFT_PROTRUSION_Y - SERVO_BODY_Y / 2
-)
+_SERVO_BODY_Y_CENTER = TURRET_DUMP_SERVO_PIVOT_Y - SERVO_SHAFT_PROTRUSION_Y - SERVO_BODY_Y / 2
 _SERVO_BODY_Z_CENTER = TURRET_DUMP_SERVO_PIVOT_Z
 
 _SERVO_BODY_Y_MIN = _SERVO_BODY_Y_CENTER - SERVO_BODY_Y / 2  # = -54
@@ -124,14 +124,16 @@ _SERVO_BODY_X_MAX = _SERVO_BODY_X_CENTER + SERVO_BODY_X / 2  # = -74
 # spanning from the rail's +Y side (Y = +12, 2 mm past rail face) back
 # through the rail centreline (where bolts drop into the T-slot) and
 # cantilevering in -Y to past the body's -Y face.
+# fmt: off
 _BRACKET_PLATE_X = SERVO_BODY_X + 2 * 6.0                  # = 24 (cradle wall + clearance each side)
 _BRACKET_PLATE_X_CENTER = _SERVO_BODY_X_CENTER             # = -80
 _BRACKET_PLATE_Y_MIN = _SERVO_BODY_Y_MIN - 2.0             # = -49.5 (clear body -Y face)
 _BRACKET_PLATE_Y_MAX = +12.0                               # = +12 (past rail +Y face)
+# fmt: on
 _BRACKET_PLATE_Y_LEN = _BRACKET_PLATE_Y_MAX - _BRACKET_PLATE_Y_MIN
 _BRACKET_PLATE_Y_CENTER = (_BRACKET_PLATE_Y_MIN + _BRACKET_PLATE_Y_MAX) / 2
 _BRACKET_PLATE_T = 8.0
-_BRACKET_PLATE_BOTTOM_Z = RAIL_TOP_Z                       # = -120
+_BRACKET_PLATE_BOTTOM_Z = RAIL_TOP_Z  # = -120
 _BRACKET_PLATE_TOP_Z = _BRACKET_PLATE_BOTTOM_Z + _BRACKET_PLATE_T  # = -112
 _BRACKET_PLATE_CENTER_Z = (_BRACKET_PLATE_BOTTOM_Z + _BRACKET_PLATE_TOP_Z) / 2
 
@@ -146,12 +148,14 @@ _BRACKET_BOLT_HALF_X = BRACKET_BOLT_SPACING_X / 2
 # with bracket plate edges. Walls span the full body Y extent and rise
 # from the plate top to the body top face.
 _WALL_AIR_GAP = 0.4
-_CRADLE_WALL_T = (_BRACKET_PLATE_X - SERVO_BODY_X) / 2 - _WALL_AIR_GAP   # = 5.6
+_CRADLE_WALL_T = (_BRACKET_PLATE_X - SERVO_BODY_X) / 2 - _WALL_AIR_GAP  # = 5.6
 _CRADLE_WALL_X_OFFSET = SERVO_BODY_X / 2 + _WALL_AIR_GAP + _CRADLE_WALL_T / 2
 _CRADLE_WALL_Y_CENTER = _SERVO_BODY_Y_CENTER
 _CRADLE_WALL_Y_LEN = SERVO_BODY_Y
+# fmt: off
 _CRADLE_WALL_Z_BOTTOM = _BRACKET_PLATE_TOP_Z               # = -112
 _CRADLE_WALL_Z_TOP = _SERVO_BODY_Z_MAX                     # = -88.5
+# fmt: on
 _CRADLE_WALL_Z_LEN = _CRADLE_WALL_Z_TOP - _CRADLE_WALL_Z_BOTTOM
 _CRADLE_WALL_Z_CENTER = (_CRADLE_WALL_Z_BOTTOM + _CRADLE_WALL_Z_TOP) / 2
 
@@ -159,11 +163,14 @@ _CRADLE_WALL_Z_CENTER = (_CRADLE_WALL_Z_BOTTOM + _CRADLE_WALL_Z_TOP) / 2
 # --- Arm geometry ------------------------------------------------------
 
 # Pivot → pad geometry, all in turret-local.
+# fmt: off
 _PAD_CENTER_X = TURRET_DUMP_SERVO_LIFTER_TURRET_X          # = -30
 _PAD_CENTER_Y = TURRET_DUMP_SERVO_LIFTER_TURRET_Y          # = -25
 PAD_X_LEN = 22.0      # covers drop block X ∈ [-39, -21] (18 mm) + margin
 PAD_Y_LEN = 26.0      # covers drop block Y ∈ [-36, -14] (22 mm) + margin
+# fmt: on
 PAD_Z_LEN = 6.0
+# fmt: off
 _PAD_TOP_Z = TURRET_DUMP_SERVO_LIFTER_TOP_Z                # = -45
 _PAD_CENTER_Z = _PAD_TOP_Z - PAD_Z_LEN / 2                 # = -48
 _PAD_BOTTOM_Z = _PAD_TOP_Z - PAD_Z_LEN                     # = -51
@@ -177,6 +184,7 @@ _BEAM_LEN = math.hypot(_BEAM_DX, _BEAM_DZ)                 # ≈ 72.14
 # default Box long axis is +X; Rot(0, -θ, 0) maps +X to (cos θ, 0, +sin θ),
 # which is the (+X, +Z) direction we want. θ = atan2(dz, dx).
 _BEAM_ANGLE_DEG = math.degrees(math.atan2(_BEAM_DZ, _BEAM_DX))   # ≈ 46.12
+# fmt: on
 
 # Beam cross-section (Y × perpendicular). Y stays along world ±Y after
 # the Y-axis rotation; the "Z" Box dimension becomes the in-plane beam
@@ -184,7 +192,7 @@ _BEAM_ANGLE_DEG = math.degrees(math.atan2(_BEAM_DZ, _BEAM_DX))   # ≈ 46.12
 BEAM_Y_LEN = 8.0
 BEAM_THICK = 6.0
 _BEAM_CENTER_X = (TURRET_DUMP_SERVO_PIVOT_X + _PAD_CENTER_X) / 2  # = -55
-_BEAM_CENTER_Y = TURRET_DUMP_SERVO_PIVOT_Y                        # = -25
+_BEAM_CENTER_Y = TURRET_DUMP_SERVO_PIVOT_Y  # = -25
 _BEAM_CENTER_Z = (TURRET_DUMP_SERVO_PIVOT_Z + _PAD_CENTER_Z) / 2  # = -74
 
 # Hub disc: cylinder on the servo output shaft. Bore Ø4.5 over SG90's
@@ -195,6 +203,7 @@ HUB_BORE_D = 4.5
 
 
 # --- Part functions ----------------------------------------------------
+
 
 def servo_body():
     """Stock SG90-class servo body stub. Centroid placed in
@@ -212,9 +221,7 @@ def servo_bracket():
     # subtracted negative space plus a containment bound on the plate's
     # Y span, so none is a part-pair claim — bare, fired when the
     # bracket is cut.
-    _bolt_to_foot_x_inner = (
-        _BRACKET_PLATE_X / 2 - _BRACKET_BOLT_HALF_X - BRACKET_BOLT_HOLE_D / 2
-    )
+    _bolt_to_foot_x_inner = _BRACKET_PLATE_X / 2 - _BRACKET_BOLT_HALF_X - BRACKET_BOLT_HOLE_D / 2
     assert _bolt_to_foot_x_inner >= WALL_MIN, (
         f"bracket bolt edge to foot X-edge wall {_bolt_to_foot_x_inner:.2f} mm "
         f"< WALL_MIN ({WALL_MIN}); raise _BRACKET_PLATE_X or shrink "
@@ -231,29 +238,22 @@ def servo_bracket():
         f"({WALL_MIN}); raise _BRACKET_PLATE_X or shrink _WALL_AIR_GAP"
     )
 
-    plate = (
-        Pos(_BRACKET_PLATE_X_CENTER, _BRACKET_PLATE_Y_CENTER, _BRACKET_PLATE_CENTER_Z)
-        * Box(_BRACKET_PLATE_X, _BRACKET_PLATE_Y_LEN, _BRACKET_PLATE_T)
+    plate = Pos(_BRACKET_PLATE_X_CENTER, _BRACKET_PLATE_Y_CENTER, _BRACKET_PLATE_CENTER_Z) * Box(
+        _BRACKET_PLATE_X, _BRACKET_PLATE_Y_LEN, _BRACKET_PLATE_T
     )
     for sx in (-1, 1):
-        plate -= (
-            Pos(
-                _BRACKET_PLATE_X_CENTER + sx * _BRACKET_BOLT_HALF_X,
-                TURRET_FRAME_CROSS_Y,
-                _BRACKET_PLATE_CENTER_Z,
-            )
-            * Cylinder(BRACKET_BOLT_HOLE_D / 2, _BRACKET_PLATE_T * 3)
-        )
+        plate -= Pos(
+            _BRACKET_PLATE_X_CENTER + sx * _BRACKET_BOLT_HALF_X,
+            TURRET_FRAME_CROSS_Y,
+            _BRACKET_PLATE_CENTER_Z,
+        ) * Cylinder(BRACKET_BOLT_HOLE_D / 2, _BRACKET_PLATE_T * 3)
 
     for sx in (-1, 1):
-        plate += (
-            Pos(
-                _BRACKET_PLATE_X_CENTER + sx * _CRADLE_WALL_X_OFFSET,
-                _CRADLE_WALL_Y_CENTER,
-                _CRADLE_WALL_Z_CENTER,
-            )
-            * Box(_CRADLE_WALL_T, _CRADLE_WALL_Y_LEN, _CRADLE_WALL_Z_LEN)
-        )
+        plate += Pos(
+            _BRACKET_PLATE_X_CENTER + sx * _CRADLE_WALL_X_OFFSET,
+            _CRADLE_WALL_Y_CENTER,
+            _CRADLE_WALL_Z_CENTER,
+        ) * Box(_CRADLE_WALL_T, _CRADLE_WALL_Y_LEN, _CRADLE_WALL_Z_LEN)
 
     return plate
 
@@ -295,8 +295,7 @@ def servo_arm():
     # Hub bore clears the shaft with a single-wall-thick remainder.
     _hub_wall = (HUB_DISC_OD - HUB_BORE_D) / 2
     assert _hub_wall >= WALL_MIN, (
-        f"hub disc wall around shaft bore {_hub_wall:.2f} mm < WALL_MIN "
-        f"({WALL_MIN}); raise HUB_DISC_OD"
+        f"hub disc wall around shaft bore {_hub_wall:.2f} mm < WALL_MIN ({WALL_MIN}); raise HUB_DISC_OD"
     )
 
     hub = hub_disc() - shaft_bore_cutter()
@@ -307,23 +306,18 @@ def servo_arm():
         * Box(_BEAM_LEN, BEAM_Y_LEN, BEAM_THICK)
     )
 
-    pad = (
-        Pos(_PAD_CENTER_X, _PAD_CENTER_Y, _PAD_CENTER_Z)
-        * Box(PAD_X_LEN, PAD_Y_LEN, PAD_Z_LEN)
-    )
+    pad = Pos(_PAD_CENTER_X, _PAD_CENTER_Y, _PAD_CENTER_Z) * Box(PAD_X_LEN, PAD_Y_LEN, PAD_Z_LEN)
 
     return hub + beam + pad
 
 
 # --- Stubs for the standalone (duplicated, not imported) ---------------
 
+
 def _cross_rail_stub(length: float = 60.0):
     """Slice (a) cross-rail stub under the bracket foot — duplicated
     rather than imported per cad/CLAUDE.md principle 2."""
-    return (
-        Pos(_BRACKET_PLATE_X_CENTER, TURRET_FRAME_CROSS_Y, TURRET_FRAME_FLOOR_Z)
-        * Box(length, MEMBER, MEMBER)
-    )
+    return Pos(_BRACKET_PLATE_X_CENTER, TURRET_FRAME_CROSS_Y, TURRET_FRAME_FLOOR_Z) * Box(length, MEMBER, MEMBER)
 
 
 # --- Assembly builder --------------------------------------------------
@@ -341,7 +335,8 @@ def build_turret_dump_servo_static() -> Assembly:
     sub-assembly."""
     a = Assembly()
     a = a.with_part(
-        "servo_bracket", servo_bracket(),
+        "servo_bracket",
+        servo_bracket(),
         material=material_of("servo_bracket"),
     )
     a = a.with_part(
@@ -372,12 +367,14 @@ def build_turret_dump_servo_arm() -> Assembly:
     as its own sub-assembly, so the m03 top level can attach the
     revolute joint around the pivot axis."""
     return Assembly().with_part(
-        "servo_arm", servo_arm(),
+        "servo_arm",
+        servo_arm(),
         material=material_of("servo_arm"),
     )
 
 
 # --- Standalone assembly -----------------------------------------------
+
 
 def build_turret_dump_servo_standalone() -> Assembly:
     """Both servo subtrees plus a cross-rail stub to seat the bracket
@@ -401,7 +398,8 @@ def build_turret_dump_servo_standalone() -> Assembly:
         .with_subassembly("static", build_turret_dump_servo_static())
         .with_subassembly("arm", build_turret_dump_servo_arm())
         .with_part(
-            "cross_rail_stub", _cross_rail_stub(),
+            "cross_rail_stub",
+            _cross_rail_stub(),
             material="aluminium_anodized",
         )
         .assert_no_interference_within(all_parts)

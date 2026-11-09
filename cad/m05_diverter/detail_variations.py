@@ -69,22 +69,16 @@ def _vslot_for_axis_aligned_box(part: Part) -> Part:
     short_y = abs(sy - _MEMBER) < _AXIS_TOL
     short_z = abs(sz - _MEMBER) < _AXIS_TOL
     if short_y and short_z and not short_x:
-        length, axis_rot = sx, Rot(0, 90, 0)        # native +Z → +X
+        length, axis_rot = sx, Rot(0, 90, 0)  # native +Z → +X
     elif short_x and short_z and not short_y:
-        length, axis_rot = sy, Rot(-90, 0, 0)       # native +Z → +Y
+        length, axis_rot = sy, Rot(-90, 0, 0)  # native +Z → +Y
     elif short_x and short_y and not short_z:
-        length, axis_rot = sz, Rot(0, 0, 0)         # native +Z (no swap)
+        length, axis_rot = sz, Rot(0, 0, 0)  # native +Z (no swap)
     else:
         raise ValueError(
-            f"detail_variations: bbox ({sx:.1f}, {sy:.1f}, {sz:.1f}) is "
-            "not a 20×20×L axis-aligned extrusion"
+            f"detail_variations: bbox ({sx:.1f}, {sy:.1f}, {sz:.1f}) is not a 20×20×L axis-aligned extrusion"
         )
-    return (
-        Pos(cx, cy, cz)
-        * axis_rot
-        * Pos(0, 0, -length / 2)
-        * VSlotLinearRail("20x20", length=length)
-    )
+    return Pos(cx, cy, cz) * axis_rot * Pos(0, 0, -length / 2) * VSlotLinearRail("20x20", length=length)
 
 
 def default_detail(assembly: Assembly) -> dict[str, Part]:

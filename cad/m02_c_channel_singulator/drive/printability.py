@@ -23,6 +23,8 @@ from .assembly import WALL_MIN, pinion
 # The pinion prints gear-face down (hub up): the step from the pitch
 # cylinder down to the hub is then a top face, not a 90° overhang.
 inspect(
-    pinion(), method=FDM(wall_min_mm=WALL_MIN, up_axis=(0, 0, -1)),
-    out="outputs", name="pinion",
+    pinion(),
+    method=FDM(wall_min_mm=WALL_MIN, up_axis=(0, 0, -1)),
+    out="outputs",
+    name="pinion",
 )

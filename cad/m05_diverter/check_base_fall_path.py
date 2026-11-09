@@ -33,7 +33,7 @@ from .base_floor import assembly as _base
 from .params import COL_INTERIOR_SIDE, MAX_BRICK_DIM
 from .ramp_mechanism import assembly as _ramp
 
-PROBE_W = 8.0                      # a 1×N brick is 7.8 wide
+PROBE_W = 8.0  # a 1×N brick is 7.8 wide
 PROBE_YAWS_DEG = tuple(range(0, 180, 15))
 
 
@@ -58,18 +58,18 @@ def build_base_fall_path() -> Assembly:
     a = floor
     for yaw in PROBE_YAWS_DEG:
         name = f"stick_{yaw:03d}"
-        a = (
-            a
-            .with_part(name, stick, location=Pos(x_mid, 0, (z_lo + z_hi) / 2) * Rot(0, 0, yaw))
-            .assert_no_interference_between(
-                [name],
-                ["bearing_spider", "ring_bearing", "rotating", "drive_train.ring_gear"],
-            )
+        a = a.with_part(
+            name, stick, location=Pos(x_mid, 0, (z_lo + z_hi) / 2) * Rot(0, 0, yaw)
+        ).assert_no_interference_between(
+            [name],
+            ["bearing_spider", "ring_bearing", "rotating", "drive_train.ring_gear"],
         )
     # The binding yaw, measured, as in check_fall_path — plus the ring
     # gear's hole, which is the column's interior carried down.
     for b in (
-        "rotating.trap.trap", "rotating.column", "rotating.ramp",
+        "rotating.trap.trap",
+        "rotating.column",
+        "rotating.ramp",
         "drive_train.ring_gear",
     ):
         a = a.assert_distance("stick_000", b, min_mm=_ramp.FALL_PATH_MARGIN / 2)

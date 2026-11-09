@@ -57,21 +57,23 @@ def face_rail_index(face_deg: float) -> int:
     return round(face_deg / 60.0 - 1) % 6
 
 
-RAIL_BOTTOM_Z = -RAIL_SIZE                       # −20 — the hangers bolt up to this face
+RAIL_BOTTOM_Z = -RAIL_SIZE  # −20 — the hangers bolt up to this face
 
 # The plate: printed PLA, 5 mm. Radially from the inner rail's inner
 # face to the outer rail's outer face, so each end lies under its rail;
 # tangentially 240, which leaves 16 on the X1C's 256 bed (bed_fit).
 PLATE_T = 5.0
+# fmt: off
 PLATE_X0 = R_HEX_INNER - RAIL_SIZE / 2           # 130
 PLATE_X1 = R_HEX_OUTER + RAIL_SIZE / 2           # 280
+# fmt: on
 PLATE_W = 240.0
 # The plate's underside sits at the bottom catch's depth (`base_floor`
 # CATCH_*: the cradle reaches z −113), so hanging electronics do not
 # deepen the clearance a stand must leave. Mirrored here (no sibling
 # imports); the tower root asserts it against the live cradle.
 PLATE_Z_BOT = -113.0
-PLATE_Z_TOP = PLATE_Z_BOT + PLATE_T              # −108
+PLATE_Z_TOP = PLATE_Z_BOT + PLATE_T  # −108
 
 # Hangers: 2020 extrusion drops (bought, aluminium) from a rail's bottom
 # face to the plate's top face. One under the inner rail on the sector
@@ -81,7 +83,7 @@ PLATE_Z_TOP = PLATE_Z_BOT + PLATE_T              # −108
 # and wide enough apart for the reach slot to pass between them.
 HANGER_SIZE = 20.0
 HANGER_OUTER_Y = 70.0
-HANGER_L = RAIL_BOTTOM_Z - PLATE_Z_TOP           # 88
+HANGER_L = RAIL_BOTTOM_Z - PLATE_Z_TOP  # 88
 
 # Bought envelopes: (radial X, tangential Y, height Z), placed on the
 # plate's top face. Each is a box the real part, its standoffs and its
@@ -93,7 +95,7 @@ HANGER_L = RAIL_BOTTOM_Z - PLATE_Z_TOP           # 88
 # servos, m03's dump servo) take PWM pins straight off the MCU. A Mega
 # 2560 is 101.6 × 53.3; the shield, heatsinks and headers set 45 tall.
 MCU_STACK = (60.0, 102.0, 45.0)
-MCU_STACK_AT = (160.0, -110.0)                   # its −X/−Y corner on the plate
+MCU_STACK_AT = (160.0, -110.0)  # its −X/−Y corner on the plate
 # The ESP32 bridge on standoffs (a dev board is ~55 × 28).
 BRIDGE = (28.0, 55.0, 20.0)
 BRIDGE_AT = (160.0, 10.0)
@@ -113,17 +115,20 @@ PSU_AT = (155.0, -100.0)
 # the inner columns (x ≤ 154), whose feet stop at z −36.
 SERVICE_REACH_X0 = 160.0
 SERVICE_REACH_X1 = 400.0
-SERVICE_REACH_Y = 58.0                           # 116 wide, between the outer hangers (|y| ≥ 60)
+SERVICE_REACH_Y = 58.0  # 116 wide, between the outer hangers (|y| ≥ 60)
 SERVICE_REACH_Z_TOP = -27.0
 
 
 # --- Part functions (sector-local) -------------------------------------
 
+
 def board_plate() -> Part:
     """The printed plate, sector-local."""
     x0, x1 = PLATE_X0, PLATE_X1
     return Pos((x0 + x1) / 2, 0, (PLATE_Z_BOT + PLATE_Z_TOP) / 2) * Box(
-        x1 - x0, PLATE_W, PLATE_T,
+        x1 - x0,
+        PLATE_W,
+        PLATE_T,
     )
 
 
@@ -142,7 +147,9 @@ def service_reach(top_of_components: float) -> Part:
     """The reach slot above a plate's components, sector-local."""
     z0 = top_of_components
     return Pos(
-        (SERVICE_REACH_X0 + SERVICE_REACH_X1) / 2, 0, (z0 + SERVICE_REACH_Z_TOP) / 2,
+        (SERVICE_REACH_X0 + SERVICE_REACH_X1) / 2,
+        0,
+        (z0 + SERVICE_REACH_Z_TOP) / 2,
     ) * Box(SERVICE_REACH_X1 - SERVICE_REACH_X0, 2 * SERVICE_REACH_Y, SERVICE_REACH_Z_TOP - z0)
 
 
@@ -155,12 +162,14 @@ _HANGERS = {
 
 # --- Builders ----------------------------------------------------------
 
+
 def _build_plate(
     face_deg: float,
     boards: dict[str, tuple[tuple[float, float, float], tuple[float, float]]],
     material_fn: Callable[[str], str | None] | None,
 ) -> Assembly:
     """One plate with its hangers and boards, turned to `face_deg`."""
+
     def _mt(name: str) -> str | None:
         return material_fn(name) if material_fn is not None else None
 
@@ -192,11 +201,15 @@ def build_electronics(
     """Both plates, base-floor-local. Static. Their rests on the rails,
     and clearances to the frame, the drive train and the catch, are the
     tower root's (`m05_diverter/assembly.py` `_add_electronics_checks`)."""
-    logic = _build_plate(LOGIC_FACE_DEG, {
-        "mcu_stack": (MCU_STACK, MCU_STACK_AT),
-        "bridge": (BRIDGE, BRIDGE_AT),
-        "servo_buck": (SERVO_BUCK, SERVO_BUCK_AT),
-    }, material_fn)
+    logic = _build_plate(
+        LOGIC_FACE_DEG,
+        {
+            "mcu_stack": (MCU_STACK, MCU_STACK_AT),
+            "bridge": (BRIDGE, BRIDGE_AT),
+            "servo_buck": (SERVO_BUCK, SERVO_BUCK_AT),
+        },
+        material_fn,
+    )
     power = _build_plate(POWER_FACE_DEG, {"psu": (PSU, PSU_AT)}, material_fn)
     return (
         Assembly()

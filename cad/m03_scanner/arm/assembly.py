@@ -100,7 +100,7 @@ TURRET_ARM_SPIDER_HEIGHT = 25.0
 # Spider top face Z in world. Flush with the shaft top so the spider
 # slides on from above and bottoms out on a circlip / shoulder at
 # the bottom of its hub bore (not modelled).
-TURRET_ARM_SPIDER_TOP_Z = TURRET_SHAFT_TOP_Z                     # = -10
+TURRET_ARM_SPIDER_TOP_Z = TURRET_SHAFT_TOP_Z  # = -10
 
 
 # --- Hub disc dimensions -----------------------------------------------
@@ -109,8 +109,10 @@ TURRET_ARM_SPIDER_TOP_Z = TURRET_SHAFT_TOP_Z                     # = -10
 # (Ø4 for a heat-set insert) running radially through the disc to
 # the central shaft bore.
 HUB_OD = 30.0
+# fmt: off
 HUB_BORE_D = TURRET_SHAFT_D + 0.4         # = 8.4 (0.4 mm dia clearance)
 HUB_HEIGHT = TURRET_ARM_SPIDER_HEIGHT     # = 25 (uniform Z profile)
+# fmt: on
 
 # M3 set-screw heat-set insert diameter (real assembly: a brass
 # insert is heat-pressed into this bore from the disc OD; the M3
@@ -120,6 +122,7 @@ SET_SCREW_INSERT_D = 4.0
 
 # --- Arm beam dimensions -----------------------------------------------
 
+# fmt: off
 ARM_BEAM_W = 14.0                          # tangential width
 
 # The beam runs INSIDE the hub disc, not up to its OD. A beam whose
@@ -133,6 +136,7 @@ ARM_BEAM_W = 14.0                          # tangential width
 # bounding box.
 ARM_EMBED = 2.0                            # radial bite into the hub disc
 _ARM_INNER_R = HUB_OD / 2 - ARM_EMBED      # joins INSIDE the hub disc OD
+# fmt: on
 
 
 # --- Bushing block dimensions ------------------------------------------
@@ -143,22 +147,18 @@ BUSHING_BLOCK_W = 20.0
 
 # Block radial depth (centred on TURRET_HINGE_PIN_RADIAL).
 BUSHING_BLOCK_RADIAL_LEN = 18.0
-_BUSHING_BLOCK_INNER_R = (
-    TURRET_HINGE_PIN_RADIAL - BUSHING_BLOCK_RADIAL_LEN / 2
-)
-_BUSHING_BLOCK_OUTER_R = (
-    TURRET_HINGE_PIN_RADIAL + BUSHING_BLOCK_RADIAL_LEN / 2
-)
+_BUSHING_BLOCK_INNER_R = TURRET_HINGE_PIN_RADIAL - BUSHING_BLOCK_RADIAL_LEN / 2
+_BUSHING_BLOCK_OUTER_R = TURRET_HINGE_PIN_RADIAL + BUSHING_BLOCK_RADIAL_LEN / 2
 
 # Pin bore: Ø5.4 (0.4 mm diametric clearance over the M5 stock pin).
-PIN_BORE_D = TURRET_HINGE_PIN_D + 0.4     # = 5.4
+PIN_BORE_D = TURRET_HINGE_PIN_D + 0.4  # = 5.4
 
 
 # --- Pin dimensions ----------------------------------------------------
 
 # Each pin protrudes 5 mm tangentially past each bushing-block face.
 _PIN_PROTRUSION = 5.0
-PIN_LENGTH = BUSHING_BLOCK_W + 2 * _PIN_PROTRUSION   # = 30
+PIN_LENGTH = BUSHING_BLOCK_W + 2 * _PIN_PROTRUSION  # = 30
 
 
 # --- Part functions ----------------------------------------------------
@@ -170,11 +170,7 @@ def _pin_bore_cutter():
     """The pin bore through the +X heading's bushing block (axis ±Y =
     tangential at +X heading). Default Cylinder axis is +Z; rotate to
     lift onto ±Y."""
-    return (
-        Pos(TURRET_HINGE_PIN_RADIAL, 0, 0)
-        * Rot(90, 0, 0)
-        * Cylinder(PIN_BORE_D / 2, BUSHING_BLOCK_W * 3)
-    )
+    return Pos(TURRET_HINGE_PIN_RADIAL, 0, 0) * Rot(90, 0, 0) * Cylinder(PIN_BORE_D / 2, BUSHING_BLOCK_W * 3)
 
 
 def pin_bore_cutters():
@@ -199,9 +195,7 @@ def set_screw_cutter():
     # Rot(-90, 45, 0) maps default Cylinder axis +Z onto (c45, c45, 0)
     # — heading +45° in the XY horizontal plane.
     return (
-        Pos(ss_radial_mid * c45, ss_radial_mid * c45, 0)
-        * Rot(-90, 45, 0)
-        * Cylinder(SET_SCREW_INSERT_D / 2, ss_length)
+        Pos(ss_radial_mid * c45, ss_radial_mid * c45, 0) * Rot(-90, 45, 0) * Cylinder(SET_SCREW_INSERT_D / 2, ss_length)
     )
 
 
@@ -214,10 +208,7 @@ def _arm_unit():
     arm_x_len = _BUSHING_BLOCK_INNER_R - _ARM_INNER_R
     beam = Pos(arm_x_center, 0, 0) * Box(arm_x_len, ARM_BEAM_W, HUB_HEIGHT)
 
-    block = (
-        Pos(TURRET_HINGE_PIN_RADIAL, 0, 0)
-        * Box(BUSHING_BLOCK_RADIAL_LEN, BUSHING_BLOCK_W, HUB_HEIGHT)
-    )
+    block = Pos(TURRET_HINGE_PIN_RADIAL, 0, 0) * Box(BUSHING_BLOCK_RADIAL_LEN, BUSHING_BLOCK_W, HUB_HEIGHT)
 
     return beam + block - _pin_bore_cutter()
 
@@ -240,32 +231,27 @@ def spider():
     # Pin bore wall to bushing-block tangential (W) faces.
     _pin_wall_w = BUSHING_BLOCK_W / 2 - PIN_BORE_D / 2
     assert _pin_wall_w >= WALL_MIN, (
-        f"pin-bore-to-block-W wall {_pin_wall_w:.2f} mm < WALL_MIN "
-        f"({WALL_MIN}); raise BUSHING_BLOCK_W"
+        f"pin-bore-to-block-W wall {_pin_wall_w:.2f} mm < WALL_MIN ({WALL_MIN}); raise BUSHING_BLOCK_W"
     )
     # Pin bore wall to spider Z (top + bottom) faces.
     _pin_wall_z = HUB_HEIGHT / 2 - PIN_BORE_D / 2
     assert _pin_wall_z >= WALL_MIN, (
-        f"pin-bore-to-spider-Z wall {_pin_wall_z:.2f} mm < WALL_MIN "
-        f"({WALL_MIN}); raise TURRET_ARM_SPIDER_HEIGHT"
+        f"pin-bore-to-spider-Z wall {_pin_wall_z:.2f} mm < WALL_MIN ({WALL_MIN}); raise TURRET_ARM_SPIDER_HEIGHT"
     )
     # Pin bore wall to bushing-block radial (inner / outer) faces.
     _pin_wall_r = (BUSHING_BLOCK_RADIAL_LEN - PIN_BORE_D) / 2
     assert _pin_wall_r >= WALL_MIN, (
-        f"pin-bore-to-block-radial wall {_pin_wall_r:.2f} mm < WALL_MIN "
-        f"({WALL_MIN}); raise BUSHING_BLOCK_RADIAL_LEN"
+        f"pin-bore-to-block-radial wall {_pin_wall_r:.2f} mm < WALL_MIN ({WALL_MIN}); raise BUSHING_BLOCK_RADIAL_LEN"
     )
     # Arm beam has positive length (hub disc OD inside bushing-block
     # inner face).
     assert _ARM_INNER_R < _BUSHING_BLOCK_INNER_R, (
-        f"arm inner R ({_ARM_INNER_R}) ≥ block inner R "
-        f"({_BUSHING_BLOCK_INNER_R}); arm beam has zero or negative length"
+        f"arm inner R ({_ARM_INNER_R}) ≥ block inner R ({_BUSHING_BLOCK_INNER_R}); arm beam has zero or negative length"
     )
     # Arm beam angular extent must not crash the +45° set-screw bore.
     _arm_half_angle = math.degrees(math.atan2(ARM_BEAM_W / 2, _ARM_INNER_R))
     assert _arm_half_angle < 45.0, (
-        f"arm half-angle {_arm_half_angle:.1f}° exceeds 45°; +X / +Y arm "
-        f"would clip the set-screw bore at heading +45°"
+        f"arm half-angle {_arm_half_angle:.1f}° exceeds 45°; +X / +Y arm would clip the set-screw bore at heading +45°"
     )
 
     # Hub disc — Cylinder default axis +Z = vertical = correct under
@@ -297,6 +283,7 @@ def pin(length: float = PIN_LENGTH, d: float = TURRET_HINGE_PIN_D):
 # heading. The pin is centred on the bushing block (= centred at
 # radial TURRET_HINGE_PIN_RADIAL from the hub axis along its arm's
 # radial line).
+# fmt: off
 _PIN_PLACEMENTS = (
     # (name, world position, rotation aligning Cylinder +Z with the
     # bushing-block tangential axis)
@@ -329,11 +316,13 @@ _PIN_PLACEMENTS = (
         Rot(90, 0, 0),                # +Z → ±Y
     ),
 )
+# fmt: on
 
 ARM_PART_NAMES = ("spider",) + tuple(name for name, _, _ in _PIN_PLACEMENTS)
 
 
 # --- Assembly builder --------------------------------------------------
+
 
 def build_turret_arm() -> Assembly:
     """Spider + 4 hinge pins sub-assembly, in turret-local
@@ -349,19 +338,21 @@ def build_turret_arm() -> Assembly:
     )
     # Spider top face flush with shaft top (design assumes flush mounting).
     assert abs(TURRET_ARM_SPIDER_TOP_Z - TURRET_SHAFT_TOP_Z) < 1e-6, (
-        f"spider top ({TURRET_ARM_SPIDER_TOP_Z}) ≠ shaft top "
-        f"({TURRET_SHAFT_TOP_Z}); design assumes flush mounting"
+        f"spider top ({TURRET_ARM_SPIDER_TOP_Z}) ≠ shaft top ({TURRET_SHAFT_TOP_Z}); design assumes flush mounting"
     )
 
     a = Assembly()
     a = a.with_part(
-        "spider", spider(),
+        "spider",
+        spider(),
         location=Pos(TURRET_HUB_X, TURRET_HUB_Y, TURRET_HINGE_PIN_Z),
         material=material_of("spider"),
     )
     for name, local_pos, rot in _PIN_PLACEMENTS:
         a = a.with_part(
-            name, pin(), location=Pos(*local_pos) * rot,
+            name,
+            pin(),
+            location=Pos(*local_pos) * rot,
             material=material_of(name),
         )
     # Hub disc and the four arms are one printed body. They met along

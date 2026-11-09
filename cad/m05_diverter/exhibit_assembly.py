@@ -18,7 +18,6 @@ resolves every name; ``build_tower`` accepts a
 ``dict[floor_idx, layout]`` for per-floor overrides.
 """
 
-
 from functools import cache
 
 from cad_khana.mechanism.assembly import Assembly
@@ -47,7 +46,7 @@ EXHIBIT_FLOOR_PLAN = [
 # floor the same ramp variant as production (`aim.ramp_exit_w_for`).
 EXHIBIT_BASKETS_BY_FLOOR = {
     0: [  # base — the canonical N=6 at +X, paired with one back N=12
-        (  0.0,  6, {"left", "right"}),
+        (0.0, 6, {"left", "right"}),
         (225.0, 12, {"left"}),
     ],
     1: [  # middle — the small-parts floor: two N=18s around the back

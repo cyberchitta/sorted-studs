@@ -110,8 +110,10 @@ from ..materials import material_of
 
 # --- Member cross-section ----------------------------------------------
 
+# fmt: off
 MEMBER = SKELETON_RAIL_MEMBER       # = 20.0
 CORNER_GAP = 0.3                    # butt-joint gap
+# fmt: on
 
 
 # --- Derived dimensions ------------------------------------------------
@@ -123,18 +125,21 @@ _POST_ZC = (ARCH_POST_Z_BOTTOM + ARCH_POST_Z_TOP) / 2
 
 # Inward stubs: span between rail D's east/west face (with CORNER_GAP)
 # and the post's inner X face (with CORNER_GAP).
+# fmt: off
 _STUB_X_INNER = MEMBER / 2 + CORNER_GAP                       # = 10.3 (rail D outer face + GAP)
 _STUB_X_OUTER = ARCH_POST_X - MEMBER / 2 - CORNER_GAP         # = 134.7 (post inner face - GAP)
 _STUB_LEN = _STUB_X_OUTER - _STUB_X_INNER                     # = 124.4
 _STUB_XC_POS = (_STUB_X_INNER + _STUB_X_OUTER) / 2            # = +72.5
 _STUB_XC_NEG = -_STUB_XC_POS                                  # = -72.5
+# fmt: on
 
 # Rail D: continuous Y-axis member centred on x = 0.
 _RAIL_D_LEN = T_FRAME_RAIL_D_Y_BACK - T_FRAME_RAIL_D_Y_FRONT  # = 300
-_RAIL_D_YC = (T_FRAME_RAIL_D_Y_FRONT + T_FRAME_RAIL_D_Y_BACK) / 2   # = 0
+_RAIL_D_YC = (T_FRAME_RAIL_D_Y_FRONT + T_FRAME_RAIL_D_Y_BACK) / 2  # = 0
 
 
 # --- Member helpers ----------------------------------------------------
+
 
 def rail_x(x_centre: float, x_len: float, y: float, z: float) -> Part:
     """X-direction stub (long axis along +X)."""
@@ -156,12 +161,8 @@ def rail_z(x: float, y: float, z_centre: float, z_len: float) -> Part:
 _MEMBERS = {
     "arch_post_pos_x": rail_z(+ARCH_POST_X, ARCH_POST_Y, _POST_ZC, _POST_LEN),
     "arch_post_neg_x": rail_z(-ARCH_POST_X, ARCH_POST_Y, _POST_ZC, _POST_LEN),
-    "arch_stub_pos_x": rail_x(
-        _STUB_XC_POS, _STUB_LEN, ARCH_CROSSBAR_Y, ARCH_CROSSBAR_Z
-    ),
-    "arch_stub_neg_x": rail_x(
-        _STUB_XC_NEG, _STUB_LEN, ARCH_CROSSBAR_Y, ARCH_CROSSBAR_Z
-    ),
+    "arch_stub_pos_x": rail_x(_STUB_XC_POS, _STUB_LEN, ARCH_CROSSBAR_Y, ARCH_CROSSBAR_Z),
+    "arch_stub_neg_x": rail_x(_STUB_XC_NEG, _STUB_LEN, ARCH_CROSSBAR_Y, ARCH_CROSSBAR_Z),
     "rail_d": rail_y(0.0, _RAIL_D_YC, _RAIL_D_LEN, T_FRAME_RAIL_D_Z),
 }
 
@@ -169,6 +170,7 @@ ARCH_PART_NAMES = tuple(_MEMBERS.keys())
 
 
 # --- Assembly builder --------------------------------------------------
+
 
 def build_arch() -> Assembly:
     """Arch sub-assembly. Members are in m03-local coordinates (the
@@ -196,8 +198,7 @@ def build_arch() -> Assembly:
     )
 
     assert _STUB_LEN > 0, (
-        f"arch stub length {_STUB_LEN:.1f} mm ≤ 0; arch posts at "
-        f"x = ±{ARCH_POST_X} too close to rail D (x = 0)"
+        f"arch stub length {_STUB_LEN:.1f} mm ≤ 0; arch posts at x = ±{ARCH_POST_X} too close to rail D (x = 0)"
     )
 
     # The posts' Y gaps to their neighbours — behind the shared back
@@ -215,15 +216,9 @@ def build_arch() -> Assembly:
     # inner corner sat 175.2 mm from hub vs 194.5 mm sweep envelope
     # (≈ 19 mm interference). Post-flip (post Y = +55) the post inner
     # corner sits ~217 mm from hub, ~22 mm clear.
-    _SWEEP_R = math.sqrt(
-        (TURRET_ARM_R + PLATFORM_ACRYLIC_SIZE / 2) ** 2
-        + (PLATFORM_ACRYLIC_SIZE / 2) ** 2
-    )
+    _SWEEP_R = math.sqrt((TURRET_ARM_R + PLATFORM_ACRYLIC_SIZE / 2) ** 2 + (PLATFORM_ACRYLIC_SIZE / 2) ** 2)
     _HUB_M03_Y = -TURRET_ARM_R
-    _POST_INNER_HUB_DIST = math.sqrt(
-        (ARCH_POST_X - MEMBER / 2) ** 2
-        + (ARCH_POST_Y - MEMBER / 2 - _HUB_M03_Y) ** 2
-    )
+    _POST_INNER_HUB_DIST = math.sqrt((ARCH_POST_X - MEMBER / 2) ** 2 + (ARCH_POST_Y - MEMBER / 2 - _HUB_M03_Y) ** 2)
     SWEEP_CLEARANCE = 5.0
     assert _POST_INNER_HUB_DIST >= _SWEEP_R + SWEEP_CLEARANCE, (
         f"arch post inner corner sits {_POST_INNER_HUB_DIST:.1f} mm from "
@@ -263,7 +258,8 @@ def build_arch() -> Assembly:
     a = Assembly()
     for name, part in _MEMBERS.items():
         a = a.with_part(
-            name, part,
+            name,
+            part,
             material=material_of(name),
         )
     return a

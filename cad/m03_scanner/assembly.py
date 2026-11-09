@@ -52,7 +52,6 @@ prefix on: `cad/` is a package, so m05's own `frame`/`drive` are
 distinct modules under their package paths and never collide.
 """
 
-
 from functools import cache
 
 from build123d import Axis, Plane, Pos
@@ -145,9 +144,7 @@ _CAMERA_INSTANCES = {
 TURRET_STATIONS = ("image", "load", "idle", "dump")
 
 CAMERA_PART_PATHS = tuple(
-    f"rig.{prefix}_{suffix}"
-    for prefix in _CAMERA_INSTANCES
-    for suffix in ("clamp_mount", "pcb", "lens")
+    f"rig.{prefix}_{suffix}" for prefix in _CAMERA_INSTANCES for suffix in ("clamp_mount", "pcb", "lens")
 )
 
 
@@ -186,25 +183,24 @@ def build_camera_rig() -> Assembly:
     for prefix, spec in _CAMERA_INSTANCES.items():
         clamp_loc = Pos(*spec["clamp_pos"]) * spec["clamp_rot"]
         axis = lens_axis_unit(spec["vertex_pos"])
-        camera_loc = Pos(*spec["vertex_pos"]) * rotation_for_normal(
-            axis, roll_deg=horizontal_x_roll_deg(axis)
-        )
+        camera_loc = Pos(*spec["vertex_pos"]) * rotation_for_normal(axis, roll_deg=horizontal_x_roll_deg(axis))
         mount_in_clamp = _camera_mount.mount_in_clamp_for(**spec)
         clamp_body = _camera_mount.clamp_mount(mount_in_clamp=mount_in_clamp)
         a = (
-            a
-            .with_part(
+            a.with_part(
                 f"{prefix}_clamp_mount",
                 clamp_body,
                 location=clamp_loc,
                 material=material_of(f"{prefix}_clamp_mount"),
             )
             .with_part(
-                f"{prefix}_pcb", _camera_mount.camera_pcb_stub(),
+                f"{prefix}_pcb",
+                _camera_mount.camera_pcb_stub(),
                 location=camera_loc,
             )
             .with_part(
-                f"{prefix}_lens", _camera_mount.m12_lens_stub(),
+                f"{prefix}_lens",
+                _camera_mount.m12_lens_stub(),
                 location=camera_loc,
             )
             # One `clamp_mount` function, four different bodies: the
@@ -242,8 +238,10 @@ def build_camera_rig() -> Assembly:
     for prefix in ("cam_below_left", "cam_below_right"):
         side = "pos" if _CAMERA_INSTANCES[prefix]["vertex_pos"][0] > 0 else "neg"
         a = a.assert_distance(
-            f"{prefix}_clamp_mount", f"arch.arch_post_{side}_x",
-            along="Y", min_mm=_arch.CORNER_GAP,
+            f"{prefix}_clamp_mount",
+            f"arch.arch_post_{side}_x",
+            along="Y",
+            min_mm=_arch.CORNER_GAP,
             name=f"{prefix}_plate_post_gap",
         )
     return a
@@ -378,9 +376,7 @@ def build_turret() -> Assembly:
         .with_subassembly("hub", _hub.build_turret_hub_static())
         .with_subassembly("drive", _drive.build_turret_drive_static())
         .with_subassembly("homing", _homing.build_turret_homing_static())
-        .with_subassembly(
-            "dump_servo", _dump_servo.build_turret_dump_servo_static()
-        )
+        .with_subassembly("dump_servo", _dump_servo.build_turret_dump_servo_static())
     )
 
     # Rotor — joint about the turret-local Z axis through the hub.
@@ -429,12 +425,18 @@ def build_turret() -> Assembly:
     # carry the library's 1e-6 tolerance, which covers the ~1e-7 of
     # bbox slop the extents carry.
     t = t.assert_distance(
-        "rotor.drive.drive_pulley_shaft", "hub.hub_housing",
-        along="-Z", min_mm=1.0, name="pulley_housing_gap",
+        "rotor.drive.drive_pulley_shaft",
+        "hub.hub_housing",
+        along="-Z",
+        min_mm=1.0,
+        name="pulley_housing_gap",
     )
     t = t.assert_distance(
-        "rotor.drive.drive_pulley_shaft", "rotor.arm.spider",
-        along="Z", min_mm=1.0, name="pulley_spider_gap",
+        "rotor.drive.drive_pulley_shaft",
+        "rotor.arm.spider",
+        along="Z",
+        min_mm=1.0,
+        name="pulley_spider_gap",
     )
     # Homing parts' lower Z bound — the flag and the sensor must clear
     # the driven pulley's top face by ≥1 mm. Declared here for the same
@@ -450,12 +452,18 @@ def build_turret() -> Assembly:
     # bracket is not bounded below by the pulley: its
     # foot sits far beneath it and its post passes outboard in X.
     t = t.assert_distance(
-        "homing.homing_sensor", "rotor.drive.drive_pulley_shaft",
-        along="-Z", min_mm=1.0, name="homing_sensor_pulley_gap",
+        "homing.homing_sensor",
+        "rotor.drive.drive_pulley_shaft",
+        along="-Z",
+        min_mm=1.0,
+        name="homing_sensor_pulley_gap",
     )
     t = t.assert_distance(
-        "rotor.homing.homing_flag", "rotor.drive.drive_pulley_shaft",
-        along="-Z", min_mm=1.0, name="homing_flag_pulley_gap",
+        "rotor.homing.homing_flag",
+        "rotor.drive.drive_pulley_shaft",
+        along="-Z",
+        min_mm=1.0,
+        name="homing_flag_pulley_gap",
     )
     # X gaps the static parts keep to their neighbours, measured where
     # both parts first share a level. The driven pulley is a body of
@@ -464,12 +472,18 @@ def build_turret() -> Assembly:
     # constants — the homing one over a `HOUSING_HALF_X` mirror —
     # until 2026-09-22.
     t = t.assert_distance(
-        "rotor.drive.drive_pulley_shaft", "drive.drive_motor",
-        along="X", min_mm=WALL_MIN, name="pulley_motor_body_gap",
+        "rotor.drive.drive_pulley_shaft",
+        "drive.drive_motor",
+        along="X",
+        min_mm=WALL_MIN,
+        name="pulley_motor_body_gap",
     )
     t = t.assert_distance(
-        "homing.homing_bracket", "hub.hub_housing",
-        along="X", min_mm=WALL_MIN, name="homing_foot_housing_gap",
+        "homing.homing_bracket",
+        "hub.hub_housing",
+        along="X",
+        min_mm=WALL_MIN,
+        name="homing_foot_housing_gap",
     )
     # The hub housing stands on the cross-rail. No-interference alone
     # also passes with the housing floating above it. (Never watched
@@ -481,11 +495,11 @@ def build_turret() -> Assembly:
     # the overlap is genuine — and this declaration is what makes the
     # within-turret group check skip the pair.
     t = t.assert_allowed_contact(
-        "rotor.drive.drive_pulley_shaft", "rotor.hub.hub_shaft",
-        min_overlap_mm3=1.5, max_overlap_mm3=2.6,
-        reason=(
-            f"press fit, {_drive.PULLEY_SHAFT_PRESS_FIT} mm diametral on Ø8"
-        ),
+        "rotor.drive.drive_pulley_shaft",
+        "rotor.hub.hub_shaft",
+        min_overlap_mm3=1.5,
+        max_overlap_mm3=2.6,
+        reason=(f"press fit, {_drive.PULLEY_SHAFT_PRESS_FIT} mm diametral on Ø8"),
     )
     # Drive-bracket foot resting on the cross-rail's top face — the
     # rail side of the bolted foot joint, asserted here against the
@@ -499,8 +513,10 @@ def build_turret() -> Assembly:
     # to within ~3 mm of the cross-rail end; the corner gap is the
     # directed distance the foot must keep from the +X side rail.
     t = t.assert_distance(
-        "drive.drive_bracket", "frame.floor_right_y",
-        along="X", min_mm=_frame.CORNER_GAP,
+        "drive.drive_bracket",
+        "frame.floor_right_y",
+        along="X",
+        min_mm=_frame.CORNER_GAP,
         name="drive_foot_on_cross_rail",
     )
     # Detail-tier, same joint: the two M5 foot bolts dip 6 mm past the
@@ -519,9 +535,7 @@ def build_turret() -> Assembly:
     # the same cross-rail. Was a `_BRACKET_PLATE_BOTTOM_Z == RAIL_TOP_Z`
     # constant comparison inside dump_servo; the standalone asserts it
     # against its rail stub, this is the real-member pair.
-    t = t.assert_tangent_contact(
-        "dump_servo.servo_bracket", "frame.floor_cross_x"
-    )
+    t = t.assert_tangent_contact("dump_servo.servo_bracket", "frame.floor_cross_x")
     # Servo pad × drop block, once per station: whichever platform is
     # parked at DUMP tilts, so the claim belongs to all four cartridges
     # (they come from one builder, so the window is the same geometry
@@ -531,7 +545,8 @@ def build_turret() -> Assembly:
     # threw away.
     for station in TURRET_STATIONS:
         t = t.assert_allowed_contact(
-            f"rotor.platform_{station}.frame", "servo_arm.servo_arm",
+            f"rotor.platform_{station}.frame",
+            "servo_arm.servo_arm",
             max_overlap_mm3=_DUMP_LIFT_MAX_OVERLAP_MM3,
             during=JointWindow(
                 f"rotor.platform_{station}",
@@ -563,13 +578,18 @@ def build_turret() -> Assembly:
                 else f"homing.{homing_part}"
             )
             t = t.assert_distance(
-                homing_path, f"{platform}.frame",
-                along="Z", min_mm=1.0, during=at_rest,
+                homing_path,
+                f"{platform}.frame",
+                along="Z",
+                min_mm=1.0,
+                during=at_rest,
                 name=f"{homing_part}_drop_block_gap_{station}",
             )
         t = t.assert_distance(
-            "servo_arm.servo_arm", f"{platform}.frame",
-            along="Z", min_mm=2.0,
+            "servo_arm.servo_arm",
+            f"{platform}.frame",
+            along="Z",
+            min_mm=2.0,
             during=(at_rest, JointWindow("servo_arm", max_deg=0.0)),
             name=f"servo_pad_drop_block_gap_{station}",
         )
@@ -594,8 +614,10 @@ def add_m03(a: Assembly) -> Assembly:
     # until 2026-09-22).
     for side in ("pos", "neg"):
         a = a.assert_distance(
-            "turret.frame.floor_back_x", f"rig.arch.arch_post_{side}_x",
-            along="Y", min_mm=_arch.CORNER_GAP,
+            "turret.frame.floor_back_x",
+            f"rig.arch.arch_post_{side}_x",
+            along="Y",
+            min_mm=_arch.CORNER_GAP,
             name=f"arch_post_{side}_x_behind_back_rail",
         )
     # Exported interface anchors (m03-local). ``load_top`` /
@@ -675,8 +697,8 @@ def add_m03_internal_checks(
     return a
 
 
-
 # --- Unit root -------------------------------------------------------
+
 
 # Cached because the degenerate ``assembly`` memo below and any
 # composing parent (``cad/assembly.py``, ``cad/render.py``) each ask

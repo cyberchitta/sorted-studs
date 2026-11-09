@@ -36,10 +36,8 @@ def _clearances(half_deg: float, notches, aim_deg: float, exit_w: float):
     basket's centreline."""
     h = math.radians(half_deg)
     a = math.radians(aim_deg)
-    right = (RAMP_TIP_X * math.sin(h - a) - exit_w / 2 * math.cos(h - a)
-             - _face_offset("right" in notches))
-    left = (RAMP_TIP_X * math.sin(h + a) - exit_w / 2 * math.cos(h + a)
-            - _face_offset("left" in notches))
+    right = RAMP_TIP_X * math.sin(h - a) - exit_w / 2 * math.cos(h - a) - _face_offset("right" in notches)
+    left = RAMP_TIP_X * math.sin(h + a) - exit_w / 2 * math.cos(h + a) - _face_offset("left" in notches)
     return right, left
 
 
@@ -69,9 +67,6 @@ def ramp_exit_w_for(layout) -> float:
     ``(center_deg, n_size, notches)`` entries, see ``params`` — can
     take with ``LANDING_MARGIN`` each side."""
     for exit_w in RAMP_EXIT_WIDTHS:
-        if all(
-            landing_clearance(n, notches, exit_w) >= LANDING_MARGIN
-            for _c, n, notches in layout
-        ):
+        if all(landing_clearance(n, notches, exit_w) >= LANDING_MARGIN for _c, n, notches in layout):
             return exit_w
     raise ValueError("no ramp variant lands in every basket of this layout")

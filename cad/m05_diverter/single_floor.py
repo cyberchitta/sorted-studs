@@ -46,7 +46,6 @@ column (outside its +Y wall, r ≤ ≈ 91), so it is checked against the
 baskets and the inner frame members below.
 """
 
-
 from functools import cache
 
 
@@ -81,7 +80,8 @@ from .ramp_mechanism import assembly as _ramp
 # work — so ``cache_info().misses`` is the only thing that shows it.
 @cache
 def build_single_floor(
-    schema: str = DEFAULT_SCHEMA, floor: int = 0,
+    schema: str = DEFAULT_SCHEMA,
+    floor: int = 0,
 ) -> Assembly:
     """One generic middle floor carrying floor ``floor``'s basket
     layout, plus a stand-in for the floor below, painted under
@@ -116,7 +116,8 @@ def build_single_floor(
         .with_subassembly(
             "bearing",
             _ramp.build_column_side_static(
-                "middle", material_fn=material_of,
+                "middle",
+                material_fn=material_of,
             ),
         )
         .with_subassembly(
@@ -147,7 +148,8 @@ def build_single_floor(
     # show the full steady-state stack-up before the multi-floor assembly
     # is built.
     assembly = assembly.with_part(
-        "lower_trap_servo", _ramp.trap_servo(),
+        "lower_trap_servo",
+        _ramp.trap_servo(),
         location=_ramp.lower_servo_loc,
         material=material_of("lower_trap_servo"),
     )
@@ -158,13 +160,16 @@ def build_single_floor(
     # stand-in for the floor below, not a physical part on this floor —
     # but it's modeled so we can assert basket walls and frame members
     # still clear it.
-    assembly = assembly.assert_no_interference_between("baskets", [
-        "rotating.column",
-        "bearing.bearing_spider",
-        "bearing.ring_bearing",
-        "rotating.trap_servo",
-        "lower_trap_servo",
-    ])
+    assembly = assembly.assert_no_interference_between(
+        "baskets",
+        [
+            "rotating.column",
+            "bearing.bearing_spider",
+            "bearing.ring_bearing",
+            "rotating.trap_servo",
+            "lower_trap_servo",
+        ],
+    )
 
     # Ramp tip lands in the N=6 basket that straddles +X.
     assembly = assembly.assert_no_interference("baskets.basket_000_06", "rotating.ramp")
@@ -182,10 +187,8 @@ def build_single_floor(
     # through-columns at both radii (outer_vert_k / inner_vert_k) — if a
     # notch is missing or misaligned, basket-vs-*_vert interference
     # fails here.
-    assembly = (
-        assembly
-        .assert_no_interference_between("baskets", "rails")
-        .assert_no_interference_between("baskets", "columns")
+    assembly = assembly.assert_no_interference_between("baskets", "rails").assert_no_interference_between(
+        "baskets", "columns"
     )
 
     # Column-side vs inner hex + radial rails (the frame parts radially
@@ -203,18 +206,17 @@ def build_single_floor(
     # the axis. Inner hex + rails sit at z ∈ [-20, 0] (top face at
     # z=0); the servo sweeps the ring r ≈ 55..91 at z ≈ 13..26 and
     # must clear them. This floor's own servo, same band a floor higher.
-    inner_rails = [
-        f"rails.{kind}_{k}"
-        for k in range(6)
-        for kind in ("inner_horiz", "radial_inner", "radial_outer")
-    ]
-    assembly = assembly.assert_no_interference_between([
-        "rotating.column",
-        "bearing.ring_bearing",
-        "bearing.bearing_spider",
-        "lower_trap_servo",
-        "rotating.trap_servo",
-    ], inner_rails)
+    inner_rails = [f"rails.{kind}_{k}" for k in range(6) for kind in ("inner_horiz", "radial_inner", "radial_outer")]
+    assembly = assembly.assert_no_interference_between(
+        [
+            "rotating.column",
+            "bearing.ring_bearing",
+            "bearing.bearing_spider",
+            "lower_trap_servo",
+            "rotating.trap_servo",
+        ],
+        inner_rails,
+    )
 
     # Ramp extends radially past the inner hex (tip corners at r≈146.7) but
     # stays at z ≥ 50 while the inner hex sits at z ∈ [-20, 0]. Inner
@@ -226,11 +228,13 @@ def build_single_floor(
     # corners cut these columns at 14–20° + 60°·k while the no-overlap
     # form stood green at azimuth 0.
     assembly = assembly.assert_no_interference_between(
-        ["rotating.ramp"], inner_rails,
+        ["rotating.ramp"],
+        inner_rails,
     )
     for k in range(6):
         assembly = assembly.assert_distance(
-            "rotating.ramp", f"columns.inner_vert_{k}",
+            "rotating.ramp",
+            f"columns.inner_vert_{k}",
             min_mm=_ramp.RAMP_COLUMN_CLEARANCE,
             name=f"ramp_inner_column_gap_{k}",
         )
@@ -243,9 +247,7 @@ def build_single_floor(
     # `step=2` bounds how far the sampled ramp/column gap can read above
     # its true minimum: a 1° miss on a corner at r≈146.7 moves it
     # ≈0.02 mm radially toward the face.
-    assembly = assembly.with_motion(
-        Motion.over_joint("stack_turn", "rotating", 0, 358, step=2)
-    )
+    assembly = assembly.with_motion(Motion.over_joint("stack_turn", "rotating", 0, 358, step=2))
 
     return paint(assembly, design_system(schema), color_for=color_for)
 

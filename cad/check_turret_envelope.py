@@ -49,8 +49,10 @@ from .m03_scanner.params import (
 )
 
 PLATFORM_CORNER_R = math.hypot(TURRET_ARM_R + PLATFORM_ACRYLIC_SIZE / 2.0, PLATFORM_ACRYLIC_SIZE / 2.0)
+# fmt: off
 PLATFORM_INNER_R = TURRET_ARM_R - PLATFORM_ACRYLIC_SIZE / 2.0          # 65
 LOADED_ARC_DEG = 270.0     # LOAD (0°) → IMAGE → IDLE → DUMP (270°), anticlockwise
+# fmt: on
 
 
 def _probe(hw_h: float, loaded_h: float) -> Part:
@@ -59,8 +61,7 @@ def _probe(hw_h: float, loaded_h: float) -> Part:
     sweep to `loaded_h`."""
     hardware = Pos(0, 0, hw_h / 2.0) * Cylinder(PLATFORM_CORNER_R, hw_h)
     sector = Pos(0, 0, loaded_h / 2.0) * (
-        Cylinder(PLATFORM_CORNER_R, loaded_h, arc_size=LOADED_ARC_DEG)
-        - Cylinder(PLATFORM_INNER_R, loaded_h + 2.0)
+        Cylinder(PLATFORM_CORNER_R, loaded_h, arc_size=LOADED_ARC_DEG) - Cylinder(PLATFORM_INNER_R, loaded_h + 2.0)
     )
     square = Box(PLATFORM_ACRYLIC_SIZE, PLATFORM_ACRYLIC_SIZE, loaded_h)
     at_load = Pos(TURRET_ARM_R, 0, loaded_h / 2.0) * square
@@ -85,9 +86,7 @@ def build_turret_envelope_check(schema: str = DEFAULT_SCHEMA) -> Assembly:
     # Turret hardware top at rest: the highest point of anything under
     # the turret subtree.
     hw_top = max(
-        (pp.location * pp.part).bounding_box().max.Z
-        for pp in top.placed_parts
-        if pp.name.startswith("m03.turret.")
+        (pp.location * pp.part).bounding_box().max.Z for pp in top.placed_parts if pp.name.startswith("m03.turret.")
     )
     hw_h = hw_top - deck_top_z
     loaded_h = hw_h + BRICK_SETTLED_H
@@ -100,13 +99,18 @@ def build_turret_envelope_check(schema: str = DEFAULT_SCHEMA) -> Assembly:
             _probe(hw_h, loaded_h),
             location=Pos(hub.X, hub.Y, deck_top_z) * Rot(0, 0, M03_ROT_DEG),
         )
-        .assert_scalar("turret_hardware_top_z", hw_top,
-                       detail="rest-pose bbox top of m03.turret.*; the probe rises BRICK_SETTLED_H above it")
+        .assert_scalar(
+            "turret_hardware_top_z",
+            hw_top,
+            detail="rest-pose bbox top of m03.turret.*; the probe rises BRICK_SETTLED_H above it",
+        )
         .assert_scalar("turret_hub_xy_x", hub.X, detail=f"dump centroid at ({dump.X:.1f}, {dump.Y:.1f})")
     )
     for pp in chain.assembly.placed_parts:
         a = a.assert_distance(
-            "turret_loaded_envelope", f"m02_chain.{pp.name}", min_mm=TURRET_SWEEP_CLEAR,
+            "turret_loaded_envelope",
+            f"m02_chain.{pp.name}",
+            min_mm=TURRET_SWEEP_CLEAR,
         )
     # The LOAD beam-break's tab, read on its own: the ramp's claim above
     # is its nearest point (the exit edge), so it says nothing about the
@@ -114,7 +118,9 @@ def build_turret_envelope_check(schema: str = DEFAULT_SCHEMA) -> Assembly:
     # the receiver's guard and its screws are chain parts, so the loop
     # holds them.
     a = a.assert_distance(
-        "turret_loaded_envelope", "m02_chain.load_ramp@beam_tab", min_mm=TURRET_SWEEP_CLEAR,
+        "turret_loaded_envelope",
+        "m02_chain.load_ramp@beam_tab",
+        min_mm=TURRET_SWEEP_CLEAR,
         name="turret_loaded_envelope_to_load_beam_tab",
     )
     return a

@@ -27,15 +27,24 @@ from .assembly import WALL_MIN, rotor, rotor_cavity
 # fails. Measured 2026-10-15: 3072.15 mm², one region at (0, 0, 80).
 method = FDM(wall_min_mm=WALL_MIN, overhang_max_deg=50.0)
 inspect(
-    rotor(), method=method, out="outputs", name="rotor",
+    rotor(),
+    method=method,
+    out="outputs",
+    name="rotor",
     features={
-        "cavity": Feature(rotor_cavity(), waive={"overhang_max": Waiver(
-            reason="real 90° ceiling: the cavity ceiling (top-cap "
-            "underside), 3072.15 mm² in one region at z 80, faces down "
-            "printed base-down — print plan in the module docstring "
-            "(breakaway support through the open base, which is why the "
-            "base stays open)",
-            max_area_mm2=3075.0, max_regions=1,
-        )}),
+        "cavity": Feature(
+            rotor_cavity(),
+            waive={
+                "overhang_max": Waiver(
+                    reason="real 90° ceiling: the cavity ceiling (top-cap "
+                    "underside), 3072.15 mm² in one region at z 80, faces down "
+                    "printed base-down — print plan in the module docstring "
+                    "(breakaway support through the open base, which is why the "
+                    "base stays open)",
+                    max_area_mm2=3075.0,
+                    max_regions=1,
+                )
+            },
+        ),
     },
 )

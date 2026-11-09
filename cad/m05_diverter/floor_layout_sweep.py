@@ -13,6 +13,7 @@ Each member declares its own `stack_turn` motion (it rides
 `build_single_floor`), so every run here is 181 poses, not one. Budget
 ~2 min for the four.
 """
+
 from cad_khana.mechanism.check import check
 
 from ..design_systems import DEFAULT_SCHEMA

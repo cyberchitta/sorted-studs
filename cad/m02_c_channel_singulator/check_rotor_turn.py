@@ -44,7 +44,10 @@ def build_rotor_turn(schema: str = DEFAULT_SCHEMA) -> Assembly:
     one facet period of rotor spin declared on top."""
     return build_m02(schema).with_motion(
         Motion.over_joint(
-            "rotor_turn", "rotor", 0.0, 360.0 / ROTOR_FACET_COUNT,
+            "rotor_turn",
+            "rotor",
+            0.0,
+            360.0 / ROTOR_FACET_COUNT,
             step=ROTOR_TURN_STEP_DEG,
         )
     )

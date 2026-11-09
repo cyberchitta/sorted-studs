@@ -38,7 +38,7 @@ def build_load_beam_check(schema: str = DEFAULT_SCHEMA) -> Assembly:
     ramp = build_chain(schema).part("load_ramp")
     frame = load_beam_frame()
     across = (frame * Pos(0, 1, 0)).position - frame.position
-    mid = (RAMP_WIDTH / 2.0 - RAMP_WALL_T) / 2.0      # between the +Y wall and the floor's centreline
+    mid = (RAMP_WIDTH / 2.0 - RAMP_WALL_T) / 2.0  # between the +Y wall and the floor's centreline
     plate = Pos(BEAM_S, mid, THINNEST_BRICK_H / 2.0) * Box(THINNEST_BRICK_W, THINNEST_BRICK_W, THINNEST_BRICK_H)
     return (
         Assembly()

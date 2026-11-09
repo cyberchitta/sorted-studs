@@ -119,10 +119,10 @@ def tilt_schedule(
 # platform at θ=0. The platform whose static heading equals
 # ``270° - 90°*q`` is the one parked at the DUMP zone during dwell q.
 _STATION_STATIC_HEADING = {
-    "load":  0,
+    "load": 0,
     "image": 90,
-    "idle":  180,
-    "dump":  270,
+    "idle": 180,
+    "dump": 270,
 }
 
 
@@ -182,12 +182,8 @@ def build_m03_at(t: float, schema: str = DEFAULT_SCHEMA) -> Assembly:
     a = add_m03(Assembly())
     a = a.with_joint_angle("turret.rotor", theta_rotor_deg)
     if tilt_deg != 0.0:
-        a = a.with_joint_angle(
-            f"turret.rotor.platform_{dump_station}", tilt_deg
-        )
-        a = a.with_joint_angle(
-            "turret.servo_arm", tilt_deg * SERVO_ARM_TILT_SCALE
-        )
+        a = a.with_joint_angle(f"turret.rotor.platform_{dump_station}", tilt_deg)
+        a = a.with_joint_angle("turret.servo_arm", tilt_deg * SERVO_ARM_TILT_SCALE)
     # Per-frame regression check — the same check set at every frame,
     # since the one pose-dependent pair carries its own tilt window
     # (see the retired-suppression note above). Any other transit-time

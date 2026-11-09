@@ -64,7 +64,7 @@ from .params import (
 # RIG MODEL
 # ============================================================================
 
-MEMBER_MM = 20.0       # 2020 extrusion cross-section
+MEMBER_MM = 20.0  # 2020 extrusion cross-section
 CORNER_GAP_MM = 0.3
 
 
@@ -135,14 +135,14 @@ def build_rig(g: Geometry) -> list[RigMember]:
 # PROJECTION + INTRUSION SCORING
 # ============================================================================
 
+# fmt: off
 _NEAR_MM = 5.0   # near-plane clip depth (segments straddling depth=0)
 _SIGMA = 0.4     # Gaussian centre-weight σ (corner weight ≈ 1.9%)
+# fmt: on
 
 
 def _project_point(p_world, cam_pos, axis, right, up):
-    v = (p_world[0] - cam_pos[0],
-         p_world[1] - cam_pos[1],
-         p_world[2] - cam_pos[2])
+    v = (p_world[0] - cam_pos[0], p_world[1] - cam_pos[1], p_world[2] - cam_pos[2])
     return _dot(v, axis), _dot(v, right), _dot(v, up)
 
 
@@ -184,8 +184,7 @@ def _liang_barsky_clip(u1, v1, u2, v2, umin, umax, vmin, vmax):
     return u1 + t0 * dx, v1 + t0 * dy, u1 + t1 * dx, v1 + t1 * dy
 
 
-def _project_member(member: RigMember, cam_pos, axis, right, up,
-                    h_lim, v_lim):
+def _project_member(member: RigMember, cam_pos, axis, right, up, h_lim, v_lim):
     """Project a 3D segment to clipped image-plane coords.
 
     Returns a dict {u1,v1,u2,v2,w1,w2} in normalised-FOV units (frame
@@ -193,7 +192,7 @@ def _project_member(member: RigMember, cam_pos, axis, right, up,
     or None if the member is entirely behind / outside the frame
     (including its projected width margin)."""
     z1, x1u, y1u = _project_point(member.p_start, cam_pos, axis, right, up)
-    z2, x2u, y2u = _project_point(member.p_end,   cam_pos, axis, right, up)
+    z2, x2u, y2u = _project_point(member.p_end, cam_pos, axis, right, up)
 
     p1, p2 = _clip_segment_to_near(z1, x1u, y1u, z2, x2u, y2u, _NEAR_MM)
     if p1 is None:
@@ -212,16 +211,13 @@ def _project_member(member: RigMember, cam_pos, axis, right, up,
     wmax = max(w1, w2)
 
     # Bbox reject.
-    if (max(u1n, u2n) < -1 - wmax or min(u1n, u2n) > 1 + wmax
-            or max(v1n, v2n) < -1 - wmax or min(v1n, v2n) > 1 + wmax):
+    if max(u1n, u2n) < -1 - wmax or min(u1n, u2n) > 1 + wmax or max(v1n, v2n) < -1 - wmax or min(v1n, v2n) > 1 + wmax:
         return None
 
     # Clip centerline against frame *expanded by* projected width so
     # edge-grazing rails register; the per-sample integrator below
     # clamps each sample's effective area to the actual frame.
-    clipped = _liang_barsky_clip(u1n, v1n, u2n, v2n,
-                                 -1 - wmax, 1 + wmax,
-                                 -1 - wmax, 1 + wmax)
+    clipped = _liang_barsky_clip(u1n, v1n, u2n, v2n, -1 - wmax, 1 + wmax, -1 - wmax, 1 + wmax)
     if clipped is None:
         return None
     cu1, cv1, cu2, cv2 = clipped
@@ -239,9 +235,7 @@ def _project_member(member: RigMember, cam_pos, axis, right, up,
     t_b = max(0.0, min(1.0, t_b))
     z_a = z1 + t_a * (z2 - z1)
     z_b = z1 + t_b * (z2 - z1)
-    return dict(u1=cu1, v1=cv1, u2=cu2, v2=cv2,
-                w1=half_cs / z_a / h_lim,
-                w2=half_cs / z_b / h_lim)
+    return dict(u1=cu1, v1=cv1, u2=cu2, v2=cv2, w1=half_cs / z_a / h_lim, w2=half_cs / z_b / h_lim)
 
 
 def _intrusion_metrics(proj):
@@ -278,8 +272,7 @@ def _intrusion_metrics(proj):
             continue
         chunk_area = (L / N) * (2 * ww)
         bbox_area = (2 * half_box) ** 2
-        in_frame_frac = ((clip_u_hi - clip_u_lo)
-                         * (clip_v_hi - clip_v_lo)) / bbox_area
+        in_frame_frac = ((clip_u_hi - clip_u_lo) * (clip_v_hi - clip_v_lo)) / bbox_area
         eff_area = chunk_area * in_frame_frac
         weight = math.exp(-(uu * uu + vv * vv) * inv_2sigma2)
         uniform_acc += eff_area
@@ -326,8 +319,7 @@ def aggregate(per_cam):
         for name, (_, w, _d) in members.items():
             if w > worst_w:
                 worst_name, worst_w = name, w
-        out[cam] = dict(total_uniform=tot_u, total_weighted=tot_w,
-                        worst_name=worst_name, worst_weighted=worst_w)
+        out[cam] = dict(total_uniform=tot_u, total_weighted=tot_w, worst_name=worst_name, worst_weighted=worst_w)
     return out
 
 
@@ -341,18 +333,21 @@ TILTS = (30, 40, 50, 65, 80)
 
 def print_default_table(g: Geometry):
     agg = aggregate(per_camera_intrusion(g))
-    print(f"Default config: lens={g.lens_focal_mm} mm, tilt={g.tilt_deg:.0f}°, "
-          f"r={g.tetra_r_mm:.0f} mm, HFOV={g.hfov_deg:.1f}°")
+    print(
+        f"Default config: lens={g.lens_focal_mm} mm, tilt={g.tilt_deg:.0f}°, "
+        f"r={g.tetra_r_mm:.0f} mm, HFOV={g.hfov_deg:.1f}°"
+    )
     print()
-    print(f"{'camera':<13} {'uniform%':>9} {'weighted%':>10} "
-          f"{'worst member':>14} {'worst w%':>10}")
+    print(f"{'camera':<13} {'uniform%':>9} {'weighted%':>10} {'worst member':>14} {'worst w%':>10}")
     print("-" * 62)
     for cam in CAM_ORDER:
         a = agg[cam]
-        print(f"{cam:<13} {100*a['total_uniform']:>9.2f} "
-              f"{100*a['total_weighted']:>10.2f} "
-              f"{a['worst_name']:>14} "
-              f"{100*a['worst_weighted']:>10.2f}")
+        print(
+            f"{cam:<13} {100 * a['total_uniform']:>9.2f} "
+            f"{100 * a['total_weighted']:>10.2f} "
+            f"{a['worst_name']:>14} "
+            f"{100 * a['worst_weighted']:>10.2f}"
+        )
 
 
 def _sweep_table(rows, label_col_w, first_col_header):
@@ -371,25 +366,22 @@ def _sweep_table(rows, label_col_w, first_col_header):
         row = f"{label:<{label_col_w}}"
         rig_max = 0.0
         for cam in CAM_ORDER:
-            w = agg[cam]['total_weighted']
-            row += f" {100*w:>10.2f}%"
+            w = agg[cam]["total_weighted"]
+            row += f" {100 * w:>10.2f}%"
             rig_max = max(rig_max, w)
-        row += f" {100*rig_max:>8.2f}%"
+        row += f" {100 * rig_max:>8.2f}%"
         print(row)
 
 
 def _try_geom(focal_mm, min_focus_mm, tilt_deg):
     try:
-        return compute_geometry(lens_focal_mm=focal_mm,
-                                lens_min_focus_mm=min_focus_mm,
-                                tilt_deg=tilt_deg)
+        return compute_geometry(lens_focal_mm=focal_mm, lens_min_focus_mm=min_focus_mm, tilt_deg=tilt_deg)
     except ValueError:
         return None
 
 
 def lens_sweep_table(tilt_deg):
-    print(f"Lens sweep at tilt={tilt_deg:.0f}° "
-          f"(per-camera weighted intrusion %, then rig-wide max):")
+    print(f"Lens sweep at tilt={tilt_deg:.0f}° (per-camera weighted intrusion %, then rig-wide max):")
     print()
     rows = []
     for focal, label, min_focus in _LENS_CANDIDATES:
@@ -399,14 +391,12 @@ def lens_sweep_table(tilt_deg):
 
 
 def tilt_sweep_table(focal_mm, min_focus_mm):
-    print(f"Tilt sweep at lens={focal_mm} mm "
-          f"(per-camera weighted intrusion %, then rig-wide max):")
+    print(f"Tilt sweep at lens={focal_mm} mm (per-camera weighted intrusion %, then rig-wide max):")
     print()
     rows = []
     for tilt in TILTS:
         g = _try_geom(focal_mm, min_focus_mm, tilt)
-        rows.append((f"{tilt}°",
-                     aggregate(per_camera_intrusion(g)) if g else None))
+        rows.append((f"{tilt}°", aggregate(per_camera_intrusion(g)) if g else None))
     _sweep_table(rows, 6, "tilt")
 
 
@@ -424,15 +414,12 @@ def lens_tilt_grid():
     for focal, _label, min_focus in _LENS_CANDIDATES:
         for tilt in TILTS:
             try:
-                g = compute_geometry(lens_focal_mm=focal,
-                                     lens_min_focus_mm=min_focus,
-                                     tilt_deg=tilt)
+                g = compute_geometry(lens_focal_mm=focal, lens_min_focus_mm=min_focus, tilt_deg=tilt)
             except ValueError:
                 grid[(focal, tilt)] = None
                 continue
             agg = aggregate(per_camera_intrusion(g))
-            grid[(focal, tilt)] = max(a['total_weighted']
-                                      for a in agg.values())
+            grid[(focal, tilt)] = max(a["total_weighted"] for a in agg.values())
     valid = [(k, v) for k, v in grid.items() if v is not None]
     min_key = min(valid, key=lambda kv: kv[1])[0] if valid else None
 
@@ -444,20 +431,18 @@ def lens_tilt_grid():
                 row += f" {'  —  ':>7}"
             else:
                 marker = "*" if (focal, tilt) == min_key else " "
-                row += f" {100*v:>5.2f}%{marker}"
+                row += f" {100 * v:>5.2f}%{marker}"
         print(row)
     if min_key:
         f, t = min_key
         print()
-        print(f"Minimum cell: lens={f} mm, tilt={t}° → "
-              f"{100*grid[min_key]:.2f}% rig-wide max weighted intrusion.")
+        print(f"Minimum cell: lens={f} mm, tilt={t}° → {100 * grid[min_key]:.2f}% rig-wide max weighted intrusion.")
     return min_key, grid
 
 
 def interpretation(default_g: Geometry, grid_min_key, grid):
     per_cam = per_camera_intrusion(default_g)
-    rig_max = max(a['total_weighted']
-                  for a in aggregate(per_cam).values())
+    rig_max = max(a["total_weighted"] for a in aggregate(per_cam).values())
     score = {}
     for members in per_cam.values():
         for name, (_, w, _d) in members.items():
@@ -469,30 +454,35 @@ def interpretation(default_g: Geometry, grid_min_key, grid):
     if grid_min_key:
         f, t = grid_min_key
         v = grid[grid_min_key]
-        delta_str = ("comparable" if abs(v - rig_max) < 0.005
-                     else f"{100*(rig_max - v):+.2f}% worse")
-        print(f"  Cleanest grid cell: lens={f} mm @ tilt={t}° "
-              f"({100*v:.2f}% rig-wide max). Default "
-              f"(lens={default_g.lens_focal_mm} mm @ {default_g.tilt_deg:.0f}°) "
-              f"= {100*rig_max:.2f}% — {delta_str}.")
-    print(f"  Most consistent offender (sum of weighted % across cameras): "
-          f"'{consistent[0]}' = {100*consistent[1]:.2f}%. "
-          f"Redesign target if intrusion budget bites.")
+        delta_str = "comparable" if abs(v - rig_max) < 0.005 else f"{100 * (rig_max - v):+.2f}% worse"
+        print(
+            f"  Cleanest grid cell: lens={f} mm @ tilt={t}° "
+            f"({100 * v:.2f}% rig-wide max). Default "
+            f"(lens={default_g.lens_focal_mm} mm @ {default_g.tilt_deg:.0f}°) "
+            f"= {100 * rig_max:.2f}% — {delta_str}."
+        )
+    print(
+        f"  Most consistent offender (sum of weighted % across cameras): "
+        f"'{consistent[0]}' = {100 * consistent[1]:.2f}%. "
+        f"Redesign target if intrusion budget bites."
+    )
     if 0.05 <= rig_max <= 0.25:
         verdict = "reasonable"
     elif rig_max < 0.05:
         verdict = "very clean — frames near-empty of rig structure"
     else:
         verdict = "high — re-evaluate rail layout or lens choice"
-    print(f"  Default rig-wide max = {100*rig_max:.2f}%: {verdict}.")
+    print(f"  Default rig-wide max = {100 * rig_max:.2f}%: {verdict}.")
 
 
 # ============================================================================
 # MAIN
 # ============================================================================
 
+
 def report():
     from sizing import LENS_FOCAL_MM, LENS_MIN_FOCUS_MM, TILT_DEG
+
     print("=" * 78)
     print("M03 SCANNER VISIBILITY — rig intrusion in camera frames")
     print("=" * 78)

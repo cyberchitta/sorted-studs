@@ -44,20 +44,32 @@ inspect(
     name="spider",
     solid_count=1,
     features={
-        "pin_bores": Feature(Compound(list(pin_bore_cutters())), waive={"overhang_max": Waiver(
-            reason="the four Ø5.4 hinge-pin bore ceilings through the "
-            "bushing blocks at r 62.3–67.7, 84.74 mm² each, 338.97 mm² at "
-            "up to 88.6° (read 2026-10-15, up +Z). Print plan: bridged, no "
-            "supports; run a Ø5.4 drill through each pin bore after "
-            "printing to restore the 0.2 mm radial pin clearance the "
-            "bridge droop eats.",
-            max_area_mm2=339.5, max_regions=4,
-        )}),
-        "set_screw_bore": Feature(set_screw_cutter(), waive={"overhang_max": Waiver(
-            reason="the Ø4 set-screw insert bore's ceiling at heading "
-            "+45°, 34.11 mm² to 89.6° (read 2026-10-15, up +Z). Bridged, no "
-            "supports; the heat-set insert is pressed in after printing.",
-            max_area_mm2=34.3, max_regions=1,
-        )}),
+        "pin_bores": Feature(
+            Compound(list(pin_bore_cutters())),
+            waive={
+                "overhang_max": Waiver(
+                    reason="the four Ø5.4 hinge-pin bore ceilings through the "
+                    "bushing blocks at r 62.3–67.7, 84.74 mm² each, 338.97 mm² at "
+                    "up to 88.6° (read 2026-10-15, up +Z). Print plan: bridged, no "
+                    "supports; run a Ø5.4 drill through each pin bore after "
+                    "printing to restore the 0.2 mm radial pin clearance the "
+                    "bridge droop eats.",
+                    max_area_mm2=339.5,
+                    max_regions=4,
+                )
+            },
+        ),
+        "set_screw_bore": Feature(
+            set_screw_cutter(),
+            waive={
+                "overhang_max": Waiver(
+                    reason="the Ø4 set-screw insert bore's ceiling at heading "
+                    "+45°, 34.11 mm² to 89.6° (read 2026-10-15, up +Z). Bridged, no "
+                    "supports; the heat-set insert is pressed in after printing.",
+                    max_area_mm2=34.3,
+                    max_regions=1,
+                )
+            },
+        ),
     },
 )

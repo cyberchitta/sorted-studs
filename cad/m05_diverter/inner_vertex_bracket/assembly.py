@@ -93,7 +93,7 @@ BOLT_SPACING = 20.0
 # wall thickness around the 20×20 vertical-column cutout.
 PLATE_T = 6.0
 HUB_HALF = 14.0
-BRACKET_Z_TOP = -EXT_SIZE     # plate top face flush with extrusion bottom
+BRACKET_Z_TOP = -EXT_SIZE  # plate top face flush with extrusion bottom
 ARM_W = EXT_SIZE
 ARM_BOLT_SPAN = BOLT_FROM_EXT_END + BOLT_SPACING + BOLT_FROM_EXT_END  # 40
 
@@ -110,6 +110,7 @@ ARM_L_TOTAL = HOR_INNER_OFFSET + ARM_BOLT_SPAN  # 62
 # vertex at r ≈ 161.66 and BRACKET_HOR_OFFSET = 22, a single bolt
 # at +10 mm beyond the rail's outer end sits at r ≈ 129.66, ~10 mm
 # clear of the saddle.
+# fmt: off
 ARM_IN_BOLT_SPAN = 2 * BOLT_FROM_EXT_END                 # 20 — single bolt centred
 ARM_IN_L_TOTAL = HOR_INNER_OFFSET + ARM_IN_BOLT_SPAN     # 42
 
@@ -120,6 +121,7 @@ ARM_IN_L_TOTAL = HOR_INNER_OFFSET + ARM_IN_BOLT_SPAN     # 42
 VERT_ARM_TOP_Z = ARM_BOLT_SPAN                            # 40 — top of vertical plate in world Z
 VERT_BOLT_Z_1 = BOLT_FROM_EXT_END                         # 10
 VERT_BOLT_Z_2 = BOLT_FROM_EXT_END + BOLT_SPACING          # 30
+# fmt: on
 
 # Hex interior half-angle.
 HALF_HEX_ANGLE_DEG = 60.0
@@ -129,6 +131,7 @@ WALL_MIN = 1.5
 
 
 # --- Part helpers -------------------------------------------------------
+
 
 def _through_hole_z(hole_d: float, plate_t: float) -> Part:
     """Cylindrical hole along +Z, long enough to cut cleanly through a
@@ -155,6 +158,7 @@ def clamp_bolt_holes() -> tuple[Part, Part]:
 
 
 # --- Part functions -----------------------------------------------------
+
 
 def bracket() -> Part:
     """Single-body inner-vertex bracket: square donut hub (cutout
@@ -204,13 +208,12 @@ def bracket() -> Part:
     # inboard rail's outer end is clamped without reaching into the
     # spider saddle's r ∈ [100, 120] grip zone.
     arm_in_plate = Pos(ARM_IN_L_TOTAL / 2, 0, plate_cz) * Box(
-        ARM_IN_L_TOTAL, ARM_W, PLATE_T,
+        ARM_IN_L_TOTAL,
+        ARM_W,
+        PLATE_T,
     )
     bolt_in_x = HOR_INNER_OFFSET + BOLT_FROM_EXT_END
-    arm_rad_in = (
-        arm_in_plate
-        - Pos(bolt_in_x, 0, plate_cz) * _through_hole_z(BOLT_HOLE_D, PLATE_T)
-    )
+    arm_rad_in = arm_in_plate - Pos(bolt_in_x, 0, plate_cz) * _through_hole_z(BOLT_HOLE_D, PLATE_T)
 
     # Vertical clamp arm on the column's bracket-local -Y face. ±X
     # are taken by radial arms; -Y picks one of the two free column
@@ -221,7 +224,7 @@ def bracket() -> Part:
     # this plate fuses with the hub and with the -60° hex-edge arm
     # at z ∈ [-26, -20] (single Boolean union; merging is intended).
     va_y_center = -EXT_SIZE / 2 - PLATE_T / 2
-    va_z_bot = BRACKET_Z_TOP - PLATE_T                    # flush with hub bottom
+    va_z_bot = BRACKET_Z_TOP - PLATE_T  # flush with hub bottom
     va_z_top = VERT_ARM_TOP_Z
     va_h_total = va_z_top - va_z_bot
     va_z_center = (va_z_bot + va_z_top) / 2
@@ -235,12 +238,8 @@ def bracket() -> Part:
     # The vertical clamp plate at y ∈ [-16, -10] sits entirely
     # outside the column's y ∈ [-10, 10] footprint, so the cutout
     # leaves the clamp arm intact.
-    vert_cutout = Pos(0, 0, plate_cz) * Box(
-        EXT_SIZE, EXT_SIZE, PLATE_T * 3
-    )
-    return (
-        hub + arm_h1 + arm_h2 + arm_rad_out + arm_rad_in + vert_arm
-    ) - vert_cutout
+    vert_cutout = Pos(0, 0, plate_cz) * Box(EXT_SIZE, EXT_SIZE, PLATE_T * 3)
+    return (hub + arm_h1 + arm_h2 + arm_rad_out + arm_rad_in + vert_arm) - vert_cutout
 
 
 def vert_ext_stub(size: float = EXT_SIZE) -> Part:
@@ -249,15 +248,17 @@ def vert_ext_stub(size: float = EXT_SIZE) -> Part:
     above the vertical clamp arm's top) so the column-vs-bracket
     interference check sees a full vertical pass-through covering
     both clamp bolts."""
+    # fmt: off
     z_bot = BRACKET_Z_TOP - PLATE_T - 10.0   # 10 mm below hub bottom
     z_top = VERT_ARM_TOP_Z + 10.0             # 10 mm above arm top
+    # fmt: on
     length = z_top - z_bot
     return Pos(0, 0, (z_bot + z_top) / 2) * Box(size, size, length)
 
 
-def horiz_ext_stub_local(length: float = EXT_STUB_LEN,
-                         size: float = EXT_SIZE,
-                         inner_offset: float = HOR_INNER_OFFSET) -> Part:
+def horiz_ext_stub_local(
+    length: float = EXT_STUB_LEN, size: float = EXT_SIZE, inner_offset: float = HOR_INNER_OFFSET
+) -> Part:
     """Horizontal extrusion stand-in along its local +X axis. Top face
     at z=0, axis at z=-size/2. Inner end at x=inner_offset; outer end
     at x=inner_offset+length."""
@@ -278,12 +279,14 @@ assembly = (
     .with_part("horiz_ext_2", horiz_ext_stub_local(), location=Rot(0, 0, -HALF_HEX_ANGLE_DEG))
     .with_part("radial_ext_out", horiz_ext_stub_local(), location=Rot(0, 0, 180.0))
     .with_part("radial_ext_in", horiz_ext_stub_local())
-    .assert_no_interference_within([
-        "bracket",
-        "vert_ext",
-        "horiz_ext_1",
-        "horiz_ext_2",
-        "radial_ext_out",
-        "radial_ext_in",
-    ])
+    .assert_no_interference_within(
+        [
+            "bracket",
+            "vert_ext",
+            "horiz_ext_1",
+            "horiz_ext_2",
+            "radial_ext_out",
+            "radial_ext_in",
+        ]
+    )
 )

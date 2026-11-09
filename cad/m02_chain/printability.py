@@ -32,7 +32,10 @@ from cad_khana.printability.methods import FDM
 from cad_khana.printability.waiver import Waiver
 
 from ..m02_c_channel_singulator.drive.assembly import (
-    BOWL_PARTS, WALL_MIN, bowl_part_at, motor_cbore_skirt_foot,
+    BOWL_PARTS,
+    WALL_MIN,
+    bowl_part_at,
+    motor_cbore_skirt_foot,
 )
 from .assembly import build_chain
 from .joints import brace_foot_wedge_edges
@@ -49,6 +52,7 @@ from .params import BRACE_COLS, BRACE_FOOT_STOP_H, S1, S3, STAGES, brace_run
 # orientation.
 chain = build_chain()
 
+
 # A vertical cut meeting a face parallel to the 41.9° brace leaves a
 # 48.1° edge (90° − elevation) in each foot: the stop wall's top ridge,
 # and the channel floor's lip at the block's end face. The crease rays
@@ -62,16 +66,20 @@ chain = build_chain()
 # feature and fails.
 def _foot_features(col: int) -> dict[str, Feature]:
     az, el, _ = brace_run(col)
-    return {"wedge_edges": Feature(
-        brace_foot_wedge_edges(az + 180.0, el, BRACE_FOOT_STOP_H),
-        waive={"wall_min": Waiver(
-            reason="48.1° wedge tip, not a sliver: min_wall_at on the stop "
-            "wall's top ridge (foot_3, 0.594) or the channel floor's end lip "
-            "(foot_5, 0.582), alignment 0.65 ≈ cos 48.1°; the edge prints as "
-            "an ordinary 48° corner",
-            min_wall_mm=0.55,
-        )},
-    )}
+    return {
+        "wedge_edges": Feature(
+            brace_foot_wedge_edges(az + 180.0, el, BRACE_FOOT_STOP_H),
+            waive={
+                "wall_min": Waiver(
+                    reason="48.1° wedge tip, not a sliver: min_wall_at on the stop "
+                    "wall's top ridge (foot_3, 0.594) or the channel floor's end lip "
+                    "(foot_5, 0.582), alignment 0.65 ≈ cos 48.1°; the edge prints as "
+                    "an ordinary 48° corner",
+                    min_wall_mm=0.55,
+                )
+            },
+        )
+    }
 
 
 for name, features in (
@@ -82,7 +90,10 @@ for name, features in (
 ):
     inspect(
         chain.part(f"gantry.{name}").part,
-        method=FDM(), out="outputs", name=name, features=features,
+        method=FDM(),
+        out="outputs",
+        name=name,
+        features=features,
     )
 
 # The bowl sectors print floor-down: the drive places each at identity
@@ -111,26 +122,26 @@ for name, features in (
 # here — re-witness it, don't carry the text over.
 _MOTOR_WAIVER = {
     ("s1", 180.0, 41.0): "0.83 mm² at 90° (s1, measured 2026-09-27 on "
-        "this body): two slivers of 0.42 mm² each, the Ø6 counterbores' "
-        "rims about the motor pattern's outboard corners (r 149.26, "
-        "az 174° and 186°) lying past the skirt's inner face at r 152 — "
-        "sagitta 0.26 mm, chord 2.45 mm each, at the floor top z −18.5. "
-        "The skirt's first layer bridges them; nothing else in the part "
-        "faces down.",
+    "this body): two slivers of 0.42 mm² each, the Ø6 counterbores' "
+    "rims about the motor pattern's outboard corners (r 149.26, "
+    "az 174° and 186°) lying past the skirt's inner face at r 152 — "
+    "sagitta 0.26 mm, chord 2.45 mm each, at the floor top z −18.5. "
+    "The skirt's first layer bridges them; nothing else in the part "
+    "faces down.",
     ("s2", 210.0, 31.0): "0.83 mm² at 90° (s2, measured 2026-09-27 on "
-        "this body): two slivers of 0.42 mm² each, the Ø6 counterbores' "
-        "rims about the motor pattern's outboard corners (r 149.26, "
-        "az 204° and 216°) lying past the skirt's inner face at r 152 — "
-        "sagitta 0.26 mm, chord 2.45 mm each, at the floor top z −18.5. "
-        "The skirt's first layer bridges them; nothing else in the part "
-        "faces down.",
+    "this body): two slivers of 0.42 mm² each, the Ø6 counterbores' "
+    "rims about the motor pattern's outboard corners (r 149.26, "
+    "az 204° and 216°) lying past the skirt's inner face at r 152 — "
+    "sagitta 0.26 mm, chord 2.45 mm each, at the floor top z −18.5. "
+    "The skirt's first layer bridges them; nothing else in the part "
+    "faces down.",
     ("s3", 210.0, 38.0): "0.83 mm² at 90° (s3, measured 2026-09-27 on "
-        "this body): two slivers of 0.42 mm² each, the Ø6 counterbores' "
-        "rims about the motor pattern's outboard corners (r 149.26, "
-        "az 204° and 216°) lying past the skirt's inner face at r 152 — "
-        "sagitta 0.26 mm, chord 2.45 mm each, at the floor top z −18.5. "
-        "The skirt's first layer bridges them; nothing else in the part "
-        "faces down.",
+    "this body): two slivers of 0.42 mm² each, the Ø6 counterbores' "
+    "rims about the motor pattern's outboard corners (r 149.26, "
+    "az 204° and 216°) lying past the skirt's inner face at r 152 — "
+    "sagitta 0.26 mm, chord 2.45 mm each, at the floor top z −18.5. "
+    "The skirt's first layer bridges them; nothing else in the part "
+    "faces down.",
 }
 
 for s in STAGES:
@@ -138,15 +149,23 @@ for s in STAGES:
     for leaf in BOWL_PARTS:
         inspect(
             chain.part(f"{s.name}.drive.{leaf}").part,
-            method=FDM(wall_min_mm=WALL_MIN), out="outputs", name=f"{s.name}_{leaf}",
-            features={"cbore_skirt_foot": Feature(
-                motor_cbore_skirt_foot(motor_azimuth_deg=s.motor_azimuth_deg),
-                waive={"overhang_max": Waiver(
-                    reason=_MOTOR_WAIVER[(s.name, s.motor_azimuth_deg, s.bowl_seam_phase_deg)],
-                    max_area_mm2=0.85, max_regions=2,
-                )},
-            )}
-            if leaf == motor_sector else None,
+            method=FDM(wall_min_mm=WALL_MIN),
+            out="outputs",
+            name=f"{s.name}_{leaf}",
+            features={
+                "cbore_skirt_foot": Feature(
+                    motor_cbore_skirt_foot(motor_azimuth_deg=s.motor_azimuth_deg),
+                    waive={
+                        "overhang_max": Waiver(
+                            reason=_MOTOR_WAIVER[(s.name, s.motor_azimuth_deg, s.bowl_seam_phase_deg)],
+                            max_area_mm2=0.85,
+                            max_regions=2,
+                        )
+                    },
+                )
+            }
+            if leaf == motor_sector
+            else None,
         )
 
 # The LOAD ramp prints on its side: the side wall's outer face (chain
@@ -170,7 +189,9 @@ for s in STAGES:
 # beam-break.
 inspect(
     chain.part("load_ramp").part,
-    method=FDM(up_axis=(0, -1, 0)), out="outputs", name="load_ramp",
+    method=FDM(up_axis=(0, -1, 0)),
+    out="outputs",
+    name="load_ramp",
 )
 
 # The LOAD beam-break's receiver guard prints on its chute face (chain
@@ -183,5 +204,8 @@ inspect(
 # chain frame.
 inspect(
     chain.part("load_beam_guard").part,
-    method=FDM(up_axis=(0, -1, 0)), out="outputs", name="load_beam_guard", solid_count=1,
+    method=FDM(up_axis=(0, -1, 0)),
+    out="outputs",
+    name="load_beam_guard",
+    solid_count=1,
 )

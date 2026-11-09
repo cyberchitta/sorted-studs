@@ -53,8 +53,10 @@ def build_basket_removal() -> Assembly:
         f"{group}_{k}"
         for k in range(6)
         for group in (
-            "columns.outer_vert", "columns.inner_vert",
-            "rails.outer_vertex_bracket", "rails.inner_vertex_bracket",
+            "columns.outer_vert",
+            "columns.inner_vert",
+            "rails.outer_vertex_bracket",
+            "rails.inner_vertex_bracket",
         )
     ]
 
@@ -62,9 +64,7 @@ def build_basket_removal() -> Assembly:
     # follow from its centre and width (they mark the edges that land on
     # a column), so one name is one shape at one pose on every floor.
     distinct = {
-        (center_deg, n_size): notches
-        for layout in FLOOR_LAYOUTS.values()
-        for center_deg, n_size, notches in layout
+        (center_deg, n_size): notches for layout in FLOOR_LAYOUTS.values() for center_deg, n_size, notches in layout
     }
     for (center_deg, n_size), notches in sorted(distinct.items()):
         half_angle = 180.0 / n_size
@@ -75,7 +75,8 @@ def build_basket_removal() -> Assembly:
         )
         path = swept(body, (withdrawal_travel(half_angle), 0, 0))
         a = a.assert_clear_of(
-            obstacles, path.moved(Rot(0, 0, center_deg)),
+            obstacles,
+            path.moved(Rot(0, 0, center_deg)),
             name=f"{basket_name(center_deg, n_size)}_draw_out",
         )
     return a

@@ -109,8 +109,10 @@ INNER_HORIZ_LEN = EDGE_LEN_INNER - 2.0 * HOR_INNER_OFFSET
 # (see params.py docstring); the inner segment runs from the spider
 # saddle out to the inner-vertex bracket's inboard arm, the outer
 # segment from the inboard arm out to the outer-vertex bracket.
+# fmt: off
 RADIAL_INNER_LEN = RAIL_INNER_OUTER_END_R - RAIL_INNER_R          # ≈ 39.66
 RADIAL_OUTER_LEN = RAIL_OUTER_R - RAIL_OUTER_INNER_END_R          # ≈ 106.11
+# fmt: on
 
 
 def edge_apothem_deg(k: int) -> float:
@@ -128,6 +130,7 @@ def edge_under(azimuth_deg: float) -> int:
 
 # --- Part helpers -------------------------------------------------------
 
+
 def _horiz_ext(length: float) -> Part:
     """2020 horizontal extrusion along local +X, top face at z=0."""
     return Pos(0, 0, -EXT_SIZE / 2.0) * Box(length, EXT_SIZE, EXT_SIZE)
@@ -143,6 +146,7 @@ VERT_EXT_BELOW = -(BRACKET_Z_TOP - OUTER_BRACKET_PLATE_T) + 10.0  # 36
 
 
 # --- Assembly builders --------------------------------------------------
+
 
 def build_floor_horizontals(
     material_fn: Callable[[str], str | None] | None = None,
@@ -172,24 +176,20 @@ def build_floor_horizontals(
     # Loose bounds with no geometric content — a zero-length extrusion
     # is a parameter mistake, not a fit problem — so they stay bare.
     assert OUTER_HORIZ_LEN > 0, (
-        f"OUTER_HORIZ_LEN = {OUTER_HORIZ_LEN:.1f} mm ≤ 0 — increase R_HEX_OUTER "
-        f"or decrease HOR_INNER_OFFSET."
+        f"OUTER_HORIZ_LEN = {OUTER_HORIZ_LEN:.1f} mm ≤ 0 — increase R_HEX_OUTER or decrease HOR_INNER_OFFSET."
     )
     assert INNER_HORIZ_LEN > 0, (
-        f"INNER_HORIZ_LEN = {INNER_HORIZ_LEN:.1f} mm ≤ 0 — increase R_HEX_INNER "
-        f"or decrease HOR_INNER_OFFSET."
+        f"INNER_HORIZ_LEN = {INNER_HORIZ_LEN:.1f} mm ≤ 0 — increase R_HEX_INNER or decrease HOR_INNER_OFFSET."
     )
     assert RAIL_SIZE == EXT_SIZE, (
         f"RAIL_SIZE ({RAIL_SIZE}) must equal frame EXT_SIZE ({EXT_SIZE}); "
         f"the radial rail is a standard 2020 and reuses the frame helper."
     )
     assert RADIAL_INNER_LEN > 0, (
-        f"RADIAL_INNER_LEN = {RADIAL_INNER_LEN:.1f} mm ≤ 0 — "
-        f"RAIL_INNER_OUTER_END_R must exceed RAIL_INNER_R."
+        f"RADIAL_INNER_LEN = {RADIAL_INNER_LEN:.1f} mm ≤ 0 — RAIL_INNER_OUTER_END_R must exceed RAIL_INNER_R."
     )
     assert RADIAL_OUTER_LEN > 0, (
-        f"RADIAL_OUTER_LEN = {RADIAL_OUTER_LEN:.1f} mm ≤ 0 — "
-        f"RAIL_OUTER_R must exceed RAIL_OUTER_INNER_END_R."
+        f"RADIAL_OUTER_LEN = {RADIAL_OUTER_LEN:.1f} mm ≤ 0 — RAIL_OUTER_R must exceed RAIL_OUTER_INNER_END_R."
     )
     assert BRACKET_HOR_OFFSET == HOR_INNER_OFFSET, (
         f"params.BRACKET_HOR_OFFSET ({BRACKET_HOR_OFFSET}) must equal bracket "
@@ -260,12 +260,8 @@ def build_floor_horizontals(
         cos_r = math.cos(math.radians(r_angle))
         sin_r = math.sin(math.radians(r_angle))
         for seg_name, seg_len, seg_mid in (
-            ("radial_inner",
-             RADIAL_INNER_LEN,
-             (RAIL_INNER_R + RAIL_INNER_OUTER_END_R) / 2.0),
-            ("radial_outer",
-             RADIAL_OUTER_LEN,
-             (RAIL_OUTER_INNER_END_R + RAIL_OUTER_R) / 2.0),
+            ("radial_inner", RADIAL_INNER_LEN, (RAIL_INNER_R + RAIL_INNER_OUTER_END_R) / 2.0),
+            ("radial_outer", RADIAL_OUTER_LEN, (RAIL_OUTER_INNER_END_R + RAIL_OUTER_R) / 2.0),
         ):
             rx = seg_mid * cos_r
             ry = seg_mid * sin_r
@@ -360,6 +356,7 @@ def build_through_columns(
 
 
 # --- Standalone assembly ------------------------------------------------
+
 
 def build_frame_standalone() -> Assembly:
     """One floor's frame, under the same subtree names every consumer

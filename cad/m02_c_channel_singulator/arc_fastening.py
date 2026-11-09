@@ -36,7 +36,23 @@ from __future__ import annotations
 
 import math
 
-from build123d import Axis, Box, Cone, Cylinder, Face, Location, Part, Plane, Polygon, Pos, Rot, extrude, loft, mirror, revolve
+from build123d import (
+    Axis,
+    Box,
+    Cone,
+    Cylinder,
+    Face,
+    Location,
+    Part,
+    Plane,
+    Polygon,
+    Pos,
+    Rot,
+    extrude,
+    loft,
+    mirror,
+    revolve,
+)
 
 from .params import (
     ARC_BOSS_EXIT_CLEAR,
@@ -71,18 +87,22 @@ from .teardrop import teardrop_cutter, teardrop_face
 FREE_END_SIGNS = (+1, -1)
 
 # Derived from the bought parts' dims.
+# fmt: off
 ARC_SCREW_HOLE_D = ARC_SCREW_D + ARC_SCREW_HOLE_CLEAR          # 3.4 through the skirt
 ARC_CSINK_D = ARC_SCREW_HEAD_D + ARC_CSINK_CLEAR               # 6.4 at the skirt's outer face
 ARC_SCREW_HEAD_H = (ARC_SCREW_HEAD_D - ARC_SCREW_D) / 2.0      # 90° head: 1.5
 
 # Where the axis runs, in the side frame.
 _AXIS_Y = ARC_BOSS_EXIT_CLEAR + ARC_BOSS_W / 2.0               # 8.0 in from the cut plane
+# fmt: on
 _X_SKIRT_OUT = math.sqrt(R_STATOR_OUTER_KINK**2 - _AXIS_Y**2)  # skirt outer face on the axis
+# fmt: off
 _X_SKIRT_IN = math.sqrt(SKIRT_R_IN**2 - _AXIS_Y**2)            # skirt inner face = boss face
 ARC_SCREW_HEAD_X = _X_SKIRT_OUT - ARC_CSINK_CLEAR / 2.0        # head top, on the axis
+# fmt: on
 _X_TIP = ARC_SCREW_HEAD_X - ARC_SCREW_L
 _X_HOLE_BOTTOM = _X_TIP - ARC_HOLE_TIP_CLEAR
-ARC_INSERT_HOLE_DEPTH = _X_SKIRT_IN - _X_HOLE_BOTTOM           # from the boss face
+ARC_INSERT_HOLE_DEPTH = _X_SKIRT_IN - _X_HOLE_BOTTOM  # from the boss face
 
 # The bearing claim's floor: half the boss's designed face on the skirt
 # (ARC_BOSS_W × its height), so the two holes (~14 mm² between them)
@@ -123,7 +143,7 @@ def arc_boss(sign: int = +1) -> Part:
         "the insert hole must sit inside the boss's height"
     )
     tan_v = math.tan(math.radians(V_HALF_ANGLE_DEG))
-    cone = lambda z: R_STATOR_OUTER_BASE + z * tan_v         # noqa: E731 — the liner's outer cone
+    cone = lambda z: R_STATOR_OUTER_BASE + z * tan_v  # noqa: E731 — the liner's outer cone
     profile = Plane.XZ * Polygon(
         (cone(ARC_BOSS_Z_LO) - SEAM_EAR_OVERLAP, ARC_BOSS_Z_LO),
         (SKIRT_R_IN, ARC_BOSS_Z_LO),
@@ -133,7 +153,9 @@ def arc_boss(sign: int = +1) -> Part:
     )
     ring = revolve(profile, axis=Axis.Z, revolution_arc=30.0)
     slab = Pos(SKIRT_R_IN / 2.0 + 50.0, ARC_BOSS_EXIT_CLEAR + ARC_BOSS_W / 2.0, SKIRT_TOP_Z / 2.0) * Box(
-        SKIRT_R_IN, ARC_BOSS_W, SKIRT_TOP_Z + 2.0,
+        SKIRT_R_IN,
+        ARC_BOSS_W,
+        SKIRT_TOP_Z + 2.0,
     )
     return _to_end(ring & slab, sign)
 
@@ -162,10 +184,13 @@ def skirt_hole(sign: int = +1) -> Part:
     # 90° cone's crown reads 45° plus tessellation); carried 2 mm
     # outside the face so the cut is clean.
     x_foot = _X_SKIRT_OUT - csink_h
-    csink = loft([
-        _teardrop_face(ARC_SCREW_HOLE_D, x_foot, apex_up=True),
-        _teardrop_face(ARC_CSINK_D, _X_SKIRT_OUT, apex_up=True),
-    ], ruled=True) + _teardrop_cutter(ARC_CSINK_D, _X_SKIRT_OUT, _X_SKIRT_OUT + 2.0, apex_up=True)
+    csink = loft(
+        [
+            _teardrop_face(ARC_SCREW_HOLE_D, x_foot, apex_up=True),
+            _teardrop_face(ARC_CSINK_D, _X_SKIRT_OUT, apex_up=True),
+        ],
+        ruled=True,
+    ) + _teardrop_cutter(ARC_CSINK_D, _X_SKIRT_OUT, _X_SKIRT_OUT + 2.0, apex_up=True)
     return _to_end(hole + csink, sign)
 
 
@@ -202,8 +227,13 @@ def driver_seat(sign: int) -> Part:
     corridor starts inside the countersink, so this much of the bowl
     cannot be held clear of it; everything else of the bowl can."""
     x0, x1 = _X_SKIRT_IN - 1.0, _X_SKIRT_OUT + 1.0
-    plug = Pos((x0 + x1) / 2.0, _AXIS_Y, ARC_SCREW_Z) * Rot(0, 90, 0) * Cylinder(
-        ARC_SCREW_ACCESS_D / 2.0 + ARC_SCREW_SEAT_CLEAR, x1 - x0,
+    plug = (
+        Pos((x0 + x1) / 2.0, _AXIS_Y, ARC_SCREW_Z)
+        * Rot(0, 90, 0)
+        * Cylinder(
+            ARC_SCREW_ACCESS_D / 2.0 + ARC_SCREW_SEAT_CLEAR,
+            x1 - x0,
+        )
     )
     return _to_end(plug, sign)
 
@@ -245,12 +275,15 @@ def bearing_area_mm2(liner: Part, bowl: Part, sign: int) -> float:
     the skirt — so this is the boss's bearing patch, holes out: zero
     if the boss stands off the skirt, or bears on another bowl sector."""
     lo, hi = boss_span_deg(sign)
+
     def on_skirt_face(part: Part):
         return [
-            f for f in part.faces()
+            f
+            for f in part.faces()
             # (a trimmed cylinder reports no radius; none of those is the skirt's face)
             if f.geom_type.name == "CYLINDER" and f.radius is not None and abs(f.radius - SKIRT_R_IN) < 1e-6
         ]
+
     area = 0.0
     for fa in on_skirt_face(liner):
         c = fa.center()

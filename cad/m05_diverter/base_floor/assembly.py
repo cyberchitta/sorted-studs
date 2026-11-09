@@ -87,9 +87,19 @@ from build123d import Box, Cone, Cylinder, Part, Plane, Polygon, Pos, Rot, extru
 from cad_khana.mechanism.assembly import Assembly
 
 from ..params import (
-    BASE_COL_Z_BOT, CABLE_DROP_AZ_DEG, CABLE_DROP_D, CABLE_DROP_R,
-    CABLE_DROP_Z_BOT, CABLE_LOOP_H, CABLE_LOOP_R_IN, CABLE_LOOP_R_OUT,
-    CABLE_LOOP_Z_BOT, COL_INTERIOR_SIDE, COLLAR_OD, RAIL_INNER_R, RAIL_SIZE,
+    BASE_COL_Z_BOT,
+    CABLE_DROP_AZ_DEG,
+    CABLE_DROP_D,
+    CABLE_DROP_R,
+    CABLE_DROP_Z_BOT,
+    CABLE_LOOP_H,
+    CABLE_LOOP_R_IN,
+    CABLE_LOOP_R_OUT,
+    CABLE_LOOP_Z_BOT,
+    COL_INTERIOR_SIDE,
+    COLLAR_OD,
+    RAIL_INNER_R,
+    RAIL_SIZE,
 )
 
 
@@ -98,9 +108,11 @@ from ..params import (
 # Spur pair: a small pinion on the off-axis motor shaft drives a large
 # ring gear bolted to the base column's bottom collar. The ring's pitch
 # diameter tracks the collar OD so the gear stays compact on the collar.
+# fmt: off
 MODULE = 1.5                          # printable spur module (low torque)
 PRESSURE_ANGLE_DEG = 20.0             # documentation only — cheap model has no teeth
 RING_TEETH = round(COLLAR_OD / MODULE)            # 92 — pitch D ≈ collar OD
+# fmt: on
 # 26 T sets the centre distance, not the ratio: it is the smallest pinion
 # that puts the motor's inner face outside the fall disc (MOTOR_INNER_R,
 # held by `drive_clear_of_fall_path`) and the inner NEMA screws outside
@@ -108,6 +120,7 @@ RING_TEETH = round(COLLAR_OD / MODULE)            # 92 — pitch D ≈ collar OD
 # m02's rim-drive pinion is 17 T (`_notes/decisions/m02-rotor-drive.md`);
 # the two no longer share a part.
 PINION_TEETH = 26
+# fmt: off
 RING_PITCH_D = RING_TEETH * MODULE                 # 138.0
 PINION_PITCH_D = PINION_TEETH * MODULE             # 39.0
 GEAR_RATIO = RING_TEETH / PINION_TEETH             # ≈ 3.54 : 1
@@ -164,17 +177,22 @@ RING_GEAR_Z_BOT = MESH_Z_BOT                       # -17 — annulus runs collar
 PINION_Z_TOP = MESH_Z_TOP                          # -9
 PINION_FACE_W = GEAR_FACE_W + 1.0                  # 9 — overhangs the gear face
 PINION_Z_BOT = PINION_Z_TOP - PINION_FACE_W        # -18
+# fmt: on
 
 MOUNT_T = 5.0
+# fmt: off
 MOUNT_Z_TOP = -RAIL_SIZE                           # -20 — rail bottom face
 MOUNT_Z_BOT = MOUNT_Z_TOP - MOUNT_T                # -25
+# fmt: on
 
 # Motor — NEMA-17 footprint (42.3 mm body), output face flush with the
 # mount underside; body hangs below. Real NEMA-17 is 42.3 mm square.
 MOTOR_BODY_W = 42.3
 MOTOR_BODY_H = 40.0
+# fmt: off
 MOTOR_TOP_Z = MOUNT_Z_BOT                          # -25 — face bolts up to the mount
 MOTOR_BOTTOM_Z = MOTOR_TOP_Z - MOTOR_BODY_H        # -65
+# fmt: on
 # The NEMA face screws (M3 on a 31 mm square) run down through the mount
 # into the motor, heads up. They are detail layer (not modelled), but
 # where the heads sit is a claim: outside the ring gear's tip circle, so
@@ -182,13 +200,14 @@ MOTOR_BOTTOM_Z = MOTOR_TOP_Z - MOTOR_BODY_H        # -65
 # They are inside the pinion's tip circle, 2 mm under its bottom face, so
 # they are countersunk flush with the mount's top.
 NEMA_BOLT_SPACING = 31.0
-NEMA_SCREW_HEAD_D = 6.0                            # M3 countersunk (ISO 10642)
+NEMA_SCREW_HEAD_D = 6.0  # M3 countersunk (ISO 10642)
 
 # Off-axis placement: midway between two back-side radial rails (rails
 # sit at (k+0.5)·60°, so a gap centre is a multiple of 60°). 120° keeps
 # the motor off the +X exit/ramp side and off the −Y side the catch tray
 # draws out toward; the flanking rails at 90° and 150° carry the mount.
 MOTOR_AZIMUTH_DEG = 120.0
+# fmt: off
 MOUNT_RAIL_OFFSETS_DEG = (-30.0, 30.0)                 # the flanking rails, from the drive azimuth
 
 # Motor mount — one plate under both flanking rails: the convex hull of a
@@ -202,6 +221,7 @@ MOUNT_PAD_L = 16.0                                     # along the rail
 MOUNT_PAD_W = 16.0                                     # across the rail
 MOUNT_PAD_R = RAIL_INNER_R + 1.0 + MOUNT_PAD_L / 2     # 109 — r 101..117
 MOUNT_SHAFT_HOLE_D = 12.0                              # clears the bare output shaft
+# fmt: on
 
 WALL_MIN = 1.5
 
@@ -213,10 +233,12 @@ WALL_MIN = 1.5
 # the exit is a disc of the square's half-diagonal. The vertical fall from
 # there down to the catch is a keep-out (`fall_path`, declared in
 # `build_drive_train`); nothing static may stand in it.
+# fmt: off
 FALL_SWEEP_R = COL_INTERIOR_SIDE * math.sqrt(2) / 2    # 63.64
 FALL_EXIT_Z = RING_GEAR_Z_BOT                          # -17
 FALL_CLEAR = 1.0                                       # static part to the vertical fall
 MOTOR_INNER_R = CENTER_DIST - MOTOR_BODY_W / 2         # 67.55 — outside FALL_SWEEP_R
+# fmt: on
 
 
 # --- Bottom catch ----------------------------------------------------------
@@ -232,21 +254,27 @@ MOTOR_INNER_R = CENTER_DIST - MOTOR_BODY_W / 2         # 67.55 — outside FALL_
 # half-angle of the cone that allowance grows at, from the exit to the
 # rim — a hand allowance, not a measurement (bench).
 CATCH_SCATTER_DEG = 10.0
+# fmt: off
 CATCH_MOUTH_MARGIN = 1.0              # scatter cone to the tray's inner wall, at the rim
 CATCH_MOTOR_CLEAR = 2.0               # rim below the motor's bottom face
+# fmt: on
 CATCH_WALL_T = 2.0
 CATCH_FLOOR_T = 2.0
+# fmt: off
 CATCH_DEPTH = 40.0                    # rim to floor, inside
 CATCH_CAPACITY_MIN_CM3 = 500.0        # a fault's worth, not a bay: owner, "size it small"
 
 CATCH_RIM_Z = MOTOR_BOTTOM_Z - CATCH_MOTOR_CLEAR                 # -67
 CATCH_DROP = FALL_EXIT_Z - CATCH_RIM_Z                           # 50
+# fmt: on
 CATCH_SCATTER_R = FALL_SWEEP_R + CATCH_DROP * math.tan(math.radians(CATCH_SCATTER_DEG))  # ≈ 72.46
+# fmt: off
 CATCH_MOUTH_R = CATCH_SCATTER_R + CATCH_MOUTH_MARGIN             # ≈ 73.46, inner wall
 CATCH_OUTER_R = CATCH_MOUTH_R + CATCH_WALL_T                     # ≈ 75.46
 CATCH_FLOOR_Z = CATCH_RIM_Z - CATCH_DEPTH                        # -107, floor top
 CATCH_BOTTOM_Z = CATCH_FLOOR_Z - CATCH_FLOOR_T                   # -109, tray underside
 CATCH_CAPACITY_CM3 = math.pi * CATCH_MOUTH_R ** 2 * CATCH_DEPTH / 1000.0   # ≈ 678
+# fmt: on
 
 # Cradle: a shelf the tray stands on, three posts up to the free inner
 # ends of radial rails, and low curbs that locate the tray. Rails sit at
@@ -257,17 +285,20 @@ CATCH_CAPACITY_CM3 = math.pi * CATCH_MOUTH_R ** 2 * CATCH_DEPTH / 1000.0   # ≈
 # so not imported; the tower root measures the gap).
 CATCH_POST_AZIMUTHS_DEG = (30.0, 210.0, 330.0)
 CATCH_POST_W = 16.0
-CATCH_POST_R = RAIL_INNER_R + 1.0 + CATCH_POST_W / 2             # 109 — r 101..117
+CATCH_POST_R = RAIL_INNER_R + 1.0 + CATCH_POST_W / 2  # 109 — r 101..117
 CATCH_SHELF_T = 4.0
-CATCH_CURB_GAP = 0.5                  # tray wall to curb
+CATCH_CURB_GAP = 0.5  # tray wall to curb
 CATCH_CURB_W = 3.0
 CATCH_CURB_H = 5.0
 CATCH_CURB_L = 40.0
+# fmt: off
 CATCH_PULL_AZIMUTH_DEG = 270.0        # −Y: toward the operator
 CATCH_PULL_TRAVEL = 2 * CATCH_OUTER_R + CATCH_CURB_GAP           # clear of its own footprint
+# fmt: on
 
 
 # --- Part functions -----------------------------------------------------
+
 
 def _on_drive_axis(part: Part, z_center: float) -> Part:
     """Place a part centered on the off-axis motor/pinion axis at the
@@ -333,9 +364,7 @@ def motor_mount() -> Part:
     the pinion. Built in the drive's own frame (+X along
     MOTOR_AZIMUTH_DEG), then turned onto it."""
     h = MOUNT_W / 2
-    pts = [
-        (CENTER_DIST + sx * h, sy * h) for sx in (-1, 1) for sy in (-1, 1)
-    ]
+    pts = [(CENTER_DIST + sx * h, sy * h) for sx in (-1, 1) for sy in (-1, 1)]
     for off in MOUNT_RAIL_OFFSETS_DEG:
         c, s_ = math.cos(math.radians(off)), math.sin(math.radians(off))
         for du in (-MOUNT_PAD_L / 2, MOUNT_PAD_L / 2):
@@ -347,7 +376,8 @@ def motor_mount() -> Part:
         amount=MOUNT_T,
     )
     bore = Pos(CENTER_DIST, 0, (MOUNT_Z_TOP + MOUNT_Z_BOT) / 2) * Cylinder(
-        MOUNT_SHAFT_HOLE_D / 2, MOUNT_T * 2,
+        MOUNT_SHAFT_HOLE_D / 2,
+        MOUNT_T * 2,
     )
     return Rot(0, 0, MOTOR_AZIMUTH_DEG) * (plate - bore)
 
@@ -393,13 +423,17 @@ def catch_cradle() -> Part:
     x0, x1 = min(xs) - half, max(xs) + half
     y0, y1 = min(ys) - half, back
     shelf = Pos((x0 + x1) / 2, (y0 + y1) / 2, (shelf_z_top + shelf_z_bot) / 2) * Box(
-        x1 - x0, y1 - y0, CATCH_SHELF_T,
+        x1 - x0,
+        y1 - y0,
+        CATCH_SHELF_T,
     )
     body = shelf
     for az in CATCH_POST_AZIMUTHS_DEG:
         h = MOUNT_Z_TOP - shelf_z_bot
         body = body + Rot(0, 0, az) * Pos(
-            CATCH_POST_R, 0, (MOUNT_Z_TOP + shelf_z_bot) / 2,
+            CATCH_POST_R,
+            0,
+            (MOUNT_Z_TOP + shelf_z_bot) / 2,
         ) * Box(CATCH_POST_W, CATCH_POST_W, h)
     curb_z = shelf_z_top + CATCH_CURB_H / 2
     curb_r = CATCH_OUTER_R + CATCH_CURB_GAP + CATCH_CURB_W / 2
@@ -436,9 +470,7 @@ def cable_loop() -> Part:
     (params.CABLE_LOOP_*) — the annulus the flat cable fills at every
     azimuth of the stack's one-revolution range, so it does not turn."""
     zc = CABLE_LOOP_Z_BOT + CABLE_LOOP_H / 2
-    return Pos(0, 0, zc) * (
-        Cylinder(CABLE_LOOP_R_OUT, CABLE_LOOP_H) - Cylinder(CABLE_LOOP_R_IN, CABLE_LOOP_H)
-    )
+    return Pos(0, 0, zc) * (Cylinder(CABLE_LOOP_R_OUT, CABLE_LOOP_H) - Cylinder(CABLE_LOOP_R_IN, CABLE_LOOP_H))
 
 
 def cable_drop() -> Part:
@@ -447,12 +479,14 @@ def cable_drop() -> Part:
     a = math.radians(CABLE_DROP_AZ_DEG)
     h = CABLE_LOOP_Z_BOT - CABLE_DROP_Z_BOT
     return Pos(
-        CABLE_DROP_R * math.cos(a), CABLE_DROP_R * math.sin(a),
+        CABLE_DROP_R * math.cos(a),
+        CABLE_DROP_R * math.sin(a),
         (CABLE_LOOP_Z_BOT + CABLE_DROP_Z_BOT) / 2,
     ) * Cylinder(CABLE_DROP_D / 2, h)
 
 
 # --- Assembly -----------------------------------------------------------
+
 
 def build_drive_train(
     material_fn: Callable[[str], str | None] | None = None,
@@ -465,6 +499,7 @@ def build_drive_train(
     builders. Colour is not a parameter — the unit root paints the
     finished tree (``cad/design_systems.py:paint``).
     """
+
     def _mt(name: str) -> str | None:
         return material_fn(name) if material_fn is not None else None
 
@@ -482,10 +517,10 @@ def build_drive_train(
     # here), and its hole is the column's, so the pass through it is
     # `check_base_fall_path.py`'s.
     a = (
-        a
-        .with_keepout("fall_path", fall_path())
-        .assert_clear_of(["motor", "pinion", "motor_mount"], "fall_path",
-                         min_mm=FALL_CLEAR, name="drive_clear_of_fall_path")
+        a.with_keepout("fall_path", fall_path())
+        .assert_clear_of(
+            ["motor", "pinion", "motor_mount"], "fall_path", min_mm=FALL_CLEAR, name="drive_clear_of_fall_path"
+        )
         # The servo wires' loop and its static drop. Declared here, with
         # the base's other keep-outs; held against the whole tower at its
         # root (`_add_harness_checks`), where the column and the frame are.
@@ -502,8 +537,10 @@ def build_drive_train(
     # comparisons carry the library's 1e-6 tolerance, so measured ==
     # bound passes despite solver noise.
     a = a.assert_distance(
-        "ring_gear", "pinion",
-        min_mm=MESH_BACKLASH, max_mm=MESH_BACKLASH + 0.1,
+        "ring_gear",
+        "pinion",
+        min_mm=MESH_BACKLASH,
+        max_mm=MESH_BACKLASH + 0.1,
         name="gear_mesh_backlash",
     )
     # The inner pair of NEMA screws is nearest the column axis. Their heads
@@ -514,7 +551,9 @@ def build_drive_train(
     head_r_min = math.hypot(CENTER_DIST - b, b) - NEMA_SCREW_HEAD_D / 2
     ring_tip_r = RING_PITCH_D / 2 + ADDENDUM
     a = a.assert_scalar(
-        "nema_screws_clear_ring_gear", head_r_min - ring_tip_r, ge=1.0,
+        "nema_screws_clear_ring_gear",
+        head_r_min - ring_tip_r,
+        ge=1.0,
         detail=(
             f"inner NEMA screw head edge r {head_r_min:.2f} − ring tip r "
             f"{ring_tip_r:.2f}; raise PINION_TEETH if it fails"
@@ -546,6 +585,7 @@ def build_bottom_catch(
     base-floor-local frame. Static. Its claims about itself and the
     falling brick are declared here; its rests on the rails and its
     clearances to the frame and drive train are the tower root's."""
+
     def _mt(name: str) -> str | None:
         return material_fn(name) if material_fn is not None else None
 
@@ -554,20 +594,18 @@ def build_bottom_catch(
         .with_part("catch_tray", catch_tray(), material=_mt("catch_tray"))
         .with_part("catch_cradle", catch_cradle(), material=_mt("catch_cradle"))
         .with_keepout("fall_scatter", fall_scatter())
-        .with_keepout("pull_path", catch_pull_path(),
-                      seat=Plane.XY.offset(CATCH_BOTTOM_Z))
+        .with_keepout("pull_path", catch_pull_path(), seat=Plane.XY.offset(CATCH_BOTTOM_Z))
         # Everything the scatter cone carries to the rim lands inside the
         # tray's wall. Constructed at exactly CATCH_MOUTH_MARGIN.
-        .assert_clear_of("catch_tray", "fall_scatter", min_mm=CATCH_MOUTH_MARGIN,
-                         name="catch_mouth_takes_scatter")
+        .assert_clear_of("catch_tray", "fall_scatter", min_mm=CATCH_MOUTH_MARGIN, name="catch_mouth_takes_scatter")
         # The tray stands on the shelf, located by curbs it does not touch.
         .assert_tangent_contact("catch_tray", "catch_cradle")
-        .assert_solid_count("catch_tray",
-                            detail="the cavity cut has holed the floor or wall")
-        .assert_solid_count("catch_cradle",
-                            detail="a post or curb no longer meets the shelf")
+        .assert_solid_count("catch_tray", detail="the cavity cut has holed the floor or wall")
+        .assert_solid_count("catch_cradle", detail="a post or curb no longer meets the shelf")
         .assert_scalar(
-            "catch_capacity_cm3", CATCH_CAPACITY_CM3, ge=CATCH_CAPACITY_MIN_CM3,
+            "catch_capacity_cm3",
+            CATCH_CAPACITY_CM3,
+            ge=CATCH_CAPACITY_MIN_CM3,
             detail=f"π·{CATCH_MOUTH_R:.1f}²·{CATCH_DEPTH:.0f} mm — raise CATCH_DEPTH",
         )
     )
@@ -592,19 +630,22 @@ def make_assembly() -> Assembly:
     return (
         build_drive_train()
         .with_subassembly("catch", build_bottom_catch())
-        .assert_no_interference_within([
-            "ring_gear",
-            "pinion",
-            "motor",
-            "motor_mount",
-        ])
-        .assert_no_interference_between(
-            "catch", ["ring_gear", "pinion", "motor", "motor_mount"],
+        .assert_no_interference_within(
+            [
+                "ring_gear",
+                "pinion",
+                "motor",
+                "motor_mount",
+            ]
         )
-        .assert_clear_of("catch", "fall_path", min_mm=FALL_CLEAR,
-                         name="catch_clear_of_fall_path")
-        .assert_clear_of(["ring_gear", "pinion", "motor", "motor_mount"],
-                         "catch.pull_path", name="drive_clear_of_catch_pull")
+        .assert_no_interference_between(
+            "catch",
+            ["ring_gear", "pinion", "motor", "motor_mount"],
+        )
+        .assert_clear_of("catch", "fall_path", min_mm=FALL_CLEAR, name="catch_clear_of_fall_path")
+        .assert_clear_of(
+            ["ring_gear", "pinion", "motor", "motor_mount"], "catch.pull_path", name="drive_clear_of_catch_pull"
+        )
     )
 
 

@@ -13,7 +13,6 @@ Lighting and camera framing come from cad_khana.render's defaults; do not
 author them here.
 """
 
-
 from ..design_systems import DEFAULT_SCHEMA, schema_from_env
 from .assembly import build_m05
 from .detail_variations import apply_default_detail

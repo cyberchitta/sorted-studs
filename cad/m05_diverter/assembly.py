@@ -122,9 +122,19 @@ from .outer_vertex_bracket.assembly import (
 )
 from .aim import ramp_exit_w_for
 from .params import (
-    CABLE_DROP_D, CABLE_DROP_R, CABLE_DROP_Z_BOT, CABLE_LOOP_H,
-    CABLE_LOOP_R_OUT, CABLE_LOOP_Z_BOT, COLLAR_CLEARANCE, FLOOR_H,
-    FLOOR_LAYOUTS, R_VERT_OUTER, THROUGH_DECK_POSTS, TOP_DECK_OD, basket_name,
+    CABLE_DROP_D,
+    CABLE_DROP_R,
+    CABLE_DROP_Z_BOT,
+    CABLE_LOOP_H,
+    CABLE_LOOP_R_OUT,
+    CABLE_LOOP_Z_BOT,
+    COLLAR_CLEARANCE,
+    FLOOR_H,
+    FLOOR_LAYOUTS,
+    R_VERT_OUTER,
+    THROUGH_DECK_POSTS,
+    TOP_DECK_OD,
+    basket_name,
 )
 from .ramp_mechanism import assembly as _ramp
 
@@ -160,7 +170,7 @@ TOP_DECK_POST_CLEAR = 1.0
 # top column's trap servo stands in that gap; this is not a claim that
 # a hand reaches it.
 TOP_DECK_FLARE_CLEAR = 20.0
-_NOTCH_PAST_RIM = 10.0       # how far a run-out notch carries past the rim
+_NOTCH_PAST_RIM = 10.0  # how far a run-out notch carries past the rim
 
 # --- Ceiling sleeve ----------------------------------------------------
 #
@@ -220,6 +230,7 @@ CEILING_SLEEVE_FRAME_CLEAR = 10.0
 # inserts' pilot holes (DECK_INSERT_D), the lip's thickness and width,
 # the screw-length check in `_add_deck_fastener` and the edge-distance
 # floor all derive from these.
+# fmt: off
 DECK_SCREW_D = 3.0          # M3 thread major Ø — the shank envelope
 DECK_SCREW_HEAD_D = 5.5     # ISO 4762 M3 dk
 DECK_SCREW_HEAD_H = 3.0     # ISO 4762 M3 k
@@ -255,6 +266,7 @@ DECK_NUT_M = 4.7              # ISO 4032 M5 height
 DECK_NUT_WASHER_OD = 10.0     # ISO 7089 M5 d2 — the nut's washer on the printed arm
 DECK_NUT_WASHER_ID = 5.3      # ISO 7089 M5 d1
 DECK_NUT_WASHER_T = 1.0       # ISO 7089 M5 h
+# fmt: on
 # The tapped hole: M5 tap drill Ø4.2 is what the real profile's centre
 # bore is made for; bd_warehouse's V-slot model draws that bore at Ø4.6
 # (2026-10-17 — not changed here; the cheap column is solid and takes
@@ -284,8 +296,7 @@ TOP_CAP_BOLT_HOLE = {4: (-60.0, 0), 5: (-60.0, 0)}
 DECK_HOLE_EDGE_MIN = max(2 * DECK_BOLT_HOLE_D, 2 * DECK_HOLE_D, TOP_DECK_T)
 
 CEILING_SLEEVE_LIP_W = (
-    CEILING_SLEEVE_SCREW_R + DECK_INSERT_D / 2 + CEILING_SLEEVE_INSERT_WALL
-    - TOP_DECK_APERTURE_D / 2
+    CEILING_SLEEVE_SCREW_R + DECK_INSERT_D / 2 + CEILING_SLEEVE_INSERT_WALL - TOP_DECK_APERTURE_D / 2
 )  # 38: the lip's reach past the aperture, radial
 
 # The `off_deck` keep-out (see `_add_top_deck`): a band on the deck-top
@@ -311,6 +322,7 @@ TOP_VERT_Z = 4 * FLOOR_H
 
 
 # --- Per-floor builders ------------------------------------------------
+
 
 def _build_floor_static(role: str, basket_layout) -> Assembly:
     """One floor's static side as a sub-`Assembly` in the floor-local
@@ -350,7 +362,8 @@ def _build_floor_static(role: str, basket_layout) -> Assembly:
         .with_subassembly(
             "bearing",
             _ramp.build_column_side_static(
-                role, material_fn=material_of,
+                role,
+                material_fn=material_of,
             ),
         )
         .assert_no_interference_between("baskets", "rails")
@@ -359,10 +372,8 @@ def _build_floor_static(role: str, basket_layout) -> Assembly:
     for center_deg, n_size, _notches in basket_layout:
         name = f"baskets.{basket_name(center_deg, n_size)}"
         k = _frame.edge_under(center_deg)
-        a = (
-            a
-            .assert_tangent_contact(name, f"rails.inner_horiz_{k}")
-            .assert_tangent_contact(name, f"rails.outer_horiz_{k}")
+        a = a.assert_tangent_contact(name, f"rails.inner_horiz_{k}").assert_tangent_contact(
+            name, f"rails.outer_horiz_{k}"
         )
     # The spider's rest on its rails — each saddle's top plate on a
     # radial rail's top face (SADDLE_CEIL_Z) — is NOT asserted: nothing
@@ -425,10 +436,7 @@ def _post_notch(deck_od: float) -> Part:
 
 def _circle_points(r: float, azimuths_deg) -> list[tuple[float, float]]:
     """(x, y) of each azimuth (degrees from +X) on a circle of radius r."""
-    return [
-        (r * math.cos(math.radians(az)), r * math.sin(math.radians(az)))
-        for az in azimuths_deg
-    ]
+    return [(r * math.cos(math.radians(az)), r * math.sin(math.radians(az))) for az in azimuths_deg]
 
 
 def corner_bolt_xy(posts: dict[int, float]) -> dict[int, tuple[float, float]]:
@@ -441,8 +449,7 @@ def corner_bolt_xy(posts: dict[int, float]) -> dict[int, tuple[float, float]]:
             az, n = TOP_CAP_BOLT_HOLE[k]
             bx = OUTER_BRACKET_ARM_INNER + OUTER_BRACKET_BOLT_FROM_END + n * OUTER_BRACKET_BOLT_SPACING
             p = (
-                _post_vertex_pose(k, 0.0)
-                * Pos(bx * math.cos(math.radians(az)), bx * math.sin(math.radians(az)), 0.0)
+                _post_vertex_pose(k, 0.0) * Pos(bx * math.cos(math.radians(az)), bx * math.sin(math.radians(az)), 0.0)
             ).position
             out[k] = (p.X, p.Y)
         else:
@@ -466,9 +473,7 @@ def deck_holes(deck_od: float, posts: dict[int, float]) -> dict[str, Part]:
     name, in deck-local coordinates (z = 0 the sheet's mid-plane): the
     post holes (`post_{k}`) and the fastener clearance holes
     (`deck_fastener_holes`)."""
-    holes = {
-        f"post_{k}": _post_vertex_pose(k, 0.0) * _post_notch(deck_od) for k in posts
-    }
+    holes = {f"post_{k}": _post_vertex_pose(k, 0.0) * _post_notch(deck_od) for k in posts}
     for name, (x, y, d) in deck_fastener_holes(posts).items():
         holes[name] = Pos(x, y, 0) * Cylinder(d / 2, TOP_DECK_T * 2)
     return holes
@@ -488,7 +493,11 @@ def hole_edge_distance(deck: Part, hole: Part, deck_od: float) -> float:
 
 
 def _add_top_deck(
-    a: Assembly, *, top_z: float, posts: dict[int, float], deck_od: float,
+    a: Assembly,
+    *,
+    top_z: float,
+    posts: dict[int, float],
+    deck_od: float,
 ) -> Assembly:
     """Clear-acrylic cap disc; bottom face tangent to through-column
     tops, cut at each through-deck post vertex and with a clearance
@@ -499,10 +508,7 @@ def _add_top_deck(
     composing parent holds whatever stands on the deck clear of it
     (`cad/assembly.py` `on_deck_*`), so a footprint's distance to it
     is its margin inside the rim."""
-    top_deck = (
-        Cylinder(deck_od / 2, TOP_DECK_T)
-        - Cylinder(TOP_DECK_APERTURE_D / 2, TOP_DECK_T * 2)
-    )
+    top_deck = Cylinder(deck_od / 2, TOP_DECK_T) - Cylinder(TOP_DECK_APERTURE_D / 2, TOP_DECK_T * 2)
     # The disc is placed at z = top_z + T/2, so cut in deck-local z.
     for hole in deck_holes(deck_od, posts).values():
         top_deck = top_deck - hole
@@ -512,18 +518,15 @@ def _add_top_deck(
     # the footprint's radial gap to the rim. The outer radius only has
     # to reach past anything that could stand there.
     off_deck = Pos(0, 0, deck_top_z + _OFF_DECK_BAND_H / 2) * (
-        Cylinder(deck_od / 2 + _OFF_DECK_BAND_W, _OFF_DECK_BAND_H)
-        - Cylinder(deck_od / 2, _OFF_DECK_BAND_H * 2)
+        Cylinder(deck_od / 2 + _OFF_DECK_BAND_W, _OFF_DECK_BAND_H) - Cylinder(deck_od / 2, _OFF_DECK_BAND_H * 2)
     )
-    return (
-        a.with_part(
-            "top_acrylic", top_deck,
-            location=Pos(0, 0, top_z + TOP_DECK_T / 2),
-            color=_TOP_DECK_COLOR,
-            material=material_of("top_acrylic"),
-        )
-        .with_keepout("off_deck", off_deck)
-    )
+    return a.with_part(
+        "top_acrylic",
+        top_deck,
+        location=Pos(0, 0, top_z + TOP_DECK_T / 2),
+        color=_TOP_DECK_COLOR,
+        material=material_of("top_acrylic"),
+    ).with_keepout("off_deck", off_deck)
 
 
 def ceiling_sleeve(
@@ -548,9 +551,7 @@ def ceiling_sleeve(
     each `screw_az` on the `screw_r` circle — the screws come down
     through the deck into them (`_add_deck_fastener`)."""
     lip_r = aperture_d / 2 + lip_w
-    assert lip_t >= insert_l, (
-        f"sleeve lip {lip_t} thick is shorter than its {insert_l} inserts"
-    )
+    assert lip_t >= insert_l, f"sleeve lip {lip_t} thick is shorter than its {insert_l} inserts"
     assert screw_r - insert_d / 2 - aperture_d / 2 >= _ramp.WALL_MIN, (
         f"sleeve insert hole at r {screw_r} breaks into the barrel's aperture"
     )
@@ -564,8 +565,12 @@ def ceiling_sleeve(
 
 
 def _ceiling_sleeve_body(
-    aperture_d: float, bore_d: float, barrel_h: float,
-    lip_t: float, lip_w: float, fit_gap: float,
+    aperture_d: float,
+    bore_d: float,
+    barrel_h: float,
+    lip_t: float,
+    lip_w: float,
+    fit_gap: float,
 ) -> Part:
     """The sleeve's barrel and lip without the insert holes — see
     `ceiling_sleeve`. `ramp_mechanism.ring_bearing` is not reused: its
@@ -577,9 +582,7 @@ def _ceiling_sleeve_body(
         f"sleeve barrel wall {barrel_r - bore_d / 2:.2f} under WALL_MIN "
         f"{_ramp.WALL_MIN}: aperture Ø{aperture_d} is too tight round bore Ø{bore_d:.2f}"
     )
-    assert 0.0 < barrel_h <= TOP_DECK_T, (
-        f"sleeve barrel {barrel_h} tall stands proud of the {TOP_DECK_T} deck"
-    )
+    assert 0.0 < barrel_h <= TOP_DECK_T, f"sleeve barrel {barrel_h} tall stands proud of the {TOP_DECK_T} deck"
     assert lip_t >= _ramp.WALL_MIN and lip_w > 0.0, (
         f"sleeve lip {lip_t} thick / {lip_w} wide: no lip to seat under the deck"
     )
@@ -598,16 +601,19 @@ def _add_ceiling_sleeve(a: Assembly, *, top_z: float) -> Assembly:
     slab_r = TOP_DECK_APERTURE_D + CEILING_SLEEVE_LIP_W
     return (
         a.with_part(
-            name, ceiling_sleeve(),
+            name,
+            ceiling_sleeve(),
             location=Pos(0, 0, top_z),
             material=material_of(name),
         )
         .with_region(
-            name, "barrel",
+            name,
+            "barrel",
             Pos(0, 0, TOP_DECK_T / 2) * Cylinder(slab_r, TOP_DECK_T),
         )
         .with_region(
-            name, "lip",
+            name,
+            "lip",
             Pos(0, 0, -CEILING_SLEEVE_LIP_T / 2) * Cylinder(slab_r, CEILING_SLEEVE_LIP_T),
         )
     )
@@ -619,8 +625,10 @@ def sleeve_screw_xy() -> list[tuple[float, float]]:
 
 
 def deck_screw(
-    d: float = DECK_SCREW_D, head_d: float = DECK_SCREW_HEAD_D,
-    head_h: float = DECK_SCREW_HEAD_H, length: float = DECK_SCREW_L,
+    d: float = DECK_SCREW_D,
+    head_d: float = DECK_SCREW_HEAD_D,
+    head_h: float = DECK_SCREW_HEAD_H,
+    length: float = DECK_SCREW_L,
     washer_t: float = DECK_WASHER_T,
 ) -> Part:
     """Socket-head cap screw envelope, in its seat's frame: z = 0 the
@@ -632,14 +640,18 @@ def deck_screw(
 
 
 def deck_washer(
-    od: float = DECK_WASHER_OD, id_: float = DECK_WASHER_ID, t: float = DECK_WASHER_T,
+    od: float = DECK_WASHER_OD,
+    id_: float = DECK_WASHER_ID,
+    t: float = DECK_WASHER_T,
 ) -> Part:
     """Plain washer, standing on z = 0."""
     return Pos(0, 0, t / 2) * (Cylinder(od / 2, t) - Cylinder(id_ / 2, 2 * t))
 
 
 def deck_insert(
-    d: float = DECK_INSERT_D, bore_d: float = DECK_SCREW_D, length: float = DECK_INSERT_L,
+    d: float = DECK_INSERT_D,
+    bore_d: float = DECK_SCREW_D,
+    length: float = DECK_INSERT_L,
 ) -> Part:
     """Heat-set insert envelope, hanging from z = 0 (its top, flush with
     the printed face it is set into): OD at the pilot-hole Ø, bore at
@@ -648,7 +660,12 @@ def deck_insert(
 
 
 def _add_deck_fastener(
-    a: Assembly, name: str, x: float, y: float, *, top_z: float,
+    a: Assembly,
+    name: str,
+    x: float,
+    y: float,
+    *,
+    top_z: float,
 ) -> Assembly:
     """One deck fastener at (x, y): washer and screw on the deck's top
     face, the insert's top flush with the deck's underside at `top_z`
@@ -658,20 +675,25 @@ def _add_deck_fastener(
     # The tip must reach into the insert and stop inside it.
     reach = DECK_SCREW_L - DECK_WASHER_T - TOP_DECK_T
     assert 0.0 < reach <= DECK_INSERT_L, (
-        f"a {DECK_SCREW_L} screw reaches {reach:.2f} below the deck: "
-        f"outside its {DECK_INSERT_L} insert"
+        f"a {DECK_SCREW_L} screw reaches {reach:.2f} below the deck: outside its {DECK_INSERT_L} insert"
     )
     return (
         a.with_part(
-            f"{name}_washer", deck_washer(), location=Pos(x, y, deck_top_z),
+            f"{name}_washer",
+            deck_washer(),
+            location=Pos(x, y, deck_top_z),
             material=material_of(f"{name}_washer"),
         )
         .with_part(
-            f"{name}_screw", deck_screw(), location=Pos(x, y, deck_top_z),
+            f"{name}_screw",
+            deck_screw(),
+            location=Pos(x, y, deck_top_z),
             material=material_of(f"{name}_screw"),
         )
         .with_part(
-            f"{name}_insert", deck_insert(), location=Pos(x, y, top_z),
+            f"{name}_insert",
+            deck_insert(),
+            location=Pos(x, y, top_z),
             material=material_of(f"{name}_insert"),
         )
     )
@@ -681,8 +703,11 @@ def deck_bolt(length: float) -> Part:
     """An M5 corner bolt's envelope (`deck_screw` at DECK_BOLT_* sizes),
     z = 0 the face its washer stands on."""
     return deck_screw(
-        d=DECK_BOLT_D, head_d=DECK_BOLT_HEAD_D, head_h=DECK_BOLT_HEAD_H,
-        length=length, washer_t=DECK_BOLT_WASHER_T,
+        d=DECK_BOLT_D,
+        head_d=DECK_BOLT_HEAD_D,
+        head_h=DECK_BOLT_HEAD_H,
+        length=length,
+        washer_t=DECK_BOLT_WASHER_T,
     )
 
 
@@ -694,7 +719,9 @@ def deck_nut_washer() -> Part:
     """The plain washer under a post vertex's nut, hanging from z = 0
     (the bracket arm's underside)."""
     return Pos(0, 0, -DECK_NUT_WASHER_T) * deck_washer(
-        od=DECK_NUT_WASHER_OD, id_=DECK_NUT_WASHER_ID, t=DECK_NUT_WASHER_T,
+        od=DECK_NUT_WASHER_OD,
+        id_=DECK_NUT_WASHER_ID,
+        t=DECK_NUT_WASHER_T,
     )
 
 
@@ -705,7 +732,13 @@ def deck_nut() -> Part:
 
 
 def _add_corner_bolt(
-    a: Assembly, k: int, x: float, y: float, *, top_z: float, post: bool,
+    a: Assembly,
+    k: int,
+    x: float,
+    y: float,
+    *,
+    top_z: float,
+    post: bool,
 ) -> Assembly:
     """Corner k's M5 bolt at (x, y), washer on the deck top. At a short
     column it threads into the column's tapped bore; at a post vertex
@@ -719,9 +752,7 @@ def _add_corner_bolt(
         length = DECK_BOLT_L_NUTTED
         # Past the nut by at least a thread pitch (M5 coarse, 0.8).
         stack = below_deck + OUTER_BRACKET_PLATE_T + DECK_NUT_WASHER_T + DECK_NUT_M
-        assert length - stack >= 0.8, (
-            f"a {length} bolt stands {length - stack:.2f} past its nut at a post vertex"
-        )
+        assert length - stack >= 0.8, f"a {length} bolt stands {length - stack:.2f} past its nut at a post vertex"
     else:
         length = DECK_BOLT_L_TAPPED
         engage = length - below_deck
@@ -729,27 +760,29 @@ def _add_corner_bolt(
             f"a {length} bolt engages {engage:.2f} of a {DECK_BOLT_TAP_DEPTH} tapped bore "
             f"(needs {DECK_BOLT_ENGAGE_MIN})"
         )
-    a = (
-        a.with_part(
-            f"{n}_washer", deck_bolt_washer(), location=Pos(x, y, deck_top_z),
-            material=material_of(f"{n}_washer"),
-        )
-        .with_part(
-            f"{n}_bolt", deck_bolt(length), location=Pos(x, y, deck_top_z),
-            material=material_of(f"{n}_bolt"),
-        )
+    a = a.with_part(
+        f"{n}_washer",
+        deck_bolt_washer(),
+        location=Pos(x, y, deck_top_z),
+        material=material_of(f"{n}_washer"),
+    ).with_part(
+        f"{n}_bolt",
+        deck_bolt(length),
+        location=Pos(x, y, deck_top_z),
+        material=material_of(f"{n}_bolt"),
     )
     if post:
         arm_under_z = top_z - OUTER_BRACKET_PLATE_T
-        a = (
-            a.with_part(
-                f"{n}_nut_washer", deck_nut_washer(), location=Pos(x, y, arm_under_z),
-                material=material_of(f"{n}_nut_washer"),
-            )
-            .with_part(
-                f"{n}_nut", deck_nut(), location=Pos(x, y, arm_under_z - DECK_NUT_WASHER_T),
-                material=material_of(f"{n}_nut"),
-            )
+        a = a.with_part(
+            f"{n}_nut_washer",
+            deck_nut_washer(),
+            location=Pos(x, y, arm_under_z),
+            material=material_of(f"{n}_nut_washer"),
+        ).with_part(
+            f"{n}_nut",
+            deck_nut(),
+            location=Pos(x, y, arm_under_z - DECK_NUT_WASHER_T),
+            material=material_of(f"{n}_nut"),
         )
     return a
 
@@ -760,7 +793,11 @@ def _head_above(body: Part) -> Part:
 
 
 def _add_deck_fasteners(
-    a: Assembly, *, top_z: float, posts: dict[int, float], peer_corners=(),
+    a: Assembly,
+    *,
+    top_z: float,
+    posts: dict[int, float],
+    peer_corners=(),
 ) -> Assembly:
     """The ceiling sleeve's screws (`sleeve_{i}_*`) and the corner bolts
     (`corner_{k}_*`; none at `peer_corners`, whose bolt a composing
@@ -791,7 +828,10 @@ def deck_bolt_corners(posts: dict[int, float], peer_corners=()) -> list[int]:
 
 
 def _add_top_cap(
-    a: Assembly, *, top_z: float, posts: dict[int, float],
+    a: Assembly,
+    *,
+    top_z: float,
+    posts: dict[int, float],
 ) -> Assembly:
     """The through-form vertex bracket under the deck at each post
     vertex, as subtree `top_cap`: hub top face tangent to the deck's
@@ -814,6 +854,7 @@ def _add_top_cap(
 #
 # Assertions address qualified tree paths from the tower root; floors
 # are identified by index (the `f{idx}` subtree name).
+
 
 def _rot(idx: int, name: str) -> str:
     """Path of a rotating part on floor `idx` (inside `rotating_stack`)."""
@@ -839,11 +880,7 @@ def _add_floor_pair_checks(a: Assembly, lower: int, upper: int) -> Assembly:
         _brg(upper, "bearing_spider"),
     ]
     for u in upper_stack:
-        a = (
-            a
-            .assert_no_interference(_rot(lower, "trap_servo"), u)
-            .assert_no_interference(_rot(lower, "column"), u)
-        )
+        a = a.assert_no_interference(_rot(lower, "trap_servo"), u).assert_no_interference(_rot(lower, "column"), u)
     # The two columns mate face-to-face at the joint plane under
     # gravity preload — the bas-relief bumps transfer torque, nothing
     # bolts the stack together, so a gap here means the tower isn't
@@ -851,13 +888,15 @@ def _add_floor_pair_checks(a: Assembly, lower: int, upper: int) -> Assembly:
     # that; this is the claim. (Declared per adjacent pair here, where
     # the real neighbours meet; `ramp_mechanism`'s standalone declares
     # the same rest against its `lower_column` stand-in.)
-    return a.assert_tangent_contact(
-        _rot(lower, "column"), _rot(upper, "column")
-    )
+    return a.assert_tangent_contact(_rot(lower, "column"), _rot(upper, "column"))
 
 
 def _add_top_deck_checks(
-    a: Assembly, top: int, posts: dict[int, float], *, flare: bool,
+    a: Assembly,
+    top: int,
+    posts: dict[int, float],
+    *,
+    flare: bool,
 ) -> Assembly:
     """Disc rests on the through-column tops (tangent contact at
     z = top_z) and clears the top floor's central column body +
@@ -881,7 +920,8 @@ def _add_top_deck_checks(
                 # Constructed at exactly TOP_DECK_POST_CLEAR; the bound
                 # is the same constant (cad/CLAUDE.md §6, corollary 2).
                 .assert_distance(
-                    "top_acrylic", col,
+                    "top_acrylic",
+                    col,
                     min_mm=TOP_DECK_POST_CLEAR,
                     name=f"deck_notch_clears_outer_vert_{k}",
                 )
@@ -895,30 +935,32 @@ def _add_top_deck_checks(
             # disc resting on one point fewer. A gap passes
             # no-interference.
             a = a.assert_tangent_contact("top_acrylic", col)
-        a = (
-            a
-            .assert_no_interference("top_acrylic", f"columns.inner_vert_{k}")
-            .assert_tangent_contact("top_acrylic", f"columns.inner_vert_{k}")
+        a = a.assert_no_interference("top_acrylic", f"columns.inner_vert_{k}").assert_tangent_contact(
+            "top_acrylic", f"columns.inner_vert_{k}"
         )
     # The top floor's trap servo rides above the deck plane, radially
     # past the aperture (r up to ≈ 91 vs 75) — it must clear the disc.
-    a = (
-        a
-        .assert_no_interference("top_acrylic", _rot(top, "column"))
-        .assert_no_interference("top_acrylic", _rot(top, "trap_servo"))
+    a = a.assert_no_interference("top_acrylic", _rot(top, "column")).assert_no_interference(
+        "top_acrylic", _rot(top, "trap_servo")
     )
     if flare:
         # The flare turns over the deck; round, so one reading holds at
         # every azimuth (and `check_stack_turn.py` turns it anyway).
         a = a.assert_distance(
-            "top_acrylic", _rot(top, "column") + "@flare",
-            min_mm=TOP_DECK_FLARE_CLEAR, name="flare_over_deck",
+            "top_acrylic",
+            _rot(top, "column") + "@flare",
+            min_mm=TOP_DECK_FLARE_CLEAR,
+            name="flare_over_deck",
         )
     return a
 
 
 def _add_ceiling_sleeve_checks(
-    a: Assembly, top: int, posts: dict[int, float], *, flare: bool,
+    a: Assembly,
+    top: int,
+    posts: dict[int, float],
+    *,
+    flare: bool,
 ) -> Assembly:
     """The ceiling sleeve's seat in the deck, its running fit round the
     top column's collar, and its clearances — to everything that turns
@@ -933,12 +975,11 @@ def _add_ceiling_sleeve_checks(
     s = "ceiling_sleeve"
     col = _rot(top, "column")
     a = (
-        a
-        .assert_solid_count(
+        a.assert_solid_count(
             s,
             detail="above 1 the lip has come off the barrel — they join "
-                   "on the deck-underside plane; check the bore is not "
-                   "wider than the barrel",
+            "on the deck-underside plane; check the bore is not "
+            "wider than the barrel",
         )
         # Seat: the lip's top face on the deck's underside (the stop the
         # sleeve is pushed up to), and the barrel in the aperture at the
@@ -946,30 +987,41 @@ def _add_ceiling_sleeve_checks(
         # bound (cad/CLAUDE.md §6, corollary 2).
         .assert_no_interference(s, "top_acrylic")
         .assert_tangent_contact(
-            f"{s}@lip", "top_acrylic", name="ceiling_sleeve_lip_under_deck",
+            f"{s}@lip",
+            "top_acrylic",
+            name="ceiling_sleeve_lip_under_deck",
         )
         .assert_distance(
-            f"{s}@barrel", "top_acrylic",
-            min_mm=CEILING_SLEEVE_FIT_GAP, max_mm=CEILING_SLEEVE_FIT_GAP,
+            f"{s}@barrel",
+            "top_acrylic",
+            min_mm=CEILING_SLEEVE_FIT_GAP,
+            max_mm=CEILING_SLEEVE_FIT_GAP,
             name="ceiling_sleeve_in_aperture",
         )
         # Running fit: the bore stands COLLAR_CLEARANCE off the collar,
         # the gap every other floor's sleeve runs at. Bounded both
         # ways — a sleeve 5 mm off the collar locates nothing.
         .assert_distance(
-            s, col, min_mm=COLLAR_CLEARANCE, max_mm=COLLAR_CLEARANCE,
+            s,
+            col,
+            min_mm=COLLAR_CLEARANCE,
+            max_mm=COLLAR_CLEARANCE,
             name="ceiling_sleeve_collar_gap",
         )
         .assert_no_interference_between([s], f"rotating_stack.f{top}")
     )
     for part in ("trap_servo", "trap.trap_coupler", "trap.servo_horn"):
         a = a.assert_distance(
-            s, _rot(top, part), min_mm=CEILING_SLEEVE_TURN_CLEAR,
+            s,
+            _rot(top, part),
+            min_mm=CEILING_SLEEVE_TURN_CLEAR,
             name=f"ceiling_sleeve_under_{part.split('.')[-1]}",
         )
     if flare:
         a = a.assert_distance(
-            s, col + "@flare", min_mm=CEILING_SLEEVE_TURN_CLEAR,
+            s,
+            col + "@flare",
+            min_mm=CEILING_SLEEVE_TURN_CLEAR,
             name="ceiling_sleeve_under_flare",
         )
     # Under the deck: the column tops the deck rests on and the top-cap
@@ -979,19 +1031,26 @@ def _add_ceiling_sleeve_checks(
     a = a.assert_no_interference_between([s], frame)
     for k in range(6):
         a = a.assert_distance(
-            s, f"columns.inner_vert_{k}", min_mm=CEILING_SLEEVE_FRAME_CLEAR,
+            s,
+            f"columns.inner_vert_{k}",
+            min_mm=CEILING_SLEEVE_FRAME_CLEAR,
             name=f"ceiling_sleeve_clears_inner_vert_{k}",
         )
     for k in posts:
         a = a.assert_distance(
-            s, f"top_cap.outer_vertex_bracket_{k}", min_mm=CEILING_SLEEVE_FRAME_CLEAR,
+            s,
+            f"top_cap.outer_vertex_bracket_{k}",
+            min_mm=CEILING_SLEEVE_FRAME_CLEAR,
             name=f"ceiling_sleeve_clears_vertex_bracket_{k}",
         )
     return a
 
 
 def _add_deck_hole_checks(
-    a: Assembly, *, deck_od: float, posts: dict[int, float],
+    a: Assembly,
+    *,
+    deck_od: float,
+    posts: dict[int, float],
 ) -> Assembly:
     """Every hole in the acrylic — post holes and fastener clearance
     holes — keeps DECK_HOLE_EDGE_MIN of sheet to the rim, the aperture
@@ -1001,7 +1060,8 @@ def _add_deck_hole_checks(
     deck = a.part("top_acrylic").part
     for name, hole in deck_holes(deck_od, posts).items():
         a = a.assert_scalar(
-            f"deck_{name}_edge_distance", hole_edge_distance(deck, hole, deck_od),
+            f"deck_{name}_edge_distance",
+            hole_edge_distance(deck, hole, deck_od),
             ge=DECK_HOLE_EDGE_MIN,
             detail="mm of acrylic from this hole to the nearest other edge of the sheet",
         )
@@ -1021,13 +1081,13 @@ def _add_sleeve_fastener_checks(a: Assembly, top: int, *, flare: bool) -> Assemb
         n = f"sleeve_{i}"
         scr, wsh, ins = f"{n}_screw", f"{n}_washer", f"{n}_insert"
         a = (
-            a
-            .assert_tangent_contact(wsh, "top_acrylic", name=f"{n}_washer_on_deck")
+            a.assert_tangent_contact(wsh, "top_acrylic", name=f"{n}_washer_on_deck")
             .assert_tangent_contact(scr, wsh, name=f"{n}_head_on_washer")
             # Through the clearance hole, centred in it: constructed at
             # exactly the hole's radial clearance, bounded both ways.
             .assert_distance(
-                scr, "top_acrylic",
+                scr,
+                "top_acrylic",
                 min_mm=(DECK_HOLE_D - DECK_SCREW_D) / 2,
                 max_mm=(DECK_HOLE_D - DECK_SCREW_D) / 2,
                 name=f"{n}_screw_through_deck",
@@ -1044,20 +1104,27 @@ def _add_sleeve_fastener_checks(a: Assembly, top: int, *, flare: bool) -> Assemb
         for part in turning:
             for p in (scr, wsh):
                 a = a.assert_distance(
-                    p, _rot(top, part), min_mm=CEILING_SLEEVE_TURN_CLEAR,
+                    p,
+                    _rot(top, part),
+                    min_mm=CEILING_SLEEVE_TURN_CLEAR,
                     name=f"{p}_under_{part.split('.')[-1]}",
                 )
         if flare:
             for p in (scr, wsh):
                 a = a.assert_distance(
-                    p, col, min_mm=CEILING_SLEEVE_TURN_CLEAR,
+                    p,
+                    col,
+                    min_mm=CEILING_SLEEVE_TURN_CLEAR,
                     name=f"{p}_under_column",
                 )
     return a
 
 
 def _add_corner_bolt_checks(
-    a: Assembly, posts: dict[int, float], *, peer_corners=(),
+    a: Assembly,
+    posts: dict[int, float],
+    *,
+    peer_corners=(),
 ) -> Assembly:
     """Each corner bolt the tower carries: washer on the deck, head on
     the washer, shank through the deck's clearance hole without touching
@@ -1077,11 +1144,14 @@ def _add_corner_bolt_checks(
         col = f"columns.outer_vert_{k}"
         parts = [bolt, wsh]
         a = (
-            a
-            .assert_tangent_contact(wsh, "top_acrylic", name=f"{n}_washer_on_deck")
+            a.assert_tangent_contact(wsh, "top_acrylic", name=f"{n}_washer_on_deck")
             .assert_tangent_contact(bolt, wsh, name=f"{n}_head_on_washer")
             .assert_distance(
-                bolt, "top_acrylic", min_mm=gap, max_mm=gap, name=f"{n}_bolt_through_deck",
+                bolt,
+                "top_acrylic",
+                min_mm=gap,
+                max_mm=gap,
+                name=f"{n}_bolt_through_deck",
             )
         )
         if k in posts:
@@ -1089,19 +1159,14 @@ def _add_corner_bolt_checks(
             nut, nw = f"{n}_nut", f"{n}_nut_washer"
             parts += [nut, nw]
             a = (
-                a
-                .assert_distance(bolt, brk, min_mm=arm_gap, max_mm=arm_gap, name=f"{n}_bolt_through_arm")
+                a.assert_distance(bolt, brk, min_mm=arm_gap, max_mm=arm_gap, name=f"{n}_bolt_through_arm")
                 .assert_tangent_contact(nw, brk, name=f"{n}_nut_washer_under_arm")
                 .assert_tangent_contact(nut, nw, name=f"{n}_nut_on_washer")
                 .assert_tangent_contact(bolt, nut, name=f"{n}_bolt_in_nut")
                 .assert_no_interference(bolt, nut)
             )
         else:
-            a = (
-                a
-                .assert_tangent_contact(bolt, col, name=f"{n}_bolt_in_column_bore")
-                .assert_no_interference(bolt, col)
-            )
+            a = a.assert_tangent_contact(bolt, col, name=f"{n}_bolt_in_column_bore").assert_no_interference(bolt, col)
         a = a.assert_no_interference_between(parts, frame)
     return a
 
@@ -1115,7 +1180,8 @@ def _add_base_bearing_checks(a: Assembly, base: int) -> Assembly:
     so it is declared here (as the standalone declares it at its own
     root)."""
     return a.assert_tangent_contact(
-        _brg(base, "ring_bearing"), _rot(base, "column"),
+        _brg(base, "ring_bearing"),
+        _rot(base, "column"),
         name="column_on_turntable",
     )
 
@@ -1136,12 +1202,13 @@ def _add_drive_train_checks(a: Assembly, base: int) -> Assembly:
     # below the rails. No overlap with either — the seat bore is the
     # tight one, so its radial gap is measured, not just non-negative.
     a = (
-        a
-        .assert_no_interference(ring, _rot(base, "column"))
+        a.assert_no_interference(ring, _rot(base, "column"))
         .assert_no_interference(ring, _brg(base, "ring_bearing"))
         .assert_no_interference(ring, _brg(base, "bearing_spider"))
         .assert_distance(
-            ring, _brg(base, "bearing_spider"), min_mm=2.0,
+            ring,
+            _brg(base, "bearing_spider"),
+            min_mm=2.0,
             name="ring_gear_standoff_seat_bore_gap",
         )
         # The ring's standoff top face seats on the flange's underside
@@ -1157,21 +1224,18 @@ def _add_drive_train_checks(a: Assembly, base: int) -> Assembly:
     # below the bearing. Its tip circle vs each flanking rail is measured
     # via grow_a_mm while the modeled body stays a pitch cylinder — the
     # modeled-body no-interference checks below can't see the tooth reach.
-    mount_rail_ks = [
-        round((_base.MOTOR_AZIMUTH_DEG + off) / 60.0 - 0.5) % 6
-        for off in _base.MOUNT_RAIL_OFFSETS_DEG
-    ]
+    mount_rail_ks = [round((_base.MOTOR_AZIMUTH_DEG + off) / 60.0 - 0.5) % 6 for off in _base.MOUNT_RAIL_OFFSETS_DEG]
     for k in mount_rail_ks:
         a = a.assert_distance(
-            pin, _rail(base, f"radial_inner_{k}"),
-            min_mm=1.0, grow_a_mm=_base.ADDENDUM,
+            pin,
+            _rail(base, f"radial_inner_{k}"),
+            min_mm=1.0,
+            grow_a_mm=_base.ADDENDUM,
             name=f"pinion_tip_rail_{k}_gap",
         )
     for k in range(6):
-        a = (
-            a
-            .assert_no_interference(pin, _rail(base, f"radial_inner_{k}"))
-            .assert_no_interference(pin, _rail(base, f"radial_outer_{k}"))
+        a = a.assert_no_interference(pin, _rail(base, f"radial_inner_{k}")).assert_no_interference(
+            pin, _rail(base, f"radial_outer_{k}")
         )
     for other in (
         _rot(base, "column"),
@@ -1183,21 +1247,19 @@ def _add_drive_train_checks(a: Assembly, base: int) -> Assembly:
     # Motor body hangs at z ∈ [-65, -25], below every other modeled part
     # and inside the rail-inner ring — clears the whole base floor. The
     # trap is named as its subtree, so every part of it is covered.
-    a = (
-        a
-        .assert_no_interference_between([mtr], [
+    a = a.assert_no_interference_between(
+        [mtr],
+        [
             _rot(base, "column"),
             _brg(base, "ring_bearing"),
             _brg(base, "bearing_spider"),
             _rot(base, "ramp"),
             _rot(base, "trap_servo"),
-        ])
-        .assert_no_interference_between([mtr], _rot(base, "trap"))
-    )
+        ],
+    ).assert_no_interference_between([mtr], _rot(base, "trap"))
     for k in range(6):
         a = (
-            a
-            .assert_no_interference(mtr, _rail(base, f"radial_inner_{k}"))
+            a.assert_no_interference(mtr, _rail(base, f"radial_inner_{k}"))
             .assert_no_interference(mtr, _rail(base, f"radial_outer_{k}"))
             .assert_no_interference(mtr, _rail(base, f"inner_horiz_{k}"))
         )
@@ -1209,18 +1271,15 @@ def _add_drive_train_checks(a: Assembly, base: int) -> Assembly:
     # span, short of the inner-vertex brackets' inboard arms, whose gap
     # is measured.
     for k in mount_rail_ks:
-        a = (
-            a
-            .assert_tangent_contact(mount, _rail(base, f"radial_inner_{k}"))
-            .assert_distance(
-                mount, _rail(base, f"inner_vertex_bracket_{k}"), min_mm=1.0,
-                name=f"motor_mount_clears_inner_bracket_{k}",
-            )
+        a = a.assert_tangent_contact(mount, _rail(base, f"radial_inner_{k}")).assert_distance(
+            mount,
+            _rail(base, f"inner_vertex_bracket_{k}"),
+            min_mm=1.0,
+            name=f"motor_mount_clears_inner_bracket_{k}",
         )
     for k in range(6):
         a = (
-            a
-            .assert_no_interference(mount, _rail(base, f"radial_inner_{k}"))
+            a.assert_no_interference(mount, _rail(base, f"radial_inner_{k}"))
             .assert_no_interference(mount, _rail(base, f"radial_outer_{k}"))
             .assert_no_interference(mount, _rail(base, f"inner_horiz_{k}"))
         )
@@ -1249,7 +1308,12 @@ _SELECT_MARGIN = 15.0
 
 
 def _parts_near(
-    a: Assembly, r: float, z_lo: float, z_hi: float, *, rotating: bool,
+    a: Assembly,
+    r: float,
+    z_lo: float,
+    z_hi: float,
+    *,
+    rotating: bool,
 ) -> list[str]:
     """Part paths — static, or inside `rotating_stack` — whose bounding
     box enters the box round the upright cylinder of radius `r` over
@@ -1270,7 +1334,10 @@ def _parts_near(
 
 
 def _add_harness_checks(
-    a: Assembly, floor_plan: list[tuple[int, str]], *, with_drive_train: bool,
+    a: Assembly,
+    floor_plan: list[tuple[int, str]],
+    *,
+    with_drive_train: bool,
 ) -> Assembly:
     """The servo-wire bundle on each floor's column, held clear of every
     static part (it turns with the stack — `check_stack_turn.py` holds
@@ -1282,13 +1349,15 @@ def _add_harness_checks(
     for idx, role in floor_plan:
         bb = _ramp.harness(role).bounding_box()
         reach = math.hypot(
-            max(abs(bb.min.X), abs(bb.max.X)), max(abs(bb.min.Y), abs(bb.max.Y)),
+            max(abs(bb.min.X), abs(bb.max.X)),
+            max(abs(bb.min.Y), abs(bb.max.Y)),
         )
         z0 = idx * FLOOR_H
         a = a.assert_clear_of(
             _parts_near(a, reach, z0 + bb.min.Z, z0 + bb.max.Z, rotating=False),
             f"rotating_stack.f{idx}.harness_path",
-            min_mm=HARNESS_STATIC_CLEAR, name=f"harness_f{idx}_clear_of_static",
+            min_mm=HARNESS_STATIC_CLEAR,
+            name=f"harness_f{idx}_clear_of_static",
         )
     if not with_drive_train:
         return a
@@ -1300,13 +1369,12 @@ def _add_harness_checks(
         ("cable_drop", CABLE_DROP_R + CABLE_DROP_D / 2, CABLE_DROP_Z_BOT, CABLE_LOOP_Z_BOT),
     ):
         for rotating, label in ((False, "static"), (True, "stack")):
-            sel = [
-                p for p in _parts_near(a, r, z0 + z_lo, z0 + z_hi, rotating=rotating)
-                if p not in lead_in
-            ]
+            sel = [p for p in _parts_near(a, r, z0 + z_lo, z0 + z_hi, rotating=rotating) if p not in lead_in]
             a = a.assert_clear_of(
-                sel, f"drive_train.{kp}",
-                min_mm=CABLE_LOOP_CLEAR, name=f"{kp}_clear_of_{label}",
+                sel,
+                f"drive_train.{kp}",
+                min_mm=CABLE_LOOP_CLEAR,
+                name=f"{kp}_clear_of_{label}",
             )
     return a
 
@@ -1325,14 +1393,17 @@ def _add_catch_checks(a: Assembly, base: int) -> Assembly:
     cradle = "catch.catch_cradle"
     frame = [f"f{base}", "columns"]
     a = (
-        a
-        .assert_clear_of(
-            frame + ["catch"], "drive_train.fall_path",
-            min_mm=_base.FALL_CLEAR, name="base_fall_path",
+        a.assert_clear_of(
+            frame + ["catch"],
+            "drive_train.fall_path",
+            min_mm=_base.FALL_CLEAR,
+            name="base_fall_path",
         )
         .assert_clear_of(
-            frame + ["drive_train", cradle], "catch.pull_path",
-            min_mm=_base.CATCH_CURB_GAP, name="catch_pull_path",
+            frame + ["drive_train", cradle],
+            "catch.pull_path",
+            min_mm=_base.CATCH_CURB_GAP,
+            name="catch_pull_path",
         )
         .assert_no_interference_between("catch", frame + ["drive_train"])
     )
@@ -1341,13 +1412,11 @@ def _add_catch_checks(a: Assembly, base: int) -> Assembly:
     # inboard arm (under), whose gap is measured.
     for az in _base.CATCH_POST_AZIMUTHS_DEG:
         k = round(az / 60.0 - 0.5) % 6
-        a = (
-            a
-            .assert_tangent_contact(cradle, _rail(base, f"radial_inner_{k}"))
-            .assert_distance(
-                cradle, _rail(base, f"inner_vertex_bracket_{k}"), min_mm=1.0,
-                name=f"catch_post_{k}_clears_inner_bracket",
-            )
+        a = a.assert_tangent_contact(cradle, _rail(base, f"radial_inner_{k}")).assert_distance(
+            cradle,
+            _rail(base, f"inner_vertex_bracket_{k}"),
+            min_mm=1.0,
+            name=f"catch_post_{k}_clears_inner_bracket",
         )
     return a
 
@@ -1366,36 +1435,37 @@ def _add_electronics_checks(a: Assembly, base: int) -> Assembly:
     for side, face in (("logic", _elec.LOGIC_FACE_DEG), ("power", _elec.POWER_FACE_DEG)):
         k = _elec.face_rail_index(face)
         a = (
-            a
-            .assert_tangent_contact(f"electronics.{side}.hanger_in", _rail(base, f"inner_horiz_{k}"))
+            a.assert_tangent_contact(f"electronics.{side}.hanger_in", _rail(base, f"inner_horiz_{k}"))
             .assert_tangent_contact(f"electronics.{side}.hanger_out_pos", _rail(base, f"outer_horiz_{k}"))
             .assert_tangent_contact(f"electronics.{side}.hanger_out_neg", _rail(base, f"outer_horiz_{k}"))
             .assert_clear_of(
                 static + [f"electronics.{other}" for other in ("logic", "power") if other != side],
-                f"electronics.{side}.service_reach", name=f"electronics_{side}_reach_open",
+                f"electronics.{side}.service_reach",
+                name=f"electronics_{side}_reach_open",
             )
         )
-    a = (
-        a
-        .assert_clear_of("electronics", "catch.pull_path", name="electronics_clear_of_catch_pull")
-        .assert_clear_of("electronics", "drive_train.cable_drop", min_mm=5.0,
-                         name="electronics_clear_of_cable_drop")
+    a = a.assert_clear_of("electronics", "catch.pull_path", name="electronics_clear_of_catch_pull").assert_clear_of(
+        "electronics", "drive_train.cable_drop", min_mm=5.0, name="electronics_clear_of_cable_drop"
     )
     placed = {pp.name: pp for pp in a.placed_parts}
+
     def _min_z(name: str) -> float:
         pp = placed[name]
         return (pp.location * pp.part).bounding_box().min.Z
+
     floor = _min_z("catch.catch_cradle")
     for side in ("logic", "power"):
         a = a.assert_scalar(
             f"electronics_{side}_above_catch_bottom_mm",
-            _min_z(f"electronics.{side}.board_plate") - floor, ge=0.0,
+            _min_z(f"electronics.{side}.board_plate") - floor,
+            ge=0.0,
             detail="plate underside above the catch cradle's: the stand clearance does not deepen",
         )
     return a
 
 
 # --- Public composition ------------------------------------------------
+
 
 def build_tower(
     floor_plan: list[tuple[int, str]],
@@ -1442,6 +1512,7 @@ def build_tower(
     posts = dict(through_posts or {})
     if posts and not with_top_deck:
         raise ValueError("through_posts need the top deck to pass through")
+
     def _layout_for(idx: int):
         if isinstance(basket_layout, dict):
             return basket_layout[idx]
@@ -1453,12 +1524,12 @@ def build_tower(
     a = Assembly().with_subassembly(
         "columns",
         _frame.build_through_columns(
-            z_bot=-_frame.VERT_EXT_BELOW, z_top=top_z,
+            z_bot=-_frame.VERT_EXT_BELOW,
+            z_top=top_z,
             material_fn=material_of,
             outer_z_top={k: deck_top_z + h for k, h in posts.items()},
             outer_top_tap=(
-                {k: (DECK_BOLT_D, DECK_BOLT_TAP_DEPTH) for k in range(6) if k not in posts}
-                if with_top_deck else None
+                {k: (DECK_BOLT_D, DECK_BOLT_TAP_DEPTH) for k in range(6) if k not in posts} if with_top_deck else None
             ),
         ),
     )
@@ -1475,7 +1546,8 @@ def build_tower(
         rotating = rotating.with_subassembly(
             f"f{idx}",
             _ramp.build_column_side_rotating(
-                role, exit_w=ramp_exit_w_for(_layout_for(idx)),
+                role,
+                exit_w=ramp_exit_w_for(_layout_for(idx)),
                 material_fn=material_of,
             ),
             location=fz_loc,
@@ -1483,11 +1555,17 @@ def build_tower(
 
     if with_top_deck:
         a = _add_top_deck(
-            a, top_z=top_z, posts=posts, deck_od=top_deck_od,
+            a,
+            top_z=top_z,
+            posts=posts,
+            deck_od=top_deck_od,
         )
         a = _add_ceiling_sleeve(a, top_z=top_z)
         a = _add_deck_fasteners(
-            a, top_z=top_z, posts=posts, peer_corners=deck_bolt_peer_corners,
+            a,
+            top_z=top_z,
+            posts=posts,
+            peer_corners=deck_bolt_peer_corners,
         )
         if posts:
             a = _add_top_cap(a, top_z=top_z, posts=posts)
@@ -1536,17 +1614,27 @@ def build_tower(
     if with_top_deck:
         # Only a top-role column carries the flare (and its region).
         a = _add_top_deck_checks(
-            a, floors[-1], posts, flare=floor_plan[-1][1] == "top",
+            a,
+            floors[-1],
+            posts,
+            flare=floor_plan[-1][1] == "top",
         )
         a = _add_ceiling_sleeve_checks(
-            a, floors[-1], posts, flare=floor_plan[-1][1] == "top",
+            a,
+            floors[-1],
+            posts,
+            flare=floor_plan[-1][1] == "top",
         )
         a = _add_sleeve_fastener_checks(
-            a, floors[-1], flare=floor_plan[-1][1] == "top",
+            a,
+            floors[-1],
+            flare=floor_plan[-1][1] == "top",
         )
         a = _add_corner_bolt_checks(a, posts, peer_corners=deck_bolt_peer_corners)
         a = _add_deck_hole_checks(
-            a, deck_od=top_deck_od, posts=posts,
+            a,
+            deck_od=top_deck_od,
+            posts=posts,
         )
 
     base_idx = next((idx for idx, role in floor_plan if role == "base"), None)
@@ -1603,8 +1691,11 @@ def build_m05(schema: str = DEFAULT_SCHEMA, top_deck_od: float = TOP_DECK_OD) ->
     """
     a = (
         build_tower(
-            FLOOR_PLAN, schema=schema, through_posts=THROUGH_DECK_POSTS,
-            top_deck_od=top_deck_od, deck_bolt_peer_corners=DECK_BOLT_PEER_CORNERS,
+            FLOOR_PLAN,
+            schema=schema,
+            through_posts=THROUGH_DECK_POSTS,
+            top_deck_od=top_deck_od,
+            deck_bolt_peer_corners=DECK_BOLT_PEER_CORNERS,
         )
         .with_anchor("deck_top", Pos(0, 0, _DECK_TOP_Z))
         .with_anchor(

@@ -51,7 +51,6 @@ Deferred:
 - exit_sensor ↔ stator exit arc (beam alignment)
 """
 
-
 import math
 from functools import cache
 
@@ -84,7 +83,7 @@ from .seams import SEAM_COUNT, SEAM_EAR_T, angular_gap_deg, angular_gap_to_span_
 from .stator import assembly as _stator
 
 
-GAP_CLEARANCE_TOLERANCE = 0.5   # mm — catches a shrunk V-gap early
+GAP_CLEARANCE_TOLERANCE = 0.5  # mm — catches a shrunk V-gap early
 
 # The bowl's seams stay at least this far round from the liner's, so
 # no seam line runs through both rings (the stagger is what makes two
@@ -152,15 +151,19 @@ def build_m02(
         .with_subassembly("stator", _stator.build_stator(wall_h))
         .with_subassembly("drive", _drive.build_drive(motor_azimuth_deg, bowl_seam_phase_deg, split))
         .assert_scalar(
-            "seam_stagger_deg", stagger, ge=SEAM_STAGGER_MIN_DEG,
+            "seam_stagger_deg",
+            stagger,
+            ge=SEAM_STAGGER_MIN_DEG,
             detail="closest bowl seam to a liner seam, degrees round the axis",
         )
         # Gear mesh: pitch cylinders sit MESH_BACKLASH apart. Measured
         # against the whole rotor part — the flange OD is the closest
         # thing to the pinion.
         .assert_distance(
-            "rotor.rotor", "drive.pinion.pinion",
-            min_mm=MESH_BACKLASH, max_mm=MESH_BACKLASH + 0.1,
+            "rotor.rotor",
+            "drive.pinion.pinion",
+            min_mm=MESH_BACKLASH,
+            max_mm=MESH_BACKLASH + 0.1,
             name="gear_mesh_backlash",
         )
         # Rotor rests on the bearing, which is BEARING_H above the plate.
@@ -172,12 +175,15 @@ def build_m02(
         # standing on the plate.
         .assert_no_interference("rotor.rotor", "stator.exit_floor")
         .assert_distance(
-            "stator.exit_floor", "rotor.rotor",
-            min_mm=_stator.EXIT_FLOOR_GEAR_CLEAR, grow_b_mm=ADDENDUM,
+            "stator.exit_floor",
+            "rotor.rotor",
+            min_mm=_stator.EXIT_FLOOR_GEAR_CLEAR,
+            grow_b_mm=ADDENDUM,
             name="exit_floor_clears_ring_gear_tips",
         )
         .assert_tangent_contact(
-            "stator.exit_floor", f"drive.{_drive.bowl_part_at(0.0, bowl_seam_phase_deg)}",
+            "stator.exit_floor",
+            f"drive.{_drive.bowl_part_at(0.0, bowl_seam_phase_deg)}",
         )
     )
     for part in _stator.STATOR_PARTS:
@@ -186,12 +192,15 @@ def build_m02(
             # V-gap
             .assert_no_interference("rotor.rotor", f"stator.{part}")
             .assert_distance(
-                "rotor.rotor", f"stator.{part}",
+                "rotor.rotor",
+                f"stator.{part}",
                 min_mm=ROTOR_STATOR_GAP - GAP_CLEARANCE_TOLERANCE,
             )
             # Pinion runs just under the stator's bottom face.
             .assert_distance(
-                f"stator.{part}", "drive.pinion.pinion", min_mm=PINION_TOP_CLEAR,
+                f"stator.{part}",
+                "drive.pinion.pinion",
+                min_mm=PINION_TOP_CLEAR,
             )
         )
     for part in _drive.BOWL_PARTS:
@@ -254,7 +263,9 @@ def _with_arc_screws(a: Assembly, bowl_seam_phase_deg: float) -> Assembly:
         for sign in _fastening.FREE_END_SIGNS
     )
     a = a.assert_scalar(
-        "arc_fastening_to_bowl_seam_deg", seam_gap, ge=ear_deg,
+        "arc_fastening_to_bowl_seam_deg",
+        seam_gap,
+        ge=ear_deg,
         detail="closest bowl seam to either free-end boss, degrees round the axis (floor: an ear pair's width)",
     )
     for sign in _fastening.FREE_END_SIGNS:
@@ -263,8 +274,7 @@ def _with_arc_screws(a: Assembly, bowl_seam_phase_deg: float) -> Assembly:
         loc = _fastening.arc_screw_location(sign)
         bowl = f"drive.{_drive.bowl_part_at(_fastening.arc_screw_azimuth_deg(sign), bowl_seam_phase_deg)}"
         a = (
-            a
-            .with_part(screw, _fastening.arc_screw(), location=loc, material=material_of(screw))
+            a.with_part(screw, _fastening.arc_screw(), location=loc, material=material_of(screw))
             .assert_tangent_contact(screw, bowl)
             .assert_scalar(
                 f"arc_boss_{end}_bearing_area_mm2",
@@ -280,9 +290,11 @@ def _with_arc_screws(a: Assembly, bowl_seam_phase_deg: float) -> Assembly:
             .with_keepout(f"arc_screw_{end}_driver", _fastening.driver_corridor(sign))
             .with_region(bowl, f"screw_{end}", _fastening.driver_seat(sign))
             .assert_clear_of(
-                [bowl, exit_liner], f"arc_screw_{end}_driver",
+                [bowl, exit_liner],
+                f"arc_screw_{end}_driver",
                 name=f"arc_screw_{end}_driver_own",
-                excluding=[f"{bowl}@screw_{end}"], min_mm=ARC_SCREW_SEAT_CLEAR,
+                excluding=[f"{bowl}@screw_{end}"],
+                min_mm=ARC_SCREW_SEAT_CLEAR,
             )
         )
     return a

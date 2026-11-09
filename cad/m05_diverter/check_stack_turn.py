@@ -40,9 +40,7 @@ from .assembly import build_m05
 def build_stack_turn(schema: str = DEFAULT_SCHEMA) -> Assembly:
     """The production tower — exactly as `cad/assembly.py` composes it —
     with the stack turn declared on top."""
-    return build_m05(schema).with_motion(
-        Motion.over_joint("stack_turn", "rotating_stack", 0, 358, step=2)
-    )
+    return build_m05(schema).with_motion(Motion.over_joint("stack_turn", "rotating_stack", 0, 358, step=2))
 
 
 assembly = build_stack_turn(DEFAULT_SCHEMA)

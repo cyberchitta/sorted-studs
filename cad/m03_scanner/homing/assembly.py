@@ -87,7 +87,6 @@ overhangs; default 45° threshold suffices (no need to lift to 90° as
 drive_bracket did, since this bracket has no cantilever plate).
 """
 
-
 from build123d import Box, Cylinder, Pos
 
 from cad_khana.mechanism.assembly import Assembly
@@ -107,6 +106,7 @@ from ..materials import material_of
 
 # --- Cross-rail interface (private mirror of slice a) ------------------
 
+# fmt: off
 MEMBER = 20.0                                              # 2020 extrusion
 RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2             # = -120 after c7
 
@@ -134,6 +134,7 @@ RAIL_TOP_Z = TURRET_FRAME_FLOOR_Z + MEMBER / 2             # = -120 after c7
 FLAG_OD = 32.0                                             # disc diameter
 FLAG_T = 3.0                                               # disc thickness
 FLAG_BORE_D = TURRET_SHAFT_D + 0.4                         # = 8.4
+# fmt: on
 
 # Detect feature: Ø4 hole at radius 12 from axis at heading 180°.
 FLAG_DETECT_HOLE_D = 4.0
@@ -143,6 +144,7 @@ FLAG_DETECT_HOLE_R = 12.0
 # bottom (-43, dynamic sweep). 2.5 mm clear of pulley top, 2.5 mm
 # clear of drop-block bottom.
 FLAG_Z_CENTER = -47.0
+# fmt: off
 _FLAG_TOP_Z = FLAG_Z_CENTER + FLAG_T / 2                   # = -45.5
 _FLAG_BOTTOM_Z = FLAG_Z_CENTER - FLAG_T / 2                # = -48.5
 
@@ -157,24 +159,29 @@ SENSOR_MAIN_X = 12.0                                       # body X length
 SENSOR_BODY_Y = 14.0                                       # body Y width (depth)
 SENSOR_BODY_Z = 6.0                                        # body Z total (vertical)
 SENSOR_PRONG_X = 18.0                                      # prong X reach
+# fmt: on
 
 # Sensor outer +X face mounts to bracket post's +X face (on -X side of
 # axis, "+X face" = face toward axis = least-negative X).
 SENSOR_OUTER_X = -40.0
-_SENSOR_MAIN_X_MAX = SENSOR_OUTER_X + SENSOR_MAIN_X        # = -28
+_SENSOR_MAIN_X_MAX = SENSOR_OUTER_X + SENSOR_MAIN_X  # = -28
 _SENSOR_PRONG_TIP_X = _SENSOR_MAIN_X_MAX + SENSOR_PRONG_X  # = -10
 _SENSOR_MAIN_CENTER_X = (SENSOR_OUTER_X + _SENSOR_MAIN_X_MAX) / 2
 _SENSOR_PRONG_CENTER_X = (_SENSOR_MAIN_X_MAX + _SENSOR_PRONG_TIP_X) / 2
 
 # Slot Z = disc plane Z. Top prong above slot, bottom prong below.
+# fmt: off
 _SLOT_Z_TOP = _FLAG_TOP_Z                                  # = -45.5
 _SLOT_Z_BOT = _FLAG_BOTTOM_Z                               # = -48.5
+# fmt: on
 _SENSOR_TOP_Z = _SLOT_Z_TOP + (SENSOR_BODY_Z - FLAG_T) / 2  # = -44
 _SENSOR_BOT_Z = _SLOT_Z_BOT - (SENSOR_BODY_Z - FLAG_T) / 2  # = -50
 _SENSOR_BODY_CENTER_Z = (_SENSOR_TOP_Z + _SENSOR_BOT_Z) / 2  # = -47
+# fmt: off
 _TOP_PRONG_CENTER_Z = (_SENSOR_TOP_Z + _SLOT_Z_TOP) / 2    # = -44.75
 _BOT_PRONG_CENTER_Z = (_SENSOR_BOT_Z + _SLOT_Z_BOT) / 2    # = -49.25
 _PRONG_T = (SENSOR_BODY_Z - FLAG_T) / 2                    # = 1.5
+# fmt: on
 
 
 # --- Bracket geometry --------------------------------------------------
@@ -186,16 +193,18 @@ _PRONG_T = (SENSOR_BODY_Z - FLAG_T) / 2                    # = 1.5
 # foot's inner edge sits 1.5 mm clear of the housing (-X face -30); the
 # outer edge sits ≫ WALL_MIN clear of the servo bracket.
 BRACKET_FOOT_X = 31.0
+# fmt: off
 BRACKET_FOOT_Y = 14.0    # depth
 BRACKET_FOOT_Z = 8.0     # vertical
+# fmt: on
 _BRACKET_FOOT_CENTER_X = -47.0
 _BRACKET_FOOT_X_MIN = _BRACKET_FOOT_CENTER_X - BRACKET_FOOT_X / 2  # = -62.5
 _BRACKET_FOOT_X_MAX = _BRACKET_FOOT_CENTER_X + BRACKET_FOOT_X / 2  # = -31.5
-_BRACKET_FOOT_BOTTOM_Z = RAIL_TOP_Z                        # = -120
+_BRACKET_FOOT_BOTTOM_Z = RAIL_TOP_Z  # = -120
 _BRACKET_FOOT_TOP_Z = _BRACKET_FOOT_BOTTOM_Z + BRACKET_FOOT_Z  # = -112
 _BRACKET_FOOT_CENTER_Z = (_BRACKET_FOOT_BOTTOM_Z + _BRACKET_FOOT_TOP_Z) / 2
 
-BRACKET_BOLT_HOLE_D = 5.5                                  # M5 clearance
+BRACKET_BOLT_HOLE_D = 5.5  # M5 clearance
 BRACKET_BOLT_SPACING_X = 22.5
 _BRACKET_BOLT_HALF_X = BRACKET_BOLT_SPACING_X / 2
 
@@ -204,19 +213,24 @@ _BRACKET_BOLT_HALF_X = BRACKET_BOLT_SPACING_X / 2
 # between the two M5 bolts with WALL_MIN to each. Rises from foot top
 # to sensor body top.
 BRACKET_POST_X = 14.0
+# fmt: off
 BRACKET_POST_Y = BRACKET_FOOT_Y                            # = 14
 _BRACKET_POST_CENTER_X = _BRACKET_FOOT_CENTER_X            # = -47
+# fmt: on
 _BRACKET_POST_X_MIN = _BRACKET_POST_CENTER_X - BRACKET_POST_X / 2  # = -54
 _BRACKET_POST_X_MAX = _BRACKET_POST_CENTER_X + BRACKET_POST_X / 2  # = -40
+# fmt: off
 _BRACKET_POST_BOTTOM_Z = _BRACKET_FOOT_TOP_Z               # = -112
 # At -44 the post is outside both below-* frames: ~50° off their lens
 # axes against a 20.8° frame half-angle (POV render, 2026-07-24).
 _BRACKET_POST_TOP_Z = _SENSOR_TOP_Z                        # = -44
+# fmt: on
 BRACKET_POST_Z = _BRACKET_POST_TOP_Z - _BRACKET_POST_BOTTOM_Z  # = 68
 _BRACKET_POST_CENTER_Z = (_BRACKET_POST_BOTTOM_Z + _BRACKET_POST_TOP_Z) / 2
 
 
 # --- Part functions ----------------------------------------------------
+
 
 def flag(
     od: float = FLAG_OD,
@@ -246,10 +260,7 @@ def flag(
 
     body = Cylinder(od / 2, thickness)
     body -= Cylinder(bore_d / 2, thickness * 3)
-    body -= (
-        Pos(-detect_hole_r, 0, 0)
-        * Cylinder(detect_hole_d / 2, thickness * 3)
-    )
+    body -= Pos(-detect_hole_r, 0, 0) * Cylinder(detect_hole_d / 2, thickness * 3)
     return body
 
 
@@ -266,18 +277,9 @@ def sensor():
         f"WALL_MIN ({WALL_MIN})"
     )
 
-    main_block = (
-        Pos(_SENSOR_MAIN_CENTER_X, 0, _SENSOR_BODY_CENTER_Z)
-        * Box(SENSOR_MAIN_X, SENSOR_BODY_Y, SENSOR_BODY_Z)
-    )
-    top_prong = (
-        Pos(_SENSOR_PRONG_CENTER_X, 0, _TOP_PRONG_CENTER_Z)
-        * Box(SENSOR_PRONG_X, SENSOR_BODY_Y, _PRONG_T)
-    )
-    bot_prong = (
-        Pos(_SENSOR_PRONG_CENTER_X, 0, _BOT_PRONG_CENTER_Z)
-        * Box(SENSOR_PRONG_X, SENSOR_BODY_Y, _PRONG_T)
-    )
+    main_block = Pos(_SENSOR_MAIN_CENTER_X, 0, _SENSOR_BODY_CENTER_Z) * Box(SENSOR_MAIN_X, SENSOR_BODY_Y, SENSOR_BODY_Z)
+    top_prong = Pos(_SENSOR_PRONG_CENTER_X, 0, _TOP_PRONG_CENTER_Z) * Box(SENSOR_PRONG_X, SENSOR_BODY_Y, _PRONG_T)
+    bot_prong = Pos(_SENSOR_PRONG_CENTER_X, 0, _BOT_PRONG_CENTER_Z) * Box(SENSOR_PRONG_X, SENSOR_BODY_Y, _PRONG_T)
     return main_block + top_prong + bot_prong
 
 
@@ -316,29 +318,21 @@ def bracket():
         f"mm < WALL_MIN ({WALL_MIN})"
     )
 
-    foot = (
-        Pos(_BRACKET_FOOT_CENTER_X, 0, _BRACKET_FOOT_CENTER_Z)
-        * Box(BRACKET_FOOT_X, BRACKET_FOOT_Y, BRACKET_FOOT_Z)
-    )
+    foot = Pos(_BRACKET_FOOT_CENTER_X, 0, _BRACKET_FOOT_CENTER_Z) * Box(BRACKET_FOOT_X, BRACKET_FOOT_Y, BRACKET_FOOT_Z)
     for sx in (-1, 1):
-        foot -= (
-            Pos(
-                _BRACKET_FOOT_CENTER_X + sx * _BRACKET_BOLT_HALF_X,
-                0,
-                _BRACKET_FOOT_CENTER_Z,
-            )
-            * Cylinder(BRACKET_BOLT_HOLE_D / 2, BRACKET_FOOT_Z * 3)
-        )
+        foot -= Pos(
+            _BRACKET_FOOT_CENTER_X + sx * _BRACKET_BOLT_HALF_X,
+            0,
+            _BRACKET_FOOT_CENTER_Z,
+        ) * Cylinder(BRACKET_BOLT_HOLE_D / 2, BRACKET_FOOT_Z * 3)
 
-    post = (
-        Pos(_BRACKET_POST_CENTER_X, 0, _BRACKET_POST_CENTER_Z)
-        * Box(BRACKET_POST_X, BRACKET_POST_Y, BRACKET_POST_Z)
-    )
+    post = Pos(_BRACKET_POST_CENTER_X, 0, _BRACKET_POST_CENTER_Z) * Box(BRACKET_POST_X, BRACKET_POST_Y, BRACKET_POST_Z)
 
     return foot + post
 
 
 # --- Stubs for the standalone (duplicated, not imported) ---------------
+
 
 def _shaft_stub(length: float):
     """Slice (b) Ø8 turret shaft mirror. Caller positions the base at
@@ -351,14 +345,11 @@ def _cross_rail_stub(length: float = BRACKET_FOOT_X + 40.0):
     """Slice (a) cross-rail stub centered under the bracket foot.
     Length spans the foot footprint with a 20 mm margin each side so
     the bolt-line + foot-tangent contact is exercised."""
-    return (
-        Pos(
-            _BRACKET_FOOT_CENTER_X,
-            TURRET_FRAME_CROSS_Y,
-            TURRET_FRAME_FLOOR_Z,
-        )
-        * Box(length, MEMBER, MEMBER)
-    )
+    return Pos(
+        _BRACKET_FOOT_CENTER_X,
+        TURRET_FRAME_CROSS_Y,
+        TURRET_FRAME_FLOOR_Z,
+    ) * Box(length, MEMBER, MEMBER)
 
 
 # --- Assembly builder --------------------------------------------------
@@ -411,7 +402,7 @@ def build_turret_homing_rotor() -> Assembly:
 
 # --- Standalone assembly -----------------------------------------------
 
-_SHAFT_LEN = TURRET_SHAFT_TOP_Z - RAIL_TOP_Z               # = 110
+_SHAFT_LEN = TURRET_SHAFT_TOP_Z - RAIL_TOP_Z  # = 110
 
 
 def build_turret_homing_standalone() -> Assembly:

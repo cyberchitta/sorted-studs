@@ -39,22 +39,27 @@ method = FDM(wall_min_mm=WALL_MIN, overhang_max_deg=50.0, up_axis=(0, 0, -1))
 # hole brought to 1.22 mm of the trough goes red here and one at
 # 1.58 mm does not.
 _KNIFE_EDGE = {
-    "knife_edge": Feature(knife_edge_ring(), waive={"wall_min": Waiver(
-        reason="wedge tip at the designed V-bottom knife edge, not a "
-        "wall — every reading runs from the flat bottom annulus (z=0, "
-        "r=122..125) into the inner V-cone (r = 122 + z), at alignment "
-        "0.71 = cos(V_HALF_ANGLE_DEG=45°), their dihedral. A ray leaving "
-        "the bottom at r = 122 + δ exits the cone after δ, so the reading "
-        "is set by how near the edge the closest sample lands — not a "
-        "design dimension (re-run 2026-09-27: 0.6956 at r≈122.7 on "
-        "sectors 0 and 1, 0.0421 at (114.1, 43.2, 0.03) on sector 2, "
-        "both stages). The wall is STATOR_WALL_T (3.0) perpendicular to "
-        "the cone; the edge tapering to zero at the V-bottom is the "
-        "trough itself and prints as the topmost edge inverted. "
-        "Truncating it would put a ledge at the exact circle bricks "
-        "slide through.",
-        min_wall_mm=0.0416,
-    )}),
+    "knife_edge": Feature(
+        knife_edge_ring(),
+        waive={
+            "wall_min": Waiver(
+                reason="wedge tip at the designed V-bottom knife edge, not a "
+                "wall — every reading runs from the flat bottom annulus (z=0, "
+                "r=122..125) into the inner V-cone (r = 122 + z), at alignment "
+                "0.71 = cos(V_HALF_ANGLE_DEG=45°), their dihedral. A ray leaving "
+                "the bottom at r = 122 + δ exits the cone after δ, so the reading "
+                "is set by how near the edge the closest sample lands — not a "
+                "design dimension (re-run 2026-09-27: 0.6956 at r≈122.7 on "
+                "sectors 0 and 1, 0.0421 at (114.1, 43.2, 0.03) on sector 2, "
+                "both stages). The wall is STATOR_WALL_T (3.0) perpendicular to "
+                "the cone; the edge tapering to zero at the V-bottom is the "
+                "trough itself and prints as the topmost edge inverted. "
+                "Truncating it would put a ledge at the exact circle bricks "
+                "slide through.",
+                min_wall_mm=0.0416,
+            )
+        },
+    ),
 }
 # The two arcs of the split sector carry the free-end bosses
 # (`../arc_fastening.py`): the insert holes are teardrops roofed toward
@@ -66,8 +71,12 @@ _KNIFE_EDGE = {
 # batch.
 for k, sector in enumerate(stator_sectors()):
     inspect(
-        sector, method=method, out="outputs", name=stator_part(k),
-        features=_KNIFE_EDGE, solid_count=sector_solid_count(k),
+        sector,
+        method=method,
+        out="outputs",
+        name=stator_part(k),
+        features=_KNIFE_EDGE,
+        solid_count=sector_solid_count(k),
     )
 # The hopper stage's liner: same sectors, the cylinder zone (and the
 # ears) up to HOPPER_WALL_H. Inverted, the wall over the exit opening
@@ -75,7 +84,10 @@ for k, sector in enumerate(stator_sectors()):
 # paddle hangs off that wall on its 45° gusset.
 for k, sector in enumerate(stator_sectors(height=HOPPER_WALL_H)):
     inspect(
-        sector, method=method, out="outputs", name=f"hopper_{stator_part(k)}",
+        sector,
+        method=method,
+        out="outputs",
+        name=f"hopper_{stator_part(k)}",
         features=_KNIFE_EDGE,
         solid_count=sector_solid_count(k, HOPPER_WALL_H),
     )
@@ -84,5 +96,8 @@ for k, sector in enumerate(stator_sectors(height=HOPPER_WALL_H)):
 # rib rising — a flat plate with a vertical arc wall, nothing
 # overhangs.
 inspect(
-    exit_floor(), method=FDM(up_axis=(0, 0, -1)), out="outputs", name="exit_floor",
+    exit_floor(),
+    method=FDM(up_axis=(0, 0, -1)),
+    out="outputs",
+    name="exit_floor",
 )
