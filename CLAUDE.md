@@ -124,6 +124,17 @@ bin for manual review — fail-safe default throughout the design.
 
 Code follows the global `code-style` skill, with `python-style` for Python and `javascript-style` for JavaScript; load them before writing code.
 
+Python checks run on the host, from the uv dev group (config in `pyproject.toml`):
+
+```
+.venv/bin/ruff format cad      # params, materials and design-system tables are excluded,
+                               #   and `# fmt: off` fences keep other constant tables aligned
+.venv/bin/ruff check cad
+.venv/bin/basedpyright         # strict; errors in .basedpyright/baseline.json pass, any new one fails
+```
+
+A new table of constants with aligned comments gets its own `# fmt: off` / `# fmt: on`.
+
 ## Working in this repo
 
 - **Working notes — `_notes/`.** A symlink to a private `working-notes` repo,

@@ -13,3 +13,32 @@ package = false
 
 [tool.uv.sources]
 cad-khana = { path = "../cad-khana", editable = true }
+
+[dependency-groups]
+# Pinned exactly: uv.lock is not versioned here, so this is the pin.
+dev = [
+    "basedpyright==1.40.2",
+    "cadquery-ocp-stubs>=8.0,<8.1",
+    "ruff==0.17.4",
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 120
+
+[tool.ruff.format]
+# Tables of physical constants keep their aligned value / comment columns:
+# these files whole, and `# fmt: off` blocks round the constant tables
+# elsewhere. Lint and type checks still cover them.
+exclude = ["**/params.py", "**/materials.py", "**/design_systems.py"]
+
+[tool.ruff.lint]
+# As cad-khana: pyflakes + pycodestyle errors, import order, pyupgrade,
+# bugbear, simplify, comprehensions.
+select = ["E4", "E7", "E9", "F", "I", "UP", "B", "SIM", "C4"]
+# SIM300 reads `-X == axis` style comparisons of geometry as yoda conditions.
+ignore = ["SIM300"]
+
+[tool.basedpyright]
+include = ["cad"]
+typeCheckingMode = "strict"
