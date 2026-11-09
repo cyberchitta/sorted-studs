@@ -133,6 +133,10 @@ Python checks run on the host, from the uv dev group (config in `pyproject.toml`
 .venv/bin/basedpyright         # strict; errors in .basedpyright/baseline.json pass, any new one fails
 ```
 
+The baseline matches an entry by rule and column span, so editing a line
+that holds a baselined error makes it new. Fix it, or give it a narrow
+`# pyright: ignore[<rule>]` with its reason; never re-baseline to absorb it.
+
 A new table of constants with aligned comments gets its own `# fmt: off` / `# fmt: on`.
 
 ## Working in this repo
