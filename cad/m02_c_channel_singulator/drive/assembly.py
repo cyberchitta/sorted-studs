@@ -29,11 +29,14 @@ hangs below the V-bottom plane, under the rotor's ring-gear flange:
                  are detail-layer.
   - pinion     — printed; pitch cylinder (no teeth, like the m05 base
                  floor) on a hub that reaches down to just above the
-                 plate so a transverse set screw has shaft to bite.
-                 Bored for the 5 mm motor shaft. Its own sub-assembly
-                 with a spin joint about its axis.
+                 plate, drilled radially for an M3 set screw
+                 (``set_screw``, bought, in the same sub-assembly so it
+                 turns with the hub). Bored for the 5 mm motor shaft.
+                 Its own sub-assembly with a spin joint about its axis.
   - motor      — NEMA 17 stub: body + pilot boss + shaft, front face
-                 up against the plate's underside.
+                 up against the plate's underside, its four tapped
+                 holes taking ``motor_screw_0..3`` (bought ISO 4762 M3)
+                 down through the floor's counterbores.
 
 Coordinate frame:
     origin = rotor axis ∩ rotor base plane (shared with rotor/)
@@ -47,7 +50,10 @@ and motor rest on the floor (tangent contact), the pinion hub clears
 the floor, the pinion bore clears the shaft, and the pinion's tip
 circle stays inside the skirt — measured radially to a datum plane on
 the skirt's inner face, because the plain distance pinion↔bowl is the
-0.5 mm floor gap, not the radial one. Rotor-vs-drive and
+0.5 mm floor gap, not the radial one. The set screw's point bears on
+the shaft; each motor screw bears on its counterbore and the motor's
+tapped hole, and its key's corridor is held clear of the drive's own
+parts (``_with_motor_screws`` says why only those). Rotor-vs-drive and
 stator-vs-drive claims live in
 ../assembly.py.
 
@@ -58,8 +64,11 @@ bought.
 """
 
 import math
+from functools import cache
+from typing import cast
 
-from build123d import Axis, Box, Circle, Compound, Cylinder, Location, Part, Plane, Polygon, Pos, Rot, extrude
+from bd_warehouse.fastener import SetScrew, SocketHeadCapScrew
+from build123d import Align, Axis, Box, Circle, Compound, Cylinder, Location, Part, Plane, Polygon, Pos, Rot, extrude
 from cad_khana.mechanism.assembly import Assembly, RevoluteJoint
 
 from .. import arc_fastening as _fastening
@@ -74,15 +83,22 @@ from ..params import (
     CENTER_DIST,
     EXIT_ARC_DEG,
     GEAR_RATIO,
+    HOLE_ROOF_DEG,
     MOTOR_AZIMUTH_DEG,
     MOTOR_BOTTOM_Z,
     MOTOR_FACE_Z,
+    MOTOR_SCREW_L,
+    MOTOR_SCREW_SIZE,
+    MOTOR_SCREW_TOOL_D,
+    MOTOR_SCREW_TOOL_L,
+    MOTOR_SCREW_TOOL_MARGIN,
     MOTOR_SHAFT_BORE_CLEARANCE,
     NEMA17_BODY_LEN,
     NEMA17_BOLT_CBORE_D,
     NEMA17_BOLT_CBORE_DEPTH,
     NEMA17_BOLT_HOLE_D,
     NEMA17_BOLT_PATTERN,
+    NEMA17_BOLT_TAP_DEPTH,
     NEMA17_PILOT_D,
     NEMA17_PILOT_H,
     NEMA17_SHAFT_D,
@@ -101,17 +117,49 @@ from ..params import (
     PLATE_R_OUT,
     PLATE_T,
     PLATE_TOP_Z,
+    SET_SCREW_L,
+    SET_SCREW_RECESS,
+    SET_SCREW_SIZE,
     SKIRT_CUT_BOTTOM_Z,
     SKIRT_R_IN,
     SKIRT_TOP_Z,
 )
 from ..seams import SEAM_COUNT, SEAM_EAR_T, angular_gap_deg, seam_azimuths, sector_index, split_ring, with_seam_bolts
+from ..teardrop import teardrop_cutter
 
 WALL_MIN = 1.5
 
 # Pinion / motor axis in drive-local XY.
 _AZ = math.radians(MOTOR_AZIMUTH_DEG)
 PINION_AXIS_XY = (CENTER_DIST * math.cos(_AZ), CENTER_DIST * math.sin(_AZ))
+
+# The motor screws' corners on the pattern square, motor-local.
+_CORNERS = ((1, 1), (1, -1), (-1, 1), (-1, -1))
+
+
+def _column(d: float, h: float, at: Location) -> Part:
+    """A cylinder of diameter ``d`` rising ``h`` from its base at ``at``."""
+    return Cylinder(d / 2.0, h, align=(Align.CENTER, Align.CENTER, Align.MIN)).moved(at)
+
+
+# --- Bought hardware (bd_warehouse) -----------------------------------
+
+
+@cache
+def _motor_screw() -> SocketHeadCapScrew:
+    return SocketHeadCapScrew(size=MOTOR_SCREW_SIZE, length=MOTOR_SCREW_L, fastener_type="iso4762", simple=True)
+
+
+@cache
+def _set_screw() -> SetScrew:
+    return SetScrew(size=SET_SCREW_SIZE, length=SET_SCREW_L, fastener_type="iso4026", simple=True)
+
+
+# The set screw's hole in the hub: its tap drill for a soft material,
+# threaded in the print; and its axis height, mid-hub.
+_TAP_HOLES = cast("dict[str, float]", _set_screw().tap_hole_diameters)  # bd_warehouse leaves the table untyped
+SET_SCREW_HOLE_D = _TAP_HOLES["Soft"]
+SET_SCREW_Z = (PINION_HUB_BOTTOM_Z + PINION_BOTTOM_Z) / 2.0
 
 
 # --- Part functions ----------------------------------------------------
@@ -135,26 +183,23 @@ def _motor_holes(
     bolt_hole_d: float,
     bolt_cbore_d: float,
     bolt_cbore_depth: float,
-) -> tuple[Part, Part]:
-    """The motor's floor cutters, placed: all of them (pilot, M3 holes,
-    counterbores) and the four counterbores alone, the second being the
-    same placed cylinders the first is built from."""
+    skirt_top_z: float,
+) -> Part:
+    """The motor's floor cutters, placed: the pilot hole, the four M3
+    holes, and each counterbore carried from its floor up past
+    ``skirt_top_z`` — the column the screw's head comes down, which
+    grooves the skirt's inner face where an outboard one reaches past
+    it (owner, 2026-11-09)."""
     half = bolt_pattern / 2.0
     cut_h = t + 2.0
+    cbore_z0 = t / 2.0 - bolt_cbore_depth
+    cbore_h = skirt_top_z + 1.0 - (PLATE_BOTTOM_Z + t / 2.0) - cbore_z0
     holes = Cylinder(pilot_hole_d / 2.0, cut_h)
-    cbores = []
-    for sx, sy in ((1, 1), (1, -1), (-1, 1), (-1, -1)):
+    for sx, sy in _CORNERS:
         holes += Pos(sx * half, sy * half, 0) * Cylinder(bolt_hole_d / 2.0, cut_h)
-        # Counterbore from the floor's top face down, so the head sits
-        # flush; the cutter extends 1 mm above the top face.
-        cbore = Pos(sx * half, sy * half, t / 2.0 - bolt_cbore_depth / 2.0 + 0.5) * Cylinder(
-            bolt_cbore_d / 2.0,
-            bolt_cbore_depth + 1.0,
-        )
-        holes += cbore
-        cbores.append(cbore)
+        holes += _column(bolt_cbore_d, cbore_h, Pos(sx * half, sy * half, cbore_z0))
     place = Pos(motor_xy[0], motor_xy[1], PLATE_BOTTOM_Z + t / 2.0) * Rot(0, 0, motor_rot_deg)
-    return place * holes, place * Compound(cbores)
+    return place * holes
 
 
 def bowl(
@@ -201,9 +246,10 @@ def bowl(
     )
     # The pattern's outboard corners (radially aligned square: corner
     # at (+half, ±half) from the axis) must keep the through-hole
-    # inside the skirt's inner face and the counterbore inside the
-    # floor's outer edge by a wall. The counterbore may nick the
-    # skirt's foot (see params NEMA17_BOLT_CBORE_D), the hole may not.
+    # inside the skirt's inner face, and the counterbore's column —
+    # which may groove the skirt's inner face (see params
+    # NEMA17_BOLT_CBORE_D) — a wall inside the floor's and skirt's
+    # outer face.
     half = bolt_pattern / 2.0
     _corner_r = math.hypot(math.hypot(*motor_xy) + half, half)
     assert _corner_r + bolt_hole_d / 2.0 <= skirt_r_in, (
@@ -231,7 +277,7 @@ def bowl(
         wedge_sketch,
         amount=skirt_top_z - skirt_cut_bottom_z + 1.0,
     )
-    holes, _ = _motor_holes(
+    holes = _motor_holes(
         t=t,
         motor_xy=motor_xy,
         motor_rot_deg=motor_rot_deg,
@@ -240,13 +286,14 @@ def bowl(
         bolt_hole_d=bolt_hole_d,
         bolt_cbore_d=bolt_cbore_d,
         bolt_cbore_depth=bolt_cbore_depth,
+        skirt_top_z=skirt_top_z,
     )
-    # Holes before the skirt: the two outboard counterbores reach
-    # ~0.3 mm under the skirt's foot, and the foot's first layer
-    # bridging that rim is the design (printability waives it with
-    # the measured area); a cutter through the standing skirt would
-    # notch its face instead.
-    body = ((plate - holes) + skirt) - wedge
+    # Holes after the skirt: the two outboard counterbores reach 0.26
+    # past its inner face, so their columns groove it top to bottom and
+    # a head comes straight down (`_with_motor_screws`' entry claim).
+    # Cut before it, the skirt's foot bridged their rims instead and
+    # stood in the head's way.
+    body = ((plate + skirt) - holes) - wedge
     if arc_screw_holes:
         for sign in _fastening.FREE_END_SIGNS:
             body = body - _fastening.skirt_hole(sign)
@@ -280,28 +327,6 @@ def bowl_sectors(
         ear_z=BOWL_EAR_Z,
         hole_apex_up=True,  # printed floor down
     )
-
-
-def motor_cbore_skirt_foot(*, motor_azimuth_deg: float = MOTOR_AZIMUTH_DEG) -> Part:
-    """Where the motor's counterbores reach under the skirt — measuring
-    geometry for `printability.py`, never placed or unioned. The skirt
-    ring intersected with the counterbore cutters `bowl()` cuts, built
-    from the same helpers at the same motor pose `bowl_sectors()` gives
-    it; its bottom face is the skirt foot's first layer over each
-    outboard counterbore's rim, the only down-facing area on the bowl.
-    Empty of material where a counterbore stays inside the skirt."""
-    az = math.radians(motor_azimuth_deg)
-    _, cbores = _motor_holes(
-        t=PLATE_T,
-        motor_xy=(CENTER_DIST * math.cos(az), CENTER_DIST * math.sin(az)),
-        motor_rot_deg=motor_azimuth_deg,
-        pilot_hole_d=PLATE_MOTOR_HOLE_D,
-        bolt_pattern=NEMA17_BOLT_PATTERN,
-        bolt_hole_d=NEMA17_BOLT_HOLE_D,
-        bolt_cbore_d=NEMA17_BOLT_CBORE_D,
-        bolt_cbore_depth=NEMA17_BOLT_CBORE_DEPTH,
-    )
-    return _skirt(r_out=PLATE_R_OUT, skirt_r_in=SKIRT_R_IN, skirt_top_z=SKIRT_TOP_Z) & cbores
 
 
 def bowl_part(k: int) -> str:
@@ -341,29 +366,110 @@ def pinion(
 ) -> Part:
     """Pitch cylinder z ∈ [PINION_BOTTOM_Z, PINION_TOP_Z] on a hub
     reaching down to PINION_HUB_BOTTOM_Z, bored through for the motor
-    shaft. Built on its own axis (pinion-local Z), so the spin joint
-    is the local Z axis."""
+    shaft, and drilled radially along +X at SET_SCREW_Z for the set
+    screw: a teardrop over SET_SCREW_HOLE_D roofed toward the print's
+    up (−Z: it prints gear-face down). Built on its own axis
+    (pinion-local Z), so the spin joint is the local Z axis."""
     assert bore_d < hub_od - 2.0 * WALL_MIN, "hub wall too thin around the bore"
     assert hub_od < pitch_d - 2.0 * ADDENDUM * 1.25, "hub wider than the root circle"
-    gear = Pos(0, 0, PINION_BOTTOM_Z) * extrude(Circle(pitch_d / 2.0), amount=face_w)
     hub_h = PINION_BOTTOM_Z - PINION_HUB_BOTTOM_Z
+    assert SET_SCREW_HOLE_D + 2.0 * WALL_MIN <= hub_h, "set screw hole leaves no hub above or below it"
+    gear = Pos(0, 0, PINION_BOTTOM_Z) * extrude(Circle(pitch_d / 2.0), amount=face_w)
     hub = Pos(0, 0, PINION_HUB_BOTTOM_Z) * extrude(Circle(hub_od / 2.0), amount=hub_h)
     total_h = PINION_TOP_Z - PINION_HUB_BOTTOM_Z
     bore = Pos(0, 0, PINION_HUB_BOTTOM_Z - 1.0) * extrude(
         Circle(bore_d / 2.0),
         amount=total_h + 2.0,
     )
-    return (gear + hub) - bore
+    set_hole = teardrop_cutter(
+        SET_SCREW_HOLE_D,
+        (bore_d / 2.0 - 1.0, 0.0, SET_SCREW_Z),
+        (1, 0, 0),
+        (hub_od - bore_d) / 2.0 + 2.0,
+        apex_up=False,
+        roof_deg=HOLE_ROOF_DEG,
+    )
+    return (gear + hub) - bore - set_hole  # pyright: ignore[reportReturnType]  # build123d types a boolean as Compound | Wire
+
+
+@cache
+def set_screw() -> Part:
+    """bd_warehouse's ISO 4026 set screw in pinion-local coordinates, in
+    its hole along +X: flat point on the shaft's surface, socket end
+    out. Its outer end sits at least SET_SCREW_RECESS under the hub's
+    face, so nothing stands proud of the spinning hub. Bought, not
+    inspected."""
+    tip_x = NEMA17_SHAFT_D / 2.0
+    assert tip_x + SET_SCREW_L <= PINION_HUB_OD / 2.0 - SET_SCREW_RECESS, "set screw stands proud of the hub"
+    # bd_warehouse draws it socket end at z 0, point down −Z; this turns
+    # +Z onto +X.
+    return _set_screw().moved(Pos(tip_x + SET_SCREW_L, 0.0, SET_SCREW_Z) * Rot(0, 90, 0))
+
+
+@cache
+def motor_screw() -> Part:
+    """bd_warehouse's ISO 4762 screw on its own axis: head on z 0 rising
+    +Z, thread down −Z — fused with a thread-Ø cylinder over its length,
+    because its simple shank is drawn under that Ø and the cylinder is
+    what bears in the motor's tapped hole. Bought, not inspected."""
+    screw = _motor_screw()
+    body = screw + _column(screw.thread_diameter, MOTOR_SCREW_L, Pos(0, 0, -MOTOR_SCREW_L))
+    assert len(body.solids()) == 1, "motor screw did not fuse into one body"
+    return body  # pyright: ignore[reportReturnType]  # build123d types a boolean as Compound | Wire
+
+
+def motor_screw_tools() -> Part:
+    """The key's way in to a motor screw: MOTOR_SCREW_TOOL_D, straight up
+    from the head's top MOTOR_SCREW_TOOL_L, in ``motor_screw``'s frame. A
+    keep-out, never placed."""
+    head_top = _motor_screw().head_height
+    return _column(MOTOR_SCREW_TOOL_D, MOTOR_SCREW_TOOL_L, Pos(0, 0, head_top))
+
+
+def motor_screw_entry() -> Part:
+    """The way the screw goes in: its head's column straight up its
+    axis, MOTOR_SCREW_TOOL_L long, in ``motor_screw``'s frame. It starts
+    at the head's mid-height, so it does not count the counterbore
+    floor the head is seated on. A keep-out, never placed."""
+    screw = _motor_screw()
+    z0 = screw.head_height / 2.0
+    return _column(screw.head_diameter, MOTOR_SCREW_TOOL_L, Pos(0, 0, z0))
+
+
+def motor_screw_name(i: int) -> str:
+    """Leaf name of the motor screw at pattern corner i."""
+    return f"motor_screw_{i}"
+
+
+MOTOR_SCREW_NAMES = tuple(motor_screw_name(i) for i in range(len(_CORNERS)))
+
+
+def motor_screw_locations(on_axis: Location) -> tuple[Location, ...]:
+    """Where each ``motor_screw()`` goes: on the pattern square about the
+    motor axis ``on_axis`` (which carries its rotation), its head on its
+    counterbore's floor."""
+    half = NEMA17_BOLT_PATTERN / 2.0
+    seat_z = PLATE_TOP_Z - NEMA17_BOLT_CBORE_DEPTH
+    return tuple(on_axis * Pos(sx * half, sy * half, seat_z) for sx, sy in _CORNERS)
 
 
 def motor() -> Part:
     """NEMA 17 stub on its own axis: square body hanging below
-    MOTOR_FACE_Z, pilot boss and shaft rising from the face."""
+    MOTOR_FACE_Z, pilot boss and shaft rising from the face, and the
+    face's four M3 holes NEMA17_BOLT_TAP_DEPTH deep on the bolt pattern
+    — drawn at the thread's major Ø, the envelope the screws are drawn
+    at, so a screw in one bears on its wall."""
+    half = NEMA17_BOLT_PATTERN / 2.0
+    tap_d = _motor_screw().thread_diameter
+    taps = [
+        _column(tap_d, NEMA17_BOLT_TAP_DEPTH + 1.0, Pos(sx * half, sy * half, MOTOR_FACE_Z - NEMA17_BOLT_TAP_DEPTH))
+        for sx, sy in _CORNERS
+    ]
     body = Pos(0, 0, MOTOR_BOTTOM_Z + NEMA17_BODY_LEN / 2.0) * Box(
         NEMA17_SIDE,
         NEMA17_SIDE,
         NEMA17_BODY_LEN,
-    )
+    ) - Compound(taps)
     pilot = Pos(0, 0, MOTOR_FACE_Z + NEMA17_PILOT_H / 2.0) * Cylinder(
         NEMA17_PILOT_D / 2.0,
         NEMA17_PILOT_H,
@@ -379,9 +485,18 @@ def motor() -> Part:
 
 
 def build_pinion() -> Assembly:
-    """The pinion in its own frame (origin on its axis at z=0). The
-    parent places it at PINION_AXIS_XY and owns the spin joint."""
-    return Assembly().with_part("pinion", pinion(), material=material_of("pinion"))
+    """The pinion and its set screw in their own frame (origin on the
+    axis at z=0). The parent places them at PINION_AXIS_XY and owns the
+    spin joint, so the screw turns with the hub. The screw sits in its
+    hole without touching it: the hole is the tap drill, which the
+    thread cuts on assembly, and bd_warehouse draws the screw at about
+    the thread's minor Ø — so nothing here measures the thread's bite."""
+    return (
+        Assembly()
+        .with_part("pinion", pinion(), material=material_of("pinion"))
+        .with_part("set_screw", set_screw(), material=material_of("set_screw"))
+        .assert_no_interference("set_screw", "pinion")
+    )
 
 
 def pinion_axis_xy(motor_azimuth_deg: float = MOTOR_AZIMUTH_DEG) -> tuple[float, float]:
@@ -478,7 +593,10 @@ def build_drive(
             name="pinion_tip_inside_skirt",
         )
         .assert_scalar("gear_ratio", GEAR_RATIO, detail="ring / pinion teeth")
+        # The set screw's point bears on the shaft.
+        .assert_tangent_contact("pinion.set_screw", "motor")
     )
+    a = _with_motor_screws(a, on_axis, motor_sector)
     # The motor touches no sector but its own. A seam run into the
     # motor puts a neighbour's ear against its body; 1 mm is a real gap,
     # not a fit (the seam bolts' own corridors are held below).
@@ -514,6 +632,43 @@ def build_drive(
         r_out=PLATE_R_OUT,
         ear_z=BOWL_EAR_Z,
     )
+
+
+def _with_motor_screws(a: Assembly, on_axis: Location, motor_sector: str) -> Assembly:
+    """The motor's four screws and their claims: each head bears on its
+    counterbore's floor (tangent contact with the motor's sector) and its
+    thread on the motor's tapped hole (tangent contact with the motor);
+    its head's way in overlaps nothing (``motor_screw_entry``: the two
+    outboard counterbores stand under the skirt's inner face); and its
+    key's corridor keeps MOTOR_SCREW_TOOL_MARGIN clear of every other
+    part here.
+
+    Here only, not against the machine: the corridor runs up through
+    where the rotor flange and the liner go, and the two inboard screws
+    end up under the flange. The motor goes on before the bearing and
+    the rotor, and comes off only once the rotor is lifted out."""
+    screw = _motor_screw()
+    assert screw.head_diameter < NEMA17_BOLT_CBORE_D, "motor screw head does not fit its counterbore"
+    assert screw.head_height <= NEMA17_BOLT_CBORE_DEPTH + 1e-6, "motor screw head stands above the floor"
+    tip_z = PLATE_TOP_Z - NEMA17_BOLT_CBORE_DEPTH - MOTOR_SCREW_L
+    assert MOTOR_FACE_Z - NEMA17_BOLT_TAP_DEPTH <= tip_z < MOTOR_FACE_Z, (
+        f"motor screw tip at z {tip_z:.2f} misses the tapped hole (face {MOTOR_FACE_Z}, {NEMA17_BOLT_TAP_DEPTH} deep)"
+    )
+    placed = tuple(zip(MOTOR_SCREW_NAMES, motor_screw_locations(on_axis), strict=True))
+    for name, loc in placed:
+        a = a.with_part(name, motor_screw(), location=loc, material=material_of(name))
+    everything = tuple(p.name for p in a.placed_parts)
+    for name, loc in placed:
+        others = [p for p in everything if p != name]
+        a = (
+            a.assert_tangent_contact(name, motor_sector)  # pyright: ignore[reportUnknownMemberType]  # cad_khana types a keep-out as Shape[Unknown]
+            .assert_tangent_contact(name, "motor")
+            .with_keepout(f"{name}_entry", loc * motor_screw_entry())
+            .assert_clear_of(others, f"{name}_entry", name=f"{name}_entry_own", min_mm=0.0)
+            .with_keepout(f"{name}_tools", loc * motor_screw_tools())
+            .assert_clear_of(others, f"{name}_tools", name=f"{name}_tools_own", min_mm=MOTOR_SCREW_TOOL_MARGIN)
+        )
+    return a
 
 
 # Degenerate memoized master, so ``khana check <file>`` resolves.

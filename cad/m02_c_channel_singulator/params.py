@@ -265,12 +265,13 @@ BOWL_SEAM_PHASE_DEG = 41.0
 # the boss. Everything stays inside the skirt's outer face — outside it
 # is the LOAD ramp's chute on S1's downstream side.
 #
-# Bought parts — a substitute is a change here:
-ARC_SCREW_D = 3.0          # ISO 10642 M3 countersunk hex socket, thread major Ø → the screw stub, the skirt's clearance hole
-ARC_SCREW_HEAD_D = 6.0     # its head Ø dk (nominal; 6.72 max) → the countersink, the stub's head cone
-ARC_SCREW_L = 10.0         # its length, head included (ISO 10642 convention) → how far it reaches into the boss, so the insert hole's depth
-ARC_INSERT_L = 5.7         # M3 brass heat-set insert, length → the insert hole's minimum depth
-ARC_INSERT_HOLE_D = 4.0    # that insert's recommended hole Ø → the boss's hole (a teardrop over this circle)
+# Bought parts, from bd_warehouse's tables (`arc_fastening.py` reads
+# every dimension off them) — a substitute is a change here:
+ARC_SCREW_SIZE = "M3-0.5"         # ISO 10642 countersunk hex socket: thread Ø → the skirt's hole; head dk → the countersink
+ARC_SCREW_TYPE = "iso10642"
+ARC_SCREW_L = 10.0                # its length, head included (ISO 10642 convention) → how far it reaches into the boss, so the insert hole's depth
+ARC_INSERT_SIZE = "M3-0.5-5.7"    # brass heat-set insert: length → the insert hole's least depth; recommended hole Ø (dc) → the boss's hole
+ARC_INSERT_TYPE = "CNCKitchen"
 # The driver's corridor to each screw, out along its axis from the head
 # top: a hex driver for the 2 mm socket. Ø8 takes the shank with the
 # fingers' room of the m03 M4 clamp bolts' corridor (CLAMP_BOLT_ACCESS_D);
@@ -299,16 +300,35 @@ NEMA17_BOLT_PATTERN = 31.0   # M3 × 4 square spacing, shaft-exit face
 NEMA17_PILOT_D = 22.0        # centring boss on the shaft-exit face
 NEMA17_PILOT_H = 2.0
 NEMA17_BOLT_HOLE_D = 3.4     # M3 clearance through the floor
+NEMA17_BOLT_TAP_DEPTH = 4.5  # the motor's tapped M3 holes, deep (common datasheet figure; NEMA is not in bd_warehouse)
 # The M3 heads are counterbored flush into the floor's top face: at
 # CENTER_DIST the pattern's two outboard corners reach r ≈ 149.3, and
-# an M3 socket head (Ø5.5) standing on the floor would touch the
+# an M3 socket head (Ø5.68) standing on the floor would touch the
 # skirt's inner face at r 152. Recessed, the heads also clear the
-# rotor flange above and need no room; the counterbore's rim nicks
-# the skirt's foot by ~0.3 mm over its 3 mm depth at those two
-# corners, which the bowl builder guards and accepts.
-NEMA17_BOLT_CBORE_D = 6.0    # M3 SHCS head Ø5.5 + 0.5
-NEMA17_BOLT_CBORE_DEPTH = 3.0   # = head height, flush
+# rotor flange above and need no room. At those two corners the
+# counterbore reaches 0.26 past the skirt's inner face, so its column
+# is carried up through the skirt as a groove (owner, 2026-11-09): the
+# head, 0.10 past that face, then comes straight down into its seat.
+NEMA17_BOLT_CBORE_D = 6.0    # designed: over MOTOR_SCREW's head Ø (bd_warehouse), guarded in `drive/assembly.py`
+NEMA17_BOLT_CBORE_DEPTH = 3.0   # designed: no less than the head's height, so it stands no higher than the floor
 PLATE_MOTOR_HOLE_D = NEMA17_PILOT_D + 1.0   # pilot boss clears the floor
+
+# The motor's four screws, down through the floor into its tapped face
+# (fastening pass, 2026-11-09). Bought, from bd_warehouse; a substitute
+# is a change here. M3×6 under the head leaves PLATE_T −
+# NEMA17_BOLT_CBORE_DEPTH of floor and 3 mm of thread in the motor.
+MOTOR_SCREW_SIZE = "M3-0.5"     # ISO 4762 socket head cap screw
+MOTOR_SCREW_L = 6.0
+MOTOR_SCREW_TOOL_D = 4.0        # a 2.5 L-key's long arm (2.9 across corners) with room, straight up from the head
+MOTOR_SCREW_TOOL_L = 60.0       # as SEAM_TOOL_L
+MOTOR_SCREW_TOOL_MARGIN = 0.5   # as SEAM_TOOL_MARGIN
+
+# The pinion's set screw, radial through the hub onto the shaft. Bought
+# (ISO 4026 flat point), from bd_warehouse. The hub's hole is its tap
+# drill for soft material, threaded in the print.
+SET_SCREW_SIZE = "M3-0.5"
+SET_SCREW_L = 4.0
+SET_SCREW_RECESS = 0.5          # its outer end below the hub's face
 
 # Slip fit between the NEMA-17 shaft and the pinion bore. Snug so a
 # single transverse M3 set screw through the hub locks the pinion.

@@ -17,7 +17,8 @@ motor and stator liner sit on, SECONDARY_STRUCTURE),
 design system — ``bearing`` (aluminium turntable) and ``motor``
 (NEMA-17) — and, on a stage whose liner the exit opening cuts
 through, ``arc_screw_pos`` / ``arc_screw_neg`` (the bought screws
-fastening the two arcs' free ends), and every ring's
+fastening the two arcs' free ends), ``set_screw`` (the pinion's) and
+``motor_screw_0..3`` (the motor's), and every ring's
 ``seam_bolt_{k}_{i}`` (bought bolt, nut and washers at the thirds
 seams), which keep their material intrinsics.
 """
@@ -57,6 +58,11 @@ ROLE_OF: dict[str, Role | None] = {
     "motor":      None,                      # NEMA-17 cast body — outside palette
     "arc_screw_pos": None,                   # bought M3 countersunk screw — outside palette
     "arc_screw_neg": None,
+    "set_screw":  None,                      # bought M3 set screw in the pinion hub — outside palette
+    "motor_screw_0": None,                   # bought M3 socket head, motor to floor — outside palette
+    "motor_screw_1": None,
+    "motor_screw_2": None,
+    "motor_screw_3": None,
     **dict.fromkeys(SEAM_BOLT_NAMES),  # bought M3 bolt + nut + washers — outside palette
 }
 

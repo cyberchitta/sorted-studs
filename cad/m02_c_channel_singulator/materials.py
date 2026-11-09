@@ -24,6 +24,11 @@ MATERIAL_OF: dict[str, str | None] = {
     "motor":      "cast_aluminium_dark",
     "arc_screw_pos": "steel",
     "arc_screw_neg": "steel",
+    "set_screw":  "steel",
+    "motor_screw_0": "steel",
+    "motor_screw_1": "steel",
+    "motor_screw_2": "steel",
+    "motor_screw_3": "steel",
     **dict.fromkeys(SEAM_BOLT_NAMES, "steel"),
 }
 

@@ -1342,30 +1342,6 @@
                     "endColumn": 31,
                     "lineCount": 1
                 }
-            },
-            {
-                "code": "reportArgumentType",
-                "range": {
-                    "startColumn": 114,
-                    "endColumn": 118,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportArgumentType",
-                "range": {
-                    "startColumn": 104,
-                    "endColumn": 108,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportReturnType",
-                "range": {
-                    "startColumn": 11,
-                    "endColumn": 23,
-                    "lineCount": 1
-                }
             }
         ],
         "./cad/m02_c_channel_singulator/assembly.py": [
@@ -1456,22 +1432,6 @@
                 }
             },
             {
-                "code": "reportUnknownMemberType",
-                "range": {
-                    "startColumn": 8,
-                    "endColumn": 21,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportReturnType",
-                "range": {
-                    "startColumn": 26,
-                    "endColumn": 50,
-                    "lineCount": 1
-                }
-            },
-            {
                 "code": "reportArgumentType",
                 "range": {
                     "startColumn": 8,
@@ -1488,26 +1448,10 @@
                 }
             },
             {
-                "code": "reportReturnType",
-                "range": {
-                    "startColumn": 11,
-                    "endColumn": 93,
-                    "lineCount": 1
-                }
-            },
-            {
                 "code": "reportArgumentType",
                 "range": {
                     "startColumn": 8,
                     "endColumn": 44,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportReturnType",
-                "range": {
-                    "startColumn": 11,
-                    "endColumn": 30,
                     "lineCount": 1
                 }
             },

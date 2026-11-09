@@ -35,11 +35,14 @@ onto the end's azimuth. The screw axis runs parallel to the cut plane
 from __future__ import annotations
 
 import math
+from functools import cache
+from typing import cast
 
+from bd_warehouse.fastener import CounterSunkScrew, HeatSetNut
 from build123d import (
+    Align,
     Axis,
     Box,
-    Cone,
     Cylinder,
     Face,
     Location,
@@ -60,15 +63,15 @@ from .params import (
     ARC_BOSS_Z_LO,
     ARC_CSINK_CLEAR,
     ARC_HOLE_TIP_CLEAR,
-    ARC_INSERT_HOLE_D,
-    ARC_INSERT_L,
+    ARC_INSERT_SIZE,
+    ARC_INSERT_TYPE,
     ARC_SCREW_ACCESS_D,
     ARC_SCREW_ACCESS_L,
-    ARC_SCREW_D,
-    ARC_SCREW_HEAD_D,
     ARC_SCREW_HOLE_CLEAR,
     ARC_SCREW_L,
     ARC_SCREW_SEAT_CLEAR,
+    ARC_SCREW_SIZE,
+    ARC_SCREW_TYPE,
     ARC_SCREW_Z,
     EXIT_ARC_DEG,
     EXIT_FLOOR_T,
@@ -85,11 +88,38 @@ from .teardrop import teardrop_cutter, teardrop_face
 
 FREE_END_SIGNS = (+1, -1)
 
-# Derived from the bought parts' dims.
+
+@cache
+def _screw() -> CounterSunkScrew:
+    return CounterSunkScrew(size=ARC_SCREW_SIZE, length=ARC_SCREW_L, fastener_type=ARC_SCREW_TYPE, simple=True)
+
+
+@cache
+def _insert() -> HeatSetNut:
+    # bd_warehouse's Literal names two of its table's five makers; the table is what it reads.
+    return HeatSetNut(size=ARC_INSERT_SIZE, fastener_type=ARC_INSERT_TYPE, simple=True)  # pyright: ignore[reportArgumentType]
+
+
+def _table(part: CounterSunkScrew | HeatSetNut, size: str, column: str) -> float:
+    """One figure from a bd_warehouse fastener table: ``column`` of the
+    part's own type, for ``size``. (The countersunk table's header spells
+    ``iso10642:dk`` with a trailing space, so keys are compared stripped.)"""
+    table = cast("dict[str, dict[str, str]]", part.fastener_data)  # bd_warehouse leaves the table untyped
+    row = {k.strip(): v for k, v in table[size].items()}
+    return float(row[f"{part.fastener_type}:{column}"])
+
+
+# The bought parts' dims, off bd_warehouse's tables.
+ARC_SCREW_D = _screw().thread_diameter  # 3.0, thread major Ø
+ARC_SCREW_HEAD_D = _table(_screw(), ARC_SCREW_SIZE, "dk")  # 6.0, the 90° head cone's Ø at its top
+ARC_INSERT_L = _insert().nut_thickness  # 5.7
+ARC_INSERT_HOLE_D = _table(_insert(), ARC_INSERT_SIZE, "dc")  # 4.0, the maker's recommended hole
+
+# Derived from them.
 # fmt: off
 ARC_SCREW_HOLE_D = ARC_SCREW_D + ARC_SCREW_HOLE_CLEAR          # 3.4 through the skirt
 ARC_CSINK_D = ARC_SCREW_HEAD_D + ARC_CSINK_CLEAR               # 6.4 at the skirt's outer face
-ARC_SCREW_HEAD_H = (ARC_SCREW_HEAD_D - ARC_SCREW_D) / 2.0      # 90° head: 1.5
+ARC_SCREW_HEAD_H = (ARC_SCREW_HEAD_D - ARC_SCREW_D) / 2.0      # 90° head: where its cone meets the thread Ø, 1.5 down
 
 # Where the axis runs, in the side frame.
 _AXIS_Y = ARC_BOSS_EXIT_CLEAR + ARC_BOSS_W / 2.0               # 8.0 in from the cut plane
@@ -193,14 +223,20 @@ def skirt_hole(sign: int = +1) -> Part:
     return _to_end(hole + csink, sign)
 
 
+@cache
 def arc_screw() -> Part:
-    """The screw stub on its own axis: head top at the origin, shank
-    down −Z — a 90° head cone ARC_SCREW_HEAD_D across and a plain
-    ARC_SCREW_D cylinder (the thread's major diameter: an outer
-    envelope). Bought, not inspected."""
-    head = Pos(0, 0, -ARC_SCREW_HEAD_H) * Cone(ARC_SCREW_D / 2.0, ARC_SCREW_HEAD_D / 2.0, ARC_SCREW_HEAD_H, align=None)
-    shank = Pos(0, 0, -ARC_SCREW_L) * Cylinder(ARC_SCREW_D / 2.0, ARC_SCREW_L - ARC_SCREW_HEAD_H, align=None)
-    return head + shank
+    """The screw on its own axis: head top at the origin, shank down −Z
+    — bd_warehouse's ISO 10642 body, fused with an ARC_SCREW_D cylinder
+    from where its head cone narrows to that Ø down to the tip. Its
+    simple shank is drawn under the thread's major Ø; the cylinder is
+    the thread's outer envelope, which the insert-hole claim measures.
+    Bought, not inspected."""
+    shank = Cylinder(
+        ARC_SCREW_D / 2.0, ARC_SCREW_L - ARC_SCREW_HEAD_H, align=(Align.CENTER, Align.CENTER, Align.MIN)
+    ).moved(Pos(0, 0, -ARC_SCREW_L))
+    body = _screw() + shank
+    assert len(body.solids()) == 1, "free-end screw did not fuse into one body"
+    return body  # pyright: ignore[reportReturnType]  # build123d types a boolean as Compound | Wire
 
 
 def arc_screw_location(sign: int) -> Location:
@@ -264,6 +300,21 @@ def boss_span_deg(sign: int) -> tuple[float, float]:
     return (near, far) if sign > 0 else (-far, -near)
 
 
+def _on_skirt_face(part: Part) -> list[Face]:
+    """The faces of ``part`` lying on the cylinder r = SKIRT_R_IN about
+    +Z: cylindrical, with points across their surface all at that
+    radius. Tested by position, not ``Face.radius``, which is None on a
+    trimmed cylinder: fusing the skirt before the bowl's motor holes
+    are cut leaves its whole inner face one trimmed face, and a radius
+    filter dropped it, reading the bosses' bearing at 0 (2026-11-09)."""
+
+    def on_it(f: Face) -> bool:
+        pts = (f.position_at(u, v) for u in (0.1, 0.5, 0.9) for v in (0.1, 0.5, 0.9))
+        return all(abs(math.hypot(p.X, p.Y) - SKIRT_R_IN) < 1e-6 for p in pts)
+
+    return [f for f in part.faces() if f.geom_type.name == "CYLINDER" and on_it(f)]
+
+
 def bearing_area_mm2(liner: Part, bowl: Part, sign: int) -> float:
     """Area over which ``liner`` and ``bowl`` share the skirt's inner
     face (the cylinder r = SKIRT_R_IN) at the free end ``sign``: the
@@ -274,21 +325,12 @@ def bearing_area_mm2(liner: Part, bowl: Part, sign: int) -> float:
     the skirt — so this is the boss's bearing patch, holes out: zero
     if the boss stands off the skirt, or bears on another bowl sector."""
     lo, hi = boss_span_deg(sign)
-
-    def on_skirt_face(part: Part):
-        return [
-            f
-            for f in part.faces()
-            # (a trimmed cylinder reports no radius; none of those is the skirt's face)
-            if f.geom_type.name == "CYLINDER" and f.radius is not None and abs(f.radius - SKIRT_R_IN) < 1e-6
-        ]
-
     area = 0.0
-    for fa in on_skirt_face(liner):
+    for fa in _on_skirt_face(liner):
         c = fa.center()
         if not lo <= math.degrees(math.atan2(c.Y, c.X)) <= hi:
             continue
-        for fb in on_skirt_face(bowl):
+        for fb in _on_skirt_face(bowl):
             common = fa & fb
             area += sum(f.area for f in common.faces()) if common is not None else 0.0
     return area

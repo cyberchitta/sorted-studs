@@ -31,12 +31,7 @@ from cad_khana.printability.inspect import inspect
 from cad_khana.printability.methods import FDM
 from cad_khana.printability.waiver import Waiver
 
-from ..m02_c_channel_singulator.drive.assembly import (
-    BOWL_PARTS,
-    WALL_MIN,
-    bowl_part_at,
-    motor_cbore_skirt_foot,
-)
+from ..m02_c_channel_singulator.drive.assembly import BOWL_PARTS, WALL_MIN
 from .assembly import build_chain
 from .joints import brace_foot_wedge_edges
 from .params import BRACE_COLS, BRACE_FOOT_STOP_H, S1, S3, STAGES, brace_run
@@ -101,70 +96,18 @@ for name, features in (
 # faces are vertical; on S1 and S2 the skirt's two free-end screw holes
 # (`m02_c_channel_singulator/arc_fastening.py`) are teardrops, their
 # roofs and countersinks facing down at 40° at most — under the 45°
-# threshold, so they add no area. The only down-facing area past it is
-# the skirt foot's first layer over the rims of the motor pattern's two
-# outboard M3 counterbores (params NEMA17_BOLT_CBORE_D), so the
-# overhang waiver belongs to each stage's motor sector alone, and each
-# is witnessed on that stage's own body: the slivers' azimuths are
-# m02-local, sagitta and chord read off the down-facing facets'
-# vertices against the skirt's inner face at r 152. Owner accepted the
-# waiver as written, 2026-09-17; that the first layer bridges the
-# slivers is unsliced (`_notes/backlog/bench-validation.md` item 14).
-#
-# The waiver is scoped to `motor_cbore_skirt_foot`, the skirt ring
-# intersected with the counterbore cutters `bowl()` cuts: its bottom
-# face is exactly those two slivers, so a down-facing face anywhere
-# else on the sector traces to no feature and fails.
-#
-# Keyed by (stage, motor azimuth, seam phase): the measurement covers
-# that configuration only, so a changed stage parameter is a KeyError
-# here — re-witness it, don't carry the text over.
-_MOTOR_WAIVER = {
-    ("s1", 180.0, 41.0): "0.83 mm² at 90° (s1, measured 2026-09-27 on "
-    "this body): two slivers of 0.42 mm² each, the Ø6 counterbores' "
-    "rims about the motor pattern's outboard corners (r 149.26, "
-    "az 174° and 186°) lying past the skirt's inner face at r 152 — "
-    "sagitta 0.26 mm, chord 2.45 mm each, at the floor top z −18.5. "
-    "The skirt's first layer bridges them; nothing else in the part "
-    "faces down.",
-    ("s2", 210.0, 31.0): "0.83 mm² at 90° (s2, measured 2026-09-27 on "
-    "this body): two slivers of 0.42 mm² each, the Ø6 counterbores' "
-    "rims about the motor pattern's outboard corners (r 149.26, "
-    "az 204° and 216°) lying past the skirt's inner face at r 152 — "
-    "sagitta 0.26 mm, chord 2.45 mm each, at the floor top z −18.5. "
-    "The skirt's first layer bridges them; nothing else in the part "
-    "faces down.",
-    ("s3", 210.0, 38.0): "0.83 mm² at 90° (s3, measured 2026-09-27 on "
-    "this body): two slivers of 0.42 mm² each, the Ø6 counterbores' "
-    "rims about the motor pattern's outboard corners (r 149.26, "
-    "az 204° and 216°) lying past the skirt's inner face at r 152 — "
-    "sagitta 0.26 mm, chord 2.45 mm each, at the floor top z −18.5. "
-    "The skirt's first layer bridges them; nothing else in the part "
-    "faces down.",
-}
-
+# threshold, so they add no area. Nothing on a sector faces down past
+# it. (Until 2026-11-09 the skirt's foot bridged the rims of the motor
+# pattern's two outboard counterbores, 0.83 mm² waived per stage; their
+# columns now groove the skirt instead, so the screw heads can come
+# straight down — `drive/assembly.py` `_with_motor_screws`.)
 for s in STAGES:
-    motor_sector = bowl_part_at(s.motor_azimuth_deg, s.bowl_seam_phase_deg)
     for leaf in BOWL_PARTS:
         inspect(
             chain.part(f"{s.name}.drive.{leaf}").part,
             method=FDM(wall_min_mm=WALL_MIN),
             out="outputs",
             name=f"{s.name}_{leaf}",
-            features={
-                "cbore_skirt_foot": Feature(
-                    motor_cbore_skirt_foot(motor_azimuth_deg=s.motor_azimuth_deg),
-                    waive={
-                        "overhang_max": Waiver(
-                            reason=_MOTOR_WAIVER[(s.name, s.motor_azimuth_deg, s.bowl_seam_phase_deg)],
-                            max_area_mm2=0.85,
-                            max_regions=2,
-                        )
-                    },
-                )
-            }
-            if leaf == motor_sector
-            else None,
         )
 
 # The LOAD ramp prints on its side: the side wall's outer face (chain
